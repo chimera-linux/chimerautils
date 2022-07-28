@@ -1,0 +1,102 @@
+--- gzip/gzip.c.orig	2022-07-28 22:36:48.798182541 +0200
++++ gzip/gzip.c	2022-07-28 22:44:40.787920391 +0200
+@@ -49,13 +49,23 @@ __FBSDID("$FreeBSD$");
+  *	- make bzip2/compress -v/-t/-l support work as well as possible
+  */
+ 
+-#include <sys/endian.h>
++static inline unsigned le32dec(const void *s) {
++	const unsigned char *p = (const unsigned char *)s;
++	return (((unsigned)p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]);
++}
++
++extern const char *__progname;
++
++#define nitems(x) (sizeof((x)) / sizeof((x)[0]))
++
+ #include <sys/param.h>
+ #include <sys/stat.h>
+ #include <sys/time.h>
++#include <sys/types.h>
+ 
+ #include <inttypes.h>
+ #include <unistd.h>
++#include <signal.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+@@ -339,7 +349,7 @@ static const struct option longopts[] =
+ int
+ main(int argc, char **argv)
+ {
+-	const char *progname = getprogname();
++	const char *progname = __progname;
+ #ifndef SMALL
+ 	char *gzip;
+ 	int len;
+@@ -388,7 +398,7 @@ main(int argc, char **argv)
+ 			break;
+ 		case 'V':
+ 			display_version();
+-			/* NOTREACHED */
++			break; /* NOTREACHED */
+ #ifndef SMALL
+ 		case 'a':
+ 			fprintf(stderr, "%s: option --ascii ignored on this system\n", progname);
+@@ -401,7 +411,7 @@ main(int argc, char **argv)
+ 			break;
+ 		case 'L':
+ 			display_license();
+-			/* NOT REACHED */
++			break; /* NOT REACHED */
+ 		case 'N':
+ 			nflag = 0;
+ 			Nflag = 1;
+@@ -1140,9 +1150,11 @@ copymodes(int fd, const struct stat *sbp
+ 	if (futimens(fd, times) < 0)
+ 		maybe_warn("couldn't futimens: %s", file);
+ 
++#if 0
+ 	/* only try flags if they exist already */
+         if (sb.st_flags != 0 && fchflags(fd, sb.st_flags) < 0)
+ 		maybe_warn("couldn't fchflags: %s", file);
++#endif
+ }
+ #endif
+ 
+@@ -1231,7 +1243,7 @@ unlink_input(const char *file, const str
+ }
+ 
+ static void
+-got_sigint(int signo __unused)
++got_sigint(int signo __attribute__((unused)))
+ {
+ 
+ 	if (remove_file != NULL)
+@@ -1240,7 +1252,7 @@ got_sigint(int signo __unused)
+ }
+ 
+ static void
+-got_siginfo(int signo __unused)
++got_siginfo(int signo __attribute__((unused)))
+ {
+ 
+ 	print_info = 1;
+@@ -1250,7 +1262,7 @@ static void
+ setup_signals(void)
+ {
+ 
+-	signal(SIGINFO, got_siginfo);
++	signal(SIGUSR1, got_siginfo);
+ 	signal(SIGINT, got_sigint);
+ }
+ 
+@@ -2279,7 +2291,7 @@ usage(void)
+     " -V --version         display program version\n"
+     " -v --verbose         print extra statistics\n",
+ #endif
+-	    getprogname());
++	    __progname);
+ 	exit(0);
+ }
+ 

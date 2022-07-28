@@ -92,6 +92,10 @@ subdir('write')
 subdir('xargs')
 subdir('yes')
 
+if not get_option('zlib').disabled() and zlib.found()
+    subdir('gzip')
+endif
+
 if libedit.found()
     subdir('bc')
 endif

@@ -105,6 +105,15 @@ libm = cc.find_library('m', required : true)
 # df(1) needs libxo
 libxo = dependency('libxo', required : true)
 
+# gzip needs zlib
+zlib = dependency('zlib', required : get_option('zlib'))
+
+# gzip needs bzip2
+bzip2 = cc.find_library('bz2', required : get_option('bzip2'))
+
+# gzip needs liblzma
+lzma = dependency('liblzma', required : get_option('lzma'))
+
 # needed by a few utils; provided by glibc, but not by e.g. musl
 
 fts_dirs = []

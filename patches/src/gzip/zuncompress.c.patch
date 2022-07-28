@@ -1,0 +1,49 @@
+--- gzip/zuncompress.c.orig	2022-07-28 22:37:05.900507632 +0200
++++ gzip/zuncompress.c	2022-07-28 22:42:12.366505017 +0200
+@@ -40,7 +40,12 @@
+ 
+ /* This file is #included by gzip.c */
+ 
+-static int	zread(void *, char *, int);
++static ssize_t
++zread(void *cookie, char *rbp, size_t num);
++
++#ifndef EFTYPE
++#define EFTYPE EINVAL
++#endif
+ 
+ #define	tab_prefixof(i)	(zs->zs_codetab[i])
+ #define	tab_suffixof(i)	((char_type *)(zs->zs_htab))[i]
+@@ -174,6 +179,7 @@ FILE *
+ zdopen(int fd)
+ {
+ 	struct s_zstate *zs;
++	cookie_io_functions_t zfuncs;
+ 
+ 	if ((zs = calloc(1, sizeof(struct s_zstate))) == NULL)
+ 		return (NULL);
+@@ -201,7 +207,12 @@ zdopen(int fd)
+ 		return NULL;
+ 	}
+ 
+-	return funopen(zs, zread, NULL, NULL, zclose);
++	zfuncs.read = zread;
++	zfuncs.write = NULL;
++	zfuncs.seek = NULL;
++	zfuncs.close = zclose;
++
++	return fopencookie(zs, "r", zfuncs);
+ }
+ 
+ /*
+@@ -210,8 +221,8 @@ zdopen(int fd)
+  * compressed file.  The tables used herein are shared with those of the
+  * compress() routine.  See the definitions above.
+  */
+-static int
+-zread(void *cookie, char *rbp, int num)
++static ssize_t
++zread(void *cookie, char *rbp, size_t num)
+ {
+ 	u_int count, i;
+ 	struct s_zstate *zs;

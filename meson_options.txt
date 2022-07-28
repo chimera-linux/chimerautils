@@ -32,3 +32,18 @@ option('libedit',
     type: 'feature', value: 'enabled',
     description: 'Use libedit (needed by bc(1))'
 )
+
+option('zlib',
+    type: 'feature', value: 'enabled',
+    description: 'Use zlib for gzip(1)'
+)
+
+option('lzma',
+    type: 'feature', value: 'enabled',
+    description: 'Use liblzma for gzip(1)'
+)
+
+option('bzip2',
+    type: 'feature', value: 'enabled',
+    description: 'Use bzip2 for gzip(1)'
+)
