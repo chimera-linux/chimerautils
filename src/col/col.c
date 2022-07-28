@@ -59,6 +59,8 @@ __FBSDID("$FreeBSD$");
 #include <wchar.h>
 #include <wctype.h>
 
+#include "compat.h"
+
 #define	BS	'\b'		/* backspace */
 #define	TAB	'\t'		/* tab */
 #define	SPACE	' '		/* space */
@@ -135,8 +137,7 @@ main(int argc, char **argv)
 	int this_line;			/* line l points to */
 	int nflushd_lines;		/* number of lines that were flushed */
 	int adjust, opt, warned, width;
-	char *errstr = NULL;
-	long long conv;
+	const char *errstr;
 
 	(void)setlocale(LC_CTYPE, "");
 
@@ -154,12 +155,11 @@ main(int argc, char **argv)
 			compress_spaces = 1;
 			break;
 		case 'l':		/* buffered line count */
-			conv = strtoll(optarg, &errstr, 10);
-			if (*errstr || (errstr == optarg) || (conv < 1) || \
-			    (conv > ((INT_MAX - BUFFER_MARGIN) / 2)))
+			max_bufd_lines = strtonum(optarg, 1,
+			    (INT_MAX - BUFFER_MARGIN) / 2, &errstr) * 2;
+			if (errstr != NULL)
 				errx(1, "bad -l argument, %s: %s", errstr, 
 					optarg);
-			max_bufd_lines = conv * 2;
 			break;
 		case 'p':		/* pass unknown control sequences */
 			pass_unknown_seqs = 1;

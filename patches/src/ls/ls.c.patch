@@ -1,5 +1,5 @@
 --- ls/ls.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ ls/ls.c	2022-07-18 21:23:58.313576108 +0200
++++ ls/ls.c	2022-07-28 21:50:46.046717458 +0200
 @@ -49,7 +49,7 @@ __FBSDID("$FreeBSD$");
  #include <sys/param.h>
  #include <sys/stat.h>
@@ -40,50 +40,7 @@
  static int f_listdir;		/* list actual directory, not contents */
  static int f_listdot;		/* list files beginning with . */
         int f_longform;		/* long listing format */
-@@ -234,7 +233,6 @@ main(int argc, char *argv[])
- 	struct winsize win;
- 	int ch, fts_options, notused;
- 	char *p;
--	const char *errstr = NULL;
- #ifdef COLORLS
- 	char termcapbuf[1024];	/* termcap definition buffer */
- 	char tcapbuf[512];	/* capability buffer */
-@@ -246,8 +244,12 @@ main(int argc, char *argv[])
- 	/* Terminal defaults to -Cq, non-terminal defaults to -1. */
- 	if (isatty(STDOUT_FILENO)) {
- 		termwidth = 80;
--		if ((p = getenv("COLUMNS")) != NULL && *p != '\0')
--			termwidth = strtonum(p, 0, INT_MAX, &errstr);
-+		if ((p = getenv("COLUMNS")) != NULL && *p != '\0') {
-+			termwidth = strtoll(p, NULL, 10);
-+			if (errno == ERANGE || errno == EINVAL) {
-+				termwidth = 80;
-+			}
-+		}
- 		else if (ioctl(STDOUT_FILENO, TIOCGWINSZ, &win) != -1 &&
- 		    win.ws_col > 0)
- 			termwidth = win.ws_col;
-@@ -256,13 +258,14 @@ main(int argc, char *argv[])
- 		f_singlecol = 1;
- 		/* retrieve environment variable, in case of explicit -C */
- 		p = getenv("COLUMNS");
--		if (p)
--			termwidth = strtonum(p, 0, INT_MAX, &errstr);
-+		if (p) {
-+			termwidth = strtoll(p, NULL, 10);
-+			if (errno == ERANGE || errno == EINVAL) {
-+				termwidth = 80;
-+			}
-+		}
- 	}
- 
--	if (errstr)
--		termwidth = 80;
--
- 	fts_options = FTS_PHYSICAL;
- 	if (getenv("LS_SAMESORT"))
- 		f_samesort = 1;
-@@ -276,7 +279,7 @@ main(int argc, char *argv[])
+@@ -276,7 +275,7 @@ main(int argc, char *argv[])
  		colorflag = COLORFLAG_AUTO;
  #endif
  	while ((ch = getopt_long(argc, argv,
@@ -92,7 +49,7 @@
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
-@@ -301,21 +304,14 @@ main(int argc, char *argv[])
+@@ -301,21 +300,14 @@ main(int argc, char *argv[])
  			f_longform = 0;
  			f_singlecol = 0;
  			break;
@@ -115,7 +72,7 @@
  			break;
  		case 'f':
  			f_nosort = 1;
-@@ -389,9 +385,6 @@ main(int argc, char *argv[])
+@@ -389,9 +381,6 @@ main(int argc, char *argv[])
  		case 'W':
  			f_whiteout = 1;
  			break;
@@ -125,7 +82,7 @@
  		case 'b':
  			f_nonprint = 0;
  			f_octal = 0;
-@@ -422,9 +415,6 @@ main(int argc, char *argv[])
+@@ -422,9 +411,6 @@ main(int argc, char *argv[])
  		case 'n':
  			f_numericonly = 1;
  			break;
@@ -135,7 +92,7 @@
  		case 'p':
  			f_slash = 1;
  			f_type = 1;
-@@ -503,8 +493,6 @@ main(int argc, char *argv[])
+@@ -503,8 +489,6 @@ main(int argc, char *argv[])
  			f_color = 1;
  			explicitansi = true;
  		}
@@ -144,7 +101,7 @@
  #endif /*COLORLS*/
  	}
  
-@@ -572,8 +560,6 @@ main(int argc, char *argv[])
+@@ -572,8 +556,6 @@ main(int argc, char *argv[])
  			sortfcn = revsizecmp;
  		else if (f_accesstime)
  			sortfcn = revacccmp;
@@ -153,7 +110,7 @@
  		else if (f_statustime)
  			sortfcn = revstatcmp;
  		else		/* Use modification time. */
-@@ -585,8 +571,6 @@ main(int argc, char *argv[])
+@@ -585,8 +567,6 @@ main(int argc, char *argv[])
  			sortfcn = sizecmp;
  		else if (f_accesstime)
  			sortfcn = acccmp;
@@ -162,7 +119,7 @@
  		else if (f_statustime)
  			sortfcn = statcmp;
  		else		/* Use modification time. */
-@@ -643,7 +627,7 @@ traverse(int argc, char *argv[], int opt
+@@ -643,7 +623,7 @@ traverse(int argc, char *argv[], int opt
  	 * If not recursing down this tree and don't need stat info, just get
  	 * the names.
  	 */
@@ -171,7 +128,7 @@
  	    options & FTS_NOSTAT ? FTS_NAMEONLY : 0;
  
  	while (errno = 0, (p = fts_read(ftsp)) != NULL)
-@@ -694,7 +678,7 @@ traverse(int argc, char *argv[], int opt
+@@ -694,7 +674,7 @@ traverse(int argc, char *argv[], int opt
   * points to the parent directory of the display list.
   */
  static void
@@ -180,7 +137,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -703,8 +687,7 @@ display(const FTSENT *p, FTSENT *list, i
+@@ -703,8 +683,7 @@ display(const FTSENT *p, FTSENT *list, i
  	off_t maxsize;
  	long maxblock;
  	uintmax_t maxinode;
@@ -190,7 +147,7 @@
  	u_int sizelen;
  	int maxflags;
  	gid_t maxgroup;
-@@ -712,8 +695,9 @@ display(const FTSENT *p, FTSENT *list, i
+@@ -712,8 +691,9 @@ display(const FTSENT *p, FTSENT *list, i
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -201,7 +158,7 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -761,7 +745,6 @@ display(const FTSENT *p, FTSENT *list, i
+@@ -761,7 +741,6 @@ display(const FTSENT *p, FTSENT *list, i
  	maxflags = width[5];
  	maxsize = width[6];
  	maxlen = width[7];
@@ -209,7 +166,7 @@
  
  	MAKENINES(maxinode);
  	MAKENINES(maxblock);
-@@ -770,7 +753,6 @@ display(const FTSENT *p, FTSENT *list, i
+@@ -770,7 +749,6 @@ display(const FTSENT *p, FTSENT *list, i
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -217,7 +174,7 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -825,96 +807,34 @@ display(const FTSENT *p, FTSENT *list, i
+@@ -825,96 +803,34 @@ display(const FTSENT *p, FTSENT *list, i
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -333,7 +290,7 @@
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
  
-@@ -931,17 +851,6 @@ label_out:
+@@ -931,17 +847,6 @@ label_out:
  						d.s_size = sizelen;
  				}
  
@@ -351,7 +308,7 @@
  				cur->fts_pointer = np;
  			}
  		}
-@@ -964,7 +873,6 @@ label_out:
+@@ -964,7 +869,6 @@ label_out:
  		d.btotal = btotal;
  		d.s_block = snprintf(NULL, 0, "%lu", howmany(maxblock, blocksize));
  		d.s_flags = maxflags;
@@ -359,7 +316,7 @@
  		d.s_group = maxgroup;
  		d.s_inode = snprintf(NULL, 0, "%ju", maxinode);
  		d.s_nlink = snprintf(NULL, 0, "%lu", maxnlink);
-@@ -991,7 +899,7 @@ label_out:
+@@ -991,7 +895,7 @@ label_out:
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int

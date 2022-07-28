@@ -1,5 +1,5 @@
 --- timeout/timeout.c.orig	2021-04-09 02:24:12.000000000 +0200
-+++ timeout/timeout.c	2022-07-27 21:50:58.093075438 +0200
++++ timeout/timeout.c	2022-07-28 21:48:58.440232153 +0200
 @@ -28,7 +28,7 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -31,18 +31,16 @@
  
  	exit(EX_USAGE);
  }
-@@ -103,17 +107,19 @@ static int
- parse_signal(const char *str)
+@@ -104,16 +108,19 @@ parse_signal(const char *str)
  {
  	int sig, i;
--	const char *errstr;
+ 	const char *errstr;
 +	const char *signame;
  
 -	sig = strtonum(str, 1, sys_nsig - 1, &errstr);
-+	sig = strtoll(str, NULL, 10);
++	sig = strtonum(str, 1, NSIG, &errstr);
  
--	if (errstr == NULL)
-+	if (errno != EINVAL && errno != ERANGE && sig > 1 && sig < NSIG)
+ 	if (errstr == NULL)
  		return (sig);
 +
  	if (strncasecmp(str, "SIG", 3) == 0)
@@ -56,7 +54,7 @@
  			return (i);
  	}
  
-@@ -174,8 +180,7 @@ main(int argc, char **argv)
+@@ -174,8 +181,7 @@ main(int argc, char **argv)
  	bool do_second_kill = false;
  	bool child_done = false;
  	struct sigaction signals;
@@ -66,7 +64,7 @@
  	int signums[] = {
  		-1,
  		SIGTERM,
-@@ -228,8 +233,8 @@ main(int argc, char **argv)
+@@ -228,8 +234,8 @@ main(int argc, char **argv)
  
  	if (!foreground) {
  		/* Acquire a reaper */
@@ -77,7 +75,7 @@
  	}
  
  	memset(&signals, 0, sizeof(signals));
-@@ -297,9 +302,8 @@ main(int argc, char **argv)
+@@ -297,9 +303,8 @@ main(int argc, char **argv)
  				if (foreground) {
  					break;
  				} else {
@@ -89,7 +87,7 @@
  						break;
  				}
  			}
-@@ -308,10 +312,8 @@ main(int argc, char **argv)
+@@ -308,10 +313,8 @@ main(int argc, char **argv)
  
  			timedout = true;
  			if (!foreground) {
@@ -102,7 +100,7 @@
  			} else
  				kill(pid, killsig);
  
-@@ -325,10 +327,8 @@ main(int argc, char **argv)
+@@ -325,10 +328,8 @@ main(int argc, char **argv)
  
  		} else if (sig_term) {
  			if (!foreground) {
@@ -115,7 +113,7 @@
  			} else
  				kill(pid, sig_term);
  
-@@ -348,7 +348,7 @@ main(int argc, char **argv)
+@@ -348,7 +349,7 @@ main(int argc, char **argv)
  	}
  
  	if (!foreground)

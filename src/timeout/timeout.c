@@ -107,11 +107,12 @@ static int
 parse_signal(const char *str)
 {
 	int sig, i;
+	const char *errstr;
 	const char *signame;
 
-	sig = strtoll(str, NULL, 10);
+	sig = strtonum(str, 1, NSIG, &errstr);
 
-	if (errno != EINVAL && errno != ERANGE && sig > 1 && sig < NSIG)
+	if (errstr == NULL)
 		return (sig);
 
 	if (strncasecmp(str, "SIG", 3) == 0)

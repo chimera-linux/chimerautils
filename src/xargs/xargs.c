@@ -67,6 +67,7 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 
 #include "pathnames.h"
+#include "compat.h"
 
 static void	parse_input(int, char *[]);
 static void	prerun(int, char *[]);
@@ -123,6 +124,7 @@ main(int argc, char *argv[])
 	size_t linelen;
 	struct rlimit rl;
 	char *endptr;
+	const char *errstr;
 
 	inpline = replstr = NULL;
 	ep = environ;
@@ -170,23 +172,23 @@ main(int argc, char *argv[])
 			replstr = optarg;
 			break;
 		case 'L':
-			Lflag = strtoll(optarg, NULL, 10);
-			if (errno == ERANGE || errno == EINVAL)
-				errx(1, "-L %s", optarg);
+			Lflag = strtonum(optarg, 0, INT_MAX, &errstr);
+			if (errstr)
+				errx(1, "-L %s: %s", optarg, errstr);
 			break;
 		case 'n':
 			nflag = 1;
-			nargs = strtoll(optarg, NULL, 10);
-			if (nargs < 1 || (errno == ERANGE || errno == EINVAL))
-				errx(1, "-n %s", optarg);
+			nargs = strtonum(optarg, 1, INT_MAX, &errstr);
+			if (errstr)
+				errx(1, "-n %s: %s", optarg, errstr);
 			break;
 		case 'o':
 			oflag = 1;
 			break;
 		case 'P':
-			maxprocs = strtoul(optarg, NULL, 10);
-			if (errno == ERANGE || errno == EINVAL)
-				errx(1, "-P %s", optarg);
+			maxprocs = strtonum(optarg, 0, INT_MAX, &errstr);
+			if (errstr)
+				errx(1, "-P %s: %s", optarg, errstr);
 			if (getrlimit(RLIMIT_NPROC, &rl) != 0)
 				errx(1, "getrlimit failed");
 			if (maxprocs == 0 || maxprocs > rl.rlim_cur)
@@ -209,9 +211,9 @@ main(int argc, char *argv[])
 				errx(1, "replsize must be a number");
 			break;
 		case 's':
-			nline = strtoll(optarg, NULL, 10);
-			if (errno == ERANGE || errno == EINVAL)
-				errx(1, "-s %s", optarg);
+			nline = strtonum(optarg, 0, INT_MAX, &errstr);
+			if (errstr)
+				errx(1, "-s %s: %s", optarg, errstr);
 			break;
 		case 't':
 			tflag = 1;

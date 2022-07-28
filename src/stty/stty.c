@@ -56,6 +56,7 @@ __FBSDID("$FreeBSD$");
 
 #include "stty.h"
 #include "extern.h"
+#include "compat.h"
 
 int
 main(int argc, char *argv[])
@@ -63,7 +64,7 @@ main(int argc, char *argv[])
 	struct info i;
 	enum FMT fmt;
 	int ch;
-	const char *file;
+	const char *file, *errstr = NULL;
 
 	fmt = NOTSET;
 	i.fd = STDIN_FILENO;
@@ -131,12 +132,10 @@ args:	argc -= optind;
 
 		if (isdigit(**argv)) {
 			speed_t speed;
-			unsigned long baud;
-			char *errstr;
-			baud = strtoul(*argv, &errstr, 10);
-			if (*errstr) {
+			unsigned int baud;
+			baud = (unsigned int)strtonum(*argv, 0, UINT_MAX, &errstr);
+			if (errstr)
 				err(1, "speed");
-			}
 			speed = get_speed(baud);
 			cfsetospeed(&i.t, speed);
 			cfsetispeed(&i.t, speed);

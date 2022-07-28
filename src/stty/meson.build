@@ -9,6 +9,7 @@ stty_prog = executable(
       'util.c',
     ],
     include_directories : inc,
+    link_with : [ libcompat ],
     install : true,
 )
 

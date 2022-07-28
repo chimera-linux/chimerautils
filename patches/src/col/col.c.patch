@@ -1,5 +1,5 @@
---- col/col.c.orig	2022-07-28 09:50:11.752847666 +0200
-+++ col/col.c	2022-07-28 09:56:47.745955222 +0200
+--- col/col.c.orig	2021-04-09 02:24:12.000000000 +0200
++++ col/col.c	2022-07-28 21:56:16.961148758 +0200
 @@ -47,11 +47,9 @@ static char sccsid[] = "@(#)col.c	8.5 (B
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -13,13 +13,16 @@
  #include <locale.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -137,16 +135,11 @@ main(int argc, char **argv)
- 	int this_line;			/* line l points to */
- 	int nflushd_lines;		/* number of lines that were flushed */
- 	int adjust, opt, warned, width;
--	const char *errstr;
-+	char *errstr = NULL;
-+	long long conv;
+@@ -61,6 +59,8 @@ __FBSDID("$FreeBSD$");
+ #include <wchar.h>
+ #include <wctype.h>
+ 
++#include "compat.h"
++
+ #define	BS	'\b'		/* backspace */
+ #define	TAB	'\t'		/* tab */
+ #define	SPACE	' '		/* space */
+@@ -141,12 +141,6 @@ main(int argc, char **argv)
  
  	(void)setlocale(LC_CTYPE, "");
  
@@ -32,19 +35,3 @@
  	max_bufd_lines = 256;
  	compress_spaces = 1;		/* compress spaces into tabs */
  	while ((opt = getopt(argc, argv, "bfhl:px")) != -1)
-@@ -161,11 +154,12 @@ main(int argc, char **argv)
- 			compress_spaces = 1;
- 			break;
- 		case 'l':		/* buffered line count */
--			max_bufd_lines = strtonum(optarg, 1,
--			    (INT_MAX - BUFFER_MARGIN) / 2, &errstr) * 2;
--			if (errstr != NULL)
-+			conv = strtoll(optarg, &errstr, 10);
-+			if (*errstr || (errstr == optarg) || (conv < 1) || \
-+			    (conv > ((INT_MAX - BUFFER_MARGIN) / 2)))
- 				errx(1, "bad -l argument, %s: %s", errstr, 
- 					optarg);
-+			max_bufd_lines = conv * 2;
- 			break;
- 		case 'p':		/* pass unknown control sequences */
- 			pass_unknown_seqs = 1;

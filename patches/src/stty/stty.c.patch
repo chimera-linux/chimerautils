@@ -1,6 +1,6 @@
 --- stty/stty.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ stty/stty.c	2022-07-27 21:01:57.554185413 +0200
-@@ -51,6 +51,8 @@ __FBSDID("$FreeBSD$");
++++ stty/stty.c	2022-07-28 21:56:32.067669307 +0200
+@@ -51,9 +51,12 @@ __FBSDID("$FreeBSD$");
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -9,28 +9,20 @@
  
  #include "stty.h"
  #include "extern.h"
-@@ -61,7 +63,7 @@ main(int argc, char *argv[])
- 	struct info i;
- 	enum FMT fmt;
- 	int ch;
--	const char *file, *errstr = NULL;
-+	const char *file;
++#include "compat.h"
  
- 	fmt = NOTSET;
- 	i.fd = STDIN_FILENO;
-@@ -129,10 +131,13 @@ args:	argc -= optind;
+ int
+ main(int argc, char *argv[])
+@@ -129,10 +132,11 @@ args:	argc -= optind;
  
  		if (isdigit(**argv)) {
  			speed_t speed;
 -
 -			speed = strtonum(*argv, 0, UINT_MAX, &errstr);
--			if (errstr)
-+			unsigned long baud;
-+			char *errstr;
-+			baud = strtoul(*argv, &errstr, 10);
-+			if (*errstr) {
++			unsigned int baud;
++			baud = (unsigned int)strtonum(*argv, 0, UINT_MAX, &errstr);
+ 			if (errstr)
  				err(1, "speed");
-+			}
 +			speed = get_speed(baud);
  			cfsetospeed(&i.t, speed);
  			cfsetispeed(&i.t, speed);
