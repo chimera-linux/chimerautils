@@ -1,5 +1,5 @@
---- patch/pch.c.orig	2022-07-28 22:07:06.725100255 +0200
-+++ patch/pch.c	2022-07-28 22:10:40.928020353 +0200
+--- patch/pch.c.orig	2021-04-09 02:24:12.000000000 +0200
++++ patch/pch.c	2022-07-29 00:27:54.931818006 +0200
 @@ -43,6 +43,7 @@
  #include "util.h"
  #include "pch.h"
@@ -34,3 +34,12 @@
  
  	if (p_line != NULL && p_len != NULL && p_char != NULL) {
  		hunkmax = new_hunkmax;
+@@ -1215,7 +1225,7 @@ size_t
+ pgets(bool do_indent)
+ {
+ 	char *line;
+-	size_t len;
++	size_t len = 0;
+ 	int indent = 0, skipped = 0;
+ 
+ 	line = fgetln(pfp, &len);

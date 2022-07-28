@@ -1225,7 +1225,7 @@ size_t
 pgets(bool do_indent)
 {
 	char *line;
-	size_t len;
+	size_t len = 0;
 	int indent = 0, skipped = 0;
 
 	line = fgetln(pfp, &len);
