@@ -47,11 +47,9 @@ static char sccsid[] = "@(#)col.c	8.5 (Berkeley) 5/4/95";
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
-#include <sys/capsicum.h>
-
-#include <capsicum_helpers.h>
 #include <err.h>
 #include <errno.h>
+#include <limits.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -137,15 +135,10 @@ main(int argc, char **argv)
 	int this_line;			/* line l points to */
 	int nflushd_lines;		/* number of lines that were flushed */
 	int adjust, opt, warned, width;
-	const char *errstr;
+	char *errstr = NULL;
+	long long conv;
 
 	(void)setlocale(LC_CTYPE, "");
-
-	if (caph_limit_stdio() == -1)
-		err(1, "unable to limit stdio");
-
-	if (caph_enter() < 0)
-		err(1, "unable to enter capability mode");
 
 	max_bufd_lines = 256;
 	compress_spaces = 1;		/* compress spaces into tabs */
@@ -161,11 +154,12 @@ main(int argc, char **argv)
 			compress_spaces = 1;
 			break;
 		case 'l':		/* buffered line count */
-			max_bufd_lines = strtonum(optarg, 1,
-			    (INT_MAX - BUFFER_MARGIN) / 2, &errstr) * 2;
-			if (errstr != NULL)
+			conv = strtoll(optarg, &errstr, 10);
+			if (*errstr || (errstr == optarg) || (conv < 1) || \
+			    (conv > ((INT_MAX - BUFFER_MARGIN) / 2)))
 				errx(1, "bad -l argument, %s: %s", errstr, 
 					optarg);
+			max_bufd_lines = conv * 2;
 			break;
 		case 'p':		/* pass unknown control sequences */
 			pass_unknown_seqs = 1;
