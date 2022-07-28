@@ -1,0 +1,11 @@
+--- cmp/extern.h.orig	2022-07-28 23:01:02.879297331 +0200
++++ cmp/extern.h	2022-07-28 23:01:12.330371744 +0200
+@@ -34,6 +34,8 @@
+  *
+  */
+ 
++#include <stdbool.h>
++
+ #define OK_EXIT		0
+ #define DIFF_EXIT	1
+ #define ERR_EXIT	2	/* error exit code */

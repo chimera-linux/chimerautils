@@ -34,6 +34,7 @@ CMDS="bin/test
       bin/chmod
       usr.sbin/chown
       usr.bin/cksum
+      usr.bin/cmp
       usr.bin/col
       usr.bin/colrm
       usr.bin/column
@@ -45,6 +46,7 @@ CMDS="bin/test
       usr.bin/dc
       bin/dd
       bin/df
+      usr.bin/diff
       usr.bin/dirname
       usr.bin/du
       bin/echo
@@ -91,6 +93,7 @@ CMDS="bin/test
       usr.bin/rev
       bin/rm
       bin/rmdir
+      usr.bin/sdiff
       usr.bin/sed
       usr.bin/seq
       bin/sh

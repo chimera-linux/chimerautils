@@ -735,3 +735,10 @@ procctl()
 ---------
 The FreeBSD procctl() function has a different API than the prctl()
 function on Linux.  We replace procctl() calls with prctl().
+
+`diff -l` and `diff3`
+---------------------
+
+The `-l` (paginate) flag is not supported in `diff` as it was too
+hard to port. The `diff3` tool comes from OpenBSD rather than FreeBSD,
+as I have not managed to port the FreeBSD one yet.
