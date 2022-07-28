@@ -1,0 +1,15 @@
+--- grep/grep.h.orig	2022-07-29 00:17:25.405172436 +0200
++++ grep/grep.h	2022-07-29 00:18:45.145363114 +0200
+@@ -31,12 +31,10 @@
+  * SUCH DAMAGE.
+  */
+ 
+-#include <bzlib.h>
+ #include <limits.h>
+ #include <regex.h>
+ #include <stdbool.h>
+ #include <stdio.h>
+-#include <zlib.h>
+ 
+ extern const char		*errstr[];
+ 
