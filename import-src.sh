@@ -48,6 +48,7 @@ CMDS="bin/test
       usr.bin/dirname
       usr.bin/du
       bin/echo
+      bin/ed
       usr.bin/env
       usr.bin/expand
       bin/expr

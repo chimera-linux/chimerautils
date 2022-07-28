@@ -1,0 +1,18 @@
+--- ed/main.c.orig	2022-07-28 21:26:02.334985587 +0200
++++ ed/main.c	2022-07-28 21:26:33.835900559 +0200
+@@ -212,6 +212,7 @@ top:
+ 		switch (status) {
+ 		case EOF:
+ 			quit(0);
++			break; /* unreachable */
+ 		case EMOD:
+ 			modified = 0;
+ 			fputs("?\n", stderr);		/* give warning */
+@@ -231,6 +232,7 @@ top:
+ 			} else if (garrulous)
+ 				fprintf(stderr, "%s\n", errmsg);
+ 			quit(3);
++			break; /* unreachable */
+ 		default:
+ 			fputs("?\n", stderr);
+ 			if (!isatty(0)) {
