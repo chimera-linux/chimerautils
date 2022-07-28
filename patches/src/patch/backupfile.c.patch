@@ -1,0 +1,11 @@
+--- patch/backupfile.c.orig	2022-07-28 22:06:56.838068537 +0200
++++ patch/backupfile.c	2022-07-28 22:07:40.637779031 +0200
+@@ -106,7 +106,7 @@ max_backup_version(const char *file, con
+ 	file_name_length = strlen(file);
+ 
+ 	while ((dp = readdir(dirp)) != NULL) {
+-		if (dp->d_namlen <= file_name_length)
++		if (strlen(dp->d_name) <= file_name_length)
+ 			continue;
+ 
+ 		this_version = version_number(file, dp->d_name, file_name_length);

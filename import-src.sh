@@ -80,6 +80,7 @@ CMDS="bin/test
       usr.bin/nl
       usr.bin/nohup
       usr.bin/paste
+      usr.bin/patch
       usr.bin/pr
       usr.bin/printenv
       usr.bin/printf
