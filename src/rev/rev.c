@@ -57,6 +57,46 @@ __FBSDID("$FreeBSD$");
 
 static void usage(void);
 
+#define BUF_PIECE 1024
+
+static wchar_t *get_wln(FILE *f, size_t *len, wchar_t **sbuf, size_t *blen) {
+	wchar_t *wptr;
+	size_t wlen;
+
+	wptr = fgetws(*sbuf, *blen, f);
+	if (wptr) {
+		wlen = wcslen(wptr);
+		if (wptr[wlen - 1] == '\n' || feof(f)) {
+			*len = wlen;
+			return wptr;
+		}
+	} else {
+		return NULL;
+	}
+
+	for (;;) {
+		wchar_t *nptr;
+		*blen = wlen + BUF_PIECE;
+		*sbuf = realloc(*sbuf, *blen * sizeof(wchar_t));
+		if (*sbuf) err(1, "realloc");
+
+		nptr = fgetws(*sbuf + wlen, BUF_PIECE, f);
+		if (!nptr) {
+			if (feof(f))
+				break;
+			return NULL;
+		}
+
+		wlen += wcslen(nptr);
+		if ((*sbuf)[wlen - 1] == '\n' || feof(f)) {
+			break;
+		}
+	}
+
+	*len = wlen;
+	return *sbuf;
+}
+
 int
 main(int argc, char *argv[])
 {
@@ -65,6 +105,10 @@ main(int argc, char *argv[])
 	FILE *fp;
 	size_t len;
 	int ch, rval;
+	size_t bufl = BUF_PIECE;
+	wchar_t *buf = malloc(bufl * sizeof(wchar_t));
+
+	if (!buf) err(1, "malloc");
 
 	setlocale(LC_ALL, "");
 
@@ -91,7 +135,7 @@ main(int argc, char *argv[])
 			}
 			filename = *argv++;
 		}
-		while ((p = fgetwln(fp, &len)) != NULL) {
+		while ((p = get_wln(fp, &len, &buf, &bufl)) != NULL) {
 			if (p[len - 1] == '\n')
 				--len;
 			for (t = p + len - 1; t >= p; --t)
@@ -105,6 +149,7 @@ main(int argc, char *argv[])
 		}
 		(void)fclose(fp);
 	} while(*argv);
+	free(buf);
 	exit(rval);
 }
 
