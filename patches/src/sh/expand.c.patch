@@ -1,0 +1,38 @@
+--- sh/expand.c.orig	2022-07-27 21:59:35.222241559 +0200
++++ sh/expand.c	2022-07-28 06:35:59.725255788 +0200
+@@ -645,7 +645,8 @@ subevalvar_misc(const char *p, struct no
+ 		}
+ 		error("%.*s: parameter %snot set", (int)(p - var - 1),
+ 		      var, (varflags & VSNUL) ? "null or " : "");
+-
++		abort();
++		break;
+ 	default:
+ 		abort();
+ 	}
+@@ -802,6 +803,7 @@ evalvar(const char *p, struct nodelist *
+ 		c = p - var - 1;
+ 		error("${%.*s%s}: Bad substitution", c, var,
+ 		    (c > 0 && *p != CTLENDVAR) ? "..." : "");
++		break; /* unreachable */
+ 
+ 	default:
+ 		abort();
+@@ -1171,7 +1173,7 @@ expmeta(char *enddir, char *name, struct
+ 		if (dp->d_name[0] == '.' && ! matchdot)
+ 			continue;
+ 		if (patmatch(start, dp->d_name)) {
+-			namlen = dp->d_namlen;
++			namlen = strlen(dp->d_name);
+ 			if (enddir + namlen + 1 > expdir_end)
+ 				continue;
+ 			memcpy(enddir, dp->d_name, namlen + 1);
+@@ -1504,7 +1506,7 @@ wordexpcmd(int argc, char **argv)
+  */
+ 
+ int
+-freebsd_wordexpcmd(int argc __unused, char **argv __unused)
++freebsd_wordexpcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	struct arglist arglist;
+ 	union node *args, *n;

@@ -1,0 +1,48 @@
+--- sh/histedit.c.orig	2022-07-27 21:59:35.226241167 +0200
++++ sh/histedit.c	2022-07-28 07:10:27.670893133 +0200
+@@ -181,22 +181,22 @@ setterm(const char *term)
+ }
+ 
+ int
+-histcmd(int argc, char **argv __unused)
++histcmd(int argc, char **argv __attribute__((unused)))
+ {
+ 	int ch;
+ 	const char *editor = NULL;
+ 	HistEvent he;
+-	int lflg = 0, nflg = 0, rflg = 0, sflg = 0;
++	volatile int lflg = 0, nflg = 0, rflg = 0, sflg = 0;
+ 	int i, retval;
+-	const char *firststr, *laststr;
++	const char *volatile firststr, *volatile laststr;
+ 	int first, last, direction;
+-	char *pat = NULL, *repl = NULL;
++	char *volatile pat = NULL, *repl = NULL;
+ 	static int active = 0;
+ 	struct jmploc jmploc;
+ 	struct jmploc *savehandler;
+ 	char editfilestr[PATH_MAX];
+ 	char *volatile editfile;
+-	FILE *efp = NULL;
++	FILE *volatile efp = NULL;
+ 	int oldhistnum;
+ 
+ 	if (hist == NULL)
+@@ -503,7 +503,7 @@ bindcmd(int argc, char **argv)
+ #include "error.h"
+ 
+ int
+-histcmd(int argc __unused, char **argv __unused)
++histcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 
+ 	error("not compiled with history support");
+@@ -512,7 +512,7 @@ histcmd(int argc __unused, char **argv _
+ }
+ 
+ int
+-bindcmd(int argc __unused, char **argv __unused)
++bindcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 
+ 	error("not compiled with line editing support");

@@ -1,0 +1,11 @@
+--- sh/mktokens.orig	2022-07-27 21:59:50.476747616 +0200
++++ sh/mktokens	2022-07-27 22:13:09.474182990 +0200
+@@ -38,7 +38,7 @@
+ # token marks the end of a list.  The third column is the name to print in
+ # error messages.
+ 
+-temp=`mktemp -t ka`
++temp=`mktemp`
+ cat > $temp <<\!
+ TEOF	1	end of file
+ TNL	0	newline

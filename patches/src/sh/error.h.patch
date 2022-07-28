@@ -1,0 +1,15 @@
+--- sh/error.h.orig	2022-07-27 21:59:37.634005364 +0200
++++ sh/error.h	2022-07-27 22:10:38.364934804 +0200
+@@ -83,12 +83,3 @@ void onint(void) __dead2;
+ void warning(const char *, ...) __printflike(1, 2);
+ void error(const char *, ...) __printf0like(1, 2) __dead2;
+ void errorwithstatus(int, const char *, ...) __printf0like(2, 3) __dead2;
+-
+-
+-/*
+- * BSD setjmp saves the signal mask, which violates ANSI C and takes time,
+- * so we use _setjmp instead.
+- */
+-
+-#define setjmp(jmploc)	_setjmp(jmploc)
+-#define longjmp(jmploc, val)	_longjmp(jmploc, val)

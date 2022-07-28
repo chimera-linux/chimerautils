@@ -1,0 +1,77 @@
+--- sh/parser.c.orig	2022-07-27 21:59:35.242239601 +0200
++++ sh/parser.c	2022-07-28 06:31:49.557962900 +0200
+@@ -592,6 +592,9 @@ command(void)
+ 	case TRP:
+ 		if (!redir)
+ 			synexpect(-1);
++		tokpushback++;
++		n1 = simplecmd(rpp, redir);
++		return n1;
+ 	case TWORD:
+ 		tokpushback++;
+ 		n1 = simplecmd(rpp, redir);
+@@ -1092,7 +1095,6 @@ parsebackq(char *out, struct nodelist **
+ 	struct jmploc jmploc;
+ 	struct jmploc *const savehandler = handler;
+ 	size_t savelen;
+-	int saveprompt;
+ 	const int bq_startlinno = plinno;
+ 	char *volatile ostr = NULL;
+ 	struct parsefile *const savetopfile = getcurrentfile();
+@@ -1180,18 +1182,16 @@ parsebackq(char *out, struct nodelist **
+ 	(*nlpp)->next = NULL;
+ 
+ 	if (oldstyle) {
+-		saveprompt = doprompt;
++		int saveprompt = doprompt;
+ 		doprompt = 0;
+-	}
+-
+-	n = list(0);
+-
+-	if (oldstyle) {
++		n = list(0);
+ 		if (peektoken() != TEOF)
+ 			synexpect(-1);
+ 		doprompt = saveprompt;
+-	} else
++	} else {
++		n = list(0);
+ 		consumetoken(TRP);
++	}
+ 
+ 	(*nlpp)->n = n;
+         if (oldstyle) {
+@@ -1240,12 +1240,13 @@ static char *
+ readcstyleesc(char *out)
+ {
+ 	int c, vc, i, n;
+-	unsigned int v;
++	unsigned int v = 0;
+ 
+ 	c = pgetc();
+ 	switch (c) {
+ 	case '\0':
+ 		synerror("Unterminated quoted string");
++		return NULL; /* unreachable */
+ 	case '\n':
+ 		plinno++;
+ 		if (doprompt)
+@@ -1989,7 +1990,7 @@ getpwlogin(void)
+ static void
+ getusername(char *name, size_t namelen)
+ {
+-	static char cached_name[MAXLOGNAME];
++	static char cached_name[LOGIN_NAME_MAX];
+ 	struct passwd *pw;
+ 	uid_t euid;
+ 
+@@ -2024,7 +2025,7 @@ getusername(char *name, size_t namelen)
+  *    should be added here.
+  */
+ char *
+-getprompt(void *unused __unused)
++getprompt(void *unused __attribute__((unused)))
+ {
+ 	static char ps[PROMPTLEN];
+ 	const char *fmt;

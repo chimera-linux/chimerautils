@@ -83,6 +83,7 @@ CMDS="bin/test
       bin/rm
       bin/rmdir
       usr.bin/seq
+      bin/sh
       bin/sleep
       usr.bin/sort
       usr.bin/split
@@ -155,6 +156,15 @@ rm -rf ${CWD}/src/sort/nls
 
 # sort manpage
 mv ${CWD}/src/sort/sort.1.in ${CWD}/src/sort/sort.1
+
+# fix sh generator permissions
+chmod 755 ${CWD}/src/sh/mkbuiltins
+chmod 755 ${CWD}/src/sh/mktokens
+
+# remove sh files we don't want
+rm -rf ${CWD}/src/sh/dot.*
+rm -rf ${CWD}/src/sh/funcs
+rm -f ${CWD}/src/sh/profile
 
 #####################
 # APPLY ANY PATCHES #

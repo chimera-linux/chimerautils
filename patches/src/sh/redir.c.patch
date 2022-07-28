@@ -1,0 +1,11 @@
+--- sh/redir.c.orig	2022-07-27 21:59:35.242239601 +0200
++++ sh/redir.c	2022-07-27 23:22:45.619064010 +0200
+@@ -175,7 +175,7 @@ openredirect(union node *redir, char mem
+ 	struct stat sb;
+ 	int fd = redir->nfile.fd;
+ 	const char *fname;
+-	int f;
++	int f = 0;
+ 	int e;
+ 
+ 	memory[fd] = 0;

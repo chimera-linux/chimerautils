@@ -1,0 +1,10 @@
+--- sh/arith_yacc.c.orig	2022-07-27 21:59:35.214242342 +0200
++++ sh/arith_yacc.c	2022-07-27 23:20:50.658698823 +0200
+@@ -199,6 +199,7 @@ again:
+ 		return ~primary(op, val, yylex(), noeval);
+ 	default:
+ 		yyerror("expecting primary");
++		return 0; /* unreachable */
+ 	}
+ }
+ 

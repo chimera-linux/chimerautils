@@ -1,0 +1,47 @@
+--- sh/var.c.orig	2022-07-27 21:59:35.246239209 +0200
++++ sh/var.c	2022-07-28 06:33:39.495196243 +0200
+@@ -202,7 +202,7 @@ setvarsafe(const char *name, const char
+ {
+ 	struct jmploc jmploc;
+ 	struct jmploc *const savehandler = handler;
+-	int err = 0;
++	volatile int err = 0;
+ 	int inton;
+ 
+ 	inton = is_int_on();
+@@ -594,7 +594,7 @@ var_compare(const void *a, const void *b
+  */
+ 
+ int
+-showvarscmd(int argc __unused, char **argv __unused)
++showvarscmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	struct var **vpp;
+ 	struct var *vp;
+@@ -650,7 +650,7 @@ showvarscmd(int argc __unused, char **ar
+  */
+ 
+ int
+-exportcmd(int argc __unused, char **argv)
++exportcmd(int argc __attribute__((unused)), char **argv)
+ {
+ 	struct var **vpp;
+ 	struct var *vp;
+@@ -728,7 +728,7 @@ exportcmd(int argc __unused, char **argv
+  */
+ 
+ int
+-localcmd(int argc __unused, char **argv __unused)
++localcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	char *name;
+ 
+@@ -849,7 +849,7 @@ setvarcmd(int argc, char **argv)
+  */
+ 
+ int
+-unsetcmd(int argc __unused, char **argv __unused)
++unsetcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	char **ap;
+ 	int i;

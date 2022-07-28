@@ -1,0 +1,47 @@
+--- sh/miscbltin.c.orig	2022-07-27 21:59:35.234240384 +0200
++++ sh/miscbltin.c	2022-07-28 06:51:50.046301417 +0200
+@@ -63,6 +63,7 @@ __FBSDID("$FreeBSD$");
+ #include "mystring.h"
+ #include "syntax.h"
+ #include "trap.h"
++#include "compat.h"
+ 
+ #undef eflag
+ 
+@@ -155,7 +156,7 @@ fdctx_destroy(struct fdctx *fdc)
+  */
+ 
+ int
+-readcmd(int argc __unused, char **argv __unused)
++readcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	char **ap;
+ 	int backslash;
+@@ -351,7 +352,7 @@ readcmd(int argc __unused, char **argv _
+ 
+ 
+ int
+-umaskcmd(int argc __unused, char **argv __unused)
++umaskcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	char *ap;
+ 	int mask;
+@@ -515,7 +516,7 @@ printlimit(enum limithow how, const stru
+ }
+ 
+ int
+-ulimitcmd(int argc __unused, char **argv __unused)
++ulimitcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ {
+ 	rlim_t val = 0;
+ 	enum limithow how = SOFT | HARD;
+@@ -567,7 +568,8 @@ ulimitcmd(int argc __unused, char **argv
+ 				error("bad number");
+ 			uval *= l->factor;
+ 			val = (rlim_t)uval;
+-			if (val < 0 || (uintmax_t)val != uval ||
++			/* posix says rlim_t is unsigned */
++			if (uval > ((rlim_t)~(rlim_t)0) ||
+ 			    val == RLIM_INFINITY)
+ 				error("bad number");
+ 		}
