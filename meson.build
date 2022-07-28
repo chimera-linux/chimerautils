@@ -72,6 +72,10 @@ if cc.has_function('strlcat')
    add_global_arguments('-DHAVE_STRLCAT', language : [ 'c', 'cpp' ])
 endif
 
+if cc.has_function('strtonum')
+   add_global_arguments('-DHAVE_STRTONUM', language : [ 'c', 'cpp' ])
+endif
+
 # Build everything with _GNU_SOURCE enabled
 add_global_arguments('-D_GNU_SOURCE', language : [ 'c', 'cpp' ])
 

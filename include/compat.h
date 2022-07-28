@@ -102,6 +102,9 @@ size_t strlcpy(char *d, const char *s, size_t n);
 #ifndef HAVE_STRLCAT
 size_t strlcat(char *d, const char *s, size_t n);
 #endif
+#ifndef HAVE_STRTONUM
+long long strtonum(const char *nptr, long long minv, long long maxv, const char **errstr);
+#endif
 
 /* we use SIGUSR1 in place of SIGINFO */
 #define SIGINFO SIGUSR1

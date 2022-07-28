@@ -3,12 +3,14 @@ libcompat_sources = [
     'heapsort.c',
     'humanize_number.c',
     'merge.c',
+    'ohash.c',
     'setmode.c',
     'strmode.c',
     'expand_number.c',
     'vis.c',
     'strlfuncs.c',
     'signames.c',
+    'strtonum.c',
 ]
 
 libcompat = static_library(
