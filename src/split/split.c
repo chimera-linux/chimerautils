@@ -64,6 +64,10 @@ static const char sccsid[] = "@(#)split.c	8.2 (Berkeley) 4/16/94";
 
 #include "compat.h"
 
+#ifndef REG_STARTEND
+#define REG_STARTEND 0
+#endif
+
 #define DEFLINE	1000			/* Default num lines per file. */
 
 static off_t	 bytecnt;		/* Byte count to split on. */

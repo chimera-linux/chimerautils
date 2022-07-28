@@ -1,5 +1,5 @@
 --- split/split.c.orig	2021-04-09 02:24:12.000000000 +0200
-+++ split/split.c	2022-07-27 20:27:52.611040651 +0200
++++ split/split.c	2022-07-28 21:08:19.403419451 +0200
 @@ -51,7 +51,6 @@ static const char sccsid[] = "@(#)split.
  #include <errno.h>
  #include <fcntl.h>
@@ -8,16 +8,20 @@
  #include <limits.h>
  #include <locale.h>
  #include <stdbool.h>
-@@ -63,6 +62,8 @@ static const char sccsid[] = "@(#)split.
+@@ -63,6 +62,12 @@ static const char sccsid[] = "@(#)split.
  #include <regex.h>
  #include <sysexits.h>
  
 +#include "compat.h"
 +
++#ifndef REG_STARTEND
++#define REG_STARTEND 0
++#endif
++
  #define DEFLINE	1000			/* Default num lines per file. */
  
  static off_t	 bytecnt;		/* Byte count to split on. */
-@@ -89,6 +90,7 @@ main(int argc, char **argv)
+@@ -89,6 +94,7 @@ main(int argc, char **argv)
  	int ch;
  	int error;
  	char *ep, *p;
@@ -25,7 +29,7 @@
  
  	setlocale(LC_ALL, "");
  
-@@ -120,7 +122,8 @@ main(int argc, char **argv)
+@@ -120,7 +126,8 @@ main(int argc, char **argv)
  			break;
  		case 'b':		/* Byte count. */
  			errno = 0;

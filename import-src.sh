@@ -57,6 +57,7 @@ CMDS="bin/test
       usr.bin/fmt
       usr.bin/fold
       usr.bin/getopt
+      usr.bin/grep
       usr.bin/head
       usr.bin/hexdump
       bin/hostname

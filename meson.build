@@ -56,7 +56,6 @@ add_global_arguments(
       '-DDEFFILEMODE=(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)',
       '-DALLPERMS=(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)',
       '-DO_FSYNC=O_SYNC',
-      '-DREG_STARTEND=0',
     ],
     language : [ 'c', 'cpp' ]
 )

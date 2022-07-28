@@ -64,6 +64,10 @@ __FBSDID("$FreeBSD$");
 
 #include "compat.h"
 
+#ifndef REG_STARTEND
+#define REG_STARTEND 0
+#endif
+
 static PLAN *palloc(OPTION *);
 static long long find_parsenum(PLAN *, const char *, char *, char *);
 static long long find_parsetime(PLAN *, const char *, char *);

@@ -1,0 +1,30 @@
+--- grep/file.c.orig	2022-07-28 20:50:19.633306355 +0200
++++ grep/file.c	2022-07-28 21:01:15.629069689 +0200
+@@ -43,6 +43,7 @@ __FBSDID("$FreeBSD$");
+ #include <err.h>
+ #include <errno.h>
+ #include <fcntl.h>
++#include <limits.h>
+ #include <stddef.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -52,6 +53,10 @@ __FBSDID("$FreeBSD$");
+ 
+ #include "grep.h"
+ 
++#ifndef OFF_MAX
++#define OFF_MAX ((off_t)(((1ULL << (sizeof(off_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
++#endif
++
+ #define	MAXBUFSIZ	(32 * 1024)
+ #define	LNBUFBUMP	80
+ 
+@@ -187,7 +192,7 @@ grep_open(const char *path)
+ 		    (!S_ISREG(st.st_mode)))
+ 			filebehave = FILE_STDIO;
+ 		else {
+-			int flags = MAP_PRIVATE | MAP_NOCORE | MAP_NOSYNC;
++			int flags = MAP_PRIVATE;
+ #ifdef MAP_PREFAULT_READ
+ 			flags |= MAP_PREFAULT_READ;
+ #endif

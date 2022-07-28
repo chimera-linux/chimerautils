@@ -1,0 +1,43 @@
+--- grep/util.c.orig	2022-07-28 20:50:30.552237014 +0200
++++ grep/util.c	2022-07-28 21:15:59.830259725 +0200
+@@ -469,6 +469,31 @@ litexec(const struct pat *pat, const cha
+ 
+ #define iswword(x)	(iswalnum((x)) || (x) == L'_')
+ 
++#ifndef REG_STARTEND
++static int regexec_startend(
++    const regex_t *restrict preg, const char *restrict str, size_t nmatch,
++    regmatch_t pmatch[restrict], int eflags
++) {
++	regoff_t so = pmatch[0].rm_so;
++	regoff_t eo = pmatch[0].rm_eo;
++	char *buf = malloc(eo - so + 1);
++	memcpy(buf, str + pmatch[0].rm_so, eo - so);
++	buf[eo - so] = '\0';
++	int ret = regexec(preg, buf, nmatch, pmatch, eflags);
++	pmatch[0].rm_so += so;
++	pmatch[0].rm_eo += so;
++	free(buf);
++	return ret;
++}
++#else
++static int regexec_startend(
++    const regex_t *restrict preg, const char *restrict str, size_t nmatch,
++    regmatch_t pmatch[restrict], int eflags
++) {
++	return regexec(preg, str, nmatch, pmatch, eflags);
++}
++#endif
++
+ /*
+  * Processes a line comparing it with the specified patterns.  Each pattern
+  * is looped to be compared along with the full string, saving each and every
+@@ -536,7 +561,7 @@ procline(struct parsec *pc)
+ 				r = litexec(&pattern[i], pc->ln.dat, 1, &pmatch);
+ 			else
+ #endif
+-			r = regexec(&r_pattern[i], pc->ln.dat, 1, &pmatch,
++			r = regexec_startend(&r_pattern[i], pc->ln.dat, 1, &pmatch,
+ 			    leflags);
+ 			if (r != 0)
+ 				continue;
