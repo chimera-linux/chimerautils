@@ -10,6 +10,7 @@ The following commands are specific to GNU coreutils and are not part
 of a BSD base system but have alternatives:
 
     COMMAND    DESCRIPTION                    ALTERNATIVE
+    arch       print machine arch name        uname -m
     dir        list directory contents        ls
     dircolors  color setup for ls             ls supports color (-G)
     vdir       vertical 'dir' command         ls

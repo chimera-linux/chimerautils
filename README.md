@@ -1,7 +1,9 @@
 ## bsdutils
 
-This project contains a GNU coreutils-like collection of utilities
-from the FreeBSD source code tree.
+This project contains a collection of userland utilities from the
+FreeBSD source tree, ported to Linux. For most part, it provides an
+alternative to GNU coreutils, as well as other projects such as
+findutils, diffutils, sed, grep, and portions of util-linux.
 
 The project began in October 2017 and initially ported code from the
 OpenBSD source tree.  The original objective was to see how much work

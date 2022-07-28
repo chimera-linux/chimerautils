@@ -26,11 +26,7 @@ cd ${TMPDIR}
 curl -L --retry 3 --ftp-pasv -O ${SRC} || fail_exit
 xz -dc src.txz | tar -xf -
 
-# XXX: commands
-#usr.bin/arch
-#usr.bin/readlink  (part of stat)
-
-# copy in the source for all coreutils programs
+# copy in the source for all the programs we want
 CMDS="bin/test
       usr.bin/basename
       usr.bin/bc
