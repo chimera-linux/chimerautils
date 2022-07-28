@@ -1,0 +1,12 @@
+--- sh/input.c.orig	2022-07-29 00:16:14.616741462 +0200
++++ sh/input.c	2022-07-29 00:16:22.655954145 +0200
+@@ -59,7 +59,9 @@ __FBSDID("$FreeBSD$");
+ #include "error.h"
+ #include "alias.h"
+ #include "parser.h"
++#ifndef NO_HISTORY
+ #include "myhistedit.h"
++#endif
+ #include "trap.h"
+ 
+ #define EOF_NLEFT -99		/* value of parsenleft when EOF pushed back */

@@ -1,15 +1,18 @@
---- sh/trap.c.orig	2022-07-27 21:59:35.246239209 +0200
-+++ sh/trap.c	2022-07-28 06:27:28.052029669 +0200
-@@ -59,7 +59,7 @@ __FBSDID("$FreeBSD$");
+--- sh/trap.c.orig	2021-04-09 02:24:01.000000000 +0200
++++ sh/trap.c	2022-07-29 00:12:53.708213355 +0200
+@@ -58,8 +58,10 @@ __FBSDID("$FreeBSD$");
+ #include "trap.h"
  #include "mystring.h"
  #include "builtins.h"
++#ifndef NO_HISTORY
  #include "myhistedit.h"
 -
++#endif
 +#include "compat.h"
  
  /*
   * Sigmode records the current value of the signal handlers for the various
-@@ -111,10 +111,11 @@ sigstring_to_signum(char *sig)
+@@ -111,10 +113,11 @@ sigstring_to_signum(char *sig)
  
  		if (strncasecmp(sig, "SIG", 3) == 0)
  			sig += 3;
@@ -24,7 +27,7 @@
  	}
  	return (-1);
  }
-@@ -129,16 +130,17 @@ printsignals(void)
+@@ -129,16 +132,17 @@ printsignals(void)
  	int n, outlen;
  
  	outlen = 0;
@@ -47,7 +50,7 @@
  			out1str("\n");
  			outlen = 0;
  		} else {
-@@ -152,7 +154,7 @@ printsignals(void)
+@@ -152,7 +156,7 @@ printsignals(void)
   * The trap builtin.
   */
  int
@@ -56,7 +59,7 @@
  {
  	char *action;
  	int signo;
-@@ -169,14 +171,15 @@ trapcmd(int argc __unused, char **argv)
+@@ -169,14 +173,15 @@ trapcmd(int argc __unused, char **argv)
  	argv = argptr;
  
  	if (*argv == NULL) {
@@ -75,7 +78,7 @@
  				} else {
  					out1fmt(" %d\n", signo);
  				}
-@@ -509,7 +512,7 @@ exitshell_savedstatus(void)
+@@ -509,7 +514,7 @@ exitshell_savedstatus(void)
  {
  	struct jmploc loc1, loc2;
  	char *p;
