@@ -93,3 +93,7 @@ if libcrypto.found()
     subdir('dc')
     subdir('xinstall')
 endif
+
+if libtinfo.found()
+    subdir('ul')
+endif
