@@ -113,9 +113,11 @@ CMDS="bin/test
       usr.bin/unexpand
       usr.bin/uniq
       usr.bin/users
+      usr.bin/wall
       usr.bin/wc
       usr.bin/which
       usr.bin/who
+      usr.bin/write
       usr.bin/yes
       usr.sbin/chroot
       usr.bin/xargs

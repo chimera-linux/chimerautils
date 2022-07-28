@@ -1,0 +1,10 @@
+--- wall/wall.c.orig	2022-07-28 20:12:33.864038957 +0200
++++ wall/wall.c	2022-07-28 20:13:46.844891608 +0200
+@@ -49,6 +49,7 @@ static const char sccsid[] = "@(#)wall.c
+  */
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <sys/stat.h>
+ #include <sys/uio.h>
+ 
