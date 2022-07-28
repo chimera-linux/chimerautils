@@ -90,6 +90,7 @@ CMDS="bin/test
       usr.bin/rev
       bin/rm
       bin/rmdir
+      usr.bin/sed
       usr.bin/seq
       bin/sh
       bin/sleep

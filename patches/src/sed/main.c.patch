@@ -1,0 +1,29 @@
+--- sed/main.c.orig	2022-07-28 22:20:17.787564855 +0200
++++ sed/main.c	2022-07-28 22:23:12.166350099 +0200
+@@ -68,6 +68,8 @@ static const char sccsid[] = "@(#)main.c
+ #include "defs.h"
+ #include "extern.h"
+ 
++extern const char *__progname;
++
+ /*
+  * Linked list of units (strings and files) to be compiled
+  */
+@@ -213,7 +215,7 @@ usage(void)
+ 	(void)fprintf(stderr,
+ 	    "usage: %s script [-Ealnru] [-i extension] [file ...]\n"
+ 	    "\t%s [-Ealnu] [-i extension] [-e script] ... [-f script_file]"
+-	    " ... [file ...]\n", getprogname(), getprogname());
++	    " ... [file ...]\n", __progname, __progname);
+ 	exit(1);
+ }
+ 
+@@ -262,7 +264,7 @@ again:
+ 			state = ST_STRING;
+ 			goto again;
+ 		default:
+-			__unreachable();
++			abort(); /* unreachable */
+ 		}
+ 	case ST_FILE:
+ 		if ((p = fgets(buf, n, f)) != NULL) {
