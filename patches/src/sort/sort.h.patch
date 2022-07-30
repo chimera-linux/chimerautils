@@ -1,5 +1,5 @@
---- sort/sort.h.orig	2021-06-28 22:13:29.784090070 +0200
-+++ sort/sort.h	2022-07-18 22:02:54.274361481 +0200
+--- sort/sort.h.orig	2022-07-30 23:09:18.138043112 +0200
++++ sort/sort.h	2022-07-30 23:10:31.146893021 +0200
 @@ -39,7 +39,10 @@
  #include <wchar.h>
  
@@ -12,7 +12,7 @@
  
  #define	VERSION	"2.3-FreeBSD"
  
-@@ -60,15 +63,31 @@ extern unsigned int ncpu;
+@@ -61,15 +64,31 @@ extern unsigned int ncpu;
  extern size_t nthreads;
  #endif
  

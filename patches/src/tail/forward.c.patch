@@ -1,5 +1,5 @@
---- tail/forward.c.orig	2021-04-09 02:24:12.000000000 +0200
-+++ tail/forward.c	2021-06-29 22:08:56.189155961 +0200
+--- tail/forward.c.orig	2022-07-30 22:51:48.884576454 +0200
++++ tail/forward.c	2022-07-30 22:51:45.396918016 +0200
 @@ -46,20 +46,21 @@ static const char sccsid[] = "@(#)forwar
  #include <sys/stat.h>
  #include <sys/time.h>
@@ -229,7 +229,7 @@
 -				ftmp = fileargs_fopen(fa, file->file_name, "r");
 +				ftmp = fopen(file->file_name, "r");
  				if (ftmp == NULL ||
- 				    fstat(fileno(file->fp), &sb2) == -1) {
+ 				    fstat(fileno(ftmp), &sb2) == -1) {
  					if (errno != ENOENT)
 @@ -405,28 +487,61 @@ follow(file_info_t *files, enum STYLE st
  			set_events(files);

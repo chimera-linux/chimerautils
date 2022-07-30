@@ -51,6 +51,7 @@ __FBSDID("$FreeBSD$");
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <signal.h>
 #include <sysexits.h>
 #include <unistd.h>
 
@@ -193,6 +194,13 @@ copy_file(const FTSENT *entp, int dne)
 				if (wcount <= 0)
 					break;
 				wtotal += wcount;
+				if (info) {
+					info = 0;
+					(void)fprintf(stderr,
+					    "%s -> %s %3d%%\n",
+					    entp->fts_path, to.p_path,
+					    cp_pct(wtotal, fs->st_size));
+				}
 				if (wcount >= (ssize_t)wresid)
 					break;
 			}
@@ -227,7 +235,7 @@ copy_file(const FTSENT *entp, int dne)
 			do {
 				if (use_copy_file_range) {
 					rcount = copy_file_range(from_fd, NULL,
-			    		    to_fd, NULL, SSIZE_MAX, 0);
+					    to_fd, NULL, SSIZE_MAX, 0);
 					if (rcount < 0) switch (errno) {
 					case EINVAL: /* Prob a non-seekable FD */
 					case EXDEV: /* Cross-FS link */
@@ -243,6 +251,13 @@ copy_file(const FTSENT *entp, int dne)
 					    buf, bufsize);
 				}
 				wtotal += rcount;
+				if (info) {
+					info = 0;
+					(void)fprintf(stderr,
+					    "%s -> %s %3d%%\n",
+					    entp->fts_path, to.p_path,
+					    cp_pct(wtotal, fs->st_size));
+				}
 			} while (rcount > 0);
 			if (rcount < 0) {
 				warn("%s", entp->fts_path);

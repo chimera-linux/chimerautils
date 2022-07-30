@@ -135,6 +135,8 @@ main(int argc, char *argv[])
 
 	if (iswhoami && argc > 0)
 		usage();
+	if (Aflag && argc > 0)
+		usage();
 
 	switch(Aflag + Gflag + Pflag + gflag + pflag + uflag) {
 	case 1:

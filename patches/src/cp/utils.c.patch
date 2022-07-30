@@ -1,5 +1,5 @@
---- cp/utils.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ cp/utils.c	2022-07-28 17:58:23.172300018 +0200
+--- cp/utils.c.orig	2022-05-12 06:53:55.000000000 +0200
++++ cp/utils.c	2022-07-31 00:43:21.356785437 +0200
 @@ -38,7 +38,6 @@ static char sccsid[] = "@(#)utils.c	8.3
  __FBSDID("$FreeBSD$");
  
@@ -8,7 +8,13 @@
  #include <sys/param.h>
  #include <sys/stat.h>
  #ifdef VM_AND_BUFFER_CACHE_SYNCHRONIZED
-@@ -57,6 +56,8 @@ __FBSDID("$FreeBSD$");
+@@ -52,11 +51,14 @@ __FBSDID("$FreeBSD$");
+ #include <limits.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <signal.h>
+ #include <sysexits.h>
+ #include <unistd.h>
  
  #include "extern.h"
  
@@ -17,7 +23,7 @@
  #define	cp_pct(x, y)	((y == 0) ? 0 : (int)(100.0 * (x) / (y)))
  
  /*
-@@ -99,11 +100,9 @@ copy_file(const FTSENT *entp, int dne)
+@@ -99,11 +101,9 @@ copy_file(const FTSENT *entp, int dne)
  	static char *buf = NULL;
  	static size_t bufsize;
  	struct stat *fs;
@@ -30,24 +36,10 @@
  #ifdef VM_AND_BUFFER_CACHE_SYNCHRONIZED
  	char *p;
  #endif
-@@ -194,13 +193,6 @@ copy_file(const FTSENT *entp, int dne)
- 				if (wcount <= 0)
- 					break;
- 				wtotal += wcount;
--				if (info) {
--					info = 0;
--					(void)fprintf(stderr,
--					    "%s -> %s %3d%%\n",
--					    entp->fts_path, to.p_path,
--					    cp_pct(wtotal, fs->st_size));
--				}
- 				if (wcount >= (ssize_t)wresid)
- 					break;
- 			}
-@@ -236,9 +228,14 @@ copy_file(const FTSENT *entp, int dne)
+@@ -236,9 +236,14 @@ copy_file(const FTSENT *entp, int dne)
  				if (use_copy_file_range) {
  					rcount = copy_file_range(from_fd, NULL,
- 			    		    to_fd, NULL, SSIZE_MAX, 0);
+ 					    to_fd, NULL, SSIZE_MAX, 0);
 -					if (rcount < 0 && errno == EINVAL) {
 -						/* Prob a non-seekable FD */
 +					if (rcount < 0) switch (errno) {
@@ -61,21 +53,7 @@
  					}
  				}
  				if (!use_copy_file_range) {
-@@ -246,13 +243,6 @@ copy_file(const FTSENT *entp, int dne)
- 					    buf, bufsize);
- 				}
- 				wtotal += rcount;
--				if (info) {
--					info = 0;
--					(void)fprintf(stderr,
--					    "%s -> %s %3d%%\n",
--					    entp->fts_path, to.p_path,
--					    cp_pct(wtotal, fs->st_size));
--				}
- 			} while (rcount > 0);
- 			if (rcount < 0) {
- 				warn("%s", entp->fts_path);
-@@ -281,8 +271,6 @@ copy_file(const FTSENT *entp, int dne)
+@@ -281,8 +286,6 @@ copy_file(const FTSENT *entp, int dne)
  	if (!lflag && !sflag) {
  		if (pflag && setfile(fs, to_fd))
  			rval = 1;
@@ -84,7 +62,7 @@
  		if (close(to_fd)) {
  			warn("%s", to.p_path);
  			rval = 1;
-@@ -409,163 +397,14 @@ setfile(struct stat *fs, int fd)
+@@ -409,163 +412,14 @@ setfile(struct stat *fs, int fd)
  
  	if (!gotstat || fs->st_mode != ts.st_mode)
  		if (fdval ? fchmod(fd, fs->st_mode) :

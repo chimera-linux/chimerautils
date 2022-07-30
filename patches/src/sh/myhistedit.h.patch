@@ -1,0 +1,11 @@
+--- sh/myhistedit.h.orig	2022-07-30 23:46:20.784277068 +0200
++++ sh/myhistedit.h	2022-07-30 23:27:21.491845261 +0200
+@@ -38,8 +38,6 @@ extern History *hist;
+ extern EditLine *el;
+ extern int displayhist;
+ 
+-#include <filecomplete.h>
+-
+ void histedit(void);
+ void sethistsize(const char *);
+ void setterm(const char *);

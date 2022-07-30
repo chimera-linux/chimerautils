@@ -1,5 +1,5 @@
---- cmp/cmp.c.orig	2022-07-28 23:00:23.875219210 +0200
-+++ cmp/cmp.c	2022-07-28 23:00:58.315744261 +0200
+--- cmp/cmp.c.orig	2022-07-30 23:44:02.745796808 +0200
++++ cmp/cmp.c	2022-07-30 23:39:43.787274838 +0200
 @@ -47,7 +47,6 @@ __FBSDID("$FreeBSD$");
  #include <sys/types.h>
  #include <sys/stat.h>
@@ -8,7 +8,45 @@
  #include <err.h>
  #include <errno.h>
  #include <fcntl.h>
-@@ -113,12 +112,6 @@ main(int argc, char *argv[])
+@@ -58,9 +57,8 @@ __FBSDID("$FreeBSD$");
+ #include <string.h>
+ #include <unistd.h>
+ 
+-#include <libutil.h>
+-
+ #include "extern.h"
++#include "compat.h"
+ 
+ bool	bflag, lflag, sflag, xflag, zflag;
+ 
+@@ -78,7 +76,7 @@ static const struct option long_opts[] =
+ static void usage(void);
+ 
+ static bool
+-parse_iskipspec(char *spec, off_t *skip1, off_t *skip2)
++parse_iskipspec(char *spec, uint64_t *skip1, uint64_t *skip2)
+ {
+ 	char *colon;
+ 
+@@ -100,7 +98,7 @@ int
+ main(int argc, char *argv[])
+ {
+ 	struct stat sb1, sb2;
+-	off_t skip1, skip2, limit;
++	uint64_t skip1, skip2, limit;
+ 	int ch, fd1, fd2, oflag;
+ 	bool special;
+ 	const char *file1, *file2;
+@@ -127,7 +125,7 @@ main(int argc, char *argv[])
+ 			lflag = true;
+ 			break;
+ 		case 'n':		/* Limit */
+-			if (expand_number(optarg, &limit) < 0 || limit < 0) {
++			if (expand_number(optarg, &limit) < 0) {
+ 				fprintf(stderr, "Invalid --bytes: %s\n",
+ 				    optarg);
+ 				usage();
+@@ -156,12 +154,6 @@ main(int argc, char *argv[])
  	if (argc < 2 || argc > 4)
  		usage();
  
@@ -21,7 +59,7 @@
  	/* Backward compatibility -- handle "-" meaning stdin. */
  	special = false;
  	if (strcmp(file1 = argv[0], "-") == 0) {
-@@ -166,9 +159,6 @@ main(int argc, char *argv[])
+@@ -216,9 +208,6 @@ main(int argc, char *argv[])
  			exit(ERR_EXIT);
  	}
  

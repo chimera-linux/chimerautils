@@ -107,9 +107,7 @@ static void	 traverse(int, char **, int);
 
 static const struct option long_opts[] =
 {
-#ifdef COLORLS
         {"color",       optional_argument,      NULL, COLOR_OPT},
-#endif
         {NULL,          no_argument,            NULL, 0}
 };
 
@@ -434,8 +432,8 @@ main(int argc, char *argv[])
 		case 'y':
 			f_samesort = 1;
 			break;
-#ifdef COLORLS
 		case COLOR_OPT:
+#ifdef COLORLS
 			if (optarg == NULL || do_color_always(optarg))
 				colorflag = COLORFLAG_ALWAYS;
 			else if (do_color_auto(optarg))

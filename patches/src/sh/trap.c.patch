@@ -1,5 +1,5 @@
---- sh/trap.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ sh/trap.c	2022-07-29 00:12:53.708213355 +0200
+--- sh/trap.c.orig	2022-07-30 22:39:42.616156427 +0200
++++ sh/trap.c	2022-07-30 22:39:37.840624117 +0200
 @@ -58,8 +58,10 @@ __FBSDID("$FreeBSD$");
  #include "trap.h"
  #include "mystring.h"
@@ -78,7 +78,7 @@
  				} else {
  					out1fmt(" %d\n", signo);
  				}
-@@ -509,7 +514,7 @@ exitshell_savedstatus(void)
+@@ -505,7 +510,7 @@ exitshell_savedstatus(void)
  {
  	struct jmploc loc1, loc2;
  	char *p;

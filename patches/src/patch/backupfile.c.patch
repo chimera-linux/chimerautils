@@ -1,6 +1,6 @@
---- patch/backupfile.c.orig	2022-07-28 22:06:56.838068537 +0200
-+++ patch/backupfile.c	2022-07-28 22:07:40.637779031 +0200
-@@ -106,7 +106,7 @@ max_backup_version(const char *file, con
+--- patch/backupfile.c.orig	2022-07-30 22:37:45.439632060 +0200
++++ patch/backupfile.c	2022-07-30 22:37:40.596106409 +0200
+@@ -105,7 +105,7 @@ max_backup_version(const char *file, con
  	file_name_length = strlen(file);
  
  	while ((dp = readdir(dirp)) != NULL) {

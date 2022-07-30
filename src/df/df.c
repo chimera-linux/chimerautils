@@ -67,10 +67,6 @@ __FBSDID("$FreeBSD$");
 
 #include "compat.h"
 
-/* vfslist.c */
-int checkvfsname(const char *, const char **);
-const char **makevfslist(char *);
-
 #define UNITS_SI	1
 #define UNITS_2		2
 
@@ -112,17 +108,19 @@ struct maxwidths {
 
 static void	  addstat(struct mntinfo *, struct mntinfo *);
 static char	 *getmntpt(struct mntinfo **, const size_t, const char *);
+static const char **makevfslist(char *fslist, int *skip);
+static int	  checkvfsname(const char *vfsname, const char **vfslist, int skip);
+static int	  checkvfsselected(char *);
 static int	  int64width(int64_t);
 static void	  prthuman(const struct mntinfo *, int64_t);
 static void	  prthumanval(const char *, int64_t);
 static intmax_t	  fsbtoblk(int64_t, uint64_t, u_long);
 static void	  prtstat(struct mntinfo *, struct maxwidths *);
-static size_t	  regetmntinfo(struct mntinfo **, long, const char **);
+static size_t	  regetmntinfo(struct mntinfo **, long);
 static void	  update_maxwidths(struct maxwidths *, const struct mntinfo *);
 static void	  usage(void);
 static int	  getmntinfo(struct mntinfo **);
 static void	  freemntinfo(struct mntinfo *, int);
-
 
 static __inline int
 imax(int a, int b)
@@ -130,8 +128,10 @@ imax(int a, int b)
 	return (a > b ? a : b);
 }
 
-static int	aflag = 0, cflag, hflag, iflag, kflag, lflag = 0, nflag, Tflag;
-static int	thousands;
+static int	  aflag = 0, cflag, hflag, iflag, kflag, lflag = 0, nflag, Tflag;
+static int	  thousands;
+static int	  skipvfs_l, skipvfs_t;
+static const char **vfslist_l, **vfslist_t;
 
 static const struct option long_options[] =
 {
@@ -147,7 +147,6 @@ main(int argc, char *argv[])
 	struct mntinfo totalbuf;
 	struct maxwidths maxwidths;
 	char *mntpt;
-	const char **vfslist;
 	int i, mntsize;
 	int ch, rv;
 
@@ -155,7 +154,6 @@ main(int argc, char *argv[])
 	memset(&maxwidths, 0, sizeof(maxwidths));
 	memset(&totalbuf, 0, sizeof(totalbuf));
 	totalbuf.f_bsize = DEV_BSIZE;
-	vfslist = NULL;
 
 	argc = xo_parse_args(argc, argv);
 	if (argc < 0)
@@ -206,9 +204,7 @@ main(int argc, char *argv[])
 			/* Ignore duplicate -l */
 			if (lflag)
 				break;
-			if (vfslist != NULL)
-				xo_errx(1, "-l and -t are mutually exclusive.");
-			vfslist = makevfslist(NETVFSLIST);
+			vfslist_l = makevfslist(NETVFSLIST, &skipvfs_l);
 			lflag = 1;
 			break;
 		case 'm':
@@ -219,11 +215,9 @@ main(int argc, char *argv[])
 			nflag = 1;
 			break;
 		case 't':
-			if (lflag)
-				xo_errx(1, "-l and -t are mutually exclusive.");
-			if (vfslist != NULL)
+			if (vfslist_t != NULL)
 				xo_errx(1, "only one -t option may be specified");
-			vfslist = makevfslist(optarg);
+			vfslist_t = makevfslist(optarg, &skipvfs_t);
 			break;
 		case 'T':
 			Tflag = 1;
@@ -240,7 +234,7 @@ main(int argc, char *argv[])
 
 	rv = 0;
 	mntsize = getmntinfo(&mntbuf);
-	mntsize = regetmntinfo(&mntbuf, mntsize, vfslist);
+	mntsize = regetmntinfo(&mntbuf, mntsize);
 
 	xo_open_container("storage-system-information");
 	xo_open_list("filesystem");
@@ -277,7 +271,7 @@ main(int argc, char *argv[])
 		 */
 		for (i = 0; i < mntsize; i++) {
 			/* selected specified filesystems if the mount point or device matches */
-			if ((!strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && !checkvfsname(mntbuf[i].f_fstypename, vfslist)) {
+			if ((!strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
 				mntbuf[i].f_selected = 1;
 				break;
 			}
@@ -322,24 +316,96 @@ getmntpt(struct mntinfo **mntbuf, const size_t mntsize, const char *name)
 	return (NULL);
 }
 
+static const char **
+makevfslist(char *fslist, int *skip)
+{
+	const char **av;
+	int i;
+	char *nextcp;
+
+	if (fslist == NULL)
+		return (NULL);
+	*skip = 0;
+	if (fslist[0] == 'n' && fslist[1] == 'o') {
+		fslist += 2;
+		*skip = 1;
+	}
+	for (i = 0, nextcp = fslist; *nextcp; nextcp++)
+		if (*nextcp == ',')
+			i++;
+	if ((av = malloc((size_t)(i + 2) * sizeof(char *))) == NULL) {
+		warnx("malloc failed");
+		return (NULL);
+	}
+	nextcp = fslist;
+	i = 0;
+	av[i++] = nextcp;
+	while ((nextcp = strchr(nextcp, ',')) != NULL) {
+		*nextcp++ = '\0';
+		av[i++] = nextcp;
+	}
+	av[i++] = NULL;
+	return (av);
+}
+
+static int
+checkvfsname(const char *vfsname, const char **vfslist, int skip)
+{
+
+	if (vfslist == NULL)
+		return (0);
+	while (*vfslist != NULL) {
+		if (strcmp(vfsname, *vfslist) == 0)
+			return (skip);
+		++vfslist;
+	}
+	return (!skip);
+}
+
+/*
+ * Without -l and -t option, all file system types are enabled.
+ * The -l option selects the local file systems, if present.
+ * A -t option modifies the selection by adding or removing further
+ * file system types, based on the argument that is passed.
+ */
+static int
+checkvfsselected(char *fstypename)
+{
+	int result;
+
+	if (vfslist_t) {
+		/* if -t option used then select passed types */
+		result = checkvfsname(fstypename, vfslist_t, skipvfs_t);
+		if (vfslist_l) {
+			/* if -l option then adjust selection */
+			if (checkvfsname(fstypename, vfslist_l, skipvfs_l) == skipvfs_t)
+				result = skipvfs_t;
+		}
+	} else {
+		/* no -t option then -l decides */
+		result = checkvfsname(fstypename, vfslist_l, skipvfs_l);
+	}
+	return (result);
+}
+
 /*
  * Make a pass over the file system info in ``mntbuf'' filtering out
- * file system types not in vfslist and possibly re-stating to get
+ * file system types not in vfslist_{l,t} and possibly re-stating to get
  * current (not cached) info.  Returns the new count of valid statvfs bufs.
  */
 static size_t
-regetmntinfo(struct mntinfo **mntbufp, long mntsize, const char **vfslist)
+regetmntinfo(struct mntinfo **mntbufp, long mntsize)
 {
 	int error, i, j;
 	struct mntinfo *mntbuf;
 	struct statvfs svfsbuf;
 
-	if (vfslist == NULL)
+	if (vfslist_l == NULL && vfslist_t == NULL)
 		return (nflag ? mntsize : getmntinfo(mntbufp));
 
 	mntbuf = *mntbufp;
 	for (j = 0, i = 0; i < mntsize; i++) {
-		if (checkvfsname(mntbuf[i].f_fstypename, vfslist))
+		if (checkvfsselected(mntbuf[i].f_fstypename) != 0)
 			continue;
 		/*
 		 * XXX statvfs(2) can fail for various reasons. It may be

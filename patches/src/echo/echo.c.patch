@@ -1,5 +1,5 @@
---- echo/echo.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ echo/echo.c	2021-06-12 06:22:35.044183898 +0200
+--- echo/echo.c.orig	2022-07-30 22:33:43.607259803 +0200
++++ echo/echo.c	2022-07-30 22:33:38.991711825 +0200
 @@ -47,7 +47,6 @@ __FBSDID("$FreeBSD$");
  #include <sys/uio.h>
  
@@ -8,9 +8,9 @@
  #include <err.h>
  #include <errno.h>
  #include <limits.h>
-@@ -82,9 +81,6 @@ main(int argc, char *argv[])
+@@ -64,9 +63,6 @@ main(int argc, char *argv[])
+ 	char space[] = " ";
  	char newline[] = "\n";
- 	char *progname = argv[0];
  
 -	if (caph_limit_stdio() < 0 || caph_enter() < 0)
 -		err(1, "capsicum");

@@ -1,5 +1,5 @@
---- cp/cp.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ cp/cp.c	2022-07-27 20:23:03.423337122 +0200
+--- cp/cp.c.orig	2022-07-30 21:46:51.413739273 +0200
++++ cp/cp.c	2022-07-30 21:46:48.062067517 +0200
 @@ -75,6 +75,7 @@ __FBSDID("$FreeBSD$");
  #include <unistd.h>
  
@@ -17,7 +17,7 @@
  
  int
  main(int argc, char *argv[])
-@@ -375,12 +376,9 @@ copy(char *argv[], enum op type, int fts
+@@ -393,12 +394,9 @@ copy(char *argv[], enum op type, int fts
  			if (pflag) {
  				if (setfile(curr->fts_statp, -1))
  					rval = 1;
@@ -31,7 +31,7 @@
  				    ((mode | S_IRWXU) & mask) != (mode & mask))
  					if (chmod(to.p_path, mode & mask) !=
  					    0) {
-@@ -497,7 +495,7 @@ copy(char *argv[], enum op type, int fts
+@@ -515,7 +513,7 @@ copy(char *argv[], enum op type, int fts
  }
  
  static void

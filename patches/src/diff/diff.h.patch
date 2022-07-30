@@ -1,15 +1,12 @@
---- diff/diff.h.orig	2022-07-28 23:03:48.931035124 +0200
-+++ diff/diff.h	2022-07-28 23:16:31.752379501 +0200
-@@ -100,7 +100,7 @@ extern struct	stat stb1, stb2;
+--- diff/diff.h.orig	2022-07-30 22:26:22.662485580 +0200
++++ diff/diff.h	2022-07-30 22:26:20.214725300 +0200
+@@ -100,8 +100,16 @@ extern struct	stat stb1, stb2;
  extern struct	excludes *excludes_list;
  extern regex_t	ignore_re;
  
 -char	*splice(char *, char *);
 +char	*dsplice(char *, char *);
  int	diffreg(char *, char *, int, int);
- int	easprintf(char **, const char *, ...);
- void	*emalloc(size_t);
-@@ -108,3 +108,11 @@ void	*erealloc(void *, size_t);
  void	diffdir(char *, char *, int);
  void	print_only(const char *, size_t, const char *);
  void	print_status(int, char *, char *, const char *);

@@ -1,5 +1,5 @@
---- sort/sort.c.orig	2021-04-09 02:24:12.000000000 +0200
-+++ sort/sort.c	2022-07-18 22:01:39.721662768 +0200
+--- sort/sort.c.orig	2022-07-30 22:49:50.140482737 +0200
++++ sort/sort.c	2022-07-30 22:49:44.473037776 +0200
 @@ -31,7 +31,6 @@
  __FBSDID("$FreeBSD$");
  
@@ -46,7 +46,7 @@
 +
  #ifndef WITHOUT_NLS
  #include <nl_types.h>
- nl_catd catalog;
+ nl_catd catalog = (nl_catd)-1;
  #endif
  
 +extern const char *__progname;
@@ -73,7 +73,7 @@
        "[--compress-program program] [file ...]\n" };
  
  struct sort_opts sort_opts_vals;
-@@ -131,7 +161,9 @@ enum
+@@ -133,7 +163,9 @@ enum
  #if defined(SORT_THREADS)
  	PARALLEL_OPT,
  #endif
@@ -83,7 +83,7 @@
  	COMPRESSPROGRAM_OPT,
  	QSORT_OPT,
  	MERGESORT_OPT,
-@@ -172,8 +204,10 @@ static struct option long_options[] = {
+@@ -174,8 +206,10 @@ static struct option long_options[] = {
  #endif
  				{ "qsort", no_argument, NULL, QSORT_OPT },
  				{ "radixsort", no_argument, NULL, RADIXSORT_OPT },
@@ -94,7 +94,7 @@
  				{ "reverse", no_argument, NULL, 'r' },
  				{ "sort", required_argument, NULL, SORT_OPT },
  				{ "stable", no_argument, NULL, 's' },
-@@ -210,7 +244,7 @@ usage(bool opt_err)
+@@ -212,7 +246,7 @@ usage(bool opt_err)
  
  	out = opt_err ? stderr : stdout;
  
@@ -103,7 +103,7 @@
  	if (opt_err)
  		exit(2);
  	exit(0);
-@@ -325,16 +359,24 @@ set_locale(void)
+@@ -329,16 +363,24 @@ set_locale(void)
  	lc = localeconv();
  
  	if (lc) {
@@ -132,7 +132,7 @@
  	}
  
  	if (getenv("GNUSORT_NUMERIC_COMPATIBILITY"))
-@@ -429,7 +471,8 @@ parse_memory_buffer_value(const char *va
+@@ -433,7 +475,8 @@ parse_memory_buffer_value(const char *va
  				    100;
  				break;
  			default:
@@ -142,7 +142,7 @@
  				membuf = available_free_memory;
  			}
  		}
-@@ -441,8 +484,8 @@ parse_memory_buffer_value(const char *va
+@@ -445,8 +488,8 @@ parse_memory_buffer_value(const char *va
   * Signal handler that clears the temporary files.
   */
  static void
@@ -153,7 +153,7 @@
  {
  
  	clear_tmp_files();
-@@ -581,11 +624,13 @@ set_sort_modifier(struct sort_mods *sm,
+@@ -585,11 +628,13 @@ set_sort_modifier(struct sort_mods *sm,
  	case 'i':
  		sm->iflag = true;
  		break;
@@ -167,7 +167,7 @@
  	case 'M':
  		initialise_months();
  		sm->Mflag = true;
-@@ -851,7 +896,7 @@ end:
+@@ -855,7 +900,7 @@ end:
  void
  fix_obsolete_keys(int *argc, char **argv)
  {
@@ -176,7 +176,7 @@
  
  	for (int i = 1; i < *argc; i++) {
  		char *arg1;
-@@ -902,6 +947,7 @@ fix_obsolete_keys(int *argc, char **argv
+@@ -911,6 +956,7 @@ fix_obsolete_keys(int *argc, char **argv
  	}
  }
  
@@ -184,7 +184,7 @@
  /*
   * Seed random sort
   */
-@@ -974,6 +1020,7 @@ out:
+@@ -983,6 +1029,7 @@ out:
  	MD5Init(&md5_ctx);
  	MD5Update(&md5_ctx, randseed, rd);
  }
@@ -192,7 +192,7 @@
  
  /*
   * Main function.
-@@ -982,7 +1029,9 @@ int
+@@ -991,7 +1038,9 @@ int
  main(int argc, char **argv)
  {
  	char *outfile, *real_outfile;
@@ -202,7 +202,7 @@
  	int c, result;
  	bool mef_flags[NUMBER_OF_MUTUALLY_EXCLUSIVE_FLAGS] =
  	    { false, false, false, false, false, false };
-@@ -1041,7 +1090,8 @@ main(int argc, char **argv)
+@@ -1054,7 +1103,8 @@ main(int argc, char **argv)
  
  				if (parse_k(optarg, &(keys[keys_num - 1]))
  				    < 0) {
@@ -212,7 +212,7 @@
  				}
  
  				break;
-@@ -1066,7 +1116,8 @@ main(int argc, char **argv)
+@@ -1079,7 +1129,8 @@ main(int argc, char **argv)
  			case 't':
  				while (strlen(optarg) > 1) {
  					if (optarg[0] != '\\') {
@@ -222,7 +222,7 @@
  					}
  					optarg += 1;
  					if (*optarg == '0') {
-@@ -1109,8 +1160,10 @@ main(int argc, char **argv)
+@@ -1122,8 +1173,10 @@ main(int argc, char **argv)
  						set_sort_modifier(sm, 'n');
  					else if (!strcmp(optarg, "month"))
  						set_sort_modifier(sm, 'M');
@@ -233,7 +233,7 @@
  					else
  						unknown(optarg);
  				}
-@@ -1139,9 +1192,11 @@ main(int argc, char **argv)
+@@ -1152,9 +1205,11 @@ main(int argc, char **argv)
  			case RADIXSORT_OPT:
  				sort_opts_vals.sort_method = SORT_RADIXSORT;
  				break;
@@ -245,7 +245,7 @@
  			case COMPRESSPROGRAM_OPT:
  				compress_program = strdup(optarg);
  				break;
-@@ -1242,8 +1297,10 @@ main(int argc, char **argv)
+@@ -1247,8 +1302,10 @@ main(int argc, char **argv)
  		}
  	}
  

@@ -51,6 +51,7 @@ __FBSDID("$FreeBSD$");
 #include <limits.h>
 #include <paths.h>
 #include <pwd.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -67,7 +68,7 @@ main(int argc, char *argv[])
 	const char	*shell;
 	gid_t		gid, *gidlist;
 	uid_t		uid;
-	int		ch, gids;
+	int			ch, gids;
 	long		ngroups_max;
 
 	gid = 0;

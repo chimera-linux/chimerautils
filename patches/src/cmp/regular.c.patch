@@ -1,5 +1,5 @@
---- cmp/regular.c.orig	2022-07-28 23:01:23.553272634 +0200
-+++ cmp/regular.c	2022-07-28 23:01:58.189880513 +0200
+--- cmp/regular.c.orig	2022-07-30 21:43:49.447560054 +0200
++++ cmp/regular.c	2022-07-30 21:43:43.640128803 +0200
 @@ -41,8 +41,8 @@ __FBSDID("$FreeBSD$");
  #include <sys/param.h>
  #include <sys/mman.h>
@@ -11,14 +11,14 @@
  #include <limits.h>
  #include <signal.h>
 @@ -63,7 +63,6 @@ c_regular(int fd1, const char *file1, of
-     int fd2, const char *file2, off_t skip2, off_t len2)
+     int fd2, const char *file2, off_t skip2, off_t len2, off_t limit)
  {
  	struct sigaction act, oact;
 -	cap_rights_t rights;
  	u_char ch, *p1, *p2, *m1, *m2, *e1, *e2;
  	off_t byte, length, line;
  	off_t pagemask, off1, off2;
-@@ -98,13 +97,6 @@ c_regular(int fd1, const char *file1, of
+@@ -100,13 +99,6 @@ c_regular(int fd1, const char *file1, of
  		return;
  	}
  
@@ -32,7 +32,7 @@
  	sigemptyset(&act.sa_mask);
  	act.sa_flags = SA_NODEFER;
  	act.sa_handler = segv_handler;
-@@ -175,7 +167,7 @@ remmap(u_char *mem, int fd, off_t offset
+@@ -181,7 +173,7 @@ remmap(u_char *mem, int fd, off_t offset
  }
  
  static void

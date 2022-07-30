@@ -1,5 +1,5 @@
---- diff/diffreg.c.orig	2022-07-28 23:04:08.189149089 +0200
-+++ diff/diffreg.c	2022-07-28 23:06:28.591567842 +0200
+--- diff/diffreg.c.orig	2022-07-30 23:44:57.936382740 +0200
++++ diff/diffreg.c	2022-07-30 23:34:58.579218572 +0200
 @@ -69,10 +69,8 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -23,7 +23,7 @@
  #include "diff.h"
  #include "xmalloc.h"
  
-@@ -258,8 +258,6 @@ diffreg(char *file1, char *file2, int fl
+@@ -259,8 +259,6 @@ diffreg(char *file1, char *file2, int fl
  {
  	FILE *f1, *f2;
  	int i, rval;
@@ -32,7 +32,7 @@
  
  	f1 = f2 = NULL;
  	rval = D_SAME;
-@@ -338,29 +336,7 @@ diffreg(char *file1, char *file2, int fl
+@@ -339,29 +337,7 @@ diffreg(char *file1, char *file2, int fl
  		goto closem;
  	}
  
@@ -46,7 +46,7 @@
 -		if (caph_rights_limit(fileno(f2), &rights_ro) < 0)
 -			err(2, "unable to limit rights on: %s", file2);
 -		if (fileno(f1) == STDIN_FILENO || fileno(f2) == STDIN_FILENO) {
--			/* stding has already been limited */
+-			/* stdin has already been limited */
 -			if (caph_limit_stderr() == -1)
 -				err(2, "unable to limit stderr");
 -			if (caph_limit_stdout() == -1)
@@ -63,7 +63,7 @@
  
  	switch (files_differ(f1, f2, flags)) {
  	case 0:
-@@ -421,8 +397,6 @@ diffreg(char *file1, char *file2, int fl
+@@ -424,8 +400,6 @@ diffreg(char *file1, char *file2, int fl
  	output(file1, f1, file2, f2, flags);
  
  closem:
@@ -72,7 +72,7 @@
  	if (anychange) {
  		status |= 1;
  		if (rval == D_SAME)
-@@ -496,7 +470,7 @@ opentemp(const char *f)
+@@ -499,7 +473,7 @@ opentemp(const char *f)
  }
  
  char *
@@ -81,7 +81,15 @@
  {
  	char *tail, *buf;
  	size_t dirlen;
-@@ -1435,7 +1409,7 @@ asciifile(FILE *f)
+@@ -1376,6 +1350,7 @@ readhash(FILE *f, int flags, unsigned *h
+ 		case '\0':
+ 			if ((flags & D_FORCEASCII) == 0)
+ 				return (RH_BINARY);
++			/* FALLTHROUGH */
+ 		case '\r':
+ 			if (flags & D_STRIPCR) {
+ 				t = getc(f);
+@@ -1433,7 +1408,7 @@ asciifile(FILE *f)
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -90,7 +98,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1654,41 +1628,18 @@ dump_unified_vec(FILE *f1, FILE *f2, int
+@@ -1652,41 +1627,18 @@ dump_unified_vec(FILE *f1, FILE *f2, int
  static void
  print_header(const char *file1, const char *file2)
  {
@@ -118,21 +126,21 @@
 -		sprintf(buf2, "%s.%.9d %s", buf2, nsec2, end2);
 -	}
  	if (label[0] != NULL)
- 		diff_output("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
+ 		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
  		    label[0]);
  	else
--		diff_output("%s %s\t%s\n", diff_format == D_CONTEXT ? "***" : "---",
+-		printf("%s %s\t%s\n", diff_format == D_CONTEXT ? "***" : "---",
 -		    file1, buf1);
-+		diff_output("%s %s\t%s", diff_format == D_CONTEXT ? "***" : "---",
++		printf("%s %s\t%s", diff_format == D_CONTEXT ? "***" : "---",
 +		    file1, ctime(&stb1.st_mtime));
  	if (label[1] != NULL)
- 		diff_output("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
+ 		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
  		    label[1]);
  	else
--		diff_output("%s %s\t%s\n", diff_format == D_CONTEXT ? "---" : "+++",
+-		printf("%s %s\t%s\n", diff_format == D_CONTEXT ? "---" : "+++",
 -		    file2, buf2);
-+		diff_output("%s %s\t%s", diff_format == D_CONTEXT ? "---" : "+++",
++		printf("%s %s\t%s", diff_format == D_CONTEXT ? "---" : "+++",
 +		    file2, ctime(&stb2.st_mtime));
  }
  
- /* 
+ /*

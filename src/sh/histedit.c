@@ -39,6 +39,8 @@ static char sccsid[] = "@(#)histedit.c	8.2 (Berkeley) 5/4/95";
 __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
+#include <sys/stat.h>
+#include <dirent.h>
 #include <limits.h>
 #include <paths.h>
 #include <stdio.h>
@@ -137,8 +139,10 @@ bad:
 		if (el) {
 			if (Vflag)
 				el_set(el, EL_EDITOR, "vi");
-			else if (Eflag)
+			else if (Eflag) {
 				el_set(el, EL_EDITOR, "emacs");
+				el_set(el, EL_BIND, "^R", "em-inc-search-prev", NULL);
+			}
 			el_set(el, EL_BIND, "^I", "sh-complete", NULL);
 			el_source(el, NULL);
 		}
@@ -494,10 +498,152 @@ bindcmd(int argc, char **argv)
 
 	fclose(out);
 
+	if (argc > 1 && argv[1][0] == '-' &&
+	    memchr("ve", argv[1][1], 2) != NULL) {
+		Vflag = argv[1][1] == 'v';
+		Eflag = !Vflag;
+		histedit();
+	}
+
 	INTON;
 
 	return ret;
 }
+
+#if 0
+/*
+ * Comparator function for qsort(). The use of curpos here is to skip
+ * characters that we already know to compare equal (common prefix).
+ */
+static int
+comparator(const void *a, const void *b, void *thunk)
+{
+	size_t curpos = (intptr_t)thunk;
+	return (strcmp(*(char *const *)a + curpos,
+		*(char *const *)b + curpos));
+}
+
+/*
+ * This function is passed to libedit's fn_complete2(). The library will
+ * use it instead of its standard function that finds matching files in
+ * current directory. If we're at the start of the line, we want to look
+ * for available commands from all paths in $PATH.
+ */
+static char
+**sh_matches(const char *text, int start, int end)
+{
+	char *free_path = NULL, *path;
+	const char *dirname;
+	char **matches = NULL;
+	size_t i = 0, size = 16, uniq;
+	size_t curpos = end - start, lcstring = -1;
+
+	if (start > 0 || memchr("/.~", text[0], 3) != NULL)
+		return (NULL);
+	if ((free_path = path = strdup(pathval())) == NULL)
+		goto out;
+	if ((matches = malloc(size * sizeof(matches[0]))) == NULL)
+		goto out;
+	while ((dirname = strsep(&path, ":")) != NULL) {
+		struct dirent *entry;
+		DIR *dir;
+		int dfd;
+
+		dir = opendir(dirname[0] == '\0' ? "." : dirname);
+		if (dir == NULL)
+			continue;
+		if ((dfd = dirfd(dir)) == -1) {
+			closedir(dir);
+			continue;
+		}
+		while ((entry = readdir(dir)) != NULL) {
+			struct stat statb;
+			char **rmatches;
+
+			if (strncmp(entry->d_name, text, curpos) != 0)
+				continue;
+			if (entry->d_type == DT_UNKNOWN || entry->d_type == DT_LNK) {
+				if (fstatat(dfd, entry->d_name, &statb, 0) == -1)
+					continue;
+				if (!S_ISREG(statb.st_mode))
+					continue;
+			} else if (entry->d_type != DT_REG)
+				continue;
+			matches[++i] = strdup(entry->d_name);
+			if (i < size - 1)
+				continue;
+			size *= 2;
+			rmatches = reallocarray(matches, size, sizeof(matches[0]));
+			if (rmatches == NULL) {
+				closedir(dir);
+				goto out;
+			}
+			matches = rmatches;
+		}
+		closedir(dir);
+	}
+out:
+	free(free_path);
+	if (i == 0) {
+		free(matches);
+		return (NULL);
+	}
+	uniq = 1;
+	if (i > 1) {
+		qsort_s(matches + 1, i, sizeof(matches[0]), comparator,
+			(void *)(intptr_t)curpos);
+		for (size_t k = 2; k <= i; k++) {
+			const char *l = matches[uniq] + curpos;
+			const char *r = matches[k] + curpos;
+			size_t common = 0;
+
+			while (*l != '\0' && *r != '\0' && *l == *r)
+				(void)l++, r++, common++;
+			if (common < lcstring)
+				lcstring = common;
+			if (*l == *r)
+				free(matches[k]);
+			else
+				matches[++uniq] = matches[k];
+		}
+	}
+	matches[uniq + 1] = NULL;
+	/*
+	 * matches[0] is special: it's not a real matching file name but a common
+	 * prefix for all matching names. It can't be null, unlike any other
+	 * element of the array. When strings matches[0] and matches[1] compare
+	 * equal and matches[2] is null that means to libedit that there is only
+	 * a single match. It will then replace user input with possibly escaped
+	 * string in matches[0] which is the reason to copy the full name of the
+	 * only match.
+	 */
+	if (uniq == 1)
+		matches[0] = strdup(matches[1]);
+	else if (lcstring != (size_t)-1)
+		matches[0] = strndup(matches[1], curpos + lcstring);
+	else
+		matches[0] = strdup(text);
+	if (matches[0] == NULL) {
+		for (size_t k = 1; k <= uniq; k++)
+			free(matches[k]);
+		free(matches);
+		return (NULL);
+	}
+	return (matches);
+}
+
+/*
+ * This is passed to el_set(el, EL_ADDFN, ...) so that it's possible to
+ * bind a key (tab by default) to execute the function.
+ */
+unsigned char
+sh_complete(EditLine *sel, int ch __attribute__((unused)))
+{
+	return (unsigned char)fn_complete2(sel, NULL, sh_matches,
+		L" \t\n\"\\'`@$><=;|&{(", NULL, NULL, (size_t)100,
+		NULL, &((int) {0}), NULL, NULL, FN_QUOTE_MATCH);
+}
+#endif
 
 #else
 #include "error.h"

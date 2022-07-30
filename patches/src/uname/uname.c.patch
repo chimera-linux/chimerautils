@@ -1,5 +1,5 @@
---- uname/uname.c.orig	2021-06-27 03:13:32.197164071 +0200
-+++ uname/uname.c	2021-06-27 03:31:25.086698868 +0200
+--- uname/uname.c.orig	2022-07-30 22:52:52.734323356 +0200
++++ uname/uname.c	2022-07-30 22:54:05.887159164 +0200
 @@ -49,15 +49,14 @@ static const char sccsid[] = "@(#)uname.
  #endif
  
@@ -18,7 +18,7 @@
  #define	MFLAG	0x01
  #define	NFLAG	0x02
  #define	PFLAG	0x04
-@@ -205,91 +204,39 @@ print_uname(u_int flags)
+@@ -205,95 +204,39 @@ print_uname(u_int flags)
  	printf("\n");
  }
  
@@ -73,8 +73,12 @@
 -	p = NATIVE_BUFFER;
 -	n = NATIVE_LENGTH;
 -	for (; n--; ++p)
--		if (*p == '\n' || *p == '\t')
--			*p = ' ';
+-		if (*p == '\n' || *p == '\t') {
+-			if (n > 1)
+-				*p = ' ';
+-			else
+-				*p = '\0';
+-		}
 -} NATIVE_SET;
 -
 -NATIVE_SYSCTL2_GET(platform, CTL_HW, HW_MACHINE) {

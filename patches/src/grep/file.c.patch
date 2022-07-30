@@ -1,5 +1,5 @@
---- grep/file.c.orig	2022-07-28 20:50:19.633306355 +0200
-+++ grep/file.c	2022-07-28 21:01:15.629069689 +0200
+--- grep/file.c.orig	2022-07-30 22:34:29.702745461 +0200
++++ grep/file.c	2022-07-30 22:34:24.687236653 +0200
 @@ -43,6 +43,7 @@ __FBSDID("$FreeBSD$");
  #include <err.h>
  #include <errno.h>
@@ -19,7 +19,7 @@
  #define	MAXBUFSIZ	(32 * 1024)
  #define	LNBUFBUMP	80
  
-@@ -187,7 +192,7 @@ grep_open(const char *path)
+@@ -190,7 +195,7 @@ grep_open(const char *path)
  		    (!S_ISREG(st.st_mode)))
  			filebehave = FILE_STDIO;
  		else {

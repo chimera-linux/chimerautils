@@ -59,9 +59,9 @@ const char	*errstr[] = {
 	"",
 /* 1*/	"(standard input)",
 /* 2*/	"unknown %s option",
-/* 3*/	"usage: %s [-abcDEFGHhIiLlmnOoPqRSsUVvwxz] [-A num] [-B num] [-C[num]]\n",
+/* 3*/	"usage: %s [-abcDEFGHhIiLlmnOoPqRSsUVvwxz] [-A num] [-B num] [-C num]\n",
 /* 4*/	"\t[-e pattern] [-f file] [--binary-files=value] [--color=when]\n",
-/* 5*/	"\t[--context[=num]] [--directories=action] [--label] [--line-buffered]\n",
+/* 5*/	"\t[--context=num] [--directories=action] [--label] [--line-buffered]\n",
 /* 6*/	"\t[--null] [pattern] [file ...]\n",
 /* 7*/	"Binary file %s matches\n",
 /* 8*/	"%s (BSD grep, GNU compatible) %s\n",
@@ -635,6 +635,10 @@ main(int argc, char *argv[])
 	}
 	aargc -= optind;
 	aargv += optind;
+
+	/* xflag takes precedence, don't confuse the matching bits. */
+	if (wflag && xflag)
+		wflag = false;
 
 	/* Fail if we don't have any pattern */
 	if (aargc == 0 && needpattern)

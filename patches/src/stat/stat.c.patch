@@ -1,5 +1,5 @@
---- stat/stat.c.orig	2021-04-09 02:24:12.000000000 +0200
-+++ stat/stat.c	2022-07-27 20:27:11.675049700 +0200
+--- stat/stat.c.orig	2022-07-30 22:51:05.761076866 +0200
++++ stat/stat.c	2022-07-30 22:51:02.469399235 +0200
 @@ -42,17 +42,18 @@ __FBSDID("$FreeBSD$");
  #if HAVE_CONFIG_H
  #include "config.h" 
@@ -23,7 +23,7 @@
  
  #include <ctype.h>
  #include <err.h>
-@@ -67,6 +68,10 @@ __FBSDID("$FreeBSD$");
+@@ -68,6 +69,10 @@ __FBSDID("$FreeBSD$");
  #include <time.h>
  #include <unistd.h>
  
@@ -34,7 +34,7 @@
  #if HAVE_STRUCT_STAT_ST_FLAGS
  #define DEF_F "%#Xf "
  #define RAW_F "%f "
-@@ -208,24 +213,21 @@ main(int argc, char *argv[])
+@@ -209,24 +214,21 @@ main(int argc, char *argv[])
  {
  	struct stat st;
  	int ch, rc, errs, am_readlink;
@@ -61,7 +61,7 @@
  		am_readlink = 1;
  		options = "fn";
  		synopsis = "[-fn] [file ...]";
-@@ -233,7 +235,7 @@ main(int argc, char *argv[])
+@@ -234,7 +236,7 @@ main(int argc, char *argv[])
  		fmtchar = 'f';
  		quiet = 1;
  	} else {
@@ -70,7 +70,7 @@
  		synopsis = "[-FLnq] [-f format | -l | -r | -s | -x] "
  		    "[-t timefmt] [file|handle ...]";
  	}
-@@ -243,9 +245,6 @@ main(int argc, char *argv[])
+@@ -244,9 +246,6 @@ main(int argc, char *argv[])
  		case 'F':
  			lsF = 1;
  			break;
@@ -80,7 +80,7 @@
  		case 'L':
  			usestat = 1;
  			break;
-@@ -323,37 +322,11 @@ main(int argc, char *argv[])
+@@ -324,37 +323,11 @@ main(int argc, char *argv[])
  	errs = 0;
  	do {
  		if (argc == 0) {
@@ -120,7 +120,7 @@
  				/*
  				 * Try stat() and if it fails, fall back to
  				 * lstat() just in case we're examining a
-@@ -408,7 +381,7 @@ void
+@@ -409,7 +382,7 @@ void
  usage(const char *synopsis)
  {
  
@@ -129,7 +129,7 @@
  	exit(1);
  }
  
-@@ -618,8 +591,10 @@ format1(const struct stat *st,
+@@ -619,8 +592,10 @@ format1(const struct stat *st,
  {
  	u_int64_t data;
  	char *stmp, lfmt[24], tmp[20];
@@ -142,7 +142,7 @@
  	const struct timespec *tsp;
  	struct timespec ts;
  	struct tm *tm;
-@@ -716,10 +691,12 @@ format1(const struct stat *st,
+@@ -717,10 +692,12 @@ format1(const struct stat *st,
  	case SHOW_st_uid:
  		small = (sizeof(st->st_uid) == 4);
  		data = st->st_uid;
@@ -157,7 +157,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -729,10 +706,12 @@ format1(const struct stat *st,
+@@ -730,10 +707,12 @@ format1(const struct stat *st,
  	case SHOW_st_gid:
  		small = (sizeof(st->st_gid) == 4);
  		data = st->st_gid;
@@ -172,7 +172,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -740,15 +719,15 @@ format1(const struct stat *st,
+@@ -741,15 +720,15 @@ format1(const struct stat *st,
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -191,7 +191,7 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
-@@ -1091,7 +1070,7 @@ format1(const struct stat *st,
+@@ -1093,7 +1072,7 @@ format1(const struct stat *st,
  #define hex2nibble(c) (c <= '9' ? c - '0' : toupper(c) - 'A' + 10)
  int
  hex2byte(const char c[2]) {

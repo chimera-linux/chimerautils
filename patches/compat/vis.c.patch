@@ -1,5 +1,5 @@
---- compat/vis.c.orig	2021-04-09 02:24:02.000000000 +0200
-+++ compat/vis.c	2021-06-12 05:22:40.071699330 +0200
+--- compat/vis.c.orig	2022-07-30 21:30:01.773117346 +0200
++++ compat/vis.c	2022-07-30 21:29:56.849599529 +0200
 @@ -64,7 +64,6 @@ __FBSDID("$FreeBSD$");
  #define	_DIAGASSERT(x)	assert(x)
  #endif
@@ -87,7 +87,7 @@
  	wint_t c;
  	visfun_t f;
  	int clen = 0, cerr, error = -1, i, shft;
-@@ -554,11 +529,11 @@ istrsenvisx(char **mbdstp, size_t *dlen,
+@@ -555,11 +530,11 @@ istrsenvisx(char **mbdstp, size_t *dlen,
  			wmsk = 0;
  			for (i = sizeof(wmsk) - 1; i >= 0; i--) {
  				shft = i * NBBY;

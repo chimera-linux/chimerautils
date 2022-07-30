@@ -1,6 +1,15 @@
---- compat/merge.c.orig	2021-06-12 05:39:01.126680455 +0200
-+++ compat/merge.c	2021-06-12 05:43:51.018012407 +0200
-@@ -52,11 +52,15 @@ __FBSDID("$FreeBSD$");
+--- compat/merge.c.orig	2022-05-12 06:53:59.000000000 +0200
++++ compat/merge.c	2022-07-31 00:38:29.901557053 +0200
+@@ -38,6 +38,8 @@ static char sccsid[] = "@(#)merge.c	8.2
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ 
++#define __is_aligned(x, align) (((uintptr_t)x & ((align) - 1)) == 0)
++
+ /*
+  * Hybrid exponential search/linear search merge sort with hybrid
+  * natural/pairwise first pass.  Requires about .3% more comparisons
+@@ -52,11 +54,15 @@ __FBSDID("$FreeBSD$");
   * (The default is pairwise merging.)
   */
  

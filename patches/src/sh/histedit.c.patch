@@ -1,6 +1,25 @@
---- sh/histedit.c.orig	2022-07-27 21:59:35.226241167 +0200
-+++ sh/histedit.c	2022-07-28 07:10:27.670893133 +0200
-@@ -181,22 +181,22 @@ setterm(const char *term)
+--- sh/histedit.c.orig	2022-07-30 23:46:11.785158393 +0200
++++ sh/histedit.c	2022-07-30 23:31:08.985789732 +0200
+@@ -74,9 +74,6 @@ static FILE *el_in, *el_out;
+ static char *fc_replace(const char *, char *, char *);
+ static int not_fcnumber(const char *);
+ static int str_to_event(const char *, int);
+-static int comparator(const void *, const void *, void *);
+-static char **sh_matches(const char *, int, int);
+-static unsigned char sh_complete(EditLine *, int);
+ 
+ /*
+  * Set history and editing status.  Called whenever the status may
+@@ -127,7 +124,7 @@ histedit(void)
+ 				el_set(el, EL_PROMPT, getprompt);
+ 				el_set(el, EL_ADDFN, "sh-complete",
+ 				    "Filename completion",
+-				    sh_complete);
++				    _el_fn_complete);
+ 			} else {
+ bad:
+ 				out2fmt_flush("sh: can't initialize editing\n");
+@@ -188,22 +185,22 @@ setterm(const char *term)
  }
  
  int
@@ -28,7 +47,28 @@
  	int oldhistnum;
  
  	if (hist == NULL)
-@@ -503,7 +503,7 @@ bindcmd(int argc, char **argv)
+@@ -513,6 +510,7 @@ bindcmd(int argc, char **argv)
+ 	return ret;
+ }
+ 
++#if 0
+ /*
+  * Comparator function for qsort(). The use of curpos here is to skip
+  * characters that we already know to compare equal (common prefix).
+@@ -639,18 +637,19 @@ out:
+  * bind a key (tab by default) to execute the function.
+  */
+ unsigned char
+-sh_complete(EditLine *sel, int ch __unused)
++sh_complete(EditLine *sel, int ch __attribute__((unused)))
+ {
+ 	return (unsigned char)fn_complete2(sel, NULL, sh_matches,
+ 		L" \t\n\"\\'`@$><=;|&{(", NULL, NULL, (size_t)100,
+ 		NULL, &((int) {0}), NULL, NULL, FN_QUOTE_MATCH);
+ }
++#endif
+ 
+ #else
  #include "error.h"
  
  int
@@ -37,7 +77,7 @@
  {
  
  	error("not compiled with history support");
-@@ -512,7 +512,7 @@ histcmd(int argc __unused, char **argv _
+@@ -659,7 +658,7 @@ histcmd(int argc __unused, char **argv _
  }
  
  int
