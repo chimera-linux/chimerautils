@@ -47,6 +47,7 @@ static const char sccsid[] = "@(#)du.c	8.5 (Berkeley) 5/4/95";
 __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
+#include <sys/queue.h>
 #include <sys/stat.h>
 #include <err.h>
 #include <errno.h>
@@ -69,10 +70,10 @@ __FBSDID("$FreeBSD$");
 #define UNITS_2		1
 #define UNITS_SI	2
 
-static struct ignentry *ignores;
+static SLIST_HEAD(ignhead, ignentry) ignores;
 struct ignentry {
 	char			*mask;
-	struct ignentry *next;
+	SLIST_ENTRY(ignentry)	next;
 };
 
 static int	linkchk(FTSENT *);
@@ -119,7 +120,7 @@ main(int argc, char *argv[])
 	cblocksize = DEV_BSIZE;
 	blocksize = 0;
 	depth = INT_MAX;
-	ignores = NULL;
+	SLIST_INIT(&ignores);
 
 	while ((ch = getopt_long(argc, argv, "+AB:HI:LPasd:cghklmrt:x",
 	    long_options, NULL)) != -1)
@@ -530,8 +531,7 @@ ignoreadd(const char *mask)
 	ign->mask = strdup(mask);
 	if (ign->mask == NULL)
 		errx(1, "cannot allocate memory");
-	ign->next = ignores;
-	ignores = ign;
+	SLIST_INSERT_HEAD(&ignores, ign, next);
 }
 
 static void
@@ -539,9 +539,9 @@ ignoreclean(void)
 {
 	struct ignentry *ign;
 
-	while (ignores != NULL) {
-		ign = ignores;
-		ignores = ignores->next;
+	while (!SLIST_EMPTY(&ignores)) {
+		ign = SLIST_FIRST(&ignores);
+		SLIST_REMOVE_HEAD(&ignores, next);
 		free(ign->mask);
 		free(ign);
 	}
@@ -552,7 +552,7 @@ ignorep(FTSENT *ent)
 {
 	struct ignentry *ign;
 
-	for (ign = ignores; ign != NULL; ign = ign->next)
+	SLIST_FOREACH(ign, &ignores, next)
 		if (fnmatch(ign->mask, ent->fts_name, 0) != FNM_NOMATCH)
 			return 1;
 	return 0;
