@@ -67,6 +67,7 @@ static const char sccsid[] = "@(#)main.c	8.2 (Berkeley) 1/3/94";
 
 #include "defs.h"
 #include "extern.h"
+#include "compat.h"
 
 extern const char *__progname;
 
