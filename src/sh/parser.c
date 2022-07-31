@@ -65,6 +65,7 @@ __FBSDID("$FreeBSD$");
 #ifndef NO_HISTORY
 #include "myhistedit.h"
 #endif
+#include "compat.h"
 
 /*
  * Shell command parser.
