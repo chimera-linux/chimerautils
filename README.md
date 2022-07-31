@@ -1,21 +1,66 @@
+# chimerautils
+
+This is Chimera Linux's core userland. It consists of the following:
+
+* Ports of FreeBSD tools
+* An internal library providing a compat interface to simplify porting
+* Custom-made new tools
+* A Meson-based build system
+
+It replaces the following GNU projects:
+
+* coreutils
+* findutils
+* diffutils
+* grep
+* sed
+* ed
+* m4
+* bc
+* patch
+* gzip
+
+In addition to the above, it replaces portions of `util-linux` and
+provides a shell that can act as `/bin/sh`. In a way, `chimerautils`
+is also an alternative to projects like Busybox.
+
 ## bsdutils
 
-This project contains a collection of userland utilities from the
-FreeBSD source tree, ported to Linux. For most part, it provides an
-alternative to GNU coreutils, as well as other projects such as
-findutils, diffutils, sed, grep, and portions of util-linux.
+This project is a fork of [bsdutils](https://github.com/dcantrell/bsdutils)
+by David Cantrell. Chimerautils were created in order to provide a more
+complete package that prioritizes Chimera's needs and development pace.
 
-The project began in October 2017 and initially ported code from the
-OpenBSD source tree.  The original objective was to see how much work
-was involved and to compare relative sizes of built executables with
-those found in GNU coreutils and other projects.  In an effort to gain
-more featureful BSD commands and to possibly work more easily with
-dotfiles for users on MacOS X systems, the project started over by
-porting the commands from FreeBSD in April 2021.
+## Building
 
+Chimerautils requires a Linux system with a Clang or GCC compiler.
 
-Importing A New Release Of FreeBSD
-----------------------------------
+You will also need the following:
+
+* `meson` and `ninja`
+* `flex` (or another `lex`)
+* `byacc` (or `bison`)
+* `libxo` (https://github.com/Juniper/libxo)
+
+Optionally, these are also needed:
+
+* `ncurses` or another provider of `terminfo` (for color `ls(1)` and others)
+* `libedit` (for `bc` and line editing in `sh`)
+* `libcrypto` from OpenSSL or LibreSSL (for `dc`, `install` and optionally `sort`)
+
+If your C library does not provide them, you will need these:
+
+* `libfts`
+* `librpmatch`
+
+To build:
+
+```
+$ mkdir build && cd build
+$ meson ..
+$ ninja all
+```
+
+## Importing a new FreeBSD release
 
 When a new release of FreeBSD is made, the import-src.sh script should
 be used to update the source tree.  First edit upstream.conf and then
@@ -40,49 +85,3 @@ FreeBSD code.  The import-src.sh and patches step is meant to make it
 more clear what changes I apply to FreeBSD code from release to
 release and also if any external projects want to use these patches
 and the FreeBSD source directly.
-
-
-Build Requirements
-------------------
-
-You will need GNU-compatible C and C++ compilers, typically gcc/g++
-or clang/clang++. You will also need flex (or some other lex as long
-as it is compatible with flex), byacc or bison, meson and ninja/samurai.
-If you wish to use the top-level Makefile (which is just a simple
-wrapper around meson), you will need GNU make. Most distributions
-have all these tools already available in their repositories.
-
-    gcc/g++        https://gcc.gnu.org/
-    clang/clang++  https://llvm.org/
-    GNU make       https://www.gnu.org/software/make/
-    meson          https://mesonbuild.com/
-    ninja          https://ninja-build.org/
-    flex           https://github.com/westes/flex
-    byacc          https://invisible-island.net/byacc/byacc.html
-
-Additionally you will need the following shared libraries to build all
-of the programs in this project:
-
-    terminfo       https://invisible-mirror.net/archives/ncurses/
-    libedit        http://thrysoee.dk/editline/
-    openssl        https://www.openssl.org/
-    libxo          https://github.com/Juniper/libxo
-
-The terminfo library may be either standalone (libtinfo) or a part
-of the curses library, dependending on build. The ls(1) command needs
-this.  bc(1) needs libedit, which is the BSD alternative to GNU
-readline.  dc(1) uses libcrypto which comes from OpenSSL.  seq(1)
-needs libm, but that comes from your C library.  df(1) and wc(1) use
-libxo for outputting to multiple formats.
-
-Users of musl-based Linux systems also need libfts and librpmatch
-installed.
-
-
-Bugs
-----
-
-Probably.  The FreeBSD code is pretty solid.  But remember this
-project is a port of that code to Linux systems.  Pull requests
-welcome for any bugs found.  Also you can just open an issue on the
-project page and we will try to get to it.
