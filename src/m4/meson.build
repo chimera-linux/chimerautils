@@ -6,6 +6,7 @@ m4_prog = executable(
     ],
     include_directories : inc,
     link_with : [ libcompat ],
+    dependencies : [ libm, ],
     c_args : [ '-DEXTENDED' ],
     install : true,
 )
