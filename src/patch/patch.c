@@ -46,6 +46,7 @@
 #include "inp.h"
 #include "backupfile.h"
 #include "pathnames.h"
+#include "compat.h"
 
 mode_t		filemode = 0644;
 

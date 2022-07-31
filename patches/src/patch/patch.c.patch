@@ -1,0 +1,10 @@
+--- patch/patch.c.orig	2022-07-31 22:10:14.219018951 +0200
++++ patch/patch.c	2022-07-31 22:10:30.765398488 +0200
+@@ -46,6 +46,7 @@
+ #include "inp.h"
+ #include "backupfile.h"
+ #include "pathnames.h"
++#include "compat.h"
+ 
+ mode_t		filemode = 0644;
+ 
