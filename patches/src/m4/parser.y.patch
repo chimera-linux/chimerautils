@@ -1,0 +1,10 @@
+--- m4/parser.y.orig	2022-07-31 22:05:37.577235974 +0200
++++ m4/parser.y	2022-07-31 22:05:44.096597503 +0200
+@@ -20,6 +20,7 @@
+ 
+ #include <math.h>
+ #include <stdint.h>
++#include <stdlib.h>
+ #define YYSTYPE	int32_t
+ extern int32_t end_result;
+ extern int yylex(void);

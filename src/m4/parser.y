@@ -20,6 +20,7 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <stdlib.h>
 #define YYSTYPE	int32_t
 extern int32_t end_result;
 extern int yylex(void);
