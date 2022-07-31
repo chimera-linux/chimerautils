@@ -510,7 +510,7 @@ exitshell_savedstatus(void)
 {
 	struct jmploc loc1, loc2;
 	char *p;
-	volatile int sig = 0;
+	int sig = 0;
 	sigset_t sigs;
 
 	if (!exiting) {

@@ -1,32 +1,5 @@
---- sh/eval.c.orig	2022-07-27 21:59:35.222241559 +0200
-+++ sh/eval.c	2022-07-28 07:11:03.499384285 +0200
-@@ -95,7 +95,7 @@ static void exphere(union node *, struct
- static void expredir(union node *);
- static void evalpipe(union node *);
- static int is_valid_fast_cmdsubst(union node *n);
--static void evalcommand(union node *, int, struct backcmd *);
-+static void evalcommand(union node *, volatile int, struct backcmd *);
- static void prehash(union node *);
- 
- 
-@@ -492,7 +492,7 @@ exphere(union node *redir, struct arglis
- 	struct jmploc jmploc;
- 	struct jmploc *savehandler;
- 	struct localvar *savelocalvars;
--	int need_longjmp = 0;
-+	volatile int need_longjmp = 0;
- 	unsigned char saveoptreset;
- 
- 	redir->nhere.expdoc = "";
-@@ -815,7 +815,7 @@ safe_builtin(int idx, int argc, char **a
-  */
- 
- static void
--evalcommand(union node *cmd, int flags, struct backcmd *backcmd)
-+evalcommand(union node *cmd, volatile int flags, struct backcmd *backcmd)
- {
- 	union node *argp;
- 	struct arglist arglist;
+--- sh/eval.c.orig	2022-05-12 06:53:55.000000000 +0200
++++ sh/eval.c	2022-07-31 23:27:43.855235461 +0200
 @@ -1259,7 +1259,7 @@ breakcmd(int argc, char **argv)
   * The `command' command.
   */

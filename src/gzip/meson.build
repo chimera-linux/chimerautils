@@ -17,6 +17,7 @@ gzip_prog = executable(
     'gzip',
     [ 'gzip.c', ],
     include_directories : [ inc, ],
+    link_with : [ libcompat ],
     dependencies : [ zlib, bzip2, lzma, libfts, ],
     c_args : extra_defs,
     install : true,

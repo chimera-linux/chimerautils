@@ -190,17 +190,17 @@ histcmd(int argc, char **argv __attribute__((unused)))
 	int ch;
 	const char *editor = NULL;
 	HistEvent he;
-	volatile int lflg = 0, nflg = 0, rflg = 0, sflg = 0;
+	int lflg = 0, nflg = 0, rflg = 0, sflg = 0;
 	int i, retval;
-	const char *volatile firststr, *volatile laststr;
+	const char *firststr, *laststr;
 	int first, last, direction;
-	char *volatile pat = NULL, *repl = NULL;
+	char *pat = NULL, *repl = NULL;
 	static int active = 0;
 	struct jmploc jmploc;
 	struct jmploc *savehandler;
 	char editfilestr[PATH_MAX];
 	char *volatile editfile;
-	FILE *volatile efp = NULL;
+	FILE *efp = NULL;
 	int oldhistnum;
 
 	if (hist == NULL)

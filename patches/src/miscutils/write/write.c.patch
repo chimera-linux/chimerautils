@@ -1,6 +1,6 @@
---- write/write.c.orig	2022-07-28 20:19:41.509699355 +0200
-+++ write/write.c	2022-07-28 20:33:19.253466889 +0200
-@@ -48,23 +48,22 @@ static char sccsid[] = "@(#)write.c	8.1
+--- write/write.c.orig	2022-05-12 06:54:04.000000000 +0200
++++ write/write.c	2022-07-31 23:26:26.510797153 +0200
+@@ -48,27 +48,28 @@ static char sccsid[] = "@(#)write.c	8.1
  __FBSDID("$FreeBSD$");
  
  #include <sys/param.h>
@@ -27,7 +27,13 @@
  #include <utmpx.h>
  #include <wchar.h>
  #include <wctype.h>
-@@ -80,8 +79,6 @@ int utmp_chk(char *, char *);
+ 
++#include "compat.h"
++
+ void done(int);
+ void do_write(int, char *, char *, const char *);
+ static void usage(void);
+@@ -80,8 +81,6 @@ int utmp_chk(char *, char *);
  int
  main(int argc, char **argv)
  {
@@ -36,7 +42,7 @@
  	struct passwd *pwd;
  	time_t atime;
  	uid_t myuid;
-@@ -95,30 +92,6 @@ main(int argc, char **argv)
+@@ -95,30 +94,6 @@ main(int argc, char **argv)
  	devfd = open(_PATH_DEV, O_RDONLY);
  	if (devfd < 0)
  		err(1, "open(/dev)");
@@ -67,7 +73,7 @@
  
  	/*
  	 * Cache UTX database fds.
-@@ -137,9 +110,6 @@ main(int argc, char **argv)
+@@ -137,9 +112,6 @@ main(int argc, char **argv)
  			login = "???";
  	}
  
@@ -77,7 +83,7 @@
  	while (getopt(argc, argv, "") != -1)
  		usage();
  	argc -= optind;
-@@ -203,7 +173,8 @@ utmp_chk(char *user, char *tty)
+@@ -203,7 +175,8 @@ utmp_chk(char *user, char *tty)
  {
  	struct utmpx lu, *u;
  
@@ -87,7 +93,16 @@
  	while ((u = getutxline(&lu)) != NULL)
  		if (u->ut_type == USER_PROCESS &&
  		    strcmp(user, u->ut_user) == 0) {
-@@ -303,10 +274,9 @@ do_write(int devfd, char *tty, char *myt
+@@ -244,7 +217,7 @@ search_utmp(int devfd, char *user, char
+ 				continue;	/* bad term? skip */
+ 			if (myuid && !msgsok)
+ 				continue;	/* skip ttys with msgs off */
+-			if (strcmp(u->ut_line, mytty) == 0) {
++			if (strncmp(u->ut_line, mytty, sizeof(u->ut_line)) == 0) {
+ 				user_is_me = 1;
+ 				continue;	/* don't write to yourself */
+ 			}
+@@ -303,10 +276,9 @@ do_write(int devfd, char *tty, char *myt
  	fd = openat(devfd, tty, O_WRONLY);
  	if (fd < 0)
  		err(1, "openat(%s%s)", _PATH_DEV, tty);
@@ -100,7 +115,7 @@
  
  	(void)signal(SIGINT, done);
  	(void)signal(SIGHUP, done);
-@@ -328,7 +298,7 @@ do_write(int devfd, char *tty, char *myt
+@@ -328,7 +300,7 @@ do_write(int devfd, char *tty, char *myt
   * done - cleanup and exit
   */
  void

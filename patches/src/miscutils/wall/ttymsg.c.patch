@@ -1,5 +1,5 @@
---- wall/ttymsg.c.orig	2022-07-28 20:13:16.371875970 +0200
-+++ wall/ttymsg.c	2022-07-28 20:18:17.757894551 +0200
+--- wall/ttymsg.c.orig	2022-05-12 06:54:04.000000000 +0200
++++ wall/ttymsg.c	2022-07-31 23:25:02.331041262 +0200
 @@ -37,6 +37,7 @@ __FBSDID("$FreeBSD$");
  static const char sccsid[] = "@(#)ttymsg.c	8.2 (Berkeley) 11/16/93";
  #endif
@@ -8,7 +8,15 @@
  #include <sys/types.h>
  #include <sys/uio.h>
  #include <dirent.h>
-@@ -68,6 +69,7 @@ ttymsg(struct iovec *iov, int iovcnt, co
+@@ -50,6 +51,7 @@ static const char sccsid[] = "@(#)ttymsg
+ #include <unistd.h>
+ 
+ #include "ttymsg.h"
++#include "compat.h"
+ 
+ /*
+  * Display the contents of a uio structure on a terminal.  Used by wall(1),
+@@ -68,6 +70,7 @@ ttymsg(struct iovec *iov, int iovcnt, co
  	static char errbuf[1024];
  	char *p;
  	int forked;
@@ -16,7 +24,7 @@
  
  	forked = 0;
  	if (iovcnt > (int)(sizeof(localiov) / sizeof(localiov[0])))
-@@ -143,7 +145,8 @@ ttymsg(struct iovec *iov, int iovcnt, co
+@@ -143,7 +146,8 @@ ttymsg(struct iovec *iov, int iovcnt, co
  			/* wait at most tmout seconds */
  			(void) signal(SIGALRM, SIG_DFL);
  			(void) signal(SIGTERM, SIG_DFL); /* XXX */

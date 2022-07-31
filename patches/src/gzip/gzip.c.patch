@@ -1,5 +1,5 @@
---- gzip/gzip.c.orig	2022-07-28 22:36:48.798182541 +0200
-+++ gzip/gzip.c	2022-07-28 22:44:40.787920391 +0200
+--- gzip/gzip.c.orig	2022-05-12 06:54:04.000000000 +0200
++++ gzip/gzip.c	2022-07-31 23:23:51.218005687 +0200
 @@ -49,13 +49,23 @@ __FBSDID("$FreeBSD$");
   *	- make bzip2/compress -v/-t/-l support work as well as possible
   */
@@ -25,7 +25,16 @@
  #include <stdio.h>
  #include <string.h>
  #include <stdlib.h>
-@@ -339,7 +349,7 @@ static const struct option longopts[] =
+@@ -69,6 +79,8 @@ __FBSDID("$FreeBSD$");
+ #include <getopt.h>
+ #include <time.h>
+ 
++#include "compat.h"
++
+ /* what type of file are we dealing with */
+ enum filetype {
+ 	FT_GZIP,
+@@ -339,7 +351,7 @@ static const struct option longopts[] =
  int
  main(int argc, char **argv)
  {
@@ -34,7 +43,7 @@
  #ifndef SMALL
  	char *gzip;
  	int len;
-@@ -388,7 +398,7 @@ main(int argc, char **argv)
+@@ -388,7 +400,7 @@ main(int argc, char **argv)
  			break;
  		case 'V':
  			display_version();
@@ -43,7 +52,7 @@
  #ifndef SMALL
  		case 'a':
  			fprintf(stderr, "%s: option --ascii ignored on this system\n", progname);
-@@ -401,7 +411,7 @@ main(int argc, char **argv)
+@@ -401,7 +413,7 @@ main(int argc, char **argv)
  			break;
  		case 'L':
  			display_license();
@@ -52,7 +61,7 @@
  		case 'N':
  			nflag = 0;
  			Nflag = 1;
-@@ -1140,9 +1150,11 @@ copymodes(int fd, const struct stat *sbp
+@@ -1140,9 +1152,11 @@ copymodes(int fd, const struct stat *sbp
  	if (futimens(fd, times) < 0)
  		maybe_warn("couldn't futimens: %s", file);
  
@@ -64,7 +73,7 @@
  }
  #endif
  
-@@ -1231,7 +1243,7 @@ unlink_input(const char *file, const str
+@@ -1231,7 +1245,7 @@ unlink_input(const char *file, const str
  }
  
  static void
@@ -73,7 +82,7 @@
  {
  
  	if (remove_file != NULL)
-@@ -1240,7 +1252,7 @@ got_sigint(int signo __unused)
+@@ -1240,7 +1254,7 @@ got_sigint(int signo __unused)
  }
  
  static void
@@ -82,7 +91,7 @@
  {
  
  	print_info = 1;
-@@ -1250,7 +1262,7 @@ static void
+@@ -1250,7 +1264,7 @@ static void
  setup_signals(void)
  {
  
@@ -91,7 +100,7 @@
  	signal(SIGINT, got_sigint);
  }
  
-@@ -2279,7 +2291,7 @@ usage(void)
+@@ -2279,7 +2293,7 @@ usage(void)
      " -V --version         display program version\n"
      " -v --verbose         print extra statistics\n",
  #endif

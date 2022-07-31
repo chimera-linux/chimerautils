@@ -163,7 +163,7 @@ main(int argc, char *argv[])
 					ingroup = 1;
 				else if ((grp = getgrgid(g->gid)) != NULL) {
 					for (np = grp->gr_mem; *np; np++) {
-						if (strcmp(*np, utmp->ut_user) == 0) {
+						if (strncmp(*np, utmp->ut_user, sizeof(utmp->ut_user)) == 0) {
 							ingroup = 1;
 							break;
 						}

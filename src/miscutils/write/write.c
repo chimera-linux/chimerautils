@@ -68,6 +68,8 @@ __FBSDID("$FreeBSD$");
 #include <wchar.h>
 #include <wctype.h>
 
+#include "compat.h"
+
 void done(int);
 void do_write(int, char *, char *, const char *);
 static void usage(void);
@@ -215,7 +217,7 @@ search_utmp(int devfd, char *user, char *tty, char *mytty, uid_t myuid)
 				continue;	/* bad term? skip */
 			if (myuid && !msgsok)
 				continue;	/* skip ttys with msgs off */
-			if (strcmp(u->ut_line, mytty) == 0) {
+			if (strncmp(u->ut_line, mytty, sizeof(u->ut_line)) == 0) {
 				user_is_me = 1;
 				continue;	/* don't write to yourself */
 			}

@@ -202,7 +202,7 @@ setvarsafe(const char *name, const char *val, int flags)
 {
 	struct jmploc jmploc;
 	struct jmploc *const savehandler = handler;
-	volatile int err = 0;
+	int err = 0;
 	int inton;
 
 	inton = is_int_on();

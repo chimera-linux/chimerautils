@@ -1,5 +1,5 @@
---- diff/diffreg.c.orig	2022-07-30 23:44:57.936382740 +0200
-+++ diff/diffreg.c	2022-07-30 23:34:58.579218572 +0200
+--- diff/diffreg.c.orig	2022-05-12 06:54:04.000000000 +0200
++++ diff/diffreg.c	2022-07-31 23:23:17.625295575 +0200
 @@ -69,10 +69,8 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -11,7 +11,7 @@
  #include <ctype.h>
  #include <err.h>
  #include <errno.h>
-@@ -85,8 +83,10 @@ __FBSDID("$FreeBSD$");
+@@ -85,10 +83,13 @@ __FBSDID("$FreeBSD$");
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -22,8 +22,11 @@
 -#include "pr.h"
  #include "diff.h"
  #include "xmalloc.h"
++#include "compat.h"
  
-@@ -259,8 +259,6 @@ diffreg(char *file1, char *file2, int fl
+ /*
+  * diff - compare two files.
+@@ -259,8 +260,6 @@ diffreg(char *file1, char *file2, int fl
  {
  	FILE *f1, *f2;
  	int i, rval;
@@ -32,7 +35,7 @@
  
  	f1 = f2 = NULL;
  	rval = D_SAME;
-@@ -339,29 +337,7 @@ diffreg(char *file1, char *file2, int fl
+@@ -339,29 +338,7 @@ diffreg(char *file1, char *file2, int fl
  		goto closem;
  	}
  
@@ -63,7 +66,7 @@
  
  	switch (files_differ(f1, f2, flags)) {
  	case 0:
-@@ -424,8 +400,6 @@ diffreg(char *file1, char *file2, int fl
+@@ -424,8 +401,6 @@ diffreg(char *file1, char *file2, int fl
  	output(file1, f1, file2, f2, flags);
  
  closem:
@@ -72,7 +75,7 @@
  	if (anychange) {
  		status |= 1;
  		if (rval == D_SAME)
-@@ -499,7 +473,7 @@ opentemp(const char *f)
+@@ -499,7 +474,7 @@ opentemp(const char *f)
  }
  
  char *
@@ -81,7 +84,7 @@
  {
  	char *tail, *buf;
  	size_t dirlen;
-@@ -1376,6 +1350,7 @@ readhash(FILE *f, int flags, unsigned *h
+@@ -1376,6 +1351,7 @@ readhash(FILE *f, int flags, unsigned *h
  		case '\0':
  			if ((flags & D_FORCEASCII) == 0)
  				return (RH_BINARY);
@@ -89,7 +92,7 @@
  		case '\r':
  			if (flags & D_STRIPCR) {
  				t = getc(f);
-@@ -1433,7 +1408,7 @@ asciifile(FILE *f)
+@@ -1433,7 +1409,7 @@ asciifile(FILE *f)
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -98,7 +101,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1652,41 +1627,18 @@ dump_unified_vec(FILE *f1, FILE *f2, int
+@@ -1652,41 +1628,18 @@ dump_unified_vec(FILE *f1, FILE *f2, int
  static void
  print_header(const char *file1, const char *file2)
  {

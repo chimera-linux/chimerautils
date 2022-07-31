@@ -78,12 +78,3 @@
  				} else {
  					out1fmt(" %d\n", signo);
  				}
-@@ -505,7 +510,7 @@ exitshell_savedstatus(void)
- {
- 	struct jmploc loc1, loc2;
- 	char *p;
--	int sig = 0;
-+	volatile int sig = 0;
- 	sigset_t sigs;
- 
- 	if (!exiting) {

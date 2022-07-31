@@ -79,6 +79,8 @@ extern const char *__progname;
 #include <getopt.h>
 #include <time.h>
 
+#include "compat.h"
+
 /* what type of file are we dealing with */
 enum filetype {
 	FT_GZIP,

@@ -95,7 +95,7 @@ static void exphere(union node *, struct arglist *);
 static void expredir(union node *);
 static void evalpipe(union node *);
 static int is_valid_fast_cmdsubst(union node *n);
-static void evalcommand(union node *, volatile int, struct backcmd *);
+static void evalcommand(union node *, int, struct backcmd *);
 static void prehash(union node *);
 
 
@@ -492,7 +492,7 @@ exphere(union node *redir, struct arglist *fn)
 	struct jmploc jmploc;
 	struct jmploc *savehandler;
 	struct localvar *savelocalvars;
-	volatile int need_longjmp = 0;
+	int need_longjmp = 0;
 	unsigned char saveoptreset;
 
 	redir->nhere.expdoc = "";
@@ -815,7 +815,7 @@ safe_builtin(int idx, int argc, char **argv)
  */
 
 static void
-evalcommand(union node *cmd, volatile int flags, struct backcmd *backcmd)
+evalcommand(union node *cmd, int flags, struct backcmd *backcmd)
 {
 	union node *argp;
 	struct arglist arglist;

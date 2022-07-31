@@ -1,5 +1,5 @@
---- sh/histedit.c.orig	2022-07-30 23:46:11.785158393 +0200
-+++ sh/histedit.c	2022-07-30 23:31:08.985789732 +0200
+--- sh/histedit.c.orig	2022-05-12 06:53:55.000000000 +0200
++++ sh/histedit.c	2022-07-31 23:28:33.190403842 +0200
 @@ -74,9 +74,6 @@ static FILE *el_in, *el_out;
  static char *fc_replace(const char *, char *, char *);
  static int not_fcnumber(const char *);
@@ -19,7 +19,7 @@
  			} else {
  bad:
  				out2fmt_flush("sh: can't initialize editing\n");
-@@ -188,22 +185,22 @@ setterm(const char *term)
+@@ -188,7 +185,7 @@ setterm(const char *term)
  }
  
  int
@@ -28,25 +28,6 @@
  {
  	int ch;
  	const char *editor = NULL;
- 	HistEvent he;
--	int lflg = 0, nflg = 0, rflg = 0, sflg = 0;
-+	volatile int lflg = 0, nflg = 0, rflg = 0, sflg = 0;
- 	int i, retval;
--	const char *firststr, *laststr;
-+	const char *volatile firststr, *volatile laststr;
- 	int first, last, direction;
--	char *pat = NULL, *repl = NULL;
-+	char *volatile pat = NULL, *repl = NULL;
- 	static int active = 0;
- 	struct jmploc jmploc;
- 	struct jmploc *savehandler;
- 	char editfilestr[PATH_MAX];
- 	char *volatile editfile;
--	FILE *efp = NULL;
-+	FILE *volatile efp = NULL;
- 	int oldhistnum;
- 
- 	if (hist == NULL)
 @@ -513,6 +510,7 @@ bindcmd(int argc, char **argv)
  	return ret;
  }

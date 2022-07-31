@@ -87,6 +87,10 @@ if not libedit.found()
     sh_flags += [ '-DNO_HISTORY' ]
 endif
 
+if cc.has_argument('-Wclobbered')
+    sh_flags += [ '-Wno-clobbered' ]
+endif
+
 bltins_lib = static_library(
     'bltins_lib',
     bltins_src,
