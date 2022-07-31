@@ -285,8 +285,9 @@ static void
 plan_b(const char *filename)
 {
 	FILE	*ifp;
-	size_t	i = 0, j, len = 0, maxlen = 1;
-	char	*lbuf = NULL, *p;
+	size_t	i = 0, j, blen = 0, maxlen = 1;
+	ssize_t len;
+	char	*lbuf = NULL, *p = NULL;
 	bool	found_revision = (revision == NULL);
 
 	using_plan_a = false;
@@ -295,7 +296,7 @@ plan_b(const char *filename)
 	unlink(TMPINNAME);
 	if ((tifd = open(TMPINNAME, O_EXCL | O_CREAT | O_WRONLY, 0666)) < 0)
 		pfatal("can't open file %s", TMPINNAME);
-	while ((p = fgetln(ifp, &len)) != NULL) {
+	while ((len = getline(&p, &blen, ifp)) >= 0) {
 		if (p[len - 1] == '\n')
 			p[len - 1] = '\0';
 		else {
@@ -304,6 +305,7 @@ plan_b(const char *filename)
 				fatal("out of memory\n");
 			memcpy(lbuf, p, len);
 			lbuf[len] = '\0';
+			free(p);
 			p = lbuf;
 
 			last_line_missing_eol = true;
@@ -311,10 +313,10 @@ plan_b(const char *filename)
 		}
 		if (revision != NULL && !found_revision && rev_in_string(p))
 			found_revision = true;
-		if (len > maxlen)
+		if ((size_t)len > maxlen)
 			maxlen = len;   /* find longest line */
 	}
-	free(lbuf);
+	free(p);
 	if (ferror(ifp))
 		pfatal("can't read file %s", filename);
 

@@ -272,24 +272,24 @@ getchange(FILE *b)
 char *
 get_line(FILE *b, size_t *n)
 {
-	char *cp;
-	size_t len;
-	static char *buf;
-	static size_t bufsize;
+	char *cp = NULL;
+	ssize_t len;
+	static char *buf = NULL;
+	static size_t bufsize = 0;
 
-	if ((cp = fgetln(b, &len)) == NULL)
+	len = getline(&buf, &bufsize, b);
+	if (len < 0)
 		return (NULL);
 
 	if (cp[len - 1] != '\n')
 		len++;
-	if (len + 1 > bufsize) {
+	if ((size_t)(len + 1) > bufsize) {
 		do {
 			bufsize += 1024;
-		} while (len + 1 > bufsize);
+		} while ((size_t)(len + 1) > bufsize);
 		if ((buf = realloc(buf, bufsize)) == NULL)
 			err(EXIT_FAILURE, NULL);
 	}
-	memcpy(buf, cp, len - 1);
 	buf[len - 1] = '\n';
 	buf[len] = '\0';
 	if (n != NULL)

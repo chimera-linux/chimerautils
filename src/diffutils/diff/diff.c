@@ -415,20 +415,22 @@ void
 read_excludes_file(char *file)
 {
 	FILE *fp;
-	char *buf, *pattern;
-	size_t len;
+	char *buf = NULL, *pattern;
+	size_t blen = 0;
+	ssize_t len;
 
 	if (strcmp(file, "-") == 0)
 		fp = stdin;
 	else if ((fp = fopen(file, "r")) == NULL)
 		err(2, "%s", file);
-	while ((buf = fgetln(fp, &len)) != NULL) {
-		if (buf[len - 1] == '\n')
+	while ((len = getline(&buf, &blen, fp)) >= 0) {
+		if ((len > 0) && (buf[len - 1] == '\n'))
 			len--;
 		if ((pattern = strndup(buf, len)) == NULL)
 			err(2, "xstrndup");
 		push_excludes(pattern);
 	}
+	free(buf);
 	if (strcmp(file, "-") != 0)
 		fclose(fp);
 }

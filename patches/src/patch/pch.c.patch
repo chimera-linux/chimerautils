@@ -1,5 +1,5 @@
---- patch/pch.c.orig	2021-04-09 02:24:12.000000000 +0200
-+++ patch/pch.c	2022-07-29 00:27:54.931818006 +0200
+--- patch/pch.c.orig	2022-07-31 22:24:24.595818598 +0200
++++ patch/pch.c	2022-07-31 22:49:18.133642297 +0200
 @@ -43,6 +43,7 @@
  #include "util.h"
  #include "pch.h"
@@ -34,12 +34,35 @@
  
  	if (p_line != NULL && p_len != NULL && p_char != NULL) {
  		hunkmax = new_hunkmax;
-@@ -1215,7 +1225,7 @@ size_t
+@@ -1214,14 +1224,15 @@ hunk_done:
+ size_t
  pgets(bool do_indent)
  {
- 	char *line;
+-	char *line;
 -	size_t len;
-+	size_t len = 0;
++	char *line = NULL;
++	ssize_t len = 0;
++	size_t buflen = 0;
  	int indent = 0, skipped = 0;
  
- 	line = fgetln(pfp, &len);
+-	line = fgetln(pfp, &len);
+-	if (line != NULL) {
+-		if (len + 1 > buf_size) {
+-			while (len + 1 > buf_size)
++	if ((len = getline(&line, &buflen, pfp)) >= 0) {
++		char *linep = line;
++		if ((size_t)(len + 1) > buf_size) {
++			while ((size_t)(len + 1) > buf_size)
+ 				buf_size *= 2;
+ 			free(buf);
+ 			buf = malloc(buf_size);
+@@ -1240,7 +1251,9 @@ pgets(bool do_indent)
+ 		}
+ 		memcpy(buf, line, len - skipped);
+ 		buf[len - skipped] = '\0';
++		line = linep;
+ 	}
++	free(line);
+ 	return len;
+ }
+ 
