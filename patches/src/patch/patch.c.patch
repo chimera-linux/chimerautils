@@ -1,5 +1,5 @@
 --- patch/patch.c.orig	2022-07-31 22:10:14.219018951 +0200
-+++ patch/patch.c	2022-07-31 22:10:30.765398488 +0200
++++ patch/patch.c	2022-07-31 22:17:14.110120083 +0200
 @@ -46,6 +46,7 @@
  #include "inp.h"
  #include "backupfile.h"
@@ -8,3 +8,15 @@
  
  mode_t		filemode = 0644;
  
+@@ -558,7 +559,11 @@ get_some_switches(void)
+ 	Argv_last = Argv;
+ 	if (!Argc)
+ 		return;
++#ifdef __GLIBC__
++	optind = 0;
++#else
+ 	optreset = optind = 1;
++#endif
+ 	while ((ch = getopt_long(Argc, Argv, options, longopts, NULL)) != -1) {
+ 		switch (ch) {
+ 		case 'b':

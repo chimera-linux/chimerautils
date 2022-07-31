@@ -559,7 +559,11 @@ get_some_switches(void)
 	Argv_last = Argv;
 	if (!Argc)
 		return;
+#ifdef __GLIBC__
+	optind = 0;
+#else
 	optreset = optind = 1;
+#endif
 	while ((ch = getopt_long(Argc, Argv, options, longopts, NULL)) != -1) {
 		switch (ch) {
 		case 'b':
