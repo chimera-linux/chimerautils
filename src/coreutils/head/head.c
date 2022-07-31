@@ -141,14 +141,16 @@ static void
 head(FILE *fp, int cnt)
 {
 	char *cp = NULL;
-	size_t error, readlen = 0;
+	size_t error, bufsize = 0;
+	ssize_t readlen;
 
-	while (cnt != 0 && getline(&cp, &readlen, fp) != -1) {
+	while (cnt != 0 && (readlen = getline(&cp, &bufsize, fp)) >= 0) {
 		error = fwrite(cp, sizeof(char), readlen, stdout);
-		if (error != readlen)
+		if ((ssize_t)error != readlen)
 			err(1, "stdout");
 		cnt--;
 	}
+	free(cp);
 }
 
 static void

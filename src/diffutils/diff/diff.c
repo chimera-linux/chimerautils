@@ -415,7 +415,7 @@ void
 read_excludes_file(char *file)
 {
 	FILE *fp;
-	char *buf = NULL, *pattern;
+	char *pattern = NULL;
 	size_t blen = 0;
 	ssize_t len;
 
@@ -423,14 +423,15 @@ read_excludes_file(char *file)
 		fp = stdin;
 	else if ((fp = fopen(file, "r")) == NULL)
 		err(2, "%s", file);
-	while ((len = getline(&buf, &blen, fp)) >= 0) {
-		if ((len > 0) && (buf[len - 1] == '\n'))
-			len--;
-		if ((pattern = strndup(buf, len)) == NULL)
-			err(2, "xstrndup");
+	while ((len = getline(&pattern, &blen, fp)) >= 0) {
+		if ((len > 0) && (pattern[len - 1] == '\n'))
+			pattern[len - 1] = '\0';
 		push_excludes(pattern);
+		/* we allocate a new string per line */
+		pattern = NULL;
+		blen = 0;
 	}
-	free(buf);
+	free(pattern);
 	if (strcmp(file, "-") != 0)
 		fclose(fp);
 }

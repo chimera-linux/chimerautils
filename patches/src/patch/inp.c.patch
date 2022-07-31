@@ -1,5 +1,5 @@
 --- patch/inp.c.orig	2022-07-31 22:22:08.117184575 +0200
-+++ patch/inp.c	2022-07-31 22:49:32.160268605 +0200
++++ patch/inp.c	2022-08-01 00:43:36.584470359 +0200
 @@ -35,6 +35,7 @@
  
  #include <ctype.h>
@@ -16,11 +16,11 @@
 -	char	*lbuf = NULL, *p;
 +	size_t	i = 0, j, blen = 0, maxlen = 1;
 +	ssize_t len;
-+	char	*lbuf = NULL, *p = NULL;
++	char	*p = NULL;
  	bool	found_revision = (revision == NULL);
  
  	using_plan_a = false;
-@@ -294,7 +296,7 @@ plan_b(const char *filename)
+@@ -294,26 +296,20 @@ plan_b(const char *filename)
  	unlink(TMPINNAME);
  	if ((tifd = open(TMPINNAME, O_EXCL | O_CREAT | O_WRONLY, 0666)) < 0)
  		pfatal("can't open file %s", TMPINNAME);
@@ -29,15 +29,16 @@
  		if (p[len - 1] == '\n')
  			p[len - 1] = '\0';
  		else {
-@@ -303,6 +305,7 @@ plan_b(const char *filename)
- 				fatal("out of memory\n");
- 			memcpy(lbuf, p, len);
- 			lbuf[len] = '\0';
-+			free(p);
- 			p = lbuf;
- 
+-			/* EOF without EOL, copy and add the NUL */
+-			if ((lbuf = malloc(len + 1)) == NULL)
+-				fatal("out of memory\n");
+-			memcpy(lbuf, p, len);
+-			lbuf[len] = '\0';
+-			p = lbuf;
+-
++			/* EOF without EOL */
  			last_line_missing_eol = true;
-@@ -310,10 +313,10 @@ plan_b(const char *filename)
+ 			len++;
  		}
  		if (revision != NULL && !found_revision && rev_in_string(p))
  			found_revision = true;

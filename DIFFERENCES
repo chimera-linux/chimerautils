@@ -134,15 +134,17 @@ what we will do.  Used in loops, you can change this:
 to:
 
     char *cp = NULL;
-    size_t readlen = 0;
-    while (getline(&cp, &readlen, fp) != -1)
+    size_t buflen = 0;
+    ssize_t readlen;
+    while ((readlen = getline(&cp, &buflen, fp)) >= 0)
 
-Which is a simple change without needing to bring in fgetln().  Note
-that for getline(), we need to ensure the first argument is
-initialized to NULL and the second argument is initialized to 0.
-Typical FreeBSD code does not have variable declaration with
-initialization, just the declaration.  Though sometimes you see
-separate initialization lines, but not always.
+It is important to differentiate between the buffer size and the number
+of characters read, as getline may be called multiple times in a row
+and the buffer and its size should be preserved (so that getline can
+properly reallocate it if needed). The actual number of characters
+read from the line is returned by the function. It is also important
+to take care of properly initializing the buffer and the length before
+the first time getline is called.
 
 
 asprintf()

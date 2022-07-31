@@ -287,7 +287,7 @@ plan_b(const char *filename)
 	FILE	*ifp;
 	size_t	i = 0, j, blen = 0, maxlen = 1;
 	ssize_t len;
-	char	*lbuf = NULL, *p = NULL;
+	char	*p = NULL;
 	bool	found_revision = (revision == NULL);
 
 	using_plan_a = false;
@@ -300,14 +300,7 @@ plan_b(const char *filename)
 		if (p[len - 1] == '\n')
 			p[len - 1] = '\0';
 		else {
-			/* EOF without EOL, copy and add the NUL */
-			if ((lbuf = malloc(len + 1)) == NULL)
-				fatal("out of memory\n");
-			memcpy(lbuf, p, len);
-			lbuf[len] = '\0';
-			free(p);
-			p = lbuf;
-
+			/* EOF without EOL */
 			last_line_missing_eol = true;
 			len++;
 		}

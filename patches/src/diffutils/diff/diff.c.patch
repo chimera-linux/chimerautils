@@ -1,5 +1,5 @@
 --- diff/diff.c.orig	2022-07-31 22:25:08.283741039 +0200
-+++ diff/diff.c	2022-07-31 22:51:21.221587731 +0200
++++ diff/diff.c	2022-08-01 00:59:58.620228139 +0200
 @@ -37,8 +37,9 @@ __FBSDID("$FreeBSD$");
  
  #include "diff.h"
@@ -53,13 +53,13 @@
  			if (stat(argv[1], &stb2) == -1)
  				err(2, "%s", argv[1]);
  		}
-@@ -418,20 +415,22 @@ void
+@@ -418,20 +415,23 @@ void
  read_excludes_file(char *file)
  {
  	FILE *fp;
 -	char *buf, *pattern;
 -	size_t len;
-+	char *buf = NULL, *pattern;
++	char *pattern = NULL;
 +	size_t blen = 0;
 +	ssize_t len;
  
@@ -69,14 +69,18 @@
  		err(2, "%s", file);
 -	while ((buf = fgetln(fp, &len)) != NULL) {
 -		if (buf[len - 1] == '\n')
-+	while ((len = getline(&buf, &blen, fp)) >= 0) {
-+		if ((len > 0) && (buf[len - 1] == '\n'))
- 			len--;
- 		if ((pattern = strndup(buf, len)) == NULL)
- 			err(2, "xstrndup");
+-			len--;
+-		if ((pattern = strndup(buf, len)) == NULL)
+-			err(2, "xstrndup");
++	while ((len = getline(&pattern, &blen, fp)) >= 0) {
++		if ((len > 0) && (pattern[len - 1] == '\n'))
++			pattern[len - 1] = '\0';
  		push_excludes(pattern);
++		/* we allocate a new string per line */
++		pattern = NULL;
++		blen = 0;
  	}
-+	free(buf);
++	free(pattern);
  	if (strcmp(file, "-") != 0)
  		fclose(fp);
  }

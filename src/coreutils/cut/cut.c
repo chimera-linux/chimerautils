@@ -277,14 +277,15 @@ b_cut(FILE *fp, const char *fname __attribute__((unused)))
 static int
 b_n_cut(FILE *fp, const char *fname)
 {
-	size_t col, i, lbuflen = 0;
+	size_t col, i, bufsize = 0;
+	ssize_t lbuflen;
 	char *lbuf = NULL;
 	int canwrite, clen, warned;
 	mbstate_t mbs;
 
 	memset(&mbs, 0, sizeof(mbs));
 	warned = 0;
-	while (getline(&lbuf, &lbuflen, fp) != -1) {
+	while ((lbuflen = getline(&lbuf, &bufsize, fp)) >= 0) {
 		for (col = 0; lbuflen > 0; col += clen) {
 			if ((clen = mbrlen(lbuf, lbuflen, &mbs)) < 0) {
 				if (!warned) {
@@ -333,6 +334,7 @@ b_n_cut(FILE *fp, const char *fname)
 		if (lbuflen > 0)
 			putchar('\n');
 	}
+	free(lbuf);
 	return (warned);
 }
 
@@ -391,21 +393,22 @@ f_cut(FILE *fp, const char *fname)
 	int field, i, isdelim;
 	char *pos, *p;
 	int output;
-	char *lbuf = NULL, *mlbuf;
-	size_t clen, lbuflen = 0, reallen;
+	char *lbuf = NULL;
+	size_t clen, bufsize = 0, reallen;
+	ssize_t lbuflen;
 
-	mlbuf = NULL;
-	while (getline(&lbuf, &lbuflen, fp) != -1) {
+	while ((lbuflen = getline(&lbuf, &bufsize, fp)) >= 0) {
 		reallen = lbuflen;
 		/* Assert EOL has a newline. */
-		if (*(lbuf + lbuflen - 1) != '\n') {
+		if (lbuflen > 0 && *(lbuf + lbuflen - 1) != '\n') {
 			/* Can't have > 1 line with no trailing newline. */
-			mlbuf = malloc(lbuflen + 1);
-			if (mlbuf == NULL)
-				err(1, "malloc");
-			memcpy(mlbuf, lbuf, lbuflen);
-			*(mlbuf + lbuflen) = '\n';
-			lbuf = mlbuf;
+			if ((ssize_t)bufsize < (lbuflen + 1)) {
+				bufsize = lbuflen + 1;
+				lbuf = realloc(lbuf, bufsize);
+			}
+			if (lbuf == NULL)
+				err(1, "realloc");
+			lbuf[lbuflen] = '\n';
 			reallen++;
 		}
 		output = 0;
@@ -414,7 +417,7 @@ f_cut(FILE *fp, const char *fname)
 			if (clen == (size_t)-1 || clen == (size_t)-2) {
 				errno = EILSEQ;
 				warn("%s", fname);
-				free(mlbuf);
+				free(lbuf);
 				return (1);
 			}
 			if (clen == 0)
@@ -442,7 +445,7 @@ f_cut(FILE *fp, const char *fname)
 				if (clen == (size_t)-1 || clen == (size_t)-2) {
 					errno = EILSEQ;
 					warn("%s", fname);
-					free(mlbuf);
+					free(lbuf);
 					return (1);
 				}
 				if (clen == 0)
@@ -474,7 +477,7 @@ f_cut(FILE *fp, const char *fname)
 		}
 		(void)putchar('\n');
 	}
-	free(mlbuf);
+	free(lbuf);
 	return (0);
 }
 
