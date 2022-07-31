@@ -1,0 +1,16 @@
+subdir('col')
+subdir('colrm')
+subdir('column')
+subdir('getopt')
+subdir('hexdump')
+subdir('kill')
+subdir('look')
+subdir('mesg')
+subdir('renice')
+subdir('rev')
+subdir('wall')
+subdir('write')
+
+if libtinfo.found()
+    subdir('ul')
+endif

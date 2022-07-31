@@ -43,9 +43,9 @@ mktokens_gen = custom_target('gen-tokens',
 
 bltins_src = [
     'bltin/echo.c',
-    '../kill/kill.c',
-    '../printf/printf.c',
-    '../test/test.c',
+    '../miscutils/kill/kill.c',
+    '../coreutils/printf/printf.c',
+    '../coreutils/test/test.c',
     mkbuiltins_gen,
 ]
 

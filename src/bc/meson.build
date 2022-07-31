@@ -1,15 +1,7 @@
-bc_prog = executable(
-    'bc',
-    [ yacc.process('bc.y'),
-      lex.process('scan.l'),
-      'tty.c',
-    ],
-    include_directories : inc,
-    link_with : [ libcompat ],
-    dependencies : [ libedit ],
-    install : true,
-)
+if libedit.found()
+    subdir('bc')
+endif
 
-install_man('bc.1')
-install_data('bc.library',
-             install_dir : get_option('datadir') / 'misc')
+if libcrypto.found()
+    subdir('dc')
+endif
