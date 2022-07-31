@@ -59,6 +59,7 @@ __FBSDID("$FreeBSD$");
 #include <setjmp.h>
 
 #include "ed.h"
+#include "compat.h"
 
 
 #ifdef _POSIX_SOURCE

@@ -1,6 +1,14 @@
---- ed/main.c.orig	2022-07-28 21:26:02.334985587 +0200
-+++ ed/main.c	2022-07-28 21:26:33.835900559 +0200
-@@ -212,6 +212,7 @@ top:
+--- ed/main.c.orig	2022-05-12 06:53:55.000000000 +0200
++++ ed/main.c	2022-07-31 22:01:53.212044617 +0200
+@@ -59,6 +59,7 @@ __FBSDID("$FreeBSD$");
+ #include <setjmp.h>
+ 
+ #include "ed.h"
++#include "compat.h"
+ 
+ 
+ #ifdef _POSIX_SOURCE
+@@ -212,6 +213,7 @@ top:
  		switch (status) {
  		case EOF:
  			quit(0);
@@ -8,7 +16,7 @@
  		case EMOD:
  			modified = 0;
  			fputs("?\n", stderr);		/* give warning */
-@@ -231,6 +232,7 @@ top:
+@@ -231,6 +233,7 @@ top:
  			} else if (garrulous)
  				fprintf(stderr, "%s\n", errmsg);
  			quit(3);

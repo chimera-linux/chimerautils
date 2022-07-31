@@ -2,6 +2,7 @@ ed_prog = executable(
     'ed',
     [ 'buf.c', 'glbl.c', 'io.c', 'main.c', 're.c', 'sub.c', 'undo.c' ],
     include_directories : [ inc, ],
+    link_with : [ libcompat ],
     install : true,
 )
 
