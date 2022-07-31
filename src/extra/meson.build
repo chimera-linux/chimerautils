@@ -9,5 +9,8 @@ inc_main = include_directories('.')
 subdir('basenc')
 subdir('dir')
 subdir('hostid')
-subdir('md5sum')
 subdir('nproc')
+
+if libcrypto.found()
+    subdir('md5sum')
+endif
