@@ -1,25 +1,21 @@
 --- sh/histedit.c.orig	2022-05-12 06:53:55.000000000 +0200
-+++ sh/histedit.c	2022-07-31 23:28:33.190403842 +0200
-@@ -74,9 +74,6 @@ static FILE *el_in, *el_out;
++++ sh/histedit.c	2022-08-03 01:42:05.425061841 +0200
+@@ -74,9 +74,13 @@ static FILE *el_in, *el_out;
  static char *fc_replace(const char *, char *, char *);
  static int not_fcnumber(const char *);
  static int str_to_event(const char *, int);
 -static int comparator(const void *, const void *, void *);
--static char **sh_matches(const char *, int, int);
--static unsigned char sh_complete(EditLine *, int);
++#ifdef HAVE_FN_COMPLETE2
++static int comparator(const void *, const void *);
+ static char **sh_matches(const char *, int, int);
+ static unsigned char sh_complete(EditLine *, int);
++#else
++#define sh_complete _el_fn_complete
++#endif
  
  /*
   * Set history and editing status.  Called whenever the status may
-@@ -127,7 +124,7 @@ histedit(void)
- 				el_set(el, EL_PROMPT, getprompt);
- 				el_set(el, EL_ADDFN, "sh-complete",
- 				    "Filename completion",
--				    sh_complete);
-+				    _el_fn_complete);
- 			} else {
- bad:
- 				out2fmt_flush("sh: can't initialize editing\n");
-@@ -188,7 +185,7 @@ setterm(const char *term)
+@@ -188,7 +192,7 @@ setterm(const char *term)
  }
  
  int
@@ -28,15 +24,40 @@
  {
  	int ch;
  	const char *editor = NULL;
-@@ -513,6 +510,7 @@ bindcmd(int argc, char **argv)
+@@ -513,16 +517,17 @@ bindcmd(int argc, char **argv)
  	return ret;
  }
  
-+#if 0
++#ifdef HAVE_FN_COMPLETE2
++static size_t comp_curpos;
  /*
   * Comparator function for qsort(). The use of curpos here is to skip
   * characters that we already know to compare equal (common prefix).
-@@ -639,18 +637,19 @@ out:
+  */
+ static int
+-comparator(const void *a, const void *b, void *thunk)
++comparator(const void *a, const void *b)
+ {
+-	size_t curpos = (intptr_t)thunk;
+-	return (strcmp(*(char *const *)a + curpos,
+-		*(char *const *)b + curpos));
++	return (strcmp(*(char *const *)a + comp_curpos,
++		*(char *const *)b + comp_curpos));
+ }
+ 
+ /*
+@@ -592,8 +597,8 @@ out:
+ 	}
+ 	uniq = 1;
+ 	if (i > 1) {
+-		qsort_s(matches + 1, i, sizeof(matches[0]), comparator,
+-			(void *)(intptr_t)curpos);
++		comp_curpos = curpos;
++		qsort(matches + 1, i, sizeof(matches[0]), comparator);
+ 		for (size_t k = 2; k <= i; k++) {
+ 			const char *l = matches[uniq] + curpos;
+ 			const char *r = matches[k] + curpos;
+@@ -639,18 +644,19 @@ out:
   * bind a key (tab by default) to execute the function.
   */
  unsigned char
@@ -58,7 +79,7 @@
  {
  
  	error("not compiled with history support");
-@@ -659,7 +658,7 @@ histcmd(int argc __unused, char **argv _
+@@ -659,7 +665,7 @@ histcmd(int argc __unused, char **argv _
  }
  
  int

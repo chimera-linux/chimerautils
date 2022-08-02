@@ -84,6 +84,8 @@ sh_flags = []
 
 if not libedit.found()
     sh_flags += [ '-DNO_HISTORY' ]
+elif cc.has_function('fn_complete2', dependencies: libedit)
+    sh_flags += [ '-DHAVE_FN_COMPLETE2' ]
 endif
 
 if cc.has_argument('-Wclobbered')

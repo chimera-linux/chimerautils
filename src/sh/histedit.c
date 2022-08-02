@@ -74,6 +74,13 @@ static FILE *el_in, *el_out;
 static char *fc_replace(const char *, char *, char *);
 static int not_fcnumber(const char *);
 static int str_to_event(const char *, int);
+#ifdef HAVE_FN_COMPLETE2
+static int comparator(const void *, const void *);
+static char **sh_matches(const char *, int, int);
+static unsigned char sh_complete(EditLine *, int);
+#else
+#define sh_complete _el_fn_complete
+#endif
 
 /*
  * Set history and editing status.  Called whenever the status may
@@ -124,7 +131,7 @@ histedit(void)
 				el_set(el, EL_PROMPT, getprompt);
 				el_set(el, EL_ADDFN, "sh-complete",
 				    "Filename completion",
-				    _el_fn_complete);
+				    sh_complete);
 			} else {
 bad:
 				out2fmt_flush("sh: can't initialize editing\n");
@@ -510,17 +517,17 @@ bindcmd(int argc, char **argv)
 	return ret;
 }
 
-#if 0
+#ifdef HAVE_FN_COMPLETE2
+static size_t comp_curpos;
 /*
  * Comparator function for qsort(). The use of curpos here is to skip
  * characters that we already know to compare equal (common prefix).
  */
 static int
-comparator(const void *a, const void *b, void *thunk)
+comparator(const void *a, const void *b)
 {
-	size_t curpos = (intptr_t)thunk;
-	return (strcmp(*(char *const *)a + curpos,
-		*(char *const *)b + curpos));
+	return (strcmp(*(char *const *)a + comp_curpos,
+		*(char *const *)b + comp_curpos));
 }
 
 /*
@@ -590,8 +597,8 @@ out:
 	}
 	uniq = 1;
 	if (i > 1) {
-		qsort_s(matches + 1, i, sizeof(matches[0]), comparator,
-			(void *)(intptr_t)curpos);
+		comp_curpos = curpos;
+		qsort(matches + 1, i, sizeof(matches[0]), comparator);
 		for (size_t k = 2; k <= i; k++) {
 			const char *l = matches[uniq] + curpos;
 			const char *r = matches[k] + curpos;

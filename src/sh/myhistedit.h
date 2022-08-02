@@ -38,6 +38,22 @@ extern History *hist;
 extern EditLine *el;
 extern int displayhist;
 
+#ifdef HAVE_FN_COMPLETE2
+#define FN_QUOTE_MATCH 1U
+/* while this is not a part of the public API in libedit, it is a part of
+ * its public ABI (in recent versions, older ones did not have it, which
+ * is why this is guarded here)
+ *
+ * i hope libedit will at very least play nice and not break it, as that
+ * could get ugly
+ */
+int fn_complete2(EditLine *,
+    char *(*)(const char *, int),
+    char **(*)(const char *, int, int),
+    const wchar_t *, const wchar_t *, const char *(*)(const char *), size_t,
+    int *, int *, int *, int *, unsigned int);
+#endif
+
 void histedit(void);
 void sethistsize(const char *);
 void setterm(const char *);
