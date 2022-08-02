@@ -1254,7 +1254,7 @@ pgets(bool do_indent)
 		line = linep;
 	}
 	free(line);
-	return len;
+	return (len > 0) ? len : 0;
 }
 
 

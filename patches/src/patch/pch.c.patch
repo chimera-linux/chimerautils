@@ -1,5 +1,5 @@
 --- patch/pch.c.orig	2022-07-31 22:24:24.595818598 +0200
-+++ patch/pch.c	2022-07-31 22:49:18.133642297 +0200
++++ patch/pch.c	2022-08-02 23:58:45.764185114 +0200
 @@ -43,6 +43,7 @@
  #include "util.h"
  #include "pch.h"
@@ -56,13 +56,15 @@
  				buf_size *= 2;
  			free(buf);
  			buf = malloc(buf_size);
-@@ -1240,7 +1251,9 @@ pgets(bool do_indent)
+@@ -1240,8 +1251,10 @@ pgets(bool do_indent)
  		}
  		memcpy(buf, line, len - skipped);
  		buf[len - skipped] = '\0';
 +		line = linep;
  	}
+-	return len;
 +	free(line);
- 	return len;
++	return (len > 0) ? len : 0;
  }
+ 
  
