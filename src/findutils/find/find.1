@@ -402,50 +402,6 @@ if at least one invocation of
 returns a non-zero exit status,
 .Nm
 will return a non-zero exit status.
-.It Ic -flags Oo Cm - Ns | Ns Cm + Oc Ns Ar flags , Ns Ar notflags
-The flags are specified using symbolic names (see
-.Xr chflags 1 ) .
-Those with the
-.Qq Li no
-prefix (except
-.Qq Li nodump )
-are said to be
-.Ar notflags .
-Flags in
-.Ar flags
-are checked to be set, and flags in
-.Ar notflags
-are checked to be not set.
-Note that this is different from
-.Ic -perm ,
-which only allows the user to specify mode bits that are set.
-.Pp
-If flags are preceded by a dash
-.Pq Dq Li - ,
-this primary evaluates to true
-if at least all of the bits in
-.Ar flags
-and none of the bits in
-.Ar notflags
-are set in the file's flags bits.
-If flags are preceded by a plus
-.Pq Dq Li + ,
-this primary evaluates to true
-if any of the bits in
-.Ar flags
-is set in the file's flags bits,
-or any of the bits in
-.Ar notflags
-is not set in the file's flags bits.
-Otherwise,
-this primary evaluates to true
-if the bits in
-.Ar flags
-exactly match the file's flags bits,
-and none of the
-.Ar flags
-bits match those of
-.Ar notflags .
 .It Ic -fstype Ar type
 True if the file is contained in a file system of type
 .Ar type .
@@ -963,7 +919,6 @@ See the
 .Sx STANDARDS
 section below for details.
 .Sh SEE ALSO
-.Xr chflags 1 ,
 .Xr chmod 1 ,
 .Xr locate 1 ,
 .Xr lsvfs 1 ,

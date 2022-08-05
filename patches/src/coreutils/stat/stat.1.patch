@@ -1,5 +1,5 @@
 --- stat/stat.1.orig	2022-05-12 06:54:04.000000000 +0200
-+++ stat/stat.1	2022-08-06 01:30:24.456035670 +0200
++++ stat/stat.1	2022-08-06 01:33:21.893877675 +0200
 @@ -38,7 +38,7 @@
  .Nd display file status
  .Sh SYNOPSIS
@@ -9,15 +9,20 @@
  .Op Fl f Ar format | Fl l | r | s | x
  .Op Fl t Ar timefmt
  .Op Ar
-@@ -90,7 +90,6 @@ The default format displays the
+@@ -90,11 +90,9 @@ The default format displays the
  .Fa st_atime ,
  .Fa st_mtime ,
  .Fa st_ctime ,
 -.Fa st_birthtime ,
  .Fa st_blksize ,
- .Fa st_blocks ,
+-.Fa st_blocks ,
  and
-@@ -124,13 +123,6 @@ The use of
+-.Fa st_flags
++.Fa st_blocks
+ fields, in that order.
+ .Pp
+ The options are as follows:
+@@ -124,13 +122,6 @@ The use of
  .Fl F
  implies
  .Fl l .
@@ -31,7 +36,19 @@
  .It Fl L
  Use
  .Xr stat 2
-@@ -396,12 +388,11 @@ owner
+@@ -273,11 +264,6 @@ Display date in
+ format.
+ .It Cm dr
+ Display actual device name.
+-.It Cm f
+-Display the flags of
+-.Ar file
+-as in
+-.Nm ls Fl lTdo .
+ .It Cm gu
+ Display group or user name.
+ .It Cm p
+@@ -396,12 +382,11 @@ owner
  .It Cm r
  Device number for character and block device special files
  .Pq Fa st_rdev .
@@ -47,3 +64,13 @@
  .It Cm z
  The size of
  .Ar file
+@@ -414,9 +399,6 @@ Number of blocks allocated for
+ .It Cm k
+ Optimal file system I/O operation block size
+ .Pq Fa st_blksize .
+-.It Cm f
+-User defined flags for
+-.Ar file .
+ .It Cm v
+ Inode generation number
+ .Pq Fa st_gen .

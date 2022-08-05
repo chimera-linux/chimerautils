@@ -91,9 +91,8 @@ The default format displays the
 .Fa st_mtime ,
 .Fa st_ctime ,
 .Fa st_blksize ,
-.Fa st_blocks ,
 and
-.Fa st_flags
+.Fa st_blocks
 fields, in that order.
 .Pp
 The options are as follows:
@@ -265,11 +264,6 @@ Display date in
 format.
 .It Cm dr
 Display actual device name.
-.It Cm f
-Display the flags of
-.Ar file
-as in
-.Nm ls Fl lTdo .
 .It Cm gu
 Display group or user name.
 .It Cm p
@@ -405,9 +399,6 @@ Number of blocks allocated for
 .It Cm k
 Optimal file system I/O operation block size
 .Pq Fa st_blksize .
-.It Cm f
-User defined flags for
-.Ar file .
 .It Cm v
 Inode generation number
 .Pq Fa st_gen .

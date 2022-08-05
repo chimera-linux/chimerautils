@@ -39,7 +39,6 @@
 .Op Fl bCcpSsUv
 .Op Fl B Ar suffix
 .Op Fl D Ar destdir
-.Op Fl f Ar flags
 .Op Fl g Ar group
 .Op Fl h Ar hash
 .Op Fl l Ar linkflags
@@ -53,7 +52,6 @@
 .Op Fl bCcpSsUv
 .Op Fl B Ar suffix
 .Op Fl D Ar destdir
-.Op Fl f Ar flags
 .Op Fl g Ar group
 .Op Fl h Ar hash
 .Op Fl l Ar linkflags
@@ -116,7 +114,7 @@ is given.
 Copy the file.
 If the target file already exists and the files are the same,
 then do not change the modification time of the target.
-If the target's file flags and mode need not to be changed,
+If the target's mode needs not to be changed,
 the target's inode change time is also unchanged.
 .It Fl c
 Copy the file.
@@ -138,10 +136,6 @@ This option does not affect where the actual files are installed.
 .It Fl d
 Create directories.
 Missing parent directories are created as required.
-.It Fl f Ar flags
-Specify the target's file flags; see
-.Xr chflags 1
-for a list of possible flags and their meanings.
 .It Fl g Ar group
 Specify a group.
 A numeric GID is allowed.
@@ -198,7 +192,7 @@ in an
 .Dq full path
 specification line.
 The metadata includes: the file name and file type, and depending upon
-other options, the owner, group, file flags, modification time, and tags.
+other options, the owner, group, modification time, and tags.
 .It Fl m Ar mode
 Specify an alternate mode.
 The default mode is set to rwxr-xr-x (0755).
@@ -256,7 +250,7 @@ tags to write out for the file when using
 .Fl M Ar metalog .
 .It Fl U
 Indicate that install is running unprivileged, and that it should not
-try to change the owner, the group, or the file flags of the destination.
+try to change the owner or the group of the destination.
 The information that would have been updated can be stored in a log
 file with
 .Fl M Ar metalog .
@@ -266,12 +260,6 @@ Cause
 to be verbose,
 showing files as they are installed or backed up.
 .El
-.Pp
-By default,
-.Nm
-preserves all file flags, with the exception of the
-.Dq nodump
-flag.
 .Pp
 The
 .Nm
@@ -328,7 +316,6 @@ moved files by default.
 The default was changed to copy in
 .Fx 4.4 .
 .Sh SEE ALSO
-.Xr chflags 1 ,
 .Xr chgrp 1 ,
 .Xr chmod 1 ,
 .Xr cp 1 ,
@@ -357,15 +344,6 @@ multiple source files rather than installing it.
 Temporary files may be left in the target directory if
 .Nm
 exits abnormally.
-.Pp
-File flags cannot be set by
-.Xr fchflags 2
-over a NFS file system.
-Other file systems do not have a concept of flags.
-The
-.Nm
-utility will only warn when flags could not be set on a file system
-that does not support them.
 .Pp
 The
 .Nm
