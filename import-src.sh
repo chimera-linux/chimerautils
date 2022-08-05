@@ -215,9 +215,6 @@ cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/include
 cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src/coreutils/factor
 cp -p usr/src/usr.bin/primes/pr_tbl.c ${CWD}/src/coreutils/factor
 
-# These files are needed for the df command
-cp -p usr/src/sbin/mount/vfslist.c ${CWD}/src/coreutils/df
-
 # These are not used
 rm -rf ${CWD}/src/coreutils/sort/nls
 
