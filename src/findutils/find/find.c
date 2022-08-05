@@ -239,5 +239,6 @@ find_execute(PLAN *plan, char *paths[])
 		errno = e;
 		err(1, "fts_read");
 	}
+	f_fstypename(0); /* free allocated filesystem type resources */
 	return (exitstatus);
 }

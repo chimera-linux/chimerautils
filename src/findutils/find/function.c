@@ -44,6 +44,8 @@ __FBSDID("$FreeBSD$");
 #include <sys/types.h>
 #include <sys/wait.h>
 #include <sys/mount.h>
+#include <sys/sysmacros.h>
+#include <sys/statvfs.h>
 
 #include <dirent.h>
 #include <err.h>
@@ -878,6 +880,98 @@ c_follow(OPTION *option, char ***argvp __attribute__((unused)))
 }
 
 #if HAVE_STRUCT_STATFS_F_FSTYPENAME
+struct mntinfo {
+    dev_t devn;
+    char fstype[64];
+};
+
+const char *
+f_fstypename(dev_t curdev)
+{
+	static struct mntinfo *minfo = NULL;
+	static size_t ninfos = 0;
+	/* to be freed */
+	if (!curdev) {
+		free(minfo);
+		minfo = NULL;
+		ninfos = 0;
+		return NULL;
+	}
+	if (!minfo) {
+		FILE *f = fopen("/proc/self/mountinfo", "rb");
+		if (!f)
+			return NULL;
+		char *lbuf = NULL;
+		size_t lsize = 0, ncap = 64;
+		minfo = malloc(ncap * sizeof(struct mntinfo));
+		if (!minfo)
+			err(1, "malloc");
+		const char *rfs = NULL;
+		while (getline(&lbuf, &lsize, f) > 0) {
+			unsigned long maj, min;
+			char *errp = NULL;
+			/* skip past mount id */
+			char *p = strchr(lbuf, ' ');
+			if (!p)
+				continue;
+			/* skip past parent id */
+			p = strchr(p + 1, ' ');
+			/* read device number */
+			maj = strtoul(p + 1, &errp, 10); /* read major */
+			if (*errp != ':')
+				continue;
+			p = errp;
+			errp = NULL;
+			min = strtoul(p + 1, &errp, 10); /* read minor */
+			if (*errp != ' ')
+				continue;
+			p = errp;
+			/* skip past root */
+			p = strchr(p + 1, ' ');
+			if (!p)
+				continue;
+			/* skip past mount point */
+			p = strchr(p + 1, ' ');
+			if (!p)
+				continue;
+			/* skip past mount options */
+			p = strchr(p + 1, ' ');
+			if (!p)
+				continue;
+			/* skip past optional fields */
+			p = strchr(p + 1, ' ');
+			if (!p)
+				continue;
+			/* skip past separator */
+			errp = strchr(++p, ' ');
+			if (!errp)
+				continue;
+			*errp = '\0';
+			if (ninfos == ncap) {
+				ncap *= 2;
+				minfo = realloc(minfo, ncap * sizeof(struct mntinfo));
+				if (!minfo)
+					err(1, "realloc");
+			}
+			minfo[ninfos].devn = makedev(maj, min);
+			snprintf(
+				minfo[ninfos].fstype, sizeof(minfo[ninfos].fstype), "%s", p
+			);
+			if (minfo[ninfos].devn == curdev)
+				rfs = minfo[ninfos].fstype;
+			++ninfos;
+		}
+		free(lbuf);
+		fclose(f);
+		return rfs;
+	}
+	for (size_t i = 0; i < ninfos; ++i) {
+		if (minfo[i].devn == curdev)
+			return minfo[i].fstype;
+	}
+	return NULL;
+}
+
 /*
  * -fstype functions --
  *
@@ -888,9 +982,9 @@ f_fstype(PLAN *plan, FTSENT *entry)
 {
 	static dev_t curdev;	/* need a guaranteed illegal dev value */
 	static int first = 1;
-	struct statfs sb;
-	static int val_flags;
-	static char fstype[sizeof(sb.f_fstypename)];
+	struct statvfs sb;
+	static unsigned long val_flags;
+	static const char *fstype;
 	char *p, save[2] = {0,0};
 
 	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
@@ -901,7 +995,7 @@ f_fstype(PLAN *plan, FTSENT *entry)
 		curdev = entry->fts_statp->st_dev;
 
 		/*
-		 * Statfs follows symlinks; find wants the link's filesystem,
+		 * Statvfs follows symlinks; find wants the link's filesystem,
 		 * not where it points.
 		 */
 		if (entry->fts_info == FTS_SL ||
@@ -917,7 +1011,7 @@ f_fstype(PLAN *plan, FTSENT *entry)
 		} else
 			p = NULL;
 
-		if (statfs(entry->fts_accpath, &sb)) {
+		if (statvfs(entry->fts_accpath, &sb)) {
 			if (!ignore_readdir_race || errno != ENOENT) {
 				warn("statfs: %s", entry->fts_accpath);
 				exitstatus = 1;
@@ -936,14 +1030,14 @@ f_fstype(PLAN *plan, FTSENT *entry)
 		 * Further tests may need both of these values, so
 		 * always copy both of them.
 		 */
-		val_flags = sb.f_flags;
-		strlcpy(fstype, sb.f_fstypename, sizeof(fstype));
+		val_flags = sb.f_flag;
+		fstype = f_fstypename(curdev);
 	}
 	switch (plan->flags & F_MTMASK) {
 	case F_MTFLAG:
 		return val_flags & plan->mt_data;
 	case F_MTTYPE:
-		return (strncmp(fstype, plan->c_data, sizeof(fstype)) == 0);
+		return fstype && (strcmp(fstype, plan->c_data) == 0);
 	default:
 		abort();
 	}
@@ -960,17 +1054,10 @@ c_fstype(OPTION *option, char ***argvp)
 
 	new = palloc(option);
 	switch (*fsname) {
-	case 'l':
-		if (!strcmp(fsname, "local")) {
-			new->flags |= F_MTFLAG;
-			new->mt_data = MNT_LOCAL;
-			return new;
-		}
-		break;
 	case 'r':
 		if (!strcmp(fsname, "rdonly")) {
 			new->flags |= F_MTFLAG;
-			new->mt_data = MNT_RDONLY;
+			new->mt_data = ST_RDONLY;
 			return new;
 		}
 		break;

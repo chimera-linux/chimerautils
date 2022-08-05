@@ -33,6 +33,7 @@
  */
 
 #include <sys/cdefs.h>
+#include <sys/types.h>
 
 void	 brace_subst(char *, char **, char *, size_t);
 PLAN	*find_create(char ***);
@@ -47,6 +48,7 @@ void	 printlong(char *, char *, struct stat *);
 int	 queryuser(char **);
 OPTION	*lookup_option(const char *);
 void	 finish_execplus(void);
+const char *f_fstypename(dev_t);
 
 creat_f	c_Xmin;
 creat_f	c_Xtime;

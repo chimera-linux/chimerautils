@@ -56,11 +56,7 @@
 #else
 #define HAVE_STRUCT_STAT_ST_BIRTHTIME 0
 #endif
-#if defined(MFSNAMELEN) || defined(MFSTYPENAMELEN)
 #define HAVE_STRUCT_STATFS_F_FSTYPENAME 1
-#else
-#define HAVE_STRUCT_STATFS_F_FSTYPENAME 0
-#endif
 
 /* forward declarations */
 struct _plandata;

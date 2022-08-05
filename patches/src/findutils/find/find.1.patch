@@ -1,0 +1,21 @@
+--- find/find.1.orig	2022-08-06 00:58:27.407993352 +0200
++++ find/find.1	2022-08-06 00:30:38.883091251 +0200
+@@ -482,15 +482,9 @@ The
+ .Xr lsvfs 1
+ command can be used to find out the types of file systems
+ that are available on the system.
+-In addition, there are two pseudo-types,
+-.Dq Li local
+-and
+-.Dq Li rdonly .
+-The former matches any file system physically mounted on the system where
+-the
+-.Nm
+-is being executed and the latter matches any file system which is
+-mounted read-only.
++In addition, there is a pseudotype
++.Dq Li rdonly
++that matches any file system which is mounted read-only.
+ .It Ic -gid Ar gname
+ The same thing as
+ .Ic -group Ar gname
