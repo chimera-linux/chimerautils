@@ -1,5 +1,5 @@
---- df/df.c.orig	2022-07-30 23:44:29.143211589 +0200
-+++ df/df.c	2022-07-30 23:20:19.397239930 +0200
+--- df/df.c.orig	2022-05-12 06:53:55.000000000 +0200
++++ df/df.c	2022-08-05 21:20:20.032868326 +0200
 @@ -50,11 +50,10 @@ __FBSDID("$FreeBSD$");
  
  #include <sys/param.h>
@@ -373,7 +373,7 @@
  {
  	static long blocksize = 0;
  	int dummy;
-@@ -642,69 +671,84 @@ usage(void)
+@@ -642,69 +671,85 @@ usage(void)
  	exit(EX_USAGE);
  }
  
@@ -428,6 +428,7 @@
 +
 +	    /* get statvfs fields and copy those over */
 +	    if (statvfs(current->f_mntonname, &svfsbuf) == -1) {
++	        if (errno == EPERM) continue;
 +	        err(1, "statvfs");
 +	    }
 +

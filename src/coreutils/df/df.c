@@ -716,6 +716,7 @@ getmntinfo(struct mntinfo **mntbuf)
 
 	    /* get statvfs fields and copy those over */
 	    if (statvfs(current->f_mntonname, &svfsbuf) == -1) {
+	        if (errno == EPERM) continue;
 	        err(1, "statvfs");
 	    }
 
