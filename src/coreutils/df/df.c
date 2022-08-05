@@ -648,6 +648,12 @@ getmntinfo(struct mntinfo **mntbuf)
 	            continue;
 	    }
 
+	    /* get statvfs fields and copy those over */
+	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1) {
+	        if (errno == EPERM) continue;
+	        err(1, "statvfs");
+	    }
+
 	    /* allocate the entry */
 	    list = realloc(list, (mntsize + 1) * sizeof(*list));
 	    assert(list != NULL);
@@ -658,12 +664,6 @@ getmntinfo(struct mntinfo **mntbuf)
 	    current->f_mntfromname = strdup(ent->mnt_fsname);
 	    current->f_mntonname = strdup(ent->mnt_dir);
 	    current->f_opts = strdup(ent->mnt_opts);
-
-	    /* get statvfs fields and copy those over */
-	    if (statvfs(current->f_mntonname, &svfsbuf) == -1) {
-	        if (errno == EPERM) continue;
-	        err(1, "statvfs");
-	    }
 
 	    current->f_flag = svfsbuf.f_flag;
 	    current->f_blocks = svfsbuf.f_blocks;
