@@ -77,7 +77,7 @@ __FBSDID("$FreeBSD$");
  * list should be made in to something we can generate at runtime or
  * just expand the list.
  */
-#define NETVFSLIST "nonfs,smb,cifs"
+#define NETVFSLIST "nonfs,nfs4,smb,cifs"
 
 /* combining data from getmntent() and statvfs() on Linux */
 struct mntinfo {
