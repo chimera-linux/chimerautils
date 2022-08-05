@@ -116,7 +116,6 @@ static void	  prthuman(const struct mntinfo *, int64_t);
 static void	  prthumanval(const char *, int64_t);
 static intmax_t	  fsbtoblk(int64_t, uint64_t, u_long);
 static void	  prtstat(struct mntinfo *, struct maxwidths *);
-static size_t	  regetmntinfo(struct mntinfo **, long);
 static void	  update_maxwidths(struct maxwidths *, const struct mntinfo *);
 static void	  usage(void);
 static int	  getmntinfo(struct mntinfo **);
@@ -211,6 +210,8 @@ main(int argc, char *argv[])
 			setenv("BLOCKSIZE", "1m", 1);
 			hflag = 0;
 			break;
+		case 'n':
+			break;
 		case 't':
 			if (vfslist_t != NULL)
 				xo_errx(1, "only one -t option may be specified");
@@ -231,7 +232,6 @@ main(int argc, char *argv[])
 
 	rv = 0;
 	mntsize = getmntinfo(&mntbuf);
-	mntsize = regetmntinfo(&mntbuf, mntsize);
 
 	xo_open_container("storage-system-information");
 	xo_open_list("filesystem");
@@ -379,36 +379,6 @@ checkvfsselected(char *fstypename)
 		result = checkvfsname(fstypename, vfslist_l, skipvfs_l);
 	}
 	return (result);
-}
-
-/*
- * Make a pass over the file system info in ``mntbuf'' filtering out
- * file system types not in vfslist_{l,t} and possibly re-stating to get
- * current (not cached) info.  Returns the new count of valid statvfs bufs.
- */
-static size_t
-regetmntinfo(struct mntinfo **mntbufp, long mntsize)
-{
-	int i, j;
-	struct mntinfo *mntbuf;
-
-	if (vfslist_l == NULL && vfslist_t == NULL)
-		return mntsize;
-
-	mntbuf = *mntbufp;
-	for (j = 0, i = 0; i < mntsize; i++) {
-		if (checkvfsselected(mntbuf[i].f_fstypename) != 0) {
-			/* free dynamically allocated data */
-			free(mntbuf[i].f_fstypename);
-			free(mntbuf[i].f_mntfromname);
-			free(mntbuf[i].f_mntonname);
-			free(mntbuf[i].f_opts);
-			continue;
-		}
-		if (i != j) mntbuf[j] = mntbuf[i];
-		j++;
-	}
-	return (j);
 }
 
 static void
@@ -670,6 +640,12 @@ getmntinfo(struct mntinfo **mntbuf)
 	    /* skip if necessary */
 	    if (hasmntopt(ent, MNTTYPE_IGNORE) != NULL) {
 	        continue;
+	    }
+
+	    /* filter out filesystems to be skipped */
+	    if (vfslist_l || vfslist_t) {
+	        if (checkvfsselected(ent->mnt_type) != 0)
+	            continue;
 	    }
 
 	    /* allocate the entry */
