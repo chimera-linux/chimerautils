@@ -39,7 +39,7 @@
 .Nm
 .Op Fl -libxo
 .Op Fl b | g | H | h | k | m | P
-.Op Fl acilnT
+.Op Fl acilT
 .Op Fl \&,
 .Op Fl t Ar type
 .Op Ar file | filesystem ...
@@ -127,15 +127,6 @@ Use 1048576 byte (1 Mebibyte) blocks rather than the default.
 This overrides any
 .Ev BLOCKSIZE
 specification from the environment.
-.It Fl n
-Print out the previously obtained statistics from the file systems.
-This option should be used if it is possible that one or more
-file systems are in a state such that they will not be able to provide
-statistics without a long delay.
-When this option is specified,
-.Nm
-will not request new statistics from the file systems, but will respond
-with the possibly stale statistics that were previously obtained.
 .It Fl P
 Explicitly use 512 byte blocks, overriding any
 .Ev BLOCKSIZE

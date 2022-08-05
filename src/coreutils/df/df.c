@@ -128,7 +128,7 @@ imax(int a, int b)
 	return (a > b ? a : b);
 }
 
-static int	  aflag = 0, cflag, hflag, iflag, kflag, lflag = 0, nflag, Tflag;
+static int	  aflag = 0, cflag, hflag, iflag, kflag, lflag = 0, Tflag;
 static int	  thousands;
 static int	  skipvfs_l, skipvfs_t;
 static const char **vfslist_l, **vfslist_t;
@@ -159,7 +159,7 @@ main(int argc, char *argv[])
 	if (argc < 0)
 		exit(1);
 
-	while ((ch = getopt_long(argc, argv, "+abcgHhiklmnPt:T,", long_options,
+	while ((ch = getopt_long(argc, argv, "+abcgHhiklmPt:T,", long_options,
 	    NULL)) != -1)
 		switch (ch) {
 		case 'a':
@@ -211,9 +211,6 @@ main(int argc, char *argv[])
 			setenv("BLOCKSIZE", "1m", 1);
 			hflag = 0;
 			break;
-		case 'n':
-			nflag = 1;
-			break;
 		case 't':
 			if (vfslist_t != NULL)
 				xo_errx(1, "only one -t option may be specified");
@@ -264,11 +261,6 @@ main(int argc, char *argv[])
 		} else {
 			mntpt = *argv;
 		}
-
-		/*
-		 * Statvfs does not take a `wait' flag, so we cannot
-		 * implement nflag here.
-		 */
 		for (i = 0; i < mntsize; i++) {
 			/* selected specified filesystems if the mount point or device matches */
 			if ((!strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
@@ -286,9 +278,10 @@ main(int argc, char *argv[])
 				addstat(&totalbuf, &mntbuf[i]);
 		}
 	}
-	for (i = 0; i < mntsize; i++)
+	for (i = 0; i < mntsize; i++) {
 		if ((aflag || (mntbuf[i].f_blocks > 0)) && mntbuf[i].f_selected)
 			prtstat(&mntbuf[i], &maxwidths);
+	}
 
 	xo_close_list("filesystem");
 
@@ -396,47 +389,23 @@ checkvfsselected(char *fstypename)
 static size_t
 regetmntinfo(struct mntinfo **mntbufp, long mntsize)
 {
-	int error, i, j;
+	int i, j;
 	struct mntinfo *mntbuf;
-	struct statvfs svfsbuf;
 
 	if (vfslist_l == NULL && vfslist_t == NULL)
-		return (nflag ? mntsize : getmntinfo(mntbufp));
+		return mntsize;
 
 	mntbuf = *mntbufp;
 	for (j = 0, i = 0; i < mntsize; i++) {
-		if (checkvfsselected(mntbuf[i].f_fstypename) != 0)
+		if (checkvfsselected(mntbuf[i].f_fstypename) != 0) {
+			/* free dynamically allocated data */
+			free(mntbuf[i].f_fstypename);
+			free(mntbuf[i].f_mntfromname);
+			free(mntbuf[i].f_mntonname);
+			free(mntbuf[i].f_opts);
 			continue;
-		/*
-		 * XXX statvfs(2) can fail for various reasons. It may be
-		 * possible that the user does not have access to the
-		 * pathname, if this happens, we will fall back on
-		 * "stale" filesystem statistics.
-		 */
-		error = statvfs(mntbuf[i].f_mntonname, &svfsbuf);
-		if (nflag || error < 0)
-			if (i != j) {
-				if (error < 0)
-					xo_warnx("%s stats possibly stale",
-					    mntbuf[i].f_mntonname);
-
-				free(mntbuf[j].f_fstypename);
-				mntbuf[j].f_fstypename = strdup(mntbuf[i].f_fstypename);
-				free(mntbuf[j].f_mntfromname);
-				mntbuf[j].f_mntfromname = strdup(mntbuf[i].f_mntfromname);
-				free(mntbuf[j].f_mntfromname);
-				mntbuf[j].f_mntonname = strdup(mntbuf[i].f_mntonname);
-				free(mntbuf[j].f_opts);
-				mntbuf[j].f_opts = strdup(mntbuf[i].f_opts);
-
-				mntbuf[j].f_flag = svfsbuf.f_flag;
-				mntbuf[j].f_blocks = svfsbuf.f_blocks;
-				mntbuf[j].f_bsize = svfsbuf.f_bsize;
-				mntbuf[j].f_bfree = svfsbuf.f_bfree;
-				mntbuf[j].f_bavail = svfsbuf.f_bavail;
-				mntbuf[j].f_files = svfsbuf.f_files;
-				mntbuf[j].f_ffree = svfsbuf.f_ffree;
-			}
+		}
+		if (i != j) mntbuf[j] = mntbuf[i];
 		j++;
 	}
 	return (j);
