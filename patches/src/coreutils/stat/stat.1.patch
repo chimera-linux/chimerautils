@@ -1,5 +1,5 @@
---- stat/stat.1.orig	2021-04-09 02:24:12.000000000 +0200
-+++ stat/stat.1	2021-06-12 06:22:35.164172032 +0200
+--- stat/stat.1.orig	2022-05-12 06:54:04.000000000 +0200
++++ stat/stat.1	2022-08-06 01:30:24.456035670 +0200
 @@ -38,7 +38,7 @@
  .Nd display file status
  .Sh SYNOPSIS
@@ -9,7 +9,15 @@
  .Op Fl f Ar format | Fl l | r | s | x
  .Op Fl t Ar timefmt
  .Op Ar
-@@ -124,13 +124,6 @@ The use of
+@@ -90,7 +90,6 @@ The default format displays the
+ .Fa st_atime ,
+ .Fa st_mtime ,
+ .Fa st_ctime ,
+-.Fa st_birthtime ,
+ .Fa st_blksize ,
+ .Fa st_blocks ,
+ and
+@@ -124,13 +123,6 @@ The use of
  .Fl F
  implies
  .Fl l .
@@ -23,3 +31,19 @@
  .It Fl L
  Use
  .Xr stat 2
+@@ -396,12 +388,11 @@ owner
+ .It Cm r
+ Device number for character and block device special files
+ .Pq Fa st_rdev .
+-.It Cm a , m , c , B
++.It Cm a , m , c
+ The time
+ .Ar file
+-was last accessed or modified, or when the inode was last changed, or
+-the birth time of the inode
+-.Pq Fa st_atime , st_mtime , st_ctime , st_birthtime .
++was last accessed or modified or when the inode was last changed
++.Pq Fa st_atime , st_mtime , st_ctime .
+ .It Cm z
+ The size of
+ .Ar file

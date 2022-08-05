@@ -181,35 +181,6 @@ a preceding minus sign means
 and neither means
 .Dq exactly n .
 .Bl -tag -width indent
-.It Ic -Bmin Ar n
-True if the difference between the time of a file's inode creation
-and the time
-.Nm
-was started, rounded up to the next full minute, is
-.Ar n
-minutes.
-.It Ic -Bnewer Ar file
-Same as
-.Ic -newerBm .
-.It Ic -Btime Ar n Ns Op Cm smhdw
-If no units are specified, this primary evaluates to
-true if the difference between the time of a file's inode creation
-and the time
-.Nm
-was started, rounded up to the next full 24-hour period, is
-.Ar n
-24-hour periods.
-.Pp
-If units are specified, this primary evaluates to
-true if the difference between the time of a file's inode creation
-and the time
-.Nm
-was started is exactly
-.Ar n
-units.
-Please refer to the
-.Ic -atime
-primary description for information on supported time units.
 .It Ic -acl
 May be used in conjunction with other primaries to locate
 files with extended ACLs.
@@ -1022,9 +993,7 @@ as well as
 .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
 .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
 .Ic -not , -path , -print0 , -regex , -sparse
-and all of the
-.Fl B*
-birthtime related primaries are extensions to
+are extensions to
 .St -p1003.1-2001 .
 .Pp
 Historically, the
