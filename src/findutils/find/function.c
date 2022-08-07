@@ -890,6 +890,7 @@ f_fstypename(dev_t curdev)
 {
 	static struct mntinfo *minfo = NULL;
 	static size_t ninfos = 0;
+	char curfstype[64];
 	/* to be freed */
 	if (!curdev) {
 		free(minfo);
@@ -908,45 +909,12 @@ f_fstypename(dev_t curdev)
 			err(1, "malloc");
 		const char *rfs = NULL;
 		while (getline(&lbuf, &lsize, f) > 0) {
-			unsigned long maj, min;
-			char *errp = NULL;
-			/* skip past mount id */
-			char *p = strchr(lbuf, ' ');
-			if (!p)
+			unsigned int maj, min;
+			if (sscanf(
+			    lbuf, "%*d %*d %u:%u %*s %*s %*s %*s - %63s %*s %*s",
+			    &maj, &min, curfstype
+			) <= 0)
 				continue;
-			/* skip past parent id */
-			p = strchr(p + 1, ' ');
-			/* read device number */
-			maj = strtoul(p + 1, &errp, 10); /* read major */
-			if (*errp != ':')
-				continue;
-			p = errp;
-			errp = NULL;
-			min = strtoul(p + 1, &errp, 10); /* read minor */
-			if (*errp != ' ')
-				continue;
-			p = errp;
-			/* skip past root */
-			p = strchr(p + 1, ' ');
-			if (!p)
-				continue;
-			/* skip past mount point */
-			p = strchr(p + 1, ' ');
-			if (!p)
-				continue;
-			/* skip past mount options */
-			p = strchr(p + 1, ' ');
-			if (!p)
-				continue;
-			/* skip past optional fields */
-			p = strchr(p + 1, ' ');
-			if (!p)
-				continue;
-			/* skip past separator */
-			errp = strchr(++p, ' ');
-			if (!errp)
-				continue;
-			*errp = '\0';
 			if (ninfos == ncap) {
 				ncap *= 2;
 				minfo = realloc(minfo, ncap * sizeof(struct mntinfo));
@@ -954,9 +922,7 @@ f_fstypename(dev_t curdev)
 					err(1, "realloc");
 			}
 			minfo[ninfos].devn = makedev(maj, min);
-			snprintf(
-				minfo[ninfos].fstype, sizeof(minfo[ninfos].fstype), "%s", p
-			);
+			memcpy(minfo[ninfos].fstype, curfstype, sizeof(curfstype));
 			if (minfo[ninfos].devn == curdev)
 				rfs = minfo[ninfos].fstype;
 			++ninfos;

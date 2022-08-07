@@ -1,5 +1,5 @@
---- find/function.c.orig	2022-08-06 00:58:47.807788507 +0200
-+++ find/function.c	2022-08-06 01:03:37.879480278 +0200
+--- find/function.c.orig	2022-08-07 19:40:43.034772847 +0200
++++ find/function.c	2022-08-07 19:39:12.866738348 +0200
 @@ -40,12 +40,12 @@ static const char sccsid[] = "@(#)functi
  __FBSDID("$FreeBSD$");
  
@@ -100,7 +100,7 @@
  {
  	ftsoptions &= ~FTS_PHYSICAL;
  	ftsoptions |= FTS_LOGICAL;
-@@ -874,6 +880,98 @@ c_follow(OPTION *option, char ***argvp _
+@@ -874,6 +880,64 @@ c_follow(OPTION *option, char ***argvp _
  }
  
  #if HAVE_STRUCT_STATFS_F_FSTYPENAME
@@ -114,6 +114,7 @@
 +{
 +	static struct mntinfo *minfo = NULL;
 +	static size_t ninfos = 0;
++	char curfstype[64];
 +	/* to be freed */
 +	if (!curdev) {
 +		free(minfo);
@@ -132,45 +133,12 @@
 +			err(1, "malloc");
 +		const char *rfs = NULL;
 +		while (getline(&lbuf, &lsize, f) > 0) {
-+			unsigned long maj, min;
-+			char *errp = NULL;
-+			/* skip past mount id */
-+			char *p = strchr(lbuf, ' ');
-+			if (!p)
++			unsigned int maj, min;
++			if (sscanf(
++			    lbuf, "%*d %*d %u:%u %*s %*s %*s %*s - %63s %*s %*s",
++			    &maj, &min, curfstype
++			) <= 0)
 +				continue;
-+			/* skip past parent id */
-+			p = strchr(p + 1, ' ');
-+			/* read device number */
-+			maj = strtoul(p + 1, &errp, 10); /* read major */
-+			if (*errp != ':')
-+				continue;
-+			p = errp;
-+			errp = NULL;
-+			min = strtoul(p + 1, &errp, 10); /* read minor */
-+			if (*errp != ' ')
-+				continue;
-+			p = errp;
-+			/* skip past root */
-+			p = strchr(p + 1, ' ');
-+			if (!p)
-+				continue;
-+			/* skip past mount point */
-+			p = strchr(p + 1, ' ');
-+			if (!p)
-+				continue;
-+			/* skip past mount options */
-+			p = strchr(p + 1, ' ');
-+			if (!p)
-+				continue;
-+			/* skip past optional fields */
-+			p = strchr(p + 1, ' ');
-+			if (!p)
-+				continue;
-+			/* skip past separator */
-+			errp = strchr(++p, ' ');
-+			if (!errp)
-+				continue;
-+			*errp = '\0';
 +			if (ninfos == ncap) {
 +				ncap *= 2;
 +				minfo = realloc(minfo, ncap * sizeof(struct mntinfo));
@@ -178,9 +146,7 @@
 +					err(1, "realloc");
 +			}
 +			minfo[ninfos].devn = makedev(maj, min);
-+			snprintf(
-+				minfo[ninfos].fstype, sizeof(minfo[ninfos].fstype), "%s", p
-+			);
++			memcpy(minfo[ninfos].fstype, curfstype, sizeof(curfstype));
 +			if (minfo[ninfos].devn == curdev)
 +				rfs = minfo[ninfos].fstype;
 +			++ninfos;
@@ -199,7 +165,7 @@
  /*
   * -fstype functions --
   *
-@@ -884,9 +982,9 @@ f_fstype(PLAN *plan, FTSENT *entry)
+@@ -884,9 +948,9 @@ f_fstype(PLAN *plan, FTSENT *entry)
  {
  	static dev_t curdev;	/* need a guaranteed illegal dev value */
  	static int first = 1;
@@ -212,7 +178,7 @@
  	char *p, save[2] = {0,0};
  
  	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
-@@ -897,7 +995,7 @@ f_fstype(PLAN *plan, FTSENT *entry)
+@@ -897,7 +961,7 @@ f_fstype(PLAN *plan, FTSENT *entry)
  		curdev = entry->fts_statp->st_dev;
  
  		/*
@@ -221,7 +187,7 @@
  		 * not where it points.
  		 */
  		if (entry->fts_info == FTS_SL ||
-@@ -913,7 +1011,7 @@ f_fstype(PLAN *plan, FTSENT *entry)
+@@ -913,7 +977,7 @@ f_fstype(PLAN *plan, FTSENT *entry)
  		} else
  			p = NULL;
  
@@ -230,7 +196,7 @@
  			if (!ignore_readdir_race || errno != ENOENT) {
  				warn("statfs: %s", entry->fts_accpath);
  				exitstatus = 1;
-@@ -932,14 +1030,14 @@ f_fstype(PLAN *plan, FTSENT *entry)
+@@ -932,14 +996,14 @@ f_fstype(PLAN *plan, FTSENT *entry)
  		 * Further tests may need both of these values, so
  		 * always copy both of them.
  		 */
@@ -248,7 +214,7 @@
  	default:
  		abort();
  	}
-@@ -956,17 +1054,10 @@ c_fstype(OPTION *option, char ***argvp)
+@@ -956,17 +1020,10 @@ c_fstype(OPTION *option, char ***argvp)
  
  	new = palloc(option);
  	switch (*fsname) {
@@ -267,7 +233,7 @@
  			return new;
  		}
  		break;
-@@ -1028,7 +1119,7 @@ c_group(OPTION *option, char ***argvp)
+@@ -1028,7 +1085,7 @@ c_group(OPTION *option, char ***argvp)
   */
  
  PLAN *
@@ -276,7 +242,7 @@
  {
  	if (strcmp(option->name, "-ignore_readdir_race") == 0)
  		ignore_readdir_race = 1;
-@@ -1123,14 +1214,14 @@ c_links(OPTION *option, char ***argvp)
+@@ -1123,14 +1180,14 @@ c_links(OPTION *option, char ***argvp)
   *	Always true - prints the current entry to stdout in "ls" format.
   */
  int
@@ -293,7 +259,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  	isoutput = 1;
-@@ -1259,13 +1350,15 @@ c_newer(OPTION *option, char ***argvp)
+@@ -1259,13 +1316,15 @@ c_newer(OPTION *option, char ***argvp)
   *	of the getgrnam() 9.2.1 [POSIX.1] function returns NULL.
   */
  int
@@ -312,7 +278,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -1279,13 +1372,15 @@ c_nogroup(OPTION *option, char ***argvp
+@@ -1279,13 +1338,15 @@ c_nogroup(OPTION *option, char ***argvp
   *	of the getpwuid() 9.2.2 [POSIX.1] function returns NULL.
   */
  int
@@ -331,7 +297,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -1320,7 +1415,7 @@ f_perm(PLAN *plan, FTSENT *entry)
+@@ -1320,7 +1381,7 @@ f_perm(PLAN *plan, FTSENT *entry)
  	mode_t mode;
  
  	mode = entry->fts_statp->st_mode &
@@ -340,7 +306,7 @@
  	if (plan->flags & F_ATLEAST)
  		return (plan->m_data | mode) == mode;
  	else if (plan->flags & F_ANY)
-@@ -1365,14 +1460,14 @@ c_perm(OPTION *option, char ***argvp)
+@@ -1365,14 +1426,14 @@ c_perm(OPTION *option, char ***argvp)
   *	standard output.
   */
  int
@@ -357,7 +323,7 @@
  {
  	isoutput = 1;
  
-@@ -1386,7 +1481,7 @@ c_print(OPTION *option, char ***argvp __
+@@ -1386,7 +1447,7 @@ c_print(OPTION *option, char ***argvp __
   *	standard output followed by a NUL character
   */
  int
@@ -366,7 +332,7 @@
  {
  	fputs(entry->fts_path, stdout);
  	fputc('\0', stdout);
-@@ -1401,7 +1496,7 @@ f_print0(PLAN *plan __unused, FTSENT *en
+@@ -1401,7 +1462,7 @@ f_print0(PLAN *plan __unused, FTSENT *en
   *	Prune a portion of the hierarchy.
   */
  int
@@ -375,7 +341,7 @@
  {
  	if (fts_set(tree, entry, FTS_SKIP))
  		err(1, "%s", entry->fts_path);
-@@ -1480,7 +1575,7 @@ c_regex(OPTION *option, char ***argvp)
+@@ -1480,7 +1541,7 @@ c_regex(OPTION *option, char ***argvp)
  /* c_simple covers c_prune, c_openparen, c_closeparen, c_not, c_or, c_true, c_false */
  
  PLAN *
@@ -384,7 +350,7 @@
  {
  	return palloc(option);
  }
-@@ -1562,7 +1657,7 @@ c_size(OPTION *option, char ***argvp)
+@@ -1562,7 +1623,7 @@ c_size(OPTION *option, char ***argvp)
   *      than we expect based on its size.
   */
  int
@@ -393,7 +359,7 @@
  {
  	off_t expected_blocks;
  
-@@ -1571,7 +1666,7 @@ f_sparse(PLAN *plan __unused, FTSENT *en
+@@ -1571,7 +1632,7 @@ f_sparse(PLAN *plan __unused, FTSENT *en
  }
  
  PLAN *
@@ -402,7 +368,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -1692,7 +1787,7 @@ c_user(OPTION *option, char ***argvp)
+@@ -1692,7 +1753,7 @@ c_user(OPTION *option, char ***argvp)
   *	different device ID (st_dev, see stat() S5.6.2 [POSIX.1])
   */
  PLAN *
@@ -411,7 +377,7 @@
  {
  	ftsoptions |= FTS_XDEV;
  
-@@ -1723,13 +1818,13 @@ f_expr(PLAN *plan, FTSENT *entry)
+@@ -1723,13 +1784,13 @@ f_expr(PLAN *plan, FTSENT *entry)
   */
  
  int
@@ -427,7 +393,7 @@
  {
  	abort();
  }
-@@ -1741,7 +1836,7 @@ f_closeparen(PLAN *plan __unused, FTSENT
+@@ -1741,7 +1802,7 @@ f_closeparen(PLAN *plan __unused, FTSENT
   * AND operator. Since AND is implicit, no node is allocated.
   */
  PLAN *
@@ -436,7 +402,7 @@
  {
  	return NULL;
  }
-@@ -1795,7 +1890,7 @@ f_or(PLAN *plan, FTSENT *entry)
+@@ -1795,7 +1856,7 @@ f_or(PLAN *plan, FTSENT *entry)
   *	Always false.
   */
  int
@@ -445,7 +411,7 @@
  {
  	return 0;
  }
-@@ -1808,7 +1903,7 @@ f_false(PLAN *plan __unused, FTSENT *ent
+@@ -1808,7 +1869,7 @@ f_false(PLAN *plan __unused, FTSENT *ent
   *	Exits the program
   */
  int
