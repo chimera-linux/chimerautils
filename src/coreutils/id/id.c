@@ -46,10 +46,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/types.h>
 #include <sys/param.h>
 
-#ifdef USE_BSM_AUDIT
-#include <bsm/audit.h>
-#endif
-
 #include <err.h>
 #include <errno.h>
 #include <grp.h>
@@ -78,11 +74,9 @@ main(int argc, char *argv[])
 	struct group *gr;
 	struct passwd *pw;
 	int Gflag, Pflag, ch, gflag, id, nflag, pflag, rflag, uflag;
-	int Aflag;
 	const char *myname;
 
 	Gflag = Pflag = gflag = nflag = pflag = rflag = uflag = 0;
-	Aflag = 0;
 
 	myname = strrchr(argv[0], '/');
 	myname = (myname != NULL) ? myname + 1 : argv[0];
@@ -96,13 +90,8 @@ main(int argc, char *argv[])
 	}
 
 	while ((ch = getopt(argc, argv,
-	    (isgroups || iswhoami) ? "" : "APGagnpru")) != -1)
+	    (isgroups || iswhoami) ? "" : "PGagnpru")) != -1)
 		switch(ch) {
-#ifdef USE_BSM_AUDIT
-		case 'A':
-			Aflag = 1;
-			break;
-#endif
 		case 'G':
 			Gflag = 1;
 			break;
@@ -135,10 +124,8 @@ main(int argc, char *argv[])
 
 	if (iswhoami && argc > 0)
 		usage();
-	if (Aflag && argc > 0)
-		usage();
 
-	switch(Aflag + Gflag + Pflag + gflag + pflag + uflag) {
+	switch(Gflag + Pflag + gflag + pflag + uflag) {
 	case 1:
 		break;
 	case 0:
@@ -150,16 +137,6 @@ main(int argc, char *argv[])
 	}
 
 	pw = *argv ? who(*argv) : NULL;
-
-	if (pw != NULL)
-		usage();
-
-#ifdef USE_BSM_AUDIT
-	if (Aflag) {
-		auditid();
-		exit(0);
-	}
-#endif
 
 	if (gflag) {
 		id = pw ? pw->pw_gid : rflag ? getgid() : getegid();
