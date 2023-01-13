@@ -249,12 +249,10 @@ rm -f ${CWD}/src.freebsd/sh/profile
 #####################
 
 cd ${CWD}/patches
-for patchfile in $(find . -name '*.patch') ; do
-    [ -f "${patchfile}" ] || continue
-    destfile="$(basename ${patchfile} .patch)"
-    subdir="$(dirname ${patchfile})"
-    [ -f "${CWD}/src.freebsd/${subdir}/${destfile}.orig" ] && rm -f "${CWD}/src.freebsd/${subdir}/${destfile}.orig"
-    patch -d ${CWD}/src.freebsd/${subdir} -p1 -b -z .orig < ${patchfile}
+
+for p in *.patch; do
+    [ -f "$p" ] || continue
+    patch -d ${CWD}/src.freebsd -p1 < $p
 done
 
 # Clean up
