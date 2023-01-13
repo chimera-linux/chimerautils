@@ -18,9 +18,8 @@ fail_exit() {
     exit 1
 }
 
-for sub in src.freebsd ; do
-   [ -d ${CWD}/${sub} ] || mkdir -p ${CWD}/${sub}
-done
+rm -rf src.orig
+mkdir -p src.orig src.freebsd
 
 cd ${TMPDIR}
 curl -L --retry 3 --ftp-pasv -O ${SRC} || fail_exit
@@ -51,7 +50,9 @@ copy_cmd() {
     rm -f ${rp}/Makefile.depend*
 
     # Copy in the upstream files
+    [ -d ${CWD}/src.orig/${dp} ] || mkdir -p ${CWD}/src.orig/${dp}
     [ -d ${CWD}/src.freebsd/${dp} ] || mkdir -p ${CWD}/src.freebsd/${dp}
+    cp -pr ${rp}/* ${CWD}/src.orig/${dp}
     cp -pr ${rp}/* ${CWD}/src.freebsd/${dp}
 }
 
@@ -199,33 +200,46 @@ copy_cmd usr.bin/sed
 copy_cmd usr.bin/which
 
 # 'compat' is our static library with a subset of BSD library functions
-cp -p usr/src/lib/libutil/expand_number.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libc/gen/getbsize.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libc/stdlib/heapsort.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libutil/humanize_number.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libc/stdlib/merge.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libopenbsd/ohash.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libc/gen/setmode.c ${CWD}/src.freebsd/compat
-cp -p usr/src/lib/libc/string/strmode.c ${CWD}/src.freebsd/compat
-cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/src.freebsd/compat
-cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.freebsd/include
-cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.freebsd/include
+mkdir -p ${CWD}/src.orig/compat
+cp -p usr/src/lib/libutil/expand_number.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/gen/getbsize.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/stdlib/heapsort.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libutil/humanize_number.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/stdlib/merge.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libopenbsd/ohash.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/gen/setmode.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/string/strmode.c ${CWD}/src.orig/compat
+cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/src.orig/compat
+cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.orig/include
+cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.orig/include
+
+${CWD}/src.freebsd/compat
+cp ${CWD}/src.orig/compat/* ${CWD}/src.freebsd/compat
 
 # These files are needed for the factor command
+cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src.orig/coreutils/factor
+cp -p usr/src/usr.bin/primes/pr_tbl.c ${CWD}/src.orig/coreutils/factor
 cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src.freebsd/coreutils/factor
 cp -p usr/src/usr.bin/primes/pr_tbl.c ${CWD}/src.freebsd/coreutils/factor
 
 # These are not used
+rm -rf ${CWD}/src.orig/coreutils/sort/nls
 rm -rf ${CWD}/src.freebsd/coreutils/sort/nls
 
 # sort manpage
+mv ${CWD}/src.orig/coreutils/sort/sort.1.in ${CWD}/src.orig/coreutils/sort/sort.1
 mv ${CWD}/src.freebsd/coreutils/sort/sort.1.in ${CWD}/src.freebsd/coreutils/sort/sort.1
 
 # fix sh generator permissions
+chmod 755 ${CWD}/src.orig/sh/mkbuiltins
+chmod 755 ${CWD}/src.orig/sh/mktokens
 chmod 755 ${CWD}/src.freebsd/sh/mkbuiltins
 chmod 755 ${CWD}/src.freebsd/sh/mktokens
 
 # remove sh files we don't want
+rm -rf ${CWD}/src.orig/sh/dot.*
+rm -rf ${CWD}/src.orig/sh/funcs
+rm -f ${CWD}/src.orig/sh/profile
 rm -rf ${CWD}/src.freebsd/sh/dot.*
 rm -rf ${CWD}/src.freebsd/sh/funcs
 rm -f ${CWD}/src.freebsd/sh/profile
