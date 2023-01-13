@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stddef.h>
 
+#include "config.h"
+
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *d, const char *s, size_t n) {
     char *d0 = d;

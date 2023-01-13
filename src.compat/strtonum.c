@@ -1,6 +1,8 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "config.h"
+
 #ifndef HAVE_STRTONUM
 long long strtonum(
     const char *nptr, long long minv, long long maxv, const char **errstr

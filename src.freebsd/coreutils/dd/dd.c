@@ -162,7 +162,7 @@ setup(void)
 			oflags = fcntl(out.fd, F_GETFL);
 			if (oflags == -1)
 				err(1, "unable to get fd flags for stdout");
-			oflags |= O_FSYNC;
+			oflags |= O_SYNC;
 			if (fcntl(out.fd, F_SETFL, oflags) == -1)
 				err(1, "unable to set fd flags for stdout");
 		}
@@ -171,7 +171,7 @@ setup(void)
 		if (!(ddflags & (C_SEEK | C_NOTRUNC)))
 			oflags |= O_TRUNC;
 		if (ddflags & C_OFSYNC)
-			oflags |= O_FSYNC;
+			oflags |= O_SYNC;
 		if (ddflags & C_ODIRECT)
 			oflags |= O_DIRECT;
 		out.fd = open(out.name, O_RDWR | oflags, DEFFILEMODE);

@@ -1,5 +1,5 @@
---- dd/dd.c.orig	2021-04-09 02:24:01.000000000 +0200
-+++ dd/dd.c	2021-10-27 16:17:23.793789487 +0200
+--- dd/dd.c.orig	2022-05-12 06:53:55.000000000 +0200
++++ dd/dd.c	2023-01-13 05:21:04.641625694 +0100
 @@ -49,15 +49,10 @@ __FBSDID("$FreeBSD$");
  
  #include <sys/param.h>
@@ -70,6 +70,24 @@
  	if (out.name == NULL) {
  		/* No way to check for read access here. */
  		out.fd = STDOUT_FILENO;
+@@ -179,7 +162,7 @@ setup(void)
+ 			oflags = fcntl(out.fd, F_GETFL);
+ 			if (oflags == -1)
+ 				err(1, "unable to get fd flags for stdout");
+-			oflags |= O_FSYNC;
++			oflags |= O_SYNC;
+ 			if (fcntl(out.fd, F_SETFL, oflags) == -1)
+ 				err(1, "unable to set fd flags for stdout");
+ 		}
+@@ -188,7 +171,7 @@ setup(void)
+ 		if (!(ddflags & (C_SEEK | C_NOTRUNC)))
+ 			oflags |= O_TRUNC;
+ 		if (ddflags & C_OFSYNC)
+-			oflags |= O_FSYNC;
++			oflags |= O_SYNC;
+ 		if (ddflags & C_ODIRECT)
+ 			oflags |= O_DIRECT;
+ 		out.fd = open(out.name, O_RDWR | oflags, DEFFILEMODE);
 @@ -200,7 +183,6 @@ setup(void)
  		if (out.fd == -1) {
  			out.fd = open(out.name, O_WRONLY | oflags, DEFFILEMODE);

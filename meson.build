@@ -47,35 +47,14 @@ else
     endif
 endif
 
-# Define some macros to eliminate some FreeBSD-specifics in the code
-add_global_arguments([
-    '-Dlint',
-    '-DDEFFILEMODE=(S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)',
-    '-DALLPERMS=(S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)',
-    '-DO_FSYNC=O_SYNC',
-], language: ['c', 'cpp'])
-
-if not cc.has_function('strtoq')
-   add_global_arguments(['-Dstrtoq=strtoull'], language: ['c', 'cpp'])
-endif
-
-if cc.has_function('strlcpy')
-   add_global_arguments('-DHAVE_STRLCPY', language: ['c', 'cpp'])
-endif
-
-if cc.has_function('strlcat')
-   add_global_arguments('-DHAVE_STRLCAT', language: ['c', 'cpp'])
-endif
-
-if cc.has_function('strtonum')
-   add_global_arguments('-DHAVE_STRTONUM', language: ['c', 'cpp'])
-endif
-
 # Build everything with _GNU_SOURCE enabled
-add_global_arguments('-D_GNU_SOURCE', language: ['c', 'cpp'])
+add_project_arguments('-D_GNU_SOURCE', language: ['c', 'cpp'])
 
 # Always use 64-bit file offsets on glibc
-add_global_arguments('-D_FILE_OFFSET_BITS=64', language: ['c', 'cpp'])
+add_project_arguments('-D_FILE_OFFSET_BITS=64', language: ['c', 'cpp'])
+
+# Get rid of unused metadata variables
+add_project_arguments('-Dlint', language: ['c'])
 
 # ls(1) needs the terminfo library
 foreach opt: ['tinfo', 'ncursesw', 'ncurses']
@@ -136,13 +115,11 @@ librpmatch = cc.find_library('rpmatch',
 # sort needs pthreads
 libpthread = dependency('threads')
 
-# Header files for libcompat
-inc = include_directories('include')
-
 # Symlink installation script
 install_link = meson.current_source_dir() / 'utils/install-link.sh'
 
 # Include all of the relevant subdirectories
+subdir('include')
 subdir('src.freebsd')
 subdir('src.openbsd')
 subdir('src.custom')

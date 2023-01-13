@@ -1,7 +1,7 @@
 /*-
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 2021 Daniel Kolesa
+ * Copyright (c) 2023 Daniel Kolesa
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -28,31 +28,17 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_CDEFS_H
-#define SYS_CDEFS_H
+#ifndef SYS_STAT_H
+#define SYS_STAT_H
 
-#include <features.h>
+#include_next <sys/stat.h>
 
-#ifdef __GLIBC__
-# include_next <sys/cdefs.h>
-#else
-# ifdef  __cplusplus
-#  define __BEGIN_DECLS extern "C" {
-#  define __END_DECLS }
-# else
-#  define __BEGIN_DECLS
-#  define __END_DECLS
-# endif
+#ifndef DEFFILEMODE
+#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
 #endif
 
-#define __COPYRIGHT(x)
-#define __FBSDID(x)
-#define __SCCSID(x)
-#define __RCSID(x)
-
-#define __dead2
-#define __printf0like(x, y)
-#define __printflike(x, y) __attribute__((format(printf, x, y)))
-#define __DECONST(a, v) ((a)(v))
+#ifndef ALLPERMS
+#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+#endif
 
 #endif

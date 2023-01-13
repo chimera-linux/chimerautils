@@ -37,6 +37,12 @@
 #include <stdint.h>
 #include <sys/stat.h>
 
+#include "config.h"
+
+#ifndef HAVE_STRTOQ
+#define strtoq strtoll
+#endif
+
 /* FreeBSD kernel stuff */
 
 /* from <sys/param.h> on FreeBSD */
