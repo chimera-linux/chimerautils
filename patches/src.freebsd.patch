@@ -1,6 +1,6 @@
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/bc/bc.y src.freebsd/bc/bc/bc.y
 --- src.orig/bc/bc/bc.y	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/bc/bc/bc.y	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/bc/bc/bc.y	2023-01-13 18:21:52.649566649 +0100
 @@ -1094,7 +1094,7 @@
  
  /* ARGSUSED */
@@ -12,7 +12,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/bc
  	int status, save_errno = errno;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/bc/scan.l src.freebsd/bc/bc/scan.l
 --- src.orig/bc/bc/scan.l	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/bc/bc/scan.l	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/bc/bc/scan.l	2023-01-13 18:21:52.649566649 +0100
 @@ -31,6 +31,7 @@
  #include "extern.h"
  #include "bc.h"
@@ -41,7 +41,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/bc
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/dc/bcode.c src.freebsd/bc/dc/bcode.c
 --- src.orig/bc/dc/bcode.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/bc/dc/bcode.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/bc/dc/bcode.c	2023-01-13 18:21:52.649566649 +0100
 @@ -72,7 +72,7 @@
  static void		 pop_print(void);
  static void		 pop_printn(void);
@@ -98,7 +98,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/dc
  			else
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/dc/dc.c src.freebsd/bc/dc/dc.c
 --- src.orig/bc/dc/dc.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/bc/dc/dc.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/bc/dc/dc.c	2023-01-13 18:21:52.649566649 +0100
 @@ -22,7 +22,6 @@
  
  #include <sys/stat.h>
@@ -129,7 +129,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/dc
  	eval();
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/dc/inout.c src.freebsd/bc/dc/inout.c
 --- src.orig/bc/dc/inout.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/bc/dc/inout.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/bc/dc/inout.c	2023-01-13 18:21:52.649566649 +0100
 @@ -25,6 +25,7 @@
  #include <string.h>
  
@@ -160,7 +160,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/bc/dc
  		bn_check(BN_add_word(exponent, iscale));
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compat/expand_number.c src.freebsd/compat/expand_number.c
 --- src.orig/compat/expand_number.c	2022-05-12 06:53:59.000000000 +0200
-+++ src.freebsd/compat/expand_number.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/compat/expand_number.c	2023-01-13 18:21:52.649566649 +0100
 @@ -34,7 +34,6 @@
  #include <ctype.h>
  #include <errno.h>
@@ -171,7 +171,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compa
  int
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compat/humanize_number.c src.freebsd/compat/humanize_number.c
 --- src.orig/compat/humanize_number.c	2022-05-12 06:53:59.000000000 +0200
-+++ src.freebsd/compat/humanize_number.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/compat/humanize_number.c	2023-01-13 18:21:52.653564257 +0100
 @@ -43,7 +43,8 @@
  #include <stdlib.h>
  #include <string.h>
@@ -184,7 +184,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compa
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compat/merge.c src.freebsd/compat/merge.c
 --- src.orig/compat/merge.c	2022-05-12 06:53:59.000000000 +0200
-+++ src.freebsd/compat/merge.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/compat/merge.c	2023-01-13 18:21:52.653564257 +0100
 @@ -38,6 +38,8 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -212,7 +212,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compa
  #include "block_abi.h"
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compat/setmode.c src.freebsd/compat/setmode.c
 --- src.orig/compat/setmode.c	2022-05-12 06:53:59.000000000 +0200
-+++ src.freebsd/compat/setmode.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/compat/setmode.c	2023-01-13 18:21:52.653564257 +0100
 @@ -36,10 +36,8 @@
  __SCCSID("@(#)setmode.c	8.2 (Berkeley) 3/25/94");
  __FBSDID("$FreeBSD$");
@@ -292,7 +292,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compa
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compat/vis.c src.freebsd/compat/vis.c
 --- src.orig/compat/vis.c	2022-05-12 06:53:56.000000000 +0200
-+++ src.freebsd/compat/vis.c	2023-01-13 18:17:00.060617560 +0100
++++ src.freebsd/compat/vis.c	2023-01-13 18:21:52.653564257 +0100
 @@ -64,7 +64,6 @@
  #define	_DIAGASSERT(x)	assert(x)
  #endif
@@ -396,7 +396,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/compa
  			cerr = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/basename/basename.c src.freebsd/coreutils/basename/basename.c
 --- src.orig/coreutils/basename/basename.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/basename/basename.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/basename/basename.c	2023-01-13 18:21:52.653564257 +0100
 @@ -44,7 +44,6 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -417,7 +417,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	suffixlen = 0;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/cat/cat.c src.freebsd/coreutils/cat/cat.c
 --- src.orig/coreutils/cat/cat.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/cat/cat.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/cat/cat.c	2023-01-13 18:21:52.653564257 +0100
 @@ -48,7 +48,6 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -522,7 +522,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  					wch = ch;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chmod/chmod.1 src.freebsd/coreutils/chmod/chmod.1
 --- src.orig/coreutils/chmod/chmod.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/chmod/chmod.1	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chmod/chmod.1	2023-01-13 18:21:52.653564257 +0100
 @@ -40,7 +40,7 @@
  .Nd change file modes
  .Sh SYNOPSIS
@@ -553,7 +553,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  argument for
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chmod/chmod.c src.freebsd/coreutils/chmod/chmod.c
 --- src.orig/coreutils/chmod/chmod.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/chmod/chmod.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chmod/chmod.c	2023-01-13 18:21:52.653564257 +0100
 @@ -41,7 +41,6 @@
  #endif /* not lint */
  #endif
@@ -678,7 +678,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 -}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chown/chgrp.1 src.freebsd/coreutils/chown/chgrp.1
 --- src.orig/coreutils/chown/chgrp.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/chown/chgrp.1	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chown/chgrp.1	2023-01-13 18:21:52.657561866 +0100
 @@ -124,7 +124,7 @@
  If
  .Nm
@@ -690,7 +690,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  argument for
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chown/chown.8 src.freebsd/coreutils/chown/chown.8
 --- src.orig/coreutils/chown/chown.8	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/chown/chown.8	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chown/chown.8	2023-01-13 18:21:52.657561866 +0100
 @@ -139,7 +139,7 @@
  If
  .Nm
@@ -702,7 +702,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  argument for
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chown/chown.c src.freebsd/coreutils/chown/chown.c
 --- src.orig/coreutils/chown/chown.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/chown/chown.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chown/chown.c	2023-01-13 18:21:52.657561866 +0100
 @@ -62,6 +62,8 @@
  #include <string.h>
  #include <unistd.h>
@@ -723,7 +723,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	siginfo = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chroot/chroot.8 src.freebsd/coreutils/chroot/chroot.8
 --- src.orig/coreutils/chroot/chroot.8	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/chroot/chroot.8	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chroot/chroot.8	2023-01-13 18:21:52.657561866 +0100
 @@ -39,7 +39,6 @@
  .Op Fl G Ar group Ns Op Cm \&, Ns Ar group  ...
  .Op Fl g Ar group
@@ -751,7 +751,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  The following environment variable is referenced by
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/chroot/chroot.c src.freebsd/coreutils/chroot/chroot.c
 --- src.orig/coreutils/chroot/chroot.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/chroot/chroot.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/chroot/chroot.c	2023-01-13 18:21:52.657561866 +0100
 @@ -44,7 +44,6 @@
  __FBSDID("$FreeBSD$");
  
@@ -812,7 +812,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/cp/cp.1 src.freebsd/coreutils/cp/cp.1
 --- src.orig/coreutils/cp/cp.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/cp/cp.1	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/cp/cp.1	2023-01-13 18:21:52.657561866 +0100
 @@ -172,7 +172,7 @@
  .Nm
  to preserve the following attributes of each source
@@ -833,7 +833,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  argument for
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/cp/cp.c src.freebsd/coreutils/cp/cp.c
 --- src.orig/coreutils/cp/cp.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/cp/cp.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/cp/cp.c	2023-01-13 18:21:52.657561866 +0100
 @@ -75,6 +75,7 @@
  #include <unistd.h>
  
@@ -876,7 +876,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	info = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/cp/utils.c src.freebsd/coreutils/cp/utils.c
 --- src.orig/coreutils/cp/utils.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/cp/utils.c	2023-01-13 18:17:00.064615168 +0100
++++ src.freebsd/coreutils/cp/utils.c	2023-01-13 18:21:52.657561866 +0100
 @@ -38,7 +38,6 @@
  __FBSDID("$FreeBSD$");
  
@@ -1106,7 +1106,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/csplit/csplit.c src.freebsd/coreutils/csplit/csplit.c
 --- src.orig/coreutils/csplit/csplit.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/csplit/csplit.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/csplit/csplit.c	2023-01-13 18:21:52.657561866 +0100
 @@ -221,7 +221,7 @@
  }
  
@@ -1140,7 +1140,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	if (*expr == '/')
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/cut/cut.c src.freebsd/coreutils/cut/cut.c
 --- src.orig/coreutils/cut/cut.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/cut/cut.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/cut/cut.c	2023-01-13 18:21:52.661559474 +0100
 @@ -241,7 +241,7 @@
  }
  
@@ -1245,7 +1245,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/date/date.c src.freebsd/coreutils/date/date.c
 --- src.orig/coreutils/date/date.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/date/date.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/date/date.c	2023-01-13 18:21:52.661559474 +0100
 @@ -58,9 +58,13 @@
  #include <syslog.h>
  #include <unistd.h>
@@ -1299,7 +1299,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		if ((p = getlogin()) == NULL)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/args.c src.freebsd/coreutils/dd/args.c
 --- src.orig/coreutils/dd/args.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/args.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/args.c	2023-01-13 18:21:52.661559474 +0100
 @@ -55,6 +55,8 @@
  #include "dd.h"
  #include "extern.h"
@@ -1324,7 +1324,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	else
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/dd.1 src.freebsd/coreutils/dd/dd.1
 --- src.orig/coreutils/dd/dd.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/dd.1	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/dd.1	2023-01-13 18:21:52.661559474 +0100
 @@ -417,7 +417,7 @@
  If
  .Nm
@@ -1336,7 +1336,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  argument for
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/dd.c src.freebsd/coreutils/dd/dd.c
 --- src.orig/coreutils/dd/dd.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/dd.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/dd.c	2023-01-13 18:21:52.661559474 +0100
 @@ -49,15 +49,10 @@
  
  #include <sys/param.h>
@@ -1491,7 +1491,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	errno = 0;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/dd.h src.freebsd/coreutils/dd/dd.h
 --- src.orig/coreutils/dd/dd.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/dd.h	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/dd.h	2023-01-13 18:21:52.661559474 +0100
 @@ -36,6 +36,8 @@
   * $FreeBSD$
   */
@@ -1503,7 +1503,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	u_char		*db;		/* buffer address */
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/extern.h src.freebsd/coreutils/dd/extern.h
 --- src.orig/coreutils/dd/extern.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/extern.h	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/extern.h	2023-01-13 18:21:52.661559474 +0100
 @@ -36,6 +36,8 @@
   * $FreeBSD$
   */
@@ -1515,7 +1515,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  void dd_out(int);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/misc.c src.freebsd/coreutils/dd/misc.c
 --- src.orig/coreutils/dd/misc.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/misc.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/misc.c	2023-01-13 18:21:52.661559474 +0100
 @@ -46,7 +46,6 @@
  #include <err.h>
  #include <errno.h>
@@ -1553,7 +1553,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	need_progress = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dd/position.c src.freebsd/coreutils/dd/position.c
 --- src.orig/coreutils/dd/position.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/dd/position.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/dd/position.c	2023-01-13 18:21:52.661559474 +0100
 @@ -72,9 +72,9 @@
  	 *
  	 * Bail out if the calculation of a file offset would overflow.
@@ -1568,7 +1568,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		    (uintmax_t)UINT64_MAX);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/df/df.1 src.freebsd/coreutils/df/df.1
 --- src.orig/coreutils/df/df.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/df/df.1	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/df/df.1	2023-01-13 18:21:52.661559474 +0100
 @@ -39,7 +39,7 @@
  .Nm
  .Op Fl -libxo
@@ -1619,7 +1619,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Fl P
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/df/df.c src.freebsd/coreutils/df/df.c
 --- src.orig/coreutils/df/df.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/df/df.c	2023-01-13 18:17:00.068612777 +0100
++++ src.freebsd/coreutils/df/df.c	2023-01-13 18:21:52.661559474 +0100
 @@ -50,11 +50,10 @@
  
  #include <sys/param.h>
@@ -2149,7 +2149,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/dirname/dirname.c src.freebsd/coreutils/dirname/dirname.c
 --- src.orig/coreutils/dirname/dirname.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/dirname/dirname.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/dirname/dirname.c	2023-01-13 18:21:52.661559474 +0100
 @@ -41,7 +41,6 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -2170,7 +2170,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		case '?':
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/du/du.1 src.freebsd/coreutils/du/du.1
 --- src.orig/coreutils/du/du.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/du/du.1	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/du/du.1	2023-01-13 18:21:52.661559474 +0100
 @@ -116,12 +116,6 @@
  are counted (and displayed) as many times as they are found.
  .It Fl m
@@ -2186,7 +2186,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  that cannot be opened, and so on.
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/du/du.c src.freebsd/coreutils/du/du.c
 --- src.orig/coreutils/du/du.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/du/du.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/du/du.c	2023-01-13 18:21:52.665557082 +0100
 @@ -54,8 +54,8 @@
  #include <fnmatch.h>
  #include <fts.h>
@@ -2311,7 +2311,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	info = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/echo/echo.c src.freebsd/coreutils/echo/echo.c
 --- src.orig/coreutils/echo/echo.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/echo/echo.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/echo/echo.c	2023-01-13 18:21:52.665557082 +0100
 @@ -47,7 +47,6 @@
  #include <sys/uio.h>
  
@@ -2332,7 +2332,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		++argv;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/env/env.1 src.freebsd/coreutils/env/env.1
 --- src.orig/coreutils/env/env.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/env/env.1	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/env/env.1	2023-01-13 18:21:52.665557082 +0100
 @@ -40,12 +40,10 @@
  .Sh SYNOPSIS
  .Nm
@@ -2383,7 +2383,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Ar altpath
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/env/env.c src.freebsd/coreutils/env/env.c
 --- src.orig/coreutils/env/env.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/env/env.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/env/env.c	2023-01-13 18:21:52.665557082 +0100
 @@ -42,13 +42,11 @@
  #endif
  
@@ -2499,7 +2499,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		if (env_verbosity)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/env/envopts.c src.freebsd/coreutils/env/envopts.c
 --- src.orig/coreutils/env/envopts.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/env/envopts.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/env/envopts.c	2023-01-13 18:21:52.665557082 +0100
 @@ -33,6 +33,7 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -2518,7 +2518,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		 expand_vars(int in_thisarg, char **thisarg_p, char **dest_p,
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/expr/expr.y src.freebsd/coreutils/expr/expr.y
 --- src.orig/coreutils/expr/expr.y	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/expr/expr.y	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/expr/expr.y	2023-01-13 18:21:52.665557082 +0100
 @@ -270,8 +270,7 @@
  	int c;
  
@@ -2540,7 +2540,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/factor/factor.c src.freebsd/coreutils/factor/factor.c
 --- src.orig/coreutils/factor/factor.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/factor/factor.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/factor/factor.c	2023-01-13 18:21:52.665557082 +0100
 @@ -66,6 +66,7 @@
   * If no args are given, the list of numbers are read from stdin.
   */
@@ -2551,7 +2551,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  #include <errno.h>
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/fmt/fmt.c src.freebsd/coreutils/fmt/fmt.c
 --- src.orig/coreutils/fmt/fmt.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/fmt/fmt.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/fmt/fmt.c	2023-01-13 18:21:52.665557082 +0100
 @@ -185,6 +185,7 @@
  #include <unistd.h>
  #include <wchar.h>
@@ -2571,7 +2571,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	output_buffer = XMALLOC((max_length + 1) * sizeof(wchar_t));
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/head/head.c src.freebsd/coreutils/head/head.c
 --- src.orig/coreutils/head/head.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/head/head.c	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/head/head.c	2023-01-13 18:21:52.665557082 +0100
 @@ -43,10 +43,8 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -2657,7 +2657,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  static void
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/id/id.1 src.freebsd/coreutils/id/id.1
 --- src.orig/coreutils/id/id.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/id/id.1	2023-01-13 18:17:00.072610385 +0100
++++ src.freebsd/coreutils/id/id.1	2023-01-13 18:21:52.665557082 +0100
 @@ -41,18 +41,12 @@
  .Nm
  .Op Ar user
@@ -2702,7 +2702,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .It Fl n
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/id/id.c src.freebsd/coreutils/id/id.c
 --- src.orig/coreutils/id/id.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/id/id.c	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/id/id.c	2023-01-13 18:21:52.665557082 +0100
 @@ -43,12 +43,8 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -2885,7 +2885,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		    "       id -u [-nr] [user]");
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/join/join.c src.freebsd/coreutils/join/join.c
 --- src.orig/coreutils/join/join.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/join/join.c	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/join/join.c	2023-01-13 18:21:52.665557082 +0100
 @@ -47,6 +47,7 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -2958,7 +2958,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		do {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ln/ln.c src.freebsd/coreutils/ln/ln.c
 --- src.orig/coreutils/ln/ln.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ln/ln.c	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/ln/ln.c	2023-01-13 18:21:52.665557082 +0100
 @@ -56,6 +56,8 @@
  #include <string.h>
  #include <unistd.h>
@@ -2978,7 +2978,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		exit(linkit(argv[0], ".", 1));
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/logname/logname.c src.freebsd/coreutils/logname/logname.c
 --- src.orig/coreutils/logname/logname.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/logname/logname.c	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/logname/logname.c	2023-01-13 18:21:52.669554691 +0100
 @@ -41,7 +41,6 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -3004,7 +3004,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	if ((p = getlogin()) == NULL)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/cmp.c src.freebsd/coreutils/ls/cmp.c
 --- src.orig/coreutils/ls/cmp.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/cmp.c	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/ls/cmp.c	2023-01-13 18:21:52.669554691 +0100
 @@ -123,35 +123,6 @@
  }
  
@@ -3043,7 +3043,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/extern.h src.freebsd/coreutils/ls/extern.h
 --- src.orig/coreutils/ls/extern.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/extern.h	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/ls/extern.h	2023-01-13 18:21:52.669554691 +0100
 @@ -36,8 +36,6 @@
  
  int	 acccmp(const FTSENT *, const FTSENT *);
@@ -3055,7 +3055,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  int	 namecmp(const FTSENT *, const FTSENT *);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/ls.1 src.freebsd/coreutils/ls/ls.1
 --- src.orig/coreutils/ls/ls.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/ls.1	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/ls/ls.1	2023-01-13 18:21:52.669554691 +0100
 @@ -40,7 +40,7 @@
  .Nd list directory contents
  .Sh SYNOPSIS
@@ -3146,7 +3146,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  are non-standard extensions.
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/ls.c src.freebsd/coreutils/ls/ls.c
 --- src.orig/coreutils/ls/ls.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/ls.c	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/ls/ls.c	2023-01-13 18:21:52.669554691 +0100
 @@ -49,7 +49,7 @@
  #include <sys/param.h>
  #include <sys/stat.h>
@@ -3474,7 +3474,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/ls.h src.freebsd/coreutils/ls/ls.h
 --- src.orig/coreutils/ls/ls.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/ls.h	2023-01-13 18:17:00.076607993 +0100
++++ src.freebsd/coreutils/ls/ls.h	2023-01-13 18:21:52.669554691 +0100
 @@ -42,8 +42,6 @@
  extern long blocksize;		/* block size units */
  
@@ -3486,7 +3486,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  extern int f_inode;		/* print inode */
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/print.c src.freebsd/coreutils/ls/print.c
 --- src.orig/coreutils/ls/print.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/print.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/ls/print.c	2023-01-13 18:21:52.669554691 +0100
 @@ -42,13 +42,11 @@
  
  #include <sys/param.h>
@@ -3652,7 +3652,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 -}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/ls/util.c src.freebsd/coreutils/ls/util.c
 --- src.orig/coreutils/ls/util.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/ls/util.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/ls/util.c	2023-01-13 18:21:52.669554691 +0100
 @@ -227,9 +227,9 @@
  {
  	(void)fprintf(stderr,
@@ -3667,7 +3667,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	exit(1);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/mkdir/mkdir.c src.freebsd/coreutils/mkdir/mkdir.c
 --- src.orig/coreutils/mkdir/mkdir.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/mkdir/mkdir.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/mkdir/mkdir.c	2023-01-13 18:21:52.669554691 +0100
 @@ -55,6 +55,8 @@
  #include <sysexits.h>
  #include <unistd.h>
@@ -3679,7 +3679,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/mkfifo/mkfifo.c src.freebsd/coreutils/mkfifo/mkfifo.c
 --- src.orig/coreutils/mkfifo/mkfifo.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/mkfifo/mkfifo.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/mkfifo/mkfifo.c	2023-01-13 18:21:52.669554691 +0100
 @@ -53,6 +53,8 @@
  #include <string.h>
  #include <unistd.h>
@@ -3691,7 +3691,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/mknod/mknod.c src.freebsd/coreutils/mknod/mknod.c
 --- src.orig/coreutils/mknod/mknod.c	2022-05-12 06:54:00.000000000 +0200
-+++ src.freebsd/coreutils/mknod/mknod.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/mknod/mknod.c	2023-01-13 18:21:52.669554691 +0100
 @@ -48,6 +48,7 @@
  
  #include <sys/types.h>
@@ -3702,7 +3702,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  #include <errno.h>
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/mv/mv.c src.freebsd/coreutils/mv/mv.c
 --- src.orig/coreutils/mv/mv.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/mv/mv.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/mv/mv.c	2023-01-13 18:21:52.669554691 +0100
 @@ -47,12 +47,12 @@
  __FBSDID("$FreeBSD$");
  
@@ -3885,7 +3885,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/nl/nl.c src.freebsd/coreutils/nl/nl.c
 --- src.orig/coreutils/nl/nl.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/nl/nl.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/nl/nl.c	2023-01-13 18:21:52.669554691 +0100
 @@ -151,15 +151,19 @@
  			break;
  		case 'd':
@@ -3912,7 +3912,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  					    delim2len = clen);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/pr/pr.c src.freebsd/coreutils/pr/pr.c
 --- src.orig/coreutils/pr/pr.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/pr/pr.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/pr/pr.c	2023-01-13 18:21:52.673552299 +0100
 @@ -65,6 +65,7 @@
  #include <stdlib.h>
  #include <string.h>
@@ -3943,7 +3943,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	return(0);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/printenv/printenv.c src.freebsd/coreutils/printenv/printenv.c
 --- src.orig/coreutils/printenv/printenv.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/printenv/printenv.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/printenv/printenv.c	2023-01-13 18:21:52.673552299 +0100
 @@ -46,7 +46,6 @@
  
  #include <sys/types.h>
@@ -3964,7 +3964,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		case '?':
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/rm/rm.1 src.freebsd/coreutils/rm/rm.1
 --- src.orig/coreutils/rm/rm.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/rm/rm.1	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/rm/rm.1	2023-01-13 18:21:52.673552299 +0100
 @@ -42,7 +42,7 @@
  .Sh SYNOPSIS
  .Nm
@@ -3998,7 +3998,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Xr getopt 3 ,
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/rm/rm.c src.freebsd/coreutils/rm/rm.c
 --- src.orig/coreutils/rm/rm.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/rm/rm.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/rm/rm.c	2023-01-13 18:21:52.673552299 +0100
 @@ -54,13 +54,16 @@
  #include <grp.h>
  #include <locale.h>
@@ -4288,7 +4288,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	info = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/seq/seq.c src.freebsd/coreutils/seq/seq.c
 --- src.orig/coreutils/seq/seq.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/seq/seq.c	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/seq/seq.c	2023-01-13 18:21:52.673552299 +0100
 @@ -52,6 +52,8 @@
  #define ISEXP(c)	((int)(c) == 'e' || (int)(c) == 'E')
  #define ISODIGIT(c)	((int)(c) >= '0' && (int)(c) <= '7')
@@ -4309,7 +4309,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sleep/sleep.1 src.freebsd/coreutils/sleep/sleep.1
 --- src.orig/coreutils/sleep/sleep.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/sleep/sleep.1	2023-01-13 18:17:00.080605602 +0100
++++ src.freebsd/coreutils/sleep/sleep.1	2023-01-13 18:21:52.673552299 +0100
 @@ -52,7 +52,7 @@
  .Nm
  command receives a signal, it takes the standard action.
@@ -4321,7 +4321,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Sh IMPLEMENTATION NOTES
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sleep/sleep.c src.freebsd/coreutils/sleep/sleep.c
 --- src.orig/coreutils/sleep/sleep.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/sleep/sleep.c	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sleep/sleep.c	2023-01-13 18:21:52.673552299 +0100
 @@ -41,7 +41,6 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -4383,7 +4383,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	return (0);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/bwstring.c src.freebsd/coreutils/sort/bwstring.c
 --- src.orig/coreutils/sort/bwstring.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/bwstring.c	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/bwstring.c	2023-01-13 18:21:52.673552299 +0100
 @@ -478,40 +478,100 @@
  bwsfgetln(FILE *f, size_t *len, bool zero_ended, struct reader_buffer *rb)
  {
@@ -4524,7 +4524,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  				if (*len + 1 >= rb->fgetwln_z_buffer_size) {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/coll.c src.freebsd/coreutils/sort/coll.c
 --- src.orig/coreutils/sort/coll.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/coll.c	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/coll.c	2023-01-13 18:45:55.656361796 +0100
 @@ -37,7 +37,6 @@
  #include <langinfo.h>
  #include <limits.h>
@@ -4554,7 +4554,43 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	else if (sm->Vflag)
  		return (versioncoll);
  	else
-@@ -811,7 +814,7 @@
+@@ -607,18 +610,18 @@
+  * Compare two sort list items, according to the sort specs.
+  */
+ int
+-list_coll(struct sort_list_item **ss1, struct sort_list_item **ss2)
++list_coll(const void *ss1, const void *ss2)
+ {
+ 
+-	return (list_coll_offset(ss1, ss2, 0));
++	return (list_coll_offset((struct sort_list_item **)ss1, (struct sort_list_item **)ss2, 0));
+ }
+ 
+ #define	LSCDEF(N)							\
+ static int 								\
+-list_coll_##N(struct sort_list_item **ss1, struct sort_list_item **ss2)	\
++list_coll_##N(const void *ss1, const void *ss2)	\
+ {									\
+ 									\
+-	return (list_coll_offset(ss1, ss2, N));				\
++	return (list_coll_offset((struct sort_list_item **)ss1, (struct sort_list_item **)ss2, N)); \
+ }
+ 
+ LSCDEF(1)
+@@ -662,9 +665,10 @@
+  * Compare two sort list items, only by their original string.
+  */
+ int
+-list_coll_by_str_only(struct sort_list_item **ss1, struct sort_list_item **ss2)
++list_coll_by_str_only(const void *a1, const void *a2)
+ {
+-
++	struct sort_list_item **ss1 = (struct sort_list_item **)a1;
++	struct sort_list_item **ss2 = (struct sort_list_item **)a2;
+ 	return (top_level_str_coll(((*ss1)->str), ((*ss2)->str)));
+ }
+ 
+@@ -811,7 +815,7 @@
   */
  static int
  numcoll_impl(struct key_value *kv1, struct key_value *kv2,
@@ -4563,7 +4599,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  	struct bwstring *s1, *s2;
  	wchar_t sfrac1[MAX_NUM_SIZE + 1], sfrac2[MAX_NUM_SIZE + 1];
-@@ -981,6 +984,7 @@
+@@ -981,6 +985,7 @@
  	return (numcoll_impl(kv1, kv2, offset, true));
  }
  
@@ -4571,7 +4607,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  /* Use hint space to memoize md5 computations, at least. */
  static void
  randomcoll_init_hint(struct key_value *kv, void *hash)
-@@ -995,7 +999,7 @@
+@@ -995,7 +1000,7 @@
   */
  static int
  randomcoll(struct key_value *kv1, struct key_value *kv2,
@@ -4580,7 +4616,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  	struct bwstring *s1, *s2;
  	MD5_CTX ctx1, ctx2;
-@@ -1037,13 +1041,14 @@
+@@ -1037,13 +1042,14 @@
  
  	return (memcmp(hash1, hash2, sizeof(hash1)));
  }
@@ -4596,7 +4632,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  	struct bwstring *s1, *s2;
  
-@@ -1118,7 +1123,7 @@
+@@ -1118,7 +1124,7 @@
   */
  static int
  gnumcoll(struct key_value *kv1, struct key_value *kv2,
@@ -4605,7 +4641,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  	double d1, d2;
  	int err1, err2;
-@@ -1274,7 +1279,7 @@
+@@ -1274,7 +1280,7 @@
   * Implements month sort (-M).
   */
  static int
@@ -4616,7 +4652,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	bool key1_read, key2_read;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/coll.h src.freebsd/coreutils/sort/coll.h
 --- src.orig/coreutils/sort/coll.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/coll.h	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/coll.h	2023-01-13 18:45:55.656361796 +0100
 @@ -105,7 +105,7 @@
  {
  	struct bwstring		*k; /* key string */
@@ -4626,9 +4662,29 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
  /*
   * Set of keys container object.
+@@ -141,7 +141,7 @@
+ /*
+  * Function type, used to compare two list objects
+  */
+-typedef int (*listcoll_t)(struct sort_list_item **ss1, struct sort_list_item **ss2);
++typedef int (*listcoll_t)(const void *ss1, const void *ss2);
+ 
+ extern struct key_specs *keys;
+ extern size_t keys_num;
+@@ -173,8 +173,8 @@
+ int top_level_str_coll(const struct bwstring *, const struct bwstring *);
+ int key_coll(struct keys_array *ks1, struct keys_array *ks2, size_t offset);
+ int str_list_coll(struct bwstring *str1, struct sort_list_item **ss2);
+-int list_coll_by_str_only(struct sort_list_item **ss1, struct sort_list_item **ss2);
+-int list_coll(struct sort_list_item **ss1, struct sort_list_item **ss2);
++int list_coll_by_str_only(const void *ss1, const void *ss2);
++int list_coll(const void *ss1, const void *ss2);
+ int list_coll_offset(struct sort_list_item **ss1, struct sort_list_item **ss2, size_t offset);
+ 
+ listcoll_t get_list_call_func(size_t offset);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/file.c src.freebsd/coreutils/sort/file.c
 --- src.orig/coreutils/sort/file.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/file.c	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/file.c	2023-01-13 18:21:52.673552299 +0100
 @@ -39,6 +39,7 @@
  #include <fcntl.h>
  #if defined(SORT_THREADS)
@@ -4683,7 +4739,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  				err(2, NULL);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/radixsort.c src.freebsd/coreutils/sort/radixsort.c
 --- src.orig/coreutils/sort/radixsort.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/radixsort.c	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/radixsort.c	2023-01-13 18:21:52.677549907 +0100
 @@ -37,6 +37,7 @@
  #if defined(SORT_THREADS)
  #include <pthread.h>
@@ -4731,7 +4787,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		pthread_cond_init(&g_ls_cond, NULL);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/sort.1 src.freebsd/coreutils/sort/sort.1
 --- src.orig/coreutils/sort/sort.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/sort.1	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/sort.1	2023-01-13 18:21:52.677549907 +0100
 @@ -328,9 +328,9 @@
  .It Fl Fl debug
  Print some extra information about the sorting process to the
@@ -4756,7 +4812,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  Note that
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/sort.c src.freebsd/coreutils/sort/sort.c
 --- src.orig/coreutils/sort/sort.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/sort.c	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/sort.c	2023-01-13 18:21:52.677549907 +0100
 @@ -31,7 +31,6 @@
  __FBSDID("$FreeBSD$");
  
@@ -5015,7 +5071,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	if (strcmp(outfile, "-")) {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sort/sort.h src.freebsd/coreutils/sort/sort.h
 --- src.orig/coreutils/sort/sort.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/sort/sort.h	2023-01-13 18:17:00.084603210 +0100
++++ src.freebsd/coreutils/sort/sort.h	2023-01-13 18:21:52.677549907 +0100
 @@ -39,7 +39,10 @@
  #include <wchar.h>
  
@@ -5062,7 +5118,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
   * sort.c
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/split/split.c src.freebsd/coreutils/split/split.c
 --- src.orig/coreutils/split/split.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/split/split.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/split/split.c	2023-01-13 18:21:52.677549907 +0100
 @@ -51,7 +51,6 @@
  #include <errno.h>
  #include <fcntl.h>
@@ -5104,7 +5160,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			break;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stat/stat.1 src.freebsd/coreutils/stat/stat.1
 --- src.orig/coreutils/stat/stat.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/stat/stat.1	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stat/stat.1	2023-01-13 18:21:52.677549907 +0100
 @@ -38,7 +38,7 @@
  .Nd display file status
  .Sh SYNOPSIS
@@ -5181,7 +5237,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Pq Fa st_gen .
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stat/stat.c src.freebsd/coreutils/stat/stat.c
 --- src.orig/coreutils/stat/stat.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/stat/stat.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stat/stat.c	2023-01-13 18:21:52.677549907 +0100
 @@ -42,17 +42,18 @@
  #if HAVE_CONFIG_H
  #include "config.h" 
@@ -5384,7 +5440,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/cchar.c src.freebsd/coreutils/stty/cchar.c
 --- src.orig/coreutils/stty/cchar.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/cchar.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/cchar.c	2023-01-13 18:21:52.677549907 +0100
 @@ -36,11 +36,14 @@
  __FBSDID("$FreeBSD$");
  
@@ -5425,7 +5481,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	{ "time",	VTIME,		CTIME },
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/extern.h src.freebsd/coreutils/stty/extern.h
 --- src.orig/coreutils/stty/extern.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/extern.h	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/extern.h	2023-01-13 18:21:52.677549907 +0100
 @@ -42,4 +42,7 @@
  void	print(struct termios *, struct winsize *, int, enum FMT);
  void	usage(void) __dead2;
@@ -5436,7 +5492,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  extern struct cchar cchars1[], cchars2[];
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/gfmt.c src.freebsd/coreutils/stty/gfmt.c
 --- src.orig/coreutils/stty/gfmt.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/gfmt.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/gfmt.c	2023-01-13 18:21:52.677549907 +0100
 @@ -40,7 +40,9 @@
  #include <err.h>
  #include <stdio.h>
@@ -5485,7 +5541,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		for (cp = cchars1; cp->name != NULL; ++cp)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/key.c src.freebsd/coreutils/stty/key.c
 --- src.orig/coreutils/stty/key.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/key.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/key.c	2023-01-13 18:21:52.677549907 +0100
 @@ -36,11 +36,15 @@
  __FBSDID("$FreeBSD$");
  
@@ -5569,7 +5625,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/modes.c src.freebsd/coreutils/stty/modes.c
 --- src.orig/coreutils/stty/modes.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/modes.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/modes.c	2023-01-13 18:21:52.677549907 +0100
 @@ -36,7 +36,9 @@
  __FBSDID("$FreeBSD$");
  
@@ -5623,7 +5679,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/print.c src.freebsd/coreutils/stty/print.c
 --- src.orig/coreutils/stty/print.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/print.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/print.c	2023-01-13 18:21:52.681547516 +0100
 @@ -40,6 +40,8 @@
  #include <stddef.h>
  #include <stdio.h>
@@ -5705,7 +5761,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	cc = tp->c_cc;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/stty.1 src.freebsd/coreutils/stty/stty.1
 --- src.orig/coreutils/stty/stty.1	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/stty.1	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/stty.1	2023-01-13 18:21:52.681547516 +0100
 @@ -353,13 +353,6 @@
  erased with simply an
  .Dv ERASE
@@ -5766,7 +5822,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Ar number
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/stty.c src.freebsd/coreutils/stty/stty.c
 --- src.orig/coreutils/stty/stty.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/stty.c	2023-01-13 18:17:00.088600818 +0100
++++ src.freebsd/coreutils/stty/stty.c	2023-01-13 18:21:52.681547516 +0100
 @@ -51,9 +51,12 @@
  #include <stdlib.h>
  #include <string.h>
@@ -5796,7 +5852,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			i.set = 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/stty/util.c src.freebsd/coreutils/stty/util.c
 --- src.orig/coreutils/stty/util.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/stty/util.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/stty/util.c	2023-01-13 18:21:52.681547516 +0100
 @@ -40,6 +40,7 @@
  
  #include <err.h>
@@ -5832,7 +5888,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 +}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/sync/sync.c src.freebsd/coreutils/sync/sync.c
 --- src.orig/coreutils/sync/sync.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/sync/sync.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/sync/sync.c	2023-01-13 18:21:52.681547516 +0100
 @@ -45,7 +45,7 @@
  #include <unistd.h>
  
@@ -5844,7 +5900,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	exit(0);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tail/extern.h src.freebsd/coreutils/tail/extern.h
 --- src.orig/coreutils/tail/extern.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tail/extern.h	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tail/extern.h	2023-01-13 18:21:52.681547516 +0100
 @@ -78,4 +78,3 @@
  void printfn(const char *, int);
  
@@ -5852,7 +5908,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 -extern fileargs_t *fa;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tail/forward.c src.freebsd/coreutils/tail/forward.c
 --- src.orig/coreutils/tail/forward.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tail/forward.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tail/forward.c	2023-01-13 18:21:52.681547516 +0100
 @@ -46,20 +46,21 @@
  #include <sys/stat.h>
  #include <sys/time.h>
@@ -6159,7 +6215,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			break;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tail/misc.c src.freebsd/coreutils/tail/misc.c
 --- src.orig/coreutils/tail/misc.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tail/misc.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tail/misc.c	2023-01-13 18:21:52.681547516 +0100
 @@ -51,9 +51,6 @@
  #include <string.h>
  #include <unistd.h>
@@ -6172,7 +6228,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  void
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tail/read.c src.freebsd/coreutils/tail/read.c
 --- src.orig/coreutils/tail/read.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tail/read.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tail/read.c	2023-01-13 18:21:52.681547516 +0100
 @@ -51,9 +51,6 @@
  #include <string.h>
  #include <unistd.h>
@@ -6185,7 +6241,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  /*
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tail/reverse.c src.freebsd/coreutils/tail/reverse.c
 --- src.orig/coreutils/tail/reverse.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tail/reverse.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tail/reverse.c	2023-01-13 18:21:52.681547516 +0100
 @@ -55,11 +55,16 @@
  #include <string.h>
  #include <unistd.h>
@@ -6208,7 +6264,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tail/tail.c src.freebsd/coreutils/tail/tail.c
 --- src.orig/coreutils/tail/tail.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tail/tail.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tail/tail.c	2023-01-13 18:21:52.681547516 +0100
 @@ -46,11 +46,9 @@
  static const char sccsid[] = "@(#)tail.c	8.1 (Berkeley) 6/6/93";
  #endif
@@ -6303,7 +6359,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tee/tee.c src.freebsd/coreutils/tee/tee.c
 --- src.orig/coreutils/tee/tee.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tee/tee.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tee/tee.c	2023-01-13 18:21:52.681547516 +0100
 @@ -43,11 +43,9 @@
    "$FreeBSD$";
  #endif /* not lint */
@@ -6354,7 +6410,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		err(1, "malloc");
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/timeout/timeout.c src.freebsd/coreutils/timeout/timeout.c
 --- src.orig/coreutils/timeout/timeout.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/timeout/timeout.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/timeout/timeout.c	2023-01-13 18:21:52.681547516 +0100
 @@ -28,7 +28,7 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -6479,7 +6535,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		pstat = WEXITSTATUS(pstat);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tr/cmap.h src.freebsd/coreutils/tr/cmap.h
 --- src.orig/coreutils/tr/cmap.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tr/cmap.h	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tr/cmap.h	2023-01-13 18:21:52.681547516 +0100
 @@ -47,7 +47,7 @@
  	wint_t		cm_cache[CM_CACHE_SIZE];
  	bool		cm_havecache;
@@ -6491,7 +6547,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	wint_t		cm_max;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tr/extern.h src.freebsd/coreutils/tr/extern.h
 --- src.orig/coreutils/tr/extern.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tr/extern.h	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tr/extern.h	2023-01-13 18:21:52.681547516 +0100
 @@ -35,7 +35,7 @@
  #include <limits.h>
  
@@ -6509,7 +6565,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 +#define iswrune(v) (iswprint(v) || iswcntrl(v))
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tr/str.c src.freebsd/coreutils/tr/str.c
 --- src.orig/coreutils/tr/str.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tr/str.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tr/str.c	2023-01-13 18:21:52.681547516 +0100
 @@ -51,6 +51,8 @@
  
  #include "extern.h"
@@ -6640,7 +6696,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tr/tr.c src.freebsd/coreutils/tr/tr.c
 --- src.orig/coreutils/tr/tr.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tr/tr.c	2023-01-13 18:17:00.092598427 +0100
++++ src.freebsd/coreutils/tr/tr.c	2023-01-13 18:21:52.685545124 +0100
 @@ -44,9 +44,7 @@
  #endif
  
@@ -6700,7 +6756,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			/*
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/truncate/truncate.c src.freebsd/coreutils/truncate/truncate.c
 --- src.orig/coreutils/truncate/truncate.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/truncate/truncate.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/truncate/truncate.c	2023-01-13 18:21:52.685545124 +0100
 @@ -27,7 +27,7 @@
   *
   */
@@ -6723,7 +6779,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tsort/tsort.c src.freebsd/coreutils/tsort/tsort.c
 --- src.orig/coreutils/tsort/tsort.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tsort/tsort.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/tsort/tsort.c	2023-01-13 18:21:52.685545124 +0100
 @@ -48,7 +48,6 @@
  #include <sys/types.h>
  
@@ -6892,7 +6948,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/tty/tty.c src.freebsd/coreutils/tty/tty.c
 --- src.orig/coreutils/tty/tty.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/tty/tty.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/tty/tty.c	2023-01-13 18:21:52.685545124 +0100
 @@ -48,6 +48,8 @@
  #include <stdlib.h>
  #include <unistd.h>
@@ -6912,7 +6968,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/uname/uname.c src.freebsd/coreutils/uname/uname.c
 --- src.orig/coreutils/uname/uname.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/uname/uname.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/uname/uname.c	2023-01-13 18:21:52.685545124 +0100
 @@ -49,15 +49,14 @@
  #endif
  
@@ -7058,7 +7114,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/uniq/uniq.c src.freebsd/coreutils/uniq/uniq.c
 --- src.orig/coreutils/uniq/uniq.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/uniq/uniq.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/uniq/uniq.c	2023-01-13 18:21:52.685545124 +0100
 @@ -46,9 +46,6 @@
    "$FreeBSD$";
  #endif /* not lint */
@@ -7112,7 +7168,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	prevline = thisline = NULL;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/users/users.cc src.freebsd/coreutils/users/users.cc
 --- src.orig/coreutils/users/users.cc	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/users/users.cc	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/users/users.cc	2023-01-13 18:21:52.685545124 +0100
 @@ -30,9 +30,6 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -7135,7 +7191,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			names.insert(ut->ut_user);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/wc/wc.1 src.freebsd/coreutils/wc/wc.1
 --- src.orig/coreutils/wc/wc.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/wc/wc.1	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/wc/wc.1	2023-01-13 18:21:52.685545124 +0100
 @@ -130,7 +130,7 @@
  If
  .Nm
@@ -7147,7 +7203,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  argument for
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/wc/wc.c src.freebsd/coreutils/wc/wc.c
 --- src.orig/coreutils/wc/wc.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/wc/wc.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/wc/wc.c	2023-01-13 18:21:52.685545124 +0100
 @@ -44,16 +44,16 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -7251,7 +7307,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  					errno = EILSEQ;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/who/who.c src.freebsd/coreutils/who/who.c
 --- src.orig/coreutils/who/who.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/who/who.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/who/who.c	2023-01-13 18:21:52.685545124 +0100
 @@ -45,10 +45,11 @@
  #include <stdlib.h>
  #include <string.h>
@@ -7298,7 +7354,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/xinstall/install.1 src.freebsd/coreutils/xinstall/install.1
 --- src.orig/coreutils/xinstall/install.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/xinstall/install.1	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/xinstall/install.1	2023-01-13 18:21:52.685545124 +0100
 @@ -39,7 +39,6 @@
  .Op Fl bCcpSsUv
  .Op Fl B Ar suffix
@@ -7392,7 +7448,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  utility with
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/xinstall/xinstall.c src.freebsd/coreutils/xinstall/xinstall.c
 --- src.orig/coreutils/xinstall/xinstall.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/xinstall/xinstall.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/xinstall/xinstall.c	2023-01-13 18:21:52.685545124 +0100
 @@ -57,13 +57,8 @@
  #include <fcntl.h>
  #include <grp.h>
@@ -7770,7 +7826,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	if (status != 0) {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/yes/yes.c src.freebsd/coreutils/yes/yes.c
 --- src.orig/coreutils/yes/yes.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/coreutils/yes/yes.c	2023-01-13 18:17:00.096596035 +0100
++++ src.freebsd/coreutils/yes/yes.c	2023-01-13 18:21:52.689542732 +0100
 @@ -43,7 +43,6 @@
  #endif
  #endif /* not lint */
@@ -7791,7 +7847,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  		explen = strlen(exp) + 1;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/cmp/cmp.c src.freebsd/diffutils/cmp/cmp.c
 --- src.orig/diffutils/cmp/cmp.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/cmp/cmp.c	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/cmp/cmp.c	2023-01-13 18:21:52.689542732 +0100
 @@ -47,7 +47,6 @@
  #include <sys/types.h>
  #include <sys/stat.h>
@@ -7863,7 +7919,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  			if (!sflag)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/cmp/extern.h src.freebsd/diffutils/cmp/extern.h
 --- src.orig/diffutils/cmp/extern.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/cmp/extern.h	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/cmp/extern.h	2023-01-13 18:21:52.689542732 +0100
 @@ -34,6 +34,8 @@
   *
   */
@@ -7875,7 +7931,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  #define ERR_EXIT	2	/* error exit code */
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/cmp/regular.c src.freebsd/diffutils/cmp/regular.c
 --- src.orig/diffutils/cmp/regular.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/cmp/regular.c	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/cmp/regular.c	2023-01-13 18:21:52.689542732 +0100
 @@ -41,8 +41,8 @@
  #include <sys/param.h>
  #include <sys/mman.h>
@@ -7919,7 +7975,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  	write(STDERR_FILENO, msg, sizeof(msg));
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/cmp/special.c src.freebsd/diffutils/cmp/special.c
 --- src.orig/diffutils/cmp/special.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/cmp/special.c	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/cmp/special.c	2023-01-13 18:21:52.689542732 +0100
 @@ -40,7 +40,6 @@
  
  #include <sys/types.h>
@@ -7944,7 +8000,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  	if ((fp2 = fdopen(fd2, "r")) == NULL)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/diff/diff.1 src.freebsd/diffutils/diff/diff.1
 --- src.orig/diffutils/diff/diff.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/diff/diff.1	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/diff/diff.1	2023-01-13 18:21:52.689542732 +0100
 @@ -82,7 +82,6 @@
  .Op Fl -minimal
  .Op Fl -no-ignore-file-name-case
@@ -7990,7 +8046,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  .Ar label
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/diff/diff.c src.freebsd/diffutils/diff/diff.c
 --- src.orig/diffutils/diff/diff.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/diff/diff.c	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/diff/diff.c	2023-01-13 18:21:52.689542732 +0100
 @@ -37,8 +37,9 @@
  
  #include "diff.h"
@@ -8077,7 +8133,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/diff/diff.h src.freebsd/diffutils/diff/diff.h
 --- src.orig/diffutils/diff/diff.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/diff/diff.h	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/diff/diff.h	2023-01-13 18:21:52.689542732 +0100
 @@ -100,8 +100,16 @@
  extern struct	excludes *excludes_list;
  extern regex_t	ignore_re;
@@ -8098,7 +8154,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
 +#endif
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/diff/diffdir.c src.freebsd/diffutils/diff/diffdir.c
 --- src.orig/diffutils/diff/diffdir.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/diff/diffdir.c	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/diff/diffdir.c	2023-01-13 18:21:52.689542732 +0100
 @@ -35,6 +35,7 @@
  #include <limits.h>
  
@@ -8129,7 +8185,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  	}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/diff/diffreg.c src.freebsd/diffutils/diff/diffreg.c
 --- src.orig/diffutils/diff/diffreg.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/diff/diffreg.c	2023-01-13 18:17:00.100593643 +0100
++++ src.freebsd/diffutils/diff/diffreg.c	2023-01-13 18:21:52.689542732 +0100
 @@ -69,10 +69,8 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -8279,7 +8335,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  /*
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffutils/sdiff/sdiff.c src.freebsd/diffutils/sdiff/sdiff.c
 --- src.orig/diffutils/sdiff/sdiff.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/diffutils/sdiff/sdiff.c	2023-01-13 18:17:00.104591251 +0100
++++ src.freebsd/diffutils/sdiff/sdiff.c	2023-01-13 18:21:52.689542732 +0100
 @@ -28,6 +28,7 @@
  #include <unistd.h>
  
@@ -8314,7 +8370,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/diffu
  			break;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/ed/main.c src.freebsd/ed/main.c
 --- src.orig/ed/main.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/ed/main.c	2023-01-13 18:17:00.104591251 +0100
++++ src.freebsd/ed/main.c	2023-01-13 18:21:52.689542732 +0100
 @@ -59,6 +59,7 @@
  #include <setjmp.h>
  
@@ -8341,7 +8397,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/ed/ma
  			if (!isatty(0)) {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/extern.h src.freebsd/findutils/find/extern.h
 --- src.orig/findutils/find/extern.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/extern.h	2023-01-13 18:17:00.104591251 +0100
++++ src.freebsd/findutils/find/extern.h	2023-01-13 18:21:52.693540340 +0100
 @@ -33,6 +33,7 @@
   */
  
@@ -8360,7 +8416,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  creat_f	c_Xtime;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/find.1 src.freebsd/findutils/find/find.1
 --- src.orig/findutils/find/find.1	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/find.1	2023-01-13 18:17:00.104591251 +0100
++++ src.freebsd/findutils/find/find.1	2023-01-13 18:21:52.693540340 +0100
 @@ -181,35 +181,6 @@
  and neither means
  .Dq exactly n .
@@ -8488,7 +8544,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  Historically, the
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/find.c src.freebsd/findutils/find/find.c
 --- src.orig/findutils/find/find.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/find.c	2023-01-13 18:17:00.104591251 +0100
++++ src.freebsd/findutils/find/find.c	2023-01-13 18:21:52.693540340 +0100
 @@ -52,7 +52,7 @@
  
  #include "find.h"
@@ -8522,7 +8578,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/find.h src.freebsd/findutils/find/find.h
 --- src.orig/findutils/find/find.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/find.h	2023-01-13 18:17:00.104591251 +0100
++++ src.freebsd/findutils/find/find.h	2023-01-13 18:21:52.693540340 +0100
 @@ -56,11 +56,7 @@
  #else
  #define HAVE_STRUCT_STAT_ST_BIRTHTIME 0
@@ -8537,7 +8593,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  struct _plandata;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/function.c src.freebsd/findutils/find/function.c
 --- src.orig/findutils/find/function.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/function.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/find/function.c	2023-01-13 18:21:52.693540340 +0100
 @@ -40,12 +40,12 @@
  __FBSDID("$FreeBSD$");
  
@@ -8960,7 +9016,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  	exit(exitstatus);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/getdate.y src.freebsd/findutils/find/getdate.y
 --- src.orig/findutils/find/getdate.y	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/getdate.y	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/find/getdate.y	2023-01-13 18:21:52.693540340 +0100
 @@ -524,7 +524,7 @@
  
  /* ARGSUSED */
@@ -8972,7 +9028,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/ls.c src.freebsd/findutils/find/ls.c
 --- src.orig/findutils/find/ls.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/ls.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/find/ls.c	2023-01-13 18:21:52.693540340 +0100
 @@ -38,6 +38,7 @@
  
  #include <sys/param.h>
@@ -9024,7 +9080,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  		(void)printf("%#8jx ", (uintmax_t)sb->st_rdev);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/main.c src.freebsd/findutils/find/main.c
 --- src.orig/findutils/find/main.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/main.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/find/main.c	2023-01-13 18:21:52.693540340 +0100
 @@ -32,7 +32,7 @@
   * SUCH DAMAGE.
   */
@@ -9045,7 +9101,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  static void usage(void);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/misc.c src.freebsd/findutils/find/misc.c
 --- src.orig/findutils/find/misc.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/misc.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/find/misc.c	2023-01-13 18:21:52.693540340 +0100
 @@ -51,6 +51,10 @@
  
  #include "find.h"
@@ -9068,7 +9124,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  	}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/xargs/strnsubst.c src.freebsd/findutils/xargs/strnsubst.c
 --- src.orig/findutils/xargs/strnsubst.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/xargs/strnsubst.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/xargs/strnsubst.c	2023-01-13 18:21:52.693540340 +0100
 @@ -15,6 +15,9 @@
  #include <stdlib.h>
  #include <string.h>
@@ -9081,7 +9137,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/xargs/xargs.c src.freebsd/findutils/xargs/xargs.c
 --- src.orig/findutils/xargs/xargs.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/xargs/xargs.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/findutils/xargs/xargs.c	2023-01-13 18:21:52.693540340 +0100
 @@ -51,8 +51,8 @@
  #include <sys/types.h>
  #include <sys/wait.h>
@@ -9164,7 +9220,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  	return (match == 0);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/file.c src.freebsd/grep/file.c
 --- src.orig/grep/file.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/grep/file.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/grep/file.c	2023-01-13 18:21:52.697537949 +0100
 @@ -43,6 +43,7 @@
  #include <err.h>
  #include <errno.h>
@@ -9195,7 +9251,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/
  #endif
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/grep.c src.freebsd/grep/grep.c
 --- src.orig/grep/grep.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/grep/grep.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/grep/grep.c	2023-01-13 18:21:52.697537949 +0100
 @@ -53,6 +53,8 @@
  
  #include "grep.h"
@@ -9246,7 +9302,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/
  			vflag = true;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/grep.h src.freebsd/grep/grep.h
 --- src.orig/grep/grep.h	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/grep/grep.h	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/grep/grep.h	2023-01-13 18:21:52.697537949 +0100
 @@ -31,12 +31,10 @@
   * SUCH DAMAGE.
   */
@@ -9262,7 +9318,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/util.c src.freebsd/grep/util.c
 --- src.orig/grep/util.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/grep/util.c	2023-01-13 18:17:00.108588860 +0100
++++ src.freebsd/grep/util.c	2023-01-13 18:21:52.697537949 +0100
 @@ -469,6 +469,31 @@
  
  #define iswword(x)	(iswalnum((x)) || (x) == L'_')
@@ -9306,7 +9362,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/grep/
  				continue;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/gzip/gzip.c src.freebsd/gzip/gzip.c
 --- src.orig/gzip/gzip.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/gzip/gzip.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/gzip/gzip.c	2023-01-13 18:21:52.697537949 +0100
 @@ -49,13 +49,23 @@
   *	- make bzip2/compress -v/-t/-l support work as well as possible
   */
@@ -9418,7 +9474,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/gzip/
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/gzip/unxz.c src.freebsd/gzip/unxz.c
 --- src.orig/gzip/unxz.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/gzip/unxz.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/gzip/unxz.c	2023-01-13 18:21:52.697537949 +0100
 @@ -38,6 +38,7 @@
  #include <stdio.h>
  #include <unistd.h>
@@ -9438,7 +9494,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/gzip/
  				break;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/gzip/zuncompress.c src.freebsd/gzip/zuncompress.c
 --- src.orig/gzip/zuncompress.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/gzip/zuncompress.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/gzip/zuncompress.c	2023-01-13 18:21:52.697537949 +0100
 @@ -40,7 +40,12 @@
  
  /* This file is #included by gzip.c */
@@ -9489,7 +9545,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/gzip/
 File src.orig/include is a regular file while file src.freebsd/include is a directory
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/eval.c src.freebsd/m4/eval.c
 --- src.orig/m4/eval.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/m4/eval.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/m4/eval.c	2023-01-13 18:21:52.697537949 +0100
 @@ -60,6 +60,7 @@
  #include "stdd.h"
  #include "extern.h"
@@ -9500,7 +9556,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/ev
  static void	dopushdef(const char *, const char *);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/look.c src.freebsd/m4/look.c
 --- src.orig/m4/look.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/m4/look.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/m4/look.c	2023-01-13 18:21:52.697537949 +0100
 @@ -70,20 +70,20 @@
  
  /* Support routines for hash tables.  */
@@ -9527,7 +9583,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/lo
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/misc.c src.freebsd/m4/misc.c
 --- src.orig/m4/misc.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/m4/misc.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/m4/misc.c	2023-01-13 18:21:52.697537949 +0100
 @@ -243,7 +243,7 @@
  }
  
@@ -9539,7 +9595,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/mi
  	write(STDERR_FILENO, intrmessage, sizeof(intrmessage)-1);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/parser.y src.freebsd/m4/parser.y
 --- src.orig/m4/parser.y	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/m4/parser.y	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/m4/parser.y	2023-01-13 18:21:52.697537949 +0100
 @@ -20,6 +20,7 @@
  
  #include <math.h>
@@ -9550,7 +9606,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/m4/pa
  extern int yylex(void);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/col/col.c src.freebsd/miscutils/col/col.c
 --- src.orig/miscutils/col/col.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/col/col.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/miscutils/col/col.c	2023-01-13 18:21:52.697537949 +0100
 @@ -47,11 +47,9 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
@@ -9588,7 +9644,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  	while ((opt = getopt(argc, argv, "bfhl:px")) != -1)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/getopt/getopt.c src.freebsd/miscutils/getopt/getopt.c
 --- src.orig/miscutils/getopt/getopt.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/getopt/getopt.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/miscutils/getopt/getopt.c	2023-01-13 18:21:52.701535557 +0100
 @@ -6,7 +6,6 @@
   * into the public domain and is thus not subject to any copyright.
   */
@@ -9609,7 +9665,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  		switch (c) {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/hexdump/conv.c src.freebsd/miscutils/hexdump/conv.c
 --- src.orig/miscutils/hexdump/conv.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/hexdump/conv.c	2023-01-13 18:17:00.112586468 +0100
++++ src.freebsd/miscutils/hexdump/conv.c	2023-01-13 18:21:52.701535557 +0100
 @@ -104,7 +104,7 @@
  	if (odmode && MB_CUR_MAX > 1) {
  		oclen = 0;
@@ -9621,7 +9677,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  		else if (clen == (size_t)-1 || (clen == (size_t)-2 &&
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/hexdump/display.c src.freebsd/miscutils/hexdump/display.c
 --- src.orig/miscutils/hexdump/display.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/hexdump/display.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/hexdump/display.c	2023-01-13 18:21:52.701535557 +0100
 @@ -38,12 +38,10 @@
  __FBSDID("$FreeBSD$");
  
@@ -9740,7 +9796,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  		noseek();
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/hexdump/hexdump.c src.freebsd/miscutils/hexdump/hexdump.c
 --- src.orig/miscutils/hexdump/hexdump.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/hexdump/hexdump.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/hexdump/hexdump.c	2023-01-13 18:21:52.701535557 +0100
 @@ -44,8 +44,6 @@
  __FBSDID("$FreeBSD$");
  
@@ -9767,7 +9823,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  	exit(exitval);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/hexdump/odsyntax.c src.freebsd/miscutils/hexdump/odsyntax.c
 --- src.orig/miscutils/hexdump/odsyntax.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/hexdump/odsyntax.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/hexdump/odsyntax.c	2023-01-13 18:21:52.701535557 +0100
 @@ -309,7 +309,7 @@
  }
  
@@ -9779,7 +9835,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  	int digits;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/hexdump/parse.c src.freebsd/miscutils/hexdump/parse.c
 --- src.orig/miscutils/hexdump/parse.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/hexdump/parse.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/hexdump/parse.c	2023-01-13 18:21:52.701535557 +0100
 @@ -46,13 +46,14 @@
  #include <ctype.h>
  #include <string.h>
@@ -9863,7 +9919,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  						p1[3] = '\0';
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/kill/kill.c src.freebsd/miscutils/kill/kill.c
 --- src.orig/miscutils/kill/kill.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/miscutils/kill/kill.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/kill/kill.c	2023-01-13 18:21:52.701535557 +0100
 @@ -60,9 +60,10 @@
  #include "bltin/bltin.h"
  #endif
@@ -9924,7 +9980,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  			(void)fprintf(fp, " ");
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/look/look.c src.freebsd/miscutils/look/look.c
 --- src.orig/miscutils/look/look.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/look/look.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/look/look.c	2023-01-13 18:21:52.701535557 +0100
 @@ -82,12 +82,12 @@
  
  static int dflag, fflag;
@@ -10026,7 +10082,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  	size_t len2;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/rev/rev.c src.freebsd/miscutils/rev/rev.c
 --- src.orig/miscutils/rev/rev.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/rev/rev.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/rev/rev.c	2023-01-13 18:21:52.701535557 +0100
 @@ -57,6 +57,46 @@
  
  static void usage(void);
@@ -10104,7 +10160,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/wall/ttymsg.c src.freebsd/miscutils/wall/ttymsg.c
 --- src.orig/miscutils/wall/ttymsg.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/wall/ttymsg.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/wall/ttymsg.c	2023-01-13 18:21:52.701535557 +0100
 @@ -37,6 +37,7 @@
  static const char sccsid[] = "@(#)ttymsg.c	8.2 (Berkeley) 11/16/93";
  #endif
@@ -10141,7 +10197,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  			continue;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/wall/wall.c src.freebsd/miscutils/wall/wall.c
 --- src.orig/miscutils/wall/wall.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/wall/wall.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/wall/wall.c	2023-01-13 18:21:52.701535557 +0100
 @@ -49,6 +49,7 @@
   */
  
@@ -10161,7 +10217,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  						}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscutils/write/write.c src.freebsd/miscutils/write/write.c
 --- src.orig/miscutils/write/write.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/miscutils/write/write.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/miscutils/write/write.c	2023-01-13 18:21:52.701535557 +0100
 @@ -48,27 +48,28 @@
  __FBSDID("$FreeBSD$");
  
@@ -10288,7 +10344,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/miscu
  	exit(0);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch/backupfile.c src.freebsd/patch/backupfile.c
 --- src.orig/patch/backupfile.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/patch/backupfile.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/patch/backupfile.c	2023-01-13 18:21:52.701535557 +0100
 @@ -105,7 +105,7 @@
  	file_name_length = strlen(file);
  
@@ -10300,7 +10356,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  		this_version = version_number(file, dp->d_name, file_name_length);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch/inp.c src.freebsd/patch/inp.c
 --- src.orig/patch/inp.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/patch/inp.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/patch/inp.c	2023-01-13 18:21:52.701535557 +0100
 @@ -35,6 +35,7 @@
  
  #include <ctype.h>
@@ -10354,7 +10410,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch/patch.c src.freebsd/patch/patch.c
 --- src.orig/patch/patch.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/patch/patch.c	2023-01-13 18:17:00.116584076 +0100
++++ src.freebsd/patch/patch.c	2023-01-13 18:21:52.705533165 +0100
 @@ -46,6 +46,7 @@
  #include "inp.h"
  #include "backupfile.h"
@@ -10377,7 +10433,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  		case 'b':
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch/pch.c src.freebsd/patch/pch.c
 --- src.orig/patch/pch.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/patch/pch.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/patch/pch.c	2023-01-13 18:21:52.705533165 +0100
 @@ -43,6 +43,7 @@
  #include "util.h"
  #include "pch.h"
@@ -10448,7 +10504,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch/util.c src.freebsd/patch/util.c
 --- src.orig/patch/util.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/patch/util.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/patch/util.c	2023-01-13 18:21:52.705533165 +0100
 @@ -46,6 +46,7 @@
  #include "util.h"
  #include "backupfile.h"
@@ -10459,7 +10515,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sed/compile.c src.freebsd/sed/compile.c
 --- src.orig/sed/compile.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/sed/compile.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sed/compile.c	2023-01-13 18:21:52.705533165 +0100
 @@ -827,11 +827,15 @@
  			y->bytetab[i] = (btowc(i) != WEOF) ? i : 0;
  		while (*op != '\0') {
@@ -10482,7 +10538,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sed/c
  			else {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sed/main.c src.freebsd/sed/main.c
 --- src.orig/sed/main.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/sed/main.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sed/main.c	2023-01-13 18:21:52.705533165 +0100
 @@ -67,6 +67,9 @@
  
  #include "defs.h"
@@ -10513,7 +10569,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sed/m
  		if ((p = fgets(buf, n, f)) != NULL) {
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sed/process.c src.freebsd/sed/process.c
 --- src.orig/sed/process.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/sed/process.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sed/process.c	2023-01-13 18:21:52.705533165 +0100
 @@ -669,6 +669,10 @@
  	size_t start, size_t stop)
  {
@@ -10554,7 +10610,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sed/p
  		return (1);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/alias.c src.freebsd/sh/alias.c
 --- src.orig/sh/alias.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/alias.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sh/alias.c	2023-01-13 18:21:52.705533165 +0100
 @@ -199,7 +199,7 @@
  }
  
@@ -10575,7 +10631,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/al
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/arith_yacc.c src.freebsd/sh/arith_yacc.c
 --- src.orig/sh/arith_yacc.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/arith_yacc.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sh/arith_yacc.c	2023-01-13 18:21:52.705533165 +0100
 @@ -199,6 +199,7 @@
  		return ~primary(op, val, yylex(), noeval);
  	default:
@@ -10586,7 +10642,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/ar
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/cd.c src.freebsd/sh/cd.c
 --- src.orig/sh/cd.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/cd.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sh/cd.c	2023-01-13 18:21:52.705533165 +0100
 @@ -77,7 +77,7 @@
  static char *curdir = NULL;	/* current working directory */
  
@@ -10607,7 +10663,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/cd
  	int ch, phys;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/error.h src.freebsd/sh/error.h
 --- src.orig/sh/error.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/error.h	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sh/error.h	2023-01-13 18:21:52.705533165 +0100
 @@ -83,12 +83,3 @@
  void warning(const char *, ...) __printflike(1, 2);
  void error(const char *, ...) __printf0like(1, 2) __dead2;
@@ -10623,7 +10679,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/er
 -#define longjmp(jmploc, val)	_longjmp(jmploc, val)
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/eval.c src.freebsd/sh/eval.c
 --- src.orig/sh/eval.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/eval.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sh/eval.c	2023-01-13 18:21:52.705533165 +0100
 @@ -1259,7 +1259,7 @@
   * The `command' command.
   */
@@ -10661,7 +10717,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/ev
  	long shumins, shsmins, chumins, chsmins;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/exec.c src.freebsd/sh/exec.c
 --- src.orig/sh/exec.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/exec.c	2023-01-13 18:17:00.120581685 +0100
++++ src.freebsd/sh/exec.c	2023-01-13 18:21:52.705533165 +0100
 @@ -255,7 +255,7 @@
  
  
@@ -10682,7 +10738,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/ex
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/expand.c src.freebsd/sh/expand.c
 --- src.orig/sh/expand.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/expand.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/expand.c	2023-01-13 18:21:52.709530774 +0100
 @@ -645,7 +645,8 @@
  		}
  		error("%.*s: parameter %snot set", (int)(p - var - 1),
@@ -10721,7 +10777,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/ex
  	union node *args, *n;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/histedit.c src.freebsd/sh/histedit.c
 --- src.orig/sh/histedit.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/histedit.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/histedit.c	2023-01-13 18:21:52.709530774 +0100
 @@ -74,9 +74,13 @@
  static char *fc_replace(const char *, char *, char *);
  static int not_fcnumber(const char *);
@@ -10812,7 +10868,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/hi
  	error("not compiled with line editing support");
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/input.c src.freebsd/sh/input.c
 --- src.orig/sh/input.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/input.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/input.c	2023-01-13 18:21:52.709530774 +0100
 @@ -59,7 +59,9 @@
  #include "error.h"
  #include "alias.h"
@@ -10825,7 +10881,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/in
  #define EOF_NLEFT -99		/* value of parsenleft when EOF pushed back */
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/jobs.c src.freebsd/sh/jobs.c
 --- src.orig/sh/jobs.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/jobs.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/jobs.c	2023-01-13 18:21:52.709530774 +0100
 @@ -246,7 +246,7 @@
  
  #if JOBS
@@ -10891,7 +10947,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/jo
  
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/jobs.h src.freebsd/sh/jobs.h
 --- src.orig/sh/jobs.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/jobs.h	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/jobs.h	2023-01-13 18:21:52.709530774 +0100
 @@ -55,7 +55,7 @@
  void showjobs(int, int);
  struct job *makejob(union node *, int);
@@ -10903,7 +10959,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/jo
  int backgndpidset(void);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/main.c src.freebsd/sh/main.c
 --- src.orig/sh/main.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/main.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/main.c	2023-01-13 18:21:52.709530774 +0100
 @@ -341,4 +341,5 @@
  		exitshell(number(argv[1]));
  	else
@@ -10912,7 +10968,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/ma
  }
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/memalloc.h src.freebsd/sh/memalloc.h
 --- src.orig/sh/memalloc.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/memalloc.h	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/memalloc.h	2023-01-13 18:21:52.709530774 +0100
 @@ -37,6 +37,9 @@
  
  #include <string.h>
@@ -10925,7 +10981,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/me
  	char *stacknxt;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/miscbltin.c src.freebsd/sh/miscbltin.c
 --- src.orig/sh/miscbltin.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/miscbltin.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/miscbltin.c	2023-01-13 18:21:52.709530774 +0100
 @@ -63,6 +63,7 @@
  #include "mystring.h"
  #include "syntax.h"
@@ -10973,7 +11029,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mi
  		}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mkbuiltins src.freebsd/sh/mkbuiltins
 --- src.orig/sh/mkbuiltins	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/mkbuiltins	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/mkbuiltins	2023-01-13 18:21:52.709530774 +0100
 @@ -34,7 +34,7 @@
  #	@(#)mkbuiltins	8.2 (Berkeley) 5/4/95
  # $FreeBSD$
@@ -10985,7 +11041,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mk
  if grep '^#define[	 ]*JOBS[	 ]*1' $srcdir/shell.h > /dev/null
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mksyntax.c src.freebsd/sh/mksyntax.c
 --- src.orig/sh/mksyntax.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/mksyntax.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/mksyntax.c	2023-01-13 18:21:52.709530774 +0100
 @@ -114,7 +114,7 @@
  static void output_type_macros(void);
  
@@ -10997,7 +11053,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mk
  	char buf[80];
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mktokens src.freebsd/sh/mktokens
 --- src.orig/sh/mktokens	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/mktokens	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/mktokens	2023-01-13 18:21:52.709530774 +0100
 @@ -38,7 +38,7 @@
  # token marks the end of a list.  The third column is the name to print in
  # error messages.
@@ -11009,7 +11065,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/mk
  TNL	0	newline
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/myhistedit.h src.freebsd/sh/myhistedit.h
 --- src.orig/sh/myhistedit.h	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/myhistedit.h	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/myhistedit.h	2023-01-13 18:21:52.709530774 +0100
 @@ -38,7 +38,21 @@
  extern EditLine *el;
  extern int displayhist;
@@ -11035,7 +11091,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/my
  void sethistsize(const char *);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/output.c src.freebsd/sh/output.c
 --- src.orig/sh/output.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/output.c	2023-01-13 18:17:00.124579293 +0100
++++ src.freebsd/sh/output.c	2023-01-13 18:21:52.709530774 +0100
 @@ -71,7 +71,7 @@
  #define MEM_OUT -2		/* output to dynamically allocated memory */
  #define OUTPUT_ERR 01		/* error occurred on output */
@@ -11088,7 +11144,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/ou
  /*
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/parser.c src.freebsd/sh/parser.c
 --- src.orig/sh/parser.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/parser.c	2023-01-13 18:17:00.128576901 +0100
++++ src.freebsd/sh/parser.c	2023-01-13 18:21:52.713528382 +0100
 @@ -65,6 +65,7 @@
  #ifndef NO_HISTORY
  #include "myhistedit.h"
@@ -11174,7 +11230,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/pa
  	const char *fmt;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/redir.c src.freebsd/sh/redir.c
 --- src.orig/sh/redir.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/redir.c	2023-01-13 18:17:00.128576901 +0100
++++ src.freebsd/sh/redir.c	2023-01-13 18:21:52.713528382 +0100
 @@ -175,7 +175,7 @@
  	struct stat sb;
  	int fd = redir->nfile.fd;
@@ -11186,7 +11242,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/re
  	memory[fd] = 0;
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/trap.c src.freebsd/sh/trap.c
 --- src.orig/sh/trap.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/trap.c	2023-01-13 18:17:00.128576901 +0100
++++ src.freebsd/sh/trap.c	2023-01-13 18:21:52.713528382 +0100
 @@ -58,8 +58,10 @@
  #include "trap.h"
  #include "mystring.h"
@@ -11267,7 +11323,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/tr
  				}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/sh/var.c src.freebsd/sh/var.c
 --- src.orig/sh/var.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/sh/var.c	2023-01-13 18:17:00.128576901 +0100
++++ src.freebsd/sh/var.c	2023-01-13 18:21:52.713528382 +0100
 @@ -594,7 +594,7 @@
   */
  

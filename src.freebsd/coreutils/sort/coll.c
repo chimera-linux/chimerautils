@@ -610,18 +610,18 @@ list_coll_offset(struct sort_list_item **ss1, struct sort_list_item **ss2,
  * Compare two sort list items, according to the sort specs.
  */
 int
-list_coll(struct sort_list_item **ss1, struct sort_list_item **ss2)
+list_coll(const void *ss1, const void *ss2)
 {
 
-	return (list_coll_offset(ss1, ss2, 0));
+	return (list_coll_offset((struct sort_list_item **)ss1, (struct sort_list_item **)ss2, 0));
 }
 
 #define	LSCDEF(N)							\
 static int 								\
-list_coll_##N(struct sort_list_item **ss1, struct sort_list_item **ss2)	\
+list_coll_##N(const void *ss1, const void *ss2)	\
 {									\
 									\
-	return (list_coll_offset(ss1, ss2, N));				\
+	return (list_coll_offset((struct sort_list_item **)ss1, (struct sort_list_item **)ss2, N)); \
 }
 
 LSCDEF(1)
@@ -665,9 +665,10 @@ get_list_call_func(size_t offset)
  * Compare two sort list items, only by their original string.
  */
 int
-list_coll_by_str_only(struct sort_list_item **ss1, struct sort_list_item **ss2)
+list_coll_by_str_only(const void *a1, const void *a2)
 {
-
+	struct sort_list_item **ss1 = (struct sort_list_item **)a1;
+	struct sort_list_item **ss2 = (struct sort_list_item **)a2;
 	return (top_level_str_coll(((*ss1)->str), ((*ss2)->str)));
 }
 

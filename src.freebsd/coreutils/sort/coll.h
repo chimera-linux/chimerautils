@@ -141,7 +141,7 @@ struct sort_list_item
 /*
  * Function type, used to compare two list objects
  */
-typedef int (*listcoll_t)(struct sort_list_item **ss1, struct sort_list_item **ss2);
+typedef int (*listcoll_t)(const void *ss1, const void *ss2);
 
 extern struct key_specs *keys;
 extern size_t keys_num;
@@ -173,8 +173,8 @@ int preproc(struct bwstring *s, struct keys_array *ka);
 int top_level_str_coll(const struct bwstring *, const struct bwstring *);
 int key_coll(struct keys_array *ks1, struct keys_array *ks2, size_t offset);
 int str_list_coll(struct bwstring *str1, struct sort_list_item **ss2);
-int list_coll_by_str_only(struct sort_list_item **ss1, struct sort_list_item **ss2);
-int list_coll(struct sort_list_item **ss1, struct sort_list_item **ss2);
+int list_coll_by_str_only(const void *ss1, const void *ss2);
+int list_coll(const void *ss1, const void *ss2);
 int list_coll_offset(struct sort_list_item **ss1, struct sort_list_item **ss2, size_t offset);
 
 listcoll_t get_list_call_func(size_t offset);
