@@ -8,13 +8,13 @@ libcompat_sources = [
     'strmode.c',
     'expand_number.c',
     'vis.c',
-    'strlfuncs.c',
-    'signames.c',
-    'strtonum.c',
+    '../../src.compat/strlfuncs.c',
+    '../../src.compat/signames.c',
+    '../../src.compat/strtonum.c',
 ]
 
 libcompat = static_library(
     'compat',
     libcompat_sources,
-    include_directories : inc,
+    include_directories : [inc, cinc],
 )

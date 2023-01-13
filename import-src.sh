@@ -18,7 +18,7 @@ fail_exit() {
     exit 1
 }
 
-for sub in src ; do
+for sub in src.freebsd ; do
    [ -d ${CWD}/${sub} ] || mkdir -p ${CWD}/${sub}
 done
 
@@ -51,8 +51,8 @@ copy_cmd() {
     rm -f ${rp}/Makefile.depend*
 
     # Copy in the upstream files
-    [ -d ${CWD}/src/${dp} ] || mkdir -p ${CWD}/src/${dp}
-    cp -pr ${rp}/* ${CWD}/src/${dp}
+    [ -d ${CWD}/src.freebsd/${dp} ] || mkdir -p ${CWD}/src.freebsd/${dp}
+    cp -pr ${rp}/* ${CWD}/src.freebsd/${dp}
 }
 
 # coreutils
@@ -199,59 +199,49 @@ copy_cmd usr.bin/sed
 copy_cmd usr.bin/which
 
 # 'compat' is our static library with a subset of BSD library functions
-cp -p usr/src/lib/libc/gen/setmode.c ${CWD}/compat
-cp -p usr/src/lib/libc/string/strmode.c ${CWD}/compat
-cp -p usr/src/lib/libc/gen/getbsize.c ${CWD}/compat
-cp -p usr/src/lib/libutil/humanize_number.c ${CWD}/compat
-cp -p usr/src/lib/libutil/expand_number.c ${CWD}/compat
-cp -p usr/src/lib/libc/stdlib/merge.c ${CWD}/compat
-cp -p usr/src/lib/libc/stdlib/heapsort.c ${CWD}/compat
-cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/compat
-cp -p usr/src/lib/libopenbsd/ohash.c ${CWD}/compat
-cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/include
-cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/include
+cp -p usr/src/lib/libutil/expand_number.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libc/gen/getbsize.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libc/stdlib/heapsort.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libutil/humanize_number.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libc/stdlib/merge.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libopenbsd/ohash.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libc/gen/setmode.c ${CWD}/src.freebsd/compat
+cp -p usr/src/lib/libc/string/strmode.c ${CWD}/src.freebsd/compat
+cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/src.freebsd/compat
+cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.freebsd/include
+cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.freebsd/include
 
 # These files are needed for the factor command
-cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src/coreutils/factor
-cp -p usr/src/usr.bin/primes/pr_tbl.c ${CWD}/src/coreutils/factor
+cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src.freebsd/coreutils/factor
+cp -p usr/src/usr.bin/primes/pr_tbl.c ${CWD}/src.freebsd/coreutils/factor
 
 # These are not used
-rm -rf ${CWD}/src/coreutils/sort/nls
+rm -rf ${CWD}/src.freebsd/coreutils/sort/nls
 
 # sort manpage
-mv ${CWD}/src/coreutils/sort/sort.1.in ${CWD}/src/coreutils/sort/sort.1
+mv ${CWD}/src.freebsd/coreutils/sort/sort.1.in ${CWD}/src.freebsd/coreutils/sort/sort.1
 
 # fix sh generator permissions
-chmod 755 ${CWD}/src/sh/mkbuiltins
-chmod 755 ${CWD}/src/sh/mktokens
+chmod 755 ${CWD}/src.freebsd/sh/mkbuiltins
+chmod 755 ${CWD}/src.freebsd/sh/mktokens
 
 # remove sh files we don't want
-rm -rf ${CWD}/src/sh/dot.*
-rm -rf ${CWD}/src/sh/funcs
-rm -f ${CWD}/src/sh/profile
+rm -rf ${CWD}/src.freebsd/sh/dot.*
+rm -rf ${CWD}/src.freebsd/sh/funcs
+rm -f ${CWD}/src.freebsd/sh/profile
 
 #####################
 # APPLY ANY PATCHES #
 #####################
 
-if [ -d ${CWD}/patches/compat ]; then
-    for patchfile in ${CWD}/patches/compat/*.patch ; do
-        destfile="$(basename ${patchfile} .patch)"
-        [ -f "${CWD}/compat/${destfile}.orig" ] && rm -f "${CWD}/compat/${destfile}.orig"
-        patch -d ${CWD} -p0 -b -z .orig < ${patchfile}
-    done
-fi
-
-if [ -d ${CWD}/patches/src ]; then
-    cd ${CWD}/patches/src
-    for patchfile in $(find . -name '*.patch') ; do
-        [ -f "${patchfile}" ] || continue
-        destfile="$(basename ${patchfile} .patch)"
-        subdir="$(dirname ${patchfile})"
-        [ -f "${CWD}/src/${subdir}/${destfile}.orig" ] && rm -f "${CWD}/src/${subdir}/${destfile}.orig"
-        patch -d ${CWD}/src/${subdir} -p1 -b -z .orig < ${patchfile}
-    done
-fi
+cd ${CWD}/patches
+for patchfile in $(find . -name '*.patch') ; do
+    [ -f "${patchfile}" ] || continue
+    destfile="$(basename ${patchfile} .patch)"
+    subdir="$(dirname ${patchfile})"
+    [ -f "${CWD}/src.freebsd/${subdir}/${destfile}.orig" ] && rm -f "${CWD}/src.freebsd/${subdir}/${destfile}.orig"
+    patch -d ${CWD}/src.freebsd/${subdir} -p1 -b -z .orig < ${patchfile}
+done
 
 # Clean up
 rm -rf ${TMPDIR}

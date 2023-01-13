@@ -1,7 +1,6 @@
 diff3_prog = executable(
     'diff3prog',
     [ 'diff3prog.c' ],
-    include_directories : inc,
     install : true,
     install_dir : get_option('libexecdir'),
 )

@@ -143,5 +143,6 @@ inc = include_directories('include')
 install_link = meson.current_source_dir() / 'utils/install-link.sh'
 
 # Include all of the relevant subdirectories
-subdir('compat')
-subdir('src')
+subdir('src.freebsd')
+subdir('src.openbsd')
+subdir('src.custom')

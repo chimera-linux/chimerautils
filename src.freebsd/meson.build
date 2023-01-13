@@ -1,3 +1,8 @@
+# compat library
+
+cinc = include_directories('include')
+subdir('compat')
+
 # standalone toplevel projects
 
 subdir('ed')
@@ -19,4 +24,3 @@ subdir('coreutils')
 subdir('diffutils')
 subdir('findutils')
 subdir('miscutils')
-subdir('extra')
