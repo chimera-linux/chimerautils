@@ -50,6 +50,7 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 
 #include "find.h"
+#include "compat.h"
 
 #if defined(__linux__) && !defined(__GLIBC__)
 #include <rpmatch.h>
@@ -75,7 +76,7 @@ brace_subst(char *orig, char **store, char *path, size_t len)
 		newlen += plen - 2;
 	}
 	if (newlen > len) {
-		*store = realloc(*store, newlen);
+		*store = reallocf(*store, newlen);
 		if (*store == NULL)
 			err(2, NULL);
 	}

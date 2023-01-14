@@ -9163,27 +9163,19 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findu
  static void usage(void);
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/find/misc.c src.freebsd/findutils/find/misc.c
 --- src.orig/findutils/find/misc.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/findutils/find/misc.c	2023-01-13 18:21:52.693540340 +0100
-@@ -51,6 +51,10 @@
++++ src.freebsd/findutils/find/misc.c	2023-01-14 03:25:13.772797610 +0100
+@@ -50,6 +50,11 @@
+ #include <string.h>
  
  #include "find.h"
- 
++#include "compat.h"
++
 +#if defined(__linux__) && !defined(__GLIBC__)
 +#include <rpmatch.h>
 +#endif
-+
+ 
  /*
   * brace_subst --
-  *	Replace occurrences of {} in s1 with s2 and return the result string.
-@@ -71,7 +75,7 @@
- 		newlen += plen - 2;
- 	}
- 	if (newlen > len) {
--		*store = reallocf(*store, newlen);
-+		*store = realloc(*store, newlen);
- 		if (*store == NULL)
- 			err(2, NULL);
- 	}
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/findutils/xargs/strnsubst.c src.freebsd/findutils/xargs/strnsubst.c
 --- src.orig/findutils/xargs/strnsubst.c	2022-05-12 06:54:04.000000000 +0200
 +++ src.freebsd/findutils/xargs/strnsubst.c	2023-01-13 18:21:52.693540340 +0100
@@ -10495,7 +10487,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  		case 'b':
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch/pch.c src.freebsd/patch/pch.c
 --- src.orig/patch/pch.c	2022-05-12 06:54:04.000000000 +0200
-+++ src.freebsd/patch/pch.c	2023-01-13 18:21:52.705533165 +0100
++++ src.freebsd/patch/pch.c	2023-01-14 03:24:27.505699039 +0100
 @@ -43,6 +43,7 @@
  #include "util.h"
  #include "pch.h"
@@ -10504,33 +10496,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  
  /* Patch (diff listing) abstract type. */
  
-@@ -150,13 +151,22 @@
- grow_hunkmax(void)
- {
- 	int new_hunkmax = hunkmax * 2;
-+	void *old_line, *old_len, *old_char;
- 
- 	if (p_line == NULL || p_len == NULL || p_char == NULL)
- 		fatal("Internal memory allocation error\n");
- 
--	p_line = reallocf(p_line, new_hunkmax * sizeof(char *));
--	p_len = reallocf(p_len, new_hunkmax * sizeof(unsigned short));
--	p_char = reallocf(p_char, new_hunkmax * sizeof(char));
-+	old_line = p_line;
-+	old_len = p_len;
-+	old_char = p_char;
-+
-+	p_line = realloc(p_line, new_hunkmax * sizeof(char *));
-+	p_len = realloc(p_len, new_hunkmax * sizeof(unsigned short));
-+	p_char = realloc(p_char, new_hunkmax * sizeof(char));
-+
-+	if (!p_line) free(old_line);
-+	if (!p_len) free(old_len);
-+	if (!p_char) free(old_char);
- 
- 	if (p_line != NULL && p_len != NULL && p_char != NULL) {
- 		hunkmax = new_hunkmax;
-@@ -1214,14 +1224,15 @@
+@@ -1214,14 +1215,15 @@
  size_t
  pgets(bool do_indent)
  {
@@ -10552,7 +10518,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/patch
  				buf_size *= 2;
  			free(buf);
  			buf = malloc(buf_size);
-@@ -1240,8 +1251,10 @@
+@@ -1240,8 +1242,10 @@
  		}
  		memcpy(buf, line, len - skipped);
  		buf[len - skipped] = '\0';

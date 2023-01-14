@@ -34,6 +34,7 @@
 #ifndef _COMPAT_H
 #define _COMPAT_H
 
+#include <stdlib.h>
 #include <stdint.h>
 #include <sys/stat.h>
 
@@ -110,6 +111,10 @@ size_t strlcat(char *d, const char *s, size_t n);
 #endif
 #ifndef HAVE_STRTONUM
 long long strtonum(const char *nptr, long long minv, long long maxv, const char **errstr);
+#endif
+
+#ifndef HAVE_REALLOCF
+void *reallocf(void *ptr, size_t size);
 #endif
 
 /* we use SIGUSR1 in place of SIGINFO */

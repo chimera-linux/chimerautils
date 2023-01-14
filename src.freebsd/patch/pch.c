@@ -151,22 +151,13 @@ static void
 grow_hunkmax(void)
 {
 	int new_hunkmax = hunkmax * 2;
-	void *old_line, *old_len, *old_char;
 
 	if (p_line == NULL || p_len == NULL || p_char == NULL)
 		fatal("Internal memory allocation error\n");
 
-	old_line = p_line;
-	old_len = p_len;
-	old_char = p_char;
-
-	p_line = realloc(p_line, new_hunkmax * sizeof(char *));
-	p_len = realloc(p_len, new_hunkmax * sizeof(unsigned short));
-	p_char = realloc(p_char, new_hunkmax * sizeof(char));
-
-	if (!p_line) free(old_line);
-	if (!p_len) free(old_len);
-	if (!p_char) free(old_char);
+	p_line = reallocf(p_line, new_hunkmax * sizeof(char *));
+	p_len = reallocf(p_len, new_hunkmax * sizeof(unsigned short));
+	p_char = reallocf(p_char, new_hunkmax * sizeof(char));
 
 	if (p_line != NULL && p_len != NULL && p_char != NULL) {
 		hunkmax = new_hunkmax;
