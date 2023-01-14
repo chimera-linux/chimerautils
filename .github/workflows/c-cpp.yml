@@ -5,9 +5,8 @@ on:
         branches: [ master ]
         paths:
             - 'meson.build'
-            - 'compat/**'
             - 'include/**'
-            - 'src/**'
+            - 'src.*/**'
             - '.github/workflows/**'
 
     pull_request:
@@ -16,7 +15,7 @@ on:
             - 'meson.build'
             - 'compat/**'
             - 'include/**'
-            - 'src/**'
+            - 'src.*/**'
             - '.github/workflows/**'
 
 jobs:
