@@ -92,6 +92,7 @@ struct mntinfo {
     fsfilcnt_t f_files;           /* f_files from statvfs */
     fsfilcnt_t f_ffree;           /* f_ffree from statvfs */
     unsigned long f_flag;         /* f_flag from statvfs */
+    dev_t f_dev;                  /* st_dev from stat */
     unsigned int f_selected;      /* used internally here only */
 };
 
@@ -263,7 +264,7 @@ main(int argc, char *argv[])
 		}
 		for (i = 0; i < mntsize; i++) {
 			/* selected specified filesystems if the mount point or device matches */
-			if ((!strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
+			if (((stbuf.st_dev == mntbuf[i].f_dev) || !strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
 				mntbuf[i].f_selected = 1;
 				break;
 			}
@@ -619,6 +620,7 @@ getmntinfo(struct mntinfo **mntbuf)
 	int mntsize = 0;
 	FILE *fp = NULL;
 	struct statvfs svfsbuf;
+	struct stat stmnt;
 
 #ifdef _PATH_MOUNTED
 	fp = setmntent(_PATH_MOUNTED, "r");
@@ -648,9 +650,9 @@ getmntinfo(struct mntinfo **mntbuf)
 	            continue;
 	    }
 
-	    /* get statvfs fields and copy those over */
-	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1) {
-	        if (errno == EPERM) continue;
+	    /* get stat(vfs) fields and copy those over */
+	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1 || stat(ent->mnt_dir, &stmnt) == -1) {
+	        if ((errno == EACCES) || (errno == EPERM)) continue;
 	        err(1, "statvfs");
 	    }
 
@@ -672,6 +674,9 @@ getmntinfo(struct mntinfo **mntbuf)
 	    current->f_bavail = svfsbuf.f_bavail;
 	    current->f_files = svfsbuf.f_files;
 	    current->f_ffree = svfsbuf.f_ffree;
+
+	    current->f_dev = stmnt.st_dev;
+
 	    current->f_selected = 1;
 
 	    mntsize++;

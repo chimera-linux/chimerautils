@@ -1619,7 +1619,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  .Fl P
 diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreutils/df/df.c src.freebsd/coreutils/df/df.c
 --- src.orig/coreutils/df/df.c	2022-05-12 06:53:55.000000000 +0200
-+++ src.freebsd/coreutils/df/df.c	2023-01-13 18:21:52.661559474 +0100
++++ src.freebsd/coreutils/df/df.c	2023-01-14 03:06:55.429092333 +0100
 @@ -50,11 +50,10 @@
  
  #include <sys/param.h>
@@ -1633,7 +1633,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  #include <locale.h>
  #include <stdint.h>
  #include <stdio.h>
-@@ -63,10 +62,39 @@
+@@ -63,10 +62,40 @@
  #include <sysexits.h>
  #include <unistd.h>
  #include <libxo/xo.h>
@@ -1667,13 +1667,14 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 +    fsfilcnt_t f_files;           /* f_files from statvfs */
 +    fsfilcnt_t f_ffree;           /* f_ffree from statvfs */
 +    unsigned long f_flag;         /* f_flag from statvfs */
++    dev_t f_dev;                  /* st_dev from stat */
 +    unsigned int f_selected;      /* used internally here only */
 +};
 +
  /* Maximum widths of various fields. */
  struct maxwidths {
  	int	mntfrom;
-@@ -78,20 +106,20 @@
+@@ -78,20 +107,20 @@
  	int	ifree;
  };
  
@@ -1701,7 +1702,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
  static __inline int
  imax(int a, int b)
-@@ -99,7 +127,7 @@
+@@ -99,7 +128,7 @@
  	return (a > b ? a : b);
  }
  
@@ -1710,7 +1711,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  static int	  thousands;
  static int	  skipvfs_l, skipvfs_t;
  static const char **vfslist_l, **vfslist_t;
-@@ -114,9 +142,9 @@
+@@ -114,9 +143,9 @@
  main(int argc, char *argv[])
  {
  	struct stat stbuf;
@@ -1722,7 +1723,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	char *mntpt;
  	int i, mntsize;
  	int ch, rv;
-@@ -125,13 +153,12 @@
+@@ -125,13 +154,12 @@
  	memset(&maxwidths, 0, sizeof(maxwidths));
  	memset(&totalbuf, 0, sizeof(totalbuf));
  	totalbuf.f_bsize = DEV_BSIZE;
@@ -1737,7 +1738,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	    NULL)) != -1)
  		switch (ch) {
  		case 'a':
-@@ -176,7 +203,7 @@
+@@ -176,7 +204,7 @@
  			/* Ignore duplicate -l */
  			if (lflag)
  				break;
@@ -1746,7 +1747,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			lflag = 1;
  			break;
  		case 'm':
-@@ -184,7 +211,6 @@
+@@ -184,7 +212,6 @@
  			hflag = 0;
  			break;
  		case 'n':
@@ -1754,7 +1755,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			break;
  		case 't':
  			if (vfslist_t != NULL)
-@@ -205,32 +231,28 @@
+@@ -205,32 +232,28 @@
  	argv += optind;
  
  	rv = 0;
@@ -1797,7 +1798,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  			if (mntpt == NULL) {
  				xo_warnx("%s: not mounted", *argv);
  				rv = 1;
-@@ -239,46 +261,27 @@
+@@ -239,46 +262,27 @@
  		} else {
  			mntpt = *argv;
  		}
@@ -1823,7 +1824,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 -			continue;
 +		for (i = 0; i < mntsize; i++) {
 +			/* selected specified filesystems if the mount point or device matches */
-+			if ((!strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
++			if (((stbuf.st_dev == mntbuf[i].f_dev) || !strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
 +				mntbuf[i].f_selected = 1;
 +				break;
 +			}
@@ -1854,7 +1855,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  
  	xo_close_list("filesystem");
  
-@@ -287,19 +290,21 @@
+@@ -287,19 +291,21 @@
  
  	xo_close_container("storage-system-information");
  	xo_finish();
@@ -1882,7 +1883,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	}
  	return (NULL);
  }
-@@ -376,45 +381,8 @@
+@@ -376,45 +382,8 @@
  	return (result);
  }
  
@@ -1929,7 +1930,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  
  	prthumanval("  {:blocks/%6s}", sfsp->f_blocks * sfsp->f_bsize);
-@@ -458,7 +426,7 @@
+@@ -458,7 +427,7 @@
  }
  
  /*
@@ -1938,7 +1939,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
   */
  static intmax_t
  fsbtoblk(int64_t num, uint64_t fsbs, u_long bs)
-@@ -470,7 +438,7 @@
+@@ -470,7 +439,7 @@
   * Print out status about a file system.
   */
  static void
@@ -1947,7 +1948,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  	static long blocksize;
  	static int headerlen, timesthrough = 0;
-@@ -544,7 +512,7 @@
+@@ -544,7 +513,7 @@
  		    mwp->avail, fsbtoblk(sfsp->f_bavail,
  		    sfsp->f_bsize, blocksize));
  	}
@@ -1956,7 +1957,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  	    availblks == 0 ? 100.0 : (double)used / (double)availblks * 100.0);
  	if (iflag) {
  		inodes = sfsp->f_files;
-@@ -566,23 +534,23 @@
+@@ -566,23 +535,23 @@
  			(double)used / (double)inodes * 100.0);
  	} else
  		xo_emit("  ");
@@ -1989,7 +1990,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  }
  
  /*
-@@ -590,7 +558,7 @@
+@@ -590,7 +559,7 @@
   * the file system specified by `sfsp'.
   */
  static void
@@ -1998,7 +1999,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
  {
  	static long blocksize = 0;
  	int dummy;
-@@ -642,69 +610,91 @@
+@@ -642,69 +611,95 @@
  	exit(EX_USAGE);
  }
  
@@ -2017,6 +2018,7 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 +	int mntsize = 0;
 +	FILE *fp = NULL;
 +	struct statvfs svfsbuf;
++	struct stat stmnt;
 +
 +#ifdef _PATH_MOUNTED
 +	fp = setmntent(_PATH_MOUNTED, "r");
@@ -2046,9 +2048,9 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 +	            continue;
 +	    }
 +
-+	    /* get statvfs fields and copy those over */
-+	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1) {
-+	        if (errno == EPERM) continue;
++	    /* get stat(vfs) fields and copy those over */
++	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1 || stat(ent->mnt_dir, &stmnt) == -1) {
++	        if ((errno == EACCES) || (errno == EPERM)) continue;
 +	        err(1, "statvfs");
 +	    }
 +
@@ -2070,6 +2072,9 @@ diff -Naur -x meson.build -x install.sh -x wrapper.sh -x '*.orig' src.orig/coreu
 +	    current->f_bavail = svfsbuf.f_bavail;
 +	    current->f_files = svfsbuf.f_files;
 +	    current->f_ffree = svfsbuf.f_ffree;
++
++	    current->f_dev = stmnt.st_dev;
++
 +	    current->f_selected = 1;
  
 -	if (sysctlbyname("vfs.conflist", NULL, &buflen, NULL, 0) < 0) {
