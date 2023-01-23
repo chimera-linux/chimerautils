@@ -114,18 +114,23 @@ static void add(const char *, const char *);
 static void output_type_macros(void);
 
 int
-main(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+main(int argc, char **argv)
 {
 	int i;
 	char buf[80];
 	int pos;
 
+	if (argc <= 2) {
+		fprintf(stderr, "not enough arguments\n");
+		return 1;
+	}
+
 	/* Create output files */
-	if ((cfile = fopen("syntax.c", "w")) == NULL) {
+	if ((cfile = fopen(argv[2], "w")) == NULL) {
 		perror("syntax.c");
 		exit(2);
 	}
-	if ((hfile = fopen("syntax.h", "w")) == NULL) {
+	if ((hfile = fopen(argv[1], "w")) == NULL) {
 		perror("syntax.h");
 		exit(2);
 	}

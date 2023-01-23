@@ -39,6 +39,7 @@
 # error messages.
 
 temp=`mktemp`
+dstdir=$1
 cat > $temp <<\!
 TEOF	1	end of file
 TNL	0	newline
@@ -70,7 +71,7 @@ TESAC	1	"esac"
 TNOT	0	"!"
 !
 nl=`wc -l $temp`
-exec > token.h
+exec > "${dstdir}/token.h"
 awk '{print "#define " $1 " " NR-1}' $temp
 echo '
 /* Array indicating which tokens mark the end of a list */

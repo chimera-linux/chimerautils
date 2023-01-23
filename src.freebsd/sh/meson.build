@@ -18,26 +18,26 @@ bldir = meson.current_build_dir()
 mkbuiltins_gen = custom_target('builtins.h',
     output : [ 'builtins.h', 'builtins.c' ],
     command : [
-        curdir / 'wrapper.sh', bldir, curdir / 'mkbuiltins', curdir
+        curdir / 'mkbuiltins', curdir, bldir
     ]
 )
 
 mknodes_gen = custom_target('nodes.h',
     output : [ 'nodes.h', 'nodes.c' ],
     command : [
-        curdir / 'wrapper.sh', bldir, mknodes,
-        curdir / 'nodetypes', curdir / 'nodes.c.pat'
+        mknodes, curdir / 'nodetypes', curdir / 'nodes.c.pat',
+        bldir / 'nodes.h', bldir / 'nodes.c'
     ]
 )
 
 mksyntax_gen = custom_target('syntax.h',
     output : [ 'syntax.h', 'syntax.c' ],
-    command : [ curdir / 'wrapper.sh', bldir, mksyntax, ]
+    command : [ mksyntax, bldir / 'syntax.h', bldir / 'syntax.c' ]
 )
 
 mktokens_gen = custom_target('gen-tokens',
     output : [ 'token.h' ],
-    command : [ curdir / 'wrapper.sh', bldir, curdir / 'mktokens' ]
+    command : [ curdir / 'mktokens', bldir ]
 )
 
 bltins_src = [

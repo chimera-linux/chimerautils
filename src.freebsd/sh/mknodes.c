@@ -97,7 +97,7 @@ static char *linep;
 
 static void parsenode(void);
 static void parsefield(void);
-static void output(char *);
+static void output(char *, char *, char *);
 static void outsizes(FILE *);
 static void outfunc(FILE *, int);
 static void indent(int, FILE *);
@@ -113,7 +113,7 @@ main(int argc, char *argv[])
 {
 	FILE *infp;
 
-	if (argc != 3)
+	if (argc != 5)
 		error("usage: mknodes file");
 	if ((infp = fopen(argv[1], "r")) == NULL)
 		error("Can't open %s: %s", argv[1], strerror(errno));
@@ -124,7 +124,7 @@ main(int argc, char *argv[])
 			parsenode();
 	}
 	fclose(infp);
-	output(argv[2]);
+	output(argv[2], argv[3], argv[4]);
 	exit(0);
 }
 
@@ -214,7 +214,7 @@ static const char writer[] = "\
 \n";
 
 static void
-output(char *file)
+output(char *file, char *nodesh, char *nodesc)
 {
 	FILE *hfile;
 	FILE *cfile;
@@ -226,9 +226,9 @@ output(char *file)
 
 	if ((patfile = fopen(file, "r")) == NULL)
 		error("Can't open %s: %s", file, strerror(errno));
-	if ((hfile = fopen("nodes.h", "w")) == NULL)
+	if ((hfile = fopen(nodesh, "w")) == NULL)
 		error("Can't create nodes.h: %s", strerror(errno));
-	if ((cfile = fopen("nodes.c", "w")) == NULL)
+	if ((cfile = fopen(nodesc, "w")) == NULL)
 		error("Can't create nodes.c");
 	fputs(writer, hfile);
 	for (i = 0 ; i < ntypes ; i++)
