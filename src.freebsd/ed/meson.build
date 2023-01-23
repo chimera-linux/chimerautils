@@ -7,8 +7,5 @@ ed_prog = executable(
 )
 
 install_man('ed.1')
-
-meson.add_install_script(install_link, 'ed', 'red', get_option('bindir'))
-meson.add_install_script(
-    install_link, 'ed.1', 'red.1', join_paths(get_option('mandir'), 'man1')
-)
+install_symlink('red', pointing_to: 'ed', install_dir: bindir)
+install_symlink('red.1', pointing_to: 'ed.1', install_dir: man1dir)

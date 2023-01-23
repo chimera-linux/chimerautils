@@ -7,7 +7,5 @@ cksum_prog = executable(
 )
 install_man('cksum.1')
 
-meson.add_install_script(install_link, 'cksum', 'sum', get_option('bindir'))
-meson.add_install_script(
-    install_link, 'cksum.1', 'sum.1', join_paths(get_option('mandir'), 'man1')
-)
+install_symlink('sum', pointing_to: 'cksum', install_dir: bindir)
+install_symlink('sum.1', pointing_to: 'cksum.1', install_dir: man1dir)

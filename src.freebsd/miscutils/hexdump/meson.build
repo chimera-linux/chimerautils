@@ -9,8 +9,6 @@ hexdump_prog = executable(
 install_man('od.1')
 install_man('hexdump.1')
 
-meson.add_install_script(install_link, 'hexdump', 'od', get_option('bindir'))
-meson.add_install_script(install_link, 'hexdump', 'hd', get_option('bindir'))
-meson.add_install_script(
-    install_link, 'hexdump.1', 'hd.1', join_paths(get_option('mandir'), 'man1')
-)
+install_symlink('od', pointing_to: 'hexdump', install_dir: bindir)
+install_symlink('hd', pointing_to: 'hexdump', install_dir: bindir)
+install_symlink('hd.1', pointing_to: 'hexdump.1', install_dir: man1dir)

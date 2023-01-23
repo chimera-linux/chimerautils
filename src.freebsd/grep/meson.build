@@ -8,7 +8,7 @@ grep_prog = executable(
 
 install_data(
     'zgrep.sh',
-    install_dir : get_option('bindir'),
+    install_dir : bindir,
     install_mode : 'rwxr-xr-x',
     rename : 'zgrep',
 )
@@ -17,11 +17,8 @@ install_man('grep.1')
 install_man('zgrep.1')
 
 foreach l: ['egrep', 'fgrep', 'rgrep']
-    meson.add_install_script(install_link, 'grep', l, get_option('bindir'))
-    meson.add_install_script(
-        install_link, 'grep.1', l + '.1',
-        join_paths(get_option('mandir'), 'man1')
-    )
+    install_symlink(l, pointing_to: 'grep', install_dir: bindir)
+    install_symlink(l + '.1', pointing_to: 'grep.1', install_dir: man1dir)
 endforeach
 
 foreach l: [
@@ -29,9 +26,6 @@ foreach l: [
     'lzgrep', 'lzegrep', 'lzfgrep', 'xzgrep', 'xzegrep', 'xzfgrep',
     'zstdgrep', 'zstdegrep', 'zstdfgrep'
 ]
-    meson.add_install_script(install_link, 'zgrep', l, get_option('bindir'))
-    meson.add_install_script(
-        install_link, 'zgrep.1', l + '.1',
-        join_paths(get_option('mandir'), 'man1')
-    )
+    install_symlink(l, pointing_to: 'zgrep', install_dir: bindir)
+    install_symlink(l + '.1', pointing_to: 'zgrep.1', install_dir: man1dir)
 endforeach

@@ -6,5 +6,5 @@ xinstall_prog = executable(
     dependencies: [libcrypto],
 )
 
-meson.add_install_script('install.sh', get_option('bindir'))
+meson.add_install_script('install.sh', bindir)
 install_man('install.1')

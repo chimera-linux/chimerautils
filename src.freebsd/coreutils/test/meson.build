@@ -4,5 +4,5 @@ test_prog = executable(
     include_directories : inc
 )
 
-meson.add_install_script('install.sh', get_option('bindir'))
+meson.add_install_script('install.sh', bindir)
 install_man('test.1')

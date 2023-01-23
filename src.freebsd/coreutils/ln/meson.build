@@ -9,7 +9,5 @@ ln_prog = executable(
 install_man('ln.1')
 install_man('symlink.7')
 
-meson.add_install_script(install_link, 'ln', 'link', get_option('bindir'))
-meson.add_install_script(
-    install_link, 'ln.1', 'link.1', join_paths(get_option('mandir'), 'man1')
-)
+install_symlink('link', pointing_to: 'ln', install_dir: bindir)
+install_symlink('link.1', pointing_to: 'ln.1', install_dir: man1dir)

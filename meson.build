@@ -3,8 +3,14 @@ project(
     ['c', 'cpp'],
     version: '1.0',
     default_options: ['c_std=c99', 'warning_level=2', 'buildtype=debugoptimized'],
-    license: 'BSD-3-Clause'
+    license: 'BSD-3-Clause',
+    meson_version: '>=0.61'
 )
+
+# to be reused
+bindir = get_option('bindir')
+sbindir = get_option('sbindir')
+man1dir = join_paths(get_option('mandir'), 'man1')
 
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')
@@ -114,9 +120,6 @@ librpmatch = cc.find_library('rpmatch',
 
 # sort needs pthreads
 libpthread = dependency('threads')
-
-# Symlink installation script
-install_link = meson.current_source_dir() / 'utils/install-link.sh'
 
 # Include all of the relevant subdirectories
 subdir('include')

@@ -5,10 +5,10 @@ chown_prog = executable(
     include_directories : inc,
     dependencies : [ libfts, ],
     install : true,
-    install_dir : get_option('sbindir'),
+    install_dir : sbindir,
 )
 
-meson.add_install_script(install_link, 'chown', 'chgrp', get_option('bindir'))
+install_symlink('chgrp', pointing_to: 'chown', install_dir: sbindir)
 
 install_man('chown.8')
 install_man('chgrp.1')

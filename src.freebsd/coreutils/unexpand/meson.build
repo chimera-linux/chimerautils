@@ -6,7 +6,4 @@ unexpand_prog = executable(
 )
 
 # references expand in another dir
-meson.add_install_script(
-    install_link, 'expand.1', 'unexpand.1',
-    join_paths(get_option('mandir'), 'man1')
-)
+install_symlink('unexpand.1', pointing_to: 'expand.1', install_dir: man1dir)

@@ -28,30 +28,21 @@ install_man('gzip.1')
 foreach s: [ 'gzexe', 'zdiff', 'zforce', 'zmore', 'znew' ]
     install_data(
         s,
-        install_dir : get_option('bindir'),
+        install_dir : bindir,
         install_mode : 'rwxr-xr-x',
     )
     install_man(s + '.1')
 endforeach
 
 foreach l: [ 'gunzip', 'gzcat', 'zcat' ]
-    meson.add_install_script(install_link, 'gzip', l, get_option('bindir'))
-    meson.add_install_script(
-        install_link, 'gzip.1', l + '.1',
-        join_paths(get_option('mandir'), 'man1')
-    )
+    install_symlink(l, pointing_to: 'gzip', install_dir: bindir)
+    install_symlink(l + '.1', pointing_to: 'gzip.1', install_dir: man1dir)
 endforeach
 
 foreach l: diff_links
-    meson.add_install_script(install_link, 'zdiff', l, get_option('bindir'))
-    meson.add_install_script(
-        install_link, 'zdiff.1', l + '.1',
-        join_paths(get_option('mandir'), 'man1')
-    )
+    install_symlink(l, pointing_to: 'zdiff', install_dir: bindir)
+    install_symlink(l + '.1', pointing_to: 'zdiff.1', install_dir: man1dir)
 endforeach
 
-meson.add_install_script(install_link, 'zmore', 'zless', get_option('bindir'))
-meson.add_install_script(
-    install_link, 'zmore.1', 'zless.1',
-    join_paths(get_option('mandir'), 'man1')
-)
+install_symlink('zless', pointing_to: 'zmore', install_dir: bindir)
+install_symlink('zless.1', pointing_to: 'zmore.1', install_dir: man1dir)

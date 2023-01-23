@@ -3,7 +3,7 @@ sync_prog = executable(
     [ 'sync.c' ],
     include_directories : inc,
     install : true,
-    install_dir : get_option('sbindir'),
+    install_dir : sbindir,
 )
 
 install_man('sync.8')
