@@ -1,8 +1,7 @@
 /*-
- * SPDX-License-Identifier: BSD-3-Clause
+ * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 1991, 1993, 1994
- *	The Regents of the University of California.  All rights reserved.
+ * Copyright (c) 2023 Daniel Kolesa
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -12,9 +11,6 @@
  * 2. Redistributions in binary form must reproduce the above copyright
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
- * 3. Neither the name of the University nor the names of its contributors
- *    may be used to endorse or promote products derived from this software
- *    without specific prior written permission.
  *
  * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
@@ -29,45 +25,69 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static const char copyright[] =
-"@(#) Copyright (c) 1991, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
+#ifndef CAPSICUM_HELPERS_H
+#define CAPSICUM_HELPERS_H
 
-#ifndef lint
-static const char sccsid[] = "@(#)logname.c	8.2 (Berkeley) 4/3/94";
-#endif /* not lint */
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
+#include <fcntl.h>
+#include <stddef.h>
+#include <stdint.h>
+#include <sys/capsicum.h>
 
-#include <capsicum_helpers.h>
-#include <err.h>
-#include <unistd.h>
-#include <stdio.h>
-#include <stdlib.h>
+#define	CAPH_IGNORE_EBADF	0x0001
+#define	CAPH_READ		0x0002
+#define	CAPH_WRITE		0x0004
+#define	CAPH_LOOKUP		0x0008
 
-void usage(void);
+#define CAP_FCNTL_GETFL F_GETFL
+#define CAP_FCNTL_SETFL F_SETFL
 
-int
-main(int argc, char *argv[] __attribute__((unused)))
-{
-	char *p;
-
-	if (caph_limit_stdio() < 0 || caph_enter() < 0)
-		err(1, "capsicum");
-
-	if (argc != 1)
-		usage();
-	if ((p = getlogin()) == NULL)
-		err(1, NULL);
-	(void)printf("%s\n", p);
-	exit(0);
+static inline int caph_limit_stream(int fd, int flags) {
+    (void)fd;
+    (void)flags;
+    return 0;
 }
 
-void
-usage(void)
-{
-	(void)fprintf(stderr, "usage: logname\n");
-	exit(1);
+static inline int caph_limit_stdio(void) {
+    return 0;
 }
+
+static inline int caph_limit_stdin(void) {
+    return 0;
+}
+
+static inline int caph_limit_stdout(void) {
+    return 0;
+}
+
+static inline int caph_limit_stderr(void) {
+    return 0;
+}
+
+static inline int caph_enter(void) {
+    return 0;
+}
+
+static inline void caph_cache_catpages(void) {
+}
+
+static inline void caph_cache_tzdata(void) {
+}
+
+static inline int caph_enter_casper(void) {
+    return 0;
+}
+
+static inline int caph_ioctls_limit(int fd, const unsigned long *cmds, size_t ncmds) {
+    (void)fd;
+    (void)cmds;
+    (void)ncmds;
+    return 0;
+}
+
+static inline int caph_fcntls_limit(int fd, uint32_t fcntlrights) {
+    (void)fd;
+    (void)fcntlrights;
+    return 0;
+}
+
+#endif

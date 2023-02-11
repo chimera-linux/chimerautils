@@ -55,6 +55,9 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <unistd.h>
 
+#include <libcasper.h>
+#include <casper/cap_fileargs.h>
+
 #include "extern.h"
 
 /* some versions of queue.h don't come with this */

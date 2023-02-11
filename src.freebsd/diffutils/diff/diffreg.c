@@ -69,8 +69,10 @@
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
+#include <sys/capsicum.h>
 #include <sys/stat.h>
 
+#include <capsicum_helpers.h>
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
@@ -260,6 +262,7 @@ diffreg(char *file1, char *file2, int flags, int capsicum)
 {
 	FILE *f1, *f2;
 	int i, rval;
+	cap_rights_t rights_ro;
 
 	f1 = f2 = NULL;
 	rval = D_SAME;
@@ -338,7 +341,26 @@ diffreg(char *file1, char *file2, int flags, int capsicum)
 		goto closem;
 	}
 
-	(void)capsicum;
+	if (capsicum) {
+		cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
+		if (caph_rights_limit(fileno(f1), &rights_ro) < 0)
+			err(2, "unable to limit rights on: %s", file1);
+		if (caph_rights_limit(fileno(f2), &rights_ro) < 0)
+			err(2, "unable to limit rights on: %s", file2);
+		if (fileno(f1) == STDIN_FILENO || fileno(f2) == STDIN_FILENO) {
+			/* stdin has already been limited */
+			if (caph_limit_stderr() == -1)
+				err(2, "unable to limit stderr");
+			if (caph_limit_stdout() == -1)
+				err(2, "unable to limit stdout");
+		} else if (caph_limit_stdio() == -1)
+				err(2, "unable to limit stdio");
+
+		caph_cache_catpages();
+		caph_cache_tzdata();
+		if (caph_enter() < 0)
+			err(2, "unable to enter capability mode");
+	}
 
 	switch (files_differ(f1, f2, flags)) {
 	case 0:

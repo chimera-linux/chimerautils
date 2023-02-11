@@ -48,9 +48,11 @@ static char sccsid[] = "@(#)write.c	8.1 (Berkeley) 6/6/93";
 __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
+#include <sys/capsicum.h>
 #include <sys/stat.h>
 #include <sys/time.h>
 
+#include <capsicum_helpers.h>
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
@@ -81,6 +83,8 @@ int utmp_chk(char *, char *);
 int
 main(int argc, char **argv)
 {
+	unsigned long cmds[] = { 0 };
+	cap_rights_t rights;
 	struct passwd *pwd;
 	time_t atime;
 	uid_t myuid;
@@ -94,6 +98,30 @@ main(int argc, char **argv)
 	devfd = open(_PATH_DEV, O_RDONLY);
 	if (devfd < 0)
 		err(1, "open(/dev)");
+	cap_rights_init(&rights, CAP_FCNTL, CAP_FSTAT, CAP_IOCTL, CAP_LOOKUP,
+	    CAP_PWRITE);
+	if (caph_rights_limit(devfd, &rights) < 0)
+		err(1, "can't limit devfd rights");
+
+	/*
+	 * Can't use capsicum helpers here because we need the additional
+	 * FIODGNAME ioctl.
+	 */
+	cap_rights_init(&rights, CAP_FCNTL, CAP_FSTAT, CAP_IOCTL, CAP_READ,
+	    CAP_WRITE);
+	if (caph_rights_limit(STDIN_FILENO, &rights) < 0 ||
+	    caph_rights_limit(STDOUT_FILENO, &rights) < 0 ||
+	    caph_rights_limit(STDERR_FILENO, &rights) < 0 ||
+	    caph_ioctls_limit(STDIN_FILENO, cmds, nitems(cmds)) < 0 ||
+	    caph_ioctls_limit(STDOUT_FILENO, cmds, nitems(cmds)) < 0 ||
+	    caph_ioctls_limit(STDERR_FILENO, cmds, nitems(cmds)) < 0 ||
+	    caph_fcntls_limit(STDIN_FILENO, CAP_FCNTL_GETFL) < 0 ||
+	    caph_fcntls_limit(STDOUT_FILENO, CAP_FCNTL_GETFL) < 0 ||
+	    caph_fcntls_limit(STDERR_FILENO, CAP_FCNTL_GETFL) < 0)
+		err(1, "can't limit stdio rights");
+
+	caph_cache_catpages();
+	caph_cache_tzdata();
 
 	/*
 	 * Cache UTX database fds.
@@ -111,6 +139,9 @@ main(int argc, char **argv)
 		else
 			login = "???";
 	}
+
+	if (caph_enter() < 0)
+		err(1, "cap_enter");
 
 	while (getopt(argc, argv, "") != -1)
 		usage();

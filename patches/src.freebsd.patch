@@ -93,36 +93,6 @@
  				push_number(n);
  			}
  			else
---- src.orig/bc/dc/dc.c
-+++ src.freebsd/bc/dc/dc.c
-@@ -22,7 +22,6 @@
- 
- #include <sys/stat.h>
- 
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -135,19 +134,12 @@
- 		if (fd < 0)
- 			err(1, "cannot open file %s", argv[0]);
- 
--		if (caph_limit_stream(fd, CAPH_READ) < 0 ||
--		    caph_limit_stdio() < 0 ||
--		    caph_enter() < 0)
--			err(1, "capsicum");
--
- 		procfd(fd, argv[0]);
- 		preproc_done = true;
- 	}
- 	if (preproc_done)
- 		return (0);
- 
--	if (caph_limit_stdio() < 0 || caph_enter())
--		err(1, "capsicum");
- 	src_setstream(&src, stdin);
- 	reset_bmachine(&src);
- 	eval();
 --- src.orig/bc/dc/inout.c
 +++ src.freebsd/bc/dc/inout.c
 @@ -25,6 +25,7 @@
@@ -384,105 +354,17 @@
  					    shft);
  			}
  			cerr = 1;
---- src.orig/coreutils/basename/basename.c
-+++ src.freebsd/coreutils/basename/basename.c
-@@ -44,7 +44,6 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <libgen.h>
- #include <limits.h>
-@@ -67,9 +66,6 @@
- 
- 	setlocale(LC_ALL, "");
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	aflag = 0;
- 	suffix = NULL;
- 	suffixlen = 0;
 --- src.orig/coreutils/cat/cat.c
 +++ src.freebsd/coreutils/cat/cat.c
-@@ -48,7 +48,6 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <sys/capsicum.h>
- #include <sys/param.h>
- #include <sys/stat.h>
- #ifndef NO_UDOM_SUPPORT
-@@ -57,7 +56,6 @@
- #include <netdb.h>
- #endif
- 
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -70,14 +68,11 @@
- #include <wchar.h>
- #include <wctype.h>
- 
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--#include <casper/cap_net.h>
+@@ -73,6 +73,7 @@
+ #include <libcasper.h>
+ #include <casper/cap_fileargs.h>
+ #include <casper/cap_net.h>
 +#include "compat.h"
  
  static int bflag, eflag, lflag, nflag, sflag, tflag, vflag;
  static int rval;
- static const char *filename;
--static fileargs_t *fa;
- 
- static void usage(void) __dead2;
- static void scanfiles(char *argv[], int cooked);
-@@ -145,29 +140,6 @@
- }
- #endif
- 
--static void
--init_casper(int argc, char *argv[])
--{
--	cap_channel_t *casper;
--	cap_rights_t rights;
--
--	casper = cap_init();
--	if (casper == NULL)
--		err(EXIT_FAILURE, "unable to create Casper");
--
--	fa = fileargs_cinit(casper, argc, argv, O_RDONLY, 0,
--	    cap_rights_init(&rights, CAP_READ | CAP_FSTAT | CAP_FCNTL),
--	    FA_OPEN | FA_REALPATH);
--	if (fa == NULL)
--		err(EXIT_FAILURE, "unable to create fileargs");
--
--#ifndef NO_UDOM_SUPPORT
--	init_casper_net(casper);
--#endif
--
--	cap_close(casper);
--}
--
- int
- main(int argc, char *argv[])
- {
-@@ -217,13 +189,6 @@
- 			err(EXIT_FAILURE, "stdout");
- 	}
- 
--	init_casper(argc, argv);
--
--	caph_cache_catpages();
--
--	if (caph_enter_casper() < 0)
--		err(EXIT_FAILURE, "capsicum");
--
- 	if (bflag || eflag || nflag || sflag || tflag || vflag)
- 		scanfiles(argv, 1);
- 	else
-@@ -244,7 +209,7 @@
+@@ -244,7 +245,7 @@
  }
  
  static void
@@ -491,16 +373,7 @@
  {
  	int fd, i;
  	char *path;
-@@ -260,7 +225,7 @@
- 			fd = STDIN_FILENO;
- 		} else {
- 			filename = path;
--			fd = fileargs_open(fa, path);
-+			fd = open(path, O_RDONLY);
- #ifndef NO_UDOM_SUPPORT
- 			if (fd < 0 && errno == EOPNOTSUPP)
- 				fd = udom_open(path, O_RDONLY);
-@@ -343,7 +308,6 @@
+@@ -343,7 +344,6 @@
  				if (ferror(fp) && errno == EILSEQ) {
  					clearerr(fp);
  					/* Resync attempt. */
@@ -1309,23 +1182,17 @@
  argument for
 --- src.orig/coreutils/dd/dd.c
 +++ src.freebsd/coreutils/dd/dd.c
-@@ -49,15 +49,10 @@
- 
+@@ -50,9 +50,6 @@
  #include <sys/param.h>
  #include <sys/stat.h>
--#include <sys/capsicum.h>
+ #include <sys/capsicum.h>
 -#include <sys/conf.h>
 -#include <sys/disklabel.h>
 -#include <sys/filio.h>
  #include <sys/mtio.h>
  #include <sys/time.h>
  
- #include <assert.h>
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -72,6 +67,7 @@
+@@ -72,6 +69,7 @@
  
  #include "dd.h"
  #include "extern.h"
@@ -1333,7 +1200,7 @@
  
  static void dd_close(void);
  static void dd_in(void);
-@@ -93,7 +89,7 @@
+@@ -93,7 +91,7 @@
  volatile sig_atomic_t need_progress;
  
  int
@@ -1342,44 +1209,16 @@
  {
  	struct itimerval itv = { { 1, 0 }, { 1, 0 } }; /* SIGALARM every second, if needed */
  
-@@ -101,10 +97,6 @@
- 	jcl(argv);
- 	setup();
- 
--	caph_cache_catpages();
--	if (caph_enter() < 0)
--		err(1, "unable to enter capability mode");
--
- 	(void)signal(SIGINFO, siginfo_handler);
- 	if (ddflags & C_PROGRESS) {
- 		(void)signal(SIGALRM, sigalarm_handler);
-@@ -144,8 +136,6 @@
- {
+@@ -145,7 +143,7 @@
  	u_int cnt;
  	int iflags, oflags;
--	cap_rights_t rights;
+ 	cap_rights_t rights;
 -	unsigned long cmds[] = { FIODTYPE, MTIOCTOP };
++	unsigned long cmds[] = { 0 };
  
  	if (in.name == NULL) {
  		in.name = "stdin";
-@@ -161,16 +151,9 @@
- 
- 	getfdtype(&in);
- 
--	cap_rights_init(&rights, CAP_READ, CAP_SEEK);
--	if (caph_rights_limit(in.fd, &rights) == -1)
--		err(1, "unable to limit capability rights");
--
- 	if (files_cnt > 1 && !(in.flags & ISTAPE))
- 		errx(1, "files is not supported for non-tape devices");
- 
--	cap_rights_set(&rights, CAP_FTRUNCATE, CAP_IOCTL, CAP_WRITE);
--	if (ddflags & (C_FDATASYNC | C_FSYNC))
--		cap_rights_set(&rights, CAP_FSYNC);
- 	if (out.name == NULL) {
- 		/* No way to check for read access here. */
- 		out.fd = STDOUT_FILENO;
-@@ -179,7 +162,7 @@
+@@ -179,7 +177,7 @@
  			oflags = fcntl(out.fd, F_GETFL);
  			if (oflags == -1)
  				err(1, "unable to get fd flags for stdout");
@@ -1388,7 +1227,7 @@
  			if (fcntl(out.fd, F_SETFL, oflags) == -1)
  				err(1, "unable to set fd flags for stdout");
  		}
-@@ -188,7 +171,7 @@
+@@ -188,7 +186,7 @@
  		if (!(ddflags & (C_SEEK | C_NOTRUNC)))
  			oflags |= O_TRUNC;
  		if (ddflags & C_OFSYNC)
@@ -1397,42 +1236,7 @@
  		if (ddflags & C_ODIRECT)
  			oflags |= O_DIRECT;
  		out.fd = open(out.name, O_RDWR | oflags, DEFFILEMODE);
-@@ -200,7 +183,6 @@
- 		if (out.fd == -1) {
- 			out.fd = open(out.name, O_WRONLY | oflags, DEFFILEMODE);
- 			out.flags |= NOREAD;
--			cap_rights_clear(&rights, CAP_READ);
- 		}
- 		if (out.fd == -1)
- 			err(1, "%s", out.name);
-@@ -208,26 +190,6 @@
- 
- 	getfdtype(&out);
- 
--	if (caph_rights_limit(out.fd, &rights) == -1)
--		err(1, "unable to limit capability rights");
--	if (caph_ioctls_limit(out.fd, cmds, nitems(cmds)) == -1)
--		err(1, "unable to limit capability rights");
--
--	if (in.fd != STDIN_FILENO && out.fd != STDIN_FILENO) {
--		if (caph_limit_stdin() == -1)
--			err(1, "unable to limit capability rights");
--	}
--
--	if (in.fd != STDOUT_FILENO && out.fd != STDOUT_FILENO) {
--		if (caph_limit_stdout() == -1)
--			err(1, "unable to limit capability rights");
--	}
--
--	if (in.fd != STDERR_FILENO && out.fd != STDERR_FILENO) {
--		if (caph_limit_stderr() == -1)
--			err(1, "unable to limit capability rights");
--	}
--
- 	/*
- 	 * Allocate space for the input and output buffers.  If not doing
- 	 * record oriented I/O, only need a single buffer.
-@@ -316,23 +278,16 @@
+@@ -316,23 +314,16 @@
  getfdtype(IO *io)
  {
  	struct stat sb;
@@ -2118,26 +1922,6 @@
 +	free(mntbuf);
 +	return;
  }
---- src.orig/coreutils/dirname/dirname.c
-+++ src.freebsd/coreutils/dirname/dirname.c
-@@ -41,7 +41,6 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <libgen.h>
- #include <stdio.h>
-@@ -56,9 +55,6 @@
- 	char *p;
- 	int ch;
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	while ((ch = getopt(argc, argv, "")) != -1)
- 		switch(ch) {
- 		case '?':
 --- src.orig/coreutils/du/du.1
 +++ src.freebsd/coreutils/du/du.1
 @@ -116,12 +116,6 @@
@@ -2277,26 +2061,6 @@
  {
  
  	info = 1;
---- src.orig/coreutils/echo/echo.c
-+++ src.freebsd/coreutils/echo/echo.c
-@@ -47,7 +47,6 @@
- #include <sys/uio.h>
- 
- #include <assert.h>
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <limits.h>
-@@ -64,9 +63,6 @@
- 	char space[] = " ";
- 	char newline[] = "\n";
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	/* This utility may NOT do getopt(3) option parsing. */
- 	if (*++argv && !strcmp(*argv, "-n")) {
- 		++argv;
 --- src.orig/coreutils/env/env.1
 +++ src.freebsd/coreutils/env/env.1
 @@ -40,12 +40,10 @@
@@ -2532,68 +2296,7 @@
  	output_buffer = XMALLOC((max_length + 1) * sizeof(wchar_t));
 --- src.orig/coreutils/head/head.c
 +++ src.freebsd/coreutils/head/head.c
-@@ -43,10 +43,8 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <sys/capsicum.h>
- #include <sys/types.h>
- 
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -57,9 +55,6 @@
- #include <string.h>
- #include <unistd.h>
- 
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--
- /*
-  * head - give the first few lines of a stream or of each of a set of files
-  *
-@@ -85,8 +80,6 @@
- 	char *ep;
- 	off_t bytecnt;
- 	int ch, first, linecnt, eval;
--	fileargs_t *fa;
--	cap_rights_t rights;
- 
- 	linecnt = -1;
- 	eval = 0;
-@@ -114,22 +107,13 @@
- 	argc -= optind;
- 	argv += optind;
- 
--	fa = fileargs_init(argc, argv, O_RDONLY, 0,
--	    cap_rights_init(&rights, CAP_READ, CAP_FSTAT, CAP_FCNTL), FA_OPEN);
--	if (fa == NULL)
--		err(1, "unable to init casper");
--
--	caph_cache_catpages();
--	if (caph_limit_stdio() < 0 || caph_enter_casper() < 0)
--		err(1, "unable to enter capability mode");
--
- 	if (linecnt != -1 && bytecnt != -1)
- 		errx(1, "can't combine line and byte counts");
- 	if (linecnt == -1)
- 		linecnt = 10;
- 	if (*argv != NULL) {
- 		for (first = 1; *argv != NULL; ++argv) {
--			if ((fp = fileargs_fopen(fa, *argv, "r")) == NULL) {
-+			if ((fp = fopen(*argv, "r")) == NULL) {
- 				warn("%s", *argv);
- 				eval = 1;
- 				continue;
-@@ -150,22 +134,23 @@
- 	else
- 		head_bytes(stdin, bytecnt);
- 
--	fileargs_free(fa);
- 	exit(eval);
- }
- 
+@@ -157,15 +157,17 @@
  static void
  head(FILE *fp, int cnt)
  {
@@ -2934,15 +2637,7 @@
  		exit(linkit(argv[0], ".", 1));
 --- src.orig/coreutils/logname/logname.c
 +++ src.freebsd/coreutils/logname/logname.c
-@@ -41,7 +41,6 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <unistd.h>
- #include <stdio.h>
-@@ -50,13 +49,10 @@
+@@ -50,7 +50,7 @@
  void usage(void);
  
  int
@@ -2951,12 +2646,6 @@
  {
  	char *p;
  
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	if (argc != 1)
- 		usage();
- 	if ((p = getlogin()) == NULL)
 --- src.orig/coreutils/ls/cmp.c
 +++ src.freebsd/coreutils/ls/cmp.c
 @@ -123,35 +123,6 @@
@@ -3883,26 +3572,6 @@
  	timefrmt = strdup(d_first ? TIMEFMTD : TIMEFMTM);
  
  	return(0);
---- src.orig/coreutils/printenv/printenv.c
-+++ src.freebsd/coreutils/printenv/printenv.c
-@@ -46,7 +46,6 @@
- 
- #include <sys/types.h>
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <stdlib.h>
- #include <stdio.h>
-@@ -69,9 +68,6 @@
- 	size_t len;
- 	int ch;
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	while ((ch = getopt(argc, argv, "")) != -1)
- 		switch(ch) {
- 		case '?':
 --- src.orig/coreutils/rm/rm.1
 +++ src.freebsd/coreutils/rm/rm.1
 @@ -42,7 +42,7 @@
@@ -4258,15 +3927,7 @@
  .Sh IMPLEMENTATION NOTES
 --- src.orig/coreutils/sleep/sleep.c
 +++ src.freebsd/coreutils/sleep/sleep.c
-@@ -41,7 +41,6 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <limits.h>
-@@ -50,11 +49,13 @@
+@@ -50,11 +50,13 @@
  #include <stdlib.h>
  #include <time.h>
  
@@ -4281,42 +3942,6 @@
  {
  
  	report_requested = 1;
-@@ -65,12 +66,8 @@
- {
- 	struct timespec time_to_sleep;
- 	double d;
--	time_t original;
- 	char buf[2];
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	if (argc != 2)
- 		usage();
- 
-@@ -80,7 +77,7 @@
- 		usage();
- 	if (d <= 0)
- 		return (0);
--	original = time_to_sleep.tv_sec = (time_t)d;
-+	time_to_sleep.tv_sec = (time_t)d;
- 	time_to_sleep.tv_nsec = 1e9 * (d - time_to_sleep.tv_sec);
- 
- 	signal(SIGINFO, report_request);
-@@ -91,12 +88,7 @@
- 	 * attaches. This is a bug but it is hard to fix.
- 	 */
- 	while (nanosleep(&time_to_sleep, &time_to_sleep) != 0) {
--		if (report_requested) {
--			/* Reporting does not bother with nanoseconds. */
--			warnx("about %d second(s) left out of the original %d",
--			    (int)time_to_sleep.tv_sec, (int)original);
--			report_requested = 0;
--		} else if (errno != EINTR)
-+		if (errno != EINTR)
- 			err(1, "nanosleep");
- 	}
- 	return (0);
 --- src.orig/coreutils/sort/bwstring.c
 +++ src.freebsd/coreutils/sort/bwstring.c
 @@ -478,40 +478,100 @@
@@ -5813,16 +5438,9 @@
  {
  	sync();
  	exit(0);
---- src.orig/coreutils/tail/extern.h
-+++ src.freebsd/coreutils/tail/extern.h
-@@ -78,4 +78,3 @@
- void printfn(const char *, int);
- 
- extern int Fflag, fflag, qflag, rflag, rval, no_files;
--extern fileargs_t *fa;
 --- src.orig/coreutils/tail/forward.c
 +++ src.freebsd/coreutils/tail/forward.c
-@@ -46,20 +46,21 @@
+@@ -46,12 +46,16 @@
  #include <sys/stat.h>
  #include <sys/time.h>
  #include <sys/mman.h>
@@ -5840,15 +5458,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
- #include <unistd.h>
- 
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--
- #include "extern.h"
- 
- static void rlines(FILE *, const char *fn, off_t, struct stat *);
-@@ -68,12 +69,12 @@
+@@ -68,12 +72,12 @@
  
  /* defines for inner loop actions */
  #define USE_SLEEP	0
@@ -5864,7 +5474,7 @@
  
  static const file_info_t *last;
  
-@@ -265,41 +266,118 @@
+@@ -265,41 +269,118 @@
  	return 1;
  }
  
@@ -6001,7 +5611,7 @@
  	}
  }
  
-@@ -314,7 +392,7 @@
+@@ -314,7 +395,7 @@
  	struct stat sb2;
  	file_info_t *file;
  	FILE *ftmp;
@@ -6010,7 +5620,7 @@
  
  	/* Position each of the files */
  
-@@ -337,22 +415,26 @@
+@@ -337,14 +418,19 @@
  
  	last = --file;
  
@@ -6035,25 +5645,7 @@
  	for (;;) {
  		ev_change = 0;
  		if (Fflag) {
- 			for (i = 0, file = files; i < no_files; i++, file++) {
- 				if (!file->fp) {
- 					file->fp =
--					    fileargs_fopen(fa, file->file_name,
--					    "r");
-+					    fopen(file->file_name, "r");
- 					if (file->fp != NULL &&
- 					    fstat(fileno(file->fp), &file->st)
- 					    == -1) {
-@@ -365,7 +447,7 @@
- 				}
- 				if (fileno(file->fp) == STDIN_FILENO)
- 					continue;
--				ftmp = fileargs_fopen(fa, file->file_name, "r");
-+				ftmp = fopen(file->file_name, "r");
- 				if (ftmp == NULL ||
- 				    fstat(fileno(ftmp), &sb2) == -1) {
- 					if (errno != ENOENT)
-@@ -405,28 +487,61 @@
+@@ -405,28 +491,61 @@
  			set_events(files);
  
  		switch (action) {
@@ -6126,39 +5718,10 @@
  		case USE_SLEEP:
  			(void) usleep(250000);
  			break;
---- src.orig/coreutils/tail/misc.c
-+++ src.freebsd/coreutils/tail/misc.c
-@@ -51,9 +51,6 @@
- #include <string.h>
- #include <unistd.h>
- 
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--
- #include "extern.h"
- 
- void
---- src.orig/coreutils/tail/read.c
-+++ src.freebsd/coreutils/tail/read.c
-@@ -51,9 +51,6 @@
- #include <string.h>
- #include <unistd.h>
- 
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--
- #include "extern.h"
- 
- /*
 --- src.orig/coreutils/tail/reverse.c
 +++ src.freebsd/coreutils/tail/reverse.c
-@@ -55,11 +55,16 @@
- #include <string.h>
- #include <unistd.h>
+@@ -60,6 +60,14 @@
  
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--
  #include "extern.h"
  
 +/* some versions of queue.h don't come with this */
@@ -6174,41 +5737,7 @@
  
 --- src.orig/coreutils/tail/tail.c
 +++ src.freebsd/coreutils/tail/tail.c
-@@ -46,11 +46,9 @@
- static const char sccsid[] = "@(#)tail.c	8.1 (Berkeley) 6/6/93";
- #endif
- 
--#include <sys/capsicum.h>
- #include <sys/types.h>
- #include <sys/stat.h>
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <getopt.h>
-@@ -59,13 +57,9 @@
- #include <string.h>
- #include <unistd.h>
- 
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
--
- #include "extern.h"
- 
- int Fflag, fflag, qflag, rflag, rval, no_files;
--fileargs_t *fa;
- 
- static void obsolete(char **);
- static void usage(void);
-@@ -89,7 +83,6 @@
- 	int ch, first;
- 	file_info_t file, *filep, *files;
- 	char *p;
--	cap_rights_t rights;
- 
- 	/*
- 	 * Tail's options are weird.  First, -n10 is the same as -n-10, not
-@@ -113,7 +106,7 @@
+@@ -113,7 +113,7 @@
  	case '+':							\
  		if (off)						\
  			off -= (units);					\
@@ -6217,105 +5746,6 @@
  		break;							\
  	case '-':							\
  		off = -off;						\
-@@ -160,22 +153,6 @@
- 
- 	no_files = argc ? argc : 1;
- 
--	cap_rights_init(&rights, CAP_FSTAT, CAP_FSTATFS, CAP_FCNTL,
--	    CAP_MMAP_R);
--	if (fflag)
--		cap_rights_set(&rights, CAP_EVENT);
--	if (caph_rights_limit(STDIN_FILENO, &rights) < 0 ||
--	    caph_limit_stderr() < 0 || caph_limit_stdout() < 0)
--		err(1, "can't limit stdio rights");
--
--	fa = fileargs_init(argc, argv, O_RDONLY, 0, &rights, FA_OPEN);
--	if (fa == NULL)
--		err(1, "unable to init casper");
--
--	caph_cache_catpages();
--	if (caph_enter_casper() < 0)
--		err(1, "unable to enter capability mode");
--
- 	/*
- 	 * If displaying in reverse, don't permit follow option, and convert
- 	 * style values.
-@@ -210,7 +187,7 @@
- 
- 		for (filep = files; (fn = *argv++); filep++) {
- 			filep->file_name = fn;
--			filep->fp = fileargs_fopen(fa, filep->file_name, "r");
-+			filep->fp = fopen(filep->file_name, "r");
- 			if (filep->fp == NULL ||
- 			    fstat(fileno(filep->fp), &filep->st)) {
- 				if (filep->fp != NULL) {
-@@ -225,7 +202,7 @@
- 		free(files);
- 	} else if (*argv) {
- 		for (first = 1; (fn = *argv++);) {
--			if ((fp = fileargs_fopen(fa, fn, "r")) == NULL ||
-+			if ((fp = fopen(fn, "r")) == NULL ||
- 			    fstat(fileno(fp), &sb)) {
- 				ierr(fn);
- 				continue;
-@@ -268,7 +245,6 @@
- 			forward(stdin, fn, style, off, &sb);
- 		}
- 	}
--	fileargs_free(fa);
- 	exit(rval);
- }
- 
---- src.orig/coreutils/tee/tee.c
-+++ src.freebsd/coreutils/tee/tee.c
-@@ -43,11 +43,9 @@
-   "$FreeBSD$";
- #endif /* not lint */
- 
--#include <sys/capsicum.h>
- #include <sys/stat.h>
- #include <sys/types.h>
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <fcntl.h>
-@@ -96,9 +94,6 @@
- 	if ((buf = malloc(BSIZE)) == NULL)
- 		err(1, "malloc");
- 
--	if (caph_limit_stdin() == -1 || caph_limit_stderr() == -1)
--		err(EXIT_FAILURE, "unable to limit stdio");
--
- 	add(STDOUT_FILENO, "stdout");
- 
- 	for (exitval = 0; *argv; ++argv)
-@@ -109,8 +104,6 @@
- 		} else
- 			add(fd, *argv);
- 
--	if (caph_enter() < 0)
--		err(EXIT_FAILURE, "unable to enter capability mode");
- 	while ((rval = read(STDIN_FILENO, buf, BSIZE)) > 0)
- 		for (p = head; p; p = p->next) {
- 			n = rval;
-@@ -140,16 +133,6 @@
- add(int fd, const char *name)
- {
- 	LIST *p;
--	cap_rights_t rights;
--
--	if (fd == STDOUT_FILENO) {
--		if (caph_limit_stdout() == -1)
--			err(EXIT_FAILURE, "unable to limit stdout");
--	} else {
--		cap_rights_init(&rights, CAP_WRITE, CAP_FSTAT);
--		if (caph_rights_limit(fd, &rights) < 0)
--			err(EXIT_FAILURE, "unable to limit rights");
--	}
- 
- 	if ((p = malloc(sizeof(LIST))) == NULL)
- 		err(1, "malloc");
 --- src.orig/coreutils/timeout/timeout.c
 +++ src.freebsd/coreutils/timeout/timeout.c
 @@ -28,7 +28,7 @@
@@ -6600,17 +6030,7 @@
  	}
 --- src.orig/coreutils/tr/tr.c
 +++ src.freebsd/coreutils/tr/tr.c
-@@ -44,9 +44,7 @@
- #endif
- 
- #include <sys/types.h>
--#include <sys/capsicum.h>
- 
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <limits.h>
-@@ -62,6 +60,7 @@
+@@ -62,6 +62,7 @@
  #include "cmap.h"
  #include "cset.h"
  #include "extern.h"
@@ -6618,7 +6038,7 @@
  
  static STR s1 = { STRING1, NORMAL, 0, OOBCH, 0, { 0, OOBCH }, NULL, NULL };
  static STR s2 = { STRING2, NORMAL, 0, OOBCH, 0, { 0, OOBCH }, NULL, NULL };
-@@ -78,18 +77,13 @@
+@@ -78,6 +79,7 @@
  	int n, *p;
  	int Cflag, cflag, dflag, sflag, isstring2;
  	wint_t ch, cnt, lastch;
@@ -6626,12 +6046,9 @@
  
  	(void)setlocale(LC_ALL, "");
  
--	if (caph_limit_stdio() == -1)
--		err(1, "unable to limit stdio");
--
--	if (caph_enter() < 0)
--		err(1, "unable to enter capability mode");
--
+@@ -88,8 +90,8 @@
+ 		err(1, "unable to enter capability mode");
+ 
  	Cflag = cflag = dflag = sflag = 0;
 -	while ((ch = getopt(argc, argv, "Ccdsu")) != -1)
 -		switch((char)ch) {
@@ -6640,7 +6057,7 @@
  		case 'C':
  			Cflag = 1;
  			cflag = 0;
-@@ -119,6 +113,7 @@
+@@ -119,6 +121,7 @@
  	default:
  		usage();
  		/* NOTREACHED */
@@ -6648,7 +6065,7 @@
  	case 1:
  		isstring2 = 0;
  		break;
-@@ -307,7 +302,7 @@
+@@ -307,7 +310,7 @@
  
  		s2.str = argv[1];
  		s2.state = NORMAL;
@@ -7013,79 +6430,15 @@
  {
 --- src.orig/coreutils/uniq/uniq.c
 +++ src.freebsd/coreutils/uniq/uniq.c
-@@ -46,9 +46,6 @@
-   "$FreeBSD$";
- #endif /* not lint */
+@@ -174,7 +174,7 @@
+ 	if (cap_rights_is_set(&rights, CAP_IOCTL)) {
+ 		unsigned long cmd;
  
--#include <sys/capsicum.h>
--
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -103,7 +100,6 @@
- 	size_t prevbuflen, thisbuflen, b1;
- 	char *prevline, *thisline, *p;
- 	const char *ifn;
--	cap_rights_t rights;
- 
- 	(void) setlocale(LC_ALL, "");
- 
-@@ -159,32 +155,8 @@
- 	ofp = stdout;
- 	if (argc > 0 && strcmp(argv[0], "-") != 0)
- 		ifp = file(ifn = argv[0], "r");
--	cap_rights_init(&rights, CAP_FSTAT, CAP_READ);
--	if (caph_rights_limit(fileno(ifp), &rights) < 0)
--		err(1, "unable to limit rights for %s", ifn);
--	cap_rights_init(&rights, CAP_FSTAT, CAP_WRITE);
- 	if (argc > 1)
- 		ofp = file(argv[1], "w");
--	else
--		cap_rights_set(&rights, CAP_IOCTL);
--	if (caph_rights_limit(fileno(ofp), &rights) < 0) {
--		err(1, "unable to limit rights for %s",
--		    argc > 1 ? argv[1] : "stdout");
--	}
--	if (cap_rights_is_set(&rights, CAP_IOCTL)) {
--		unsigned long cmd;
--
 -		cmd = TIOCGETA; /* required by isatty(3) in printf(3) */
--
--		if (caph_ioctls_limit(fileno(ofp), &cmd, 1) < 0) {
--			err(1, "unable to limit ioctls for %s",
--			    argc > 1 ? argv[1] : "stdout");
--		}
--	}
--
--	caph_cache_catpages();
--	if (caph_enter() < 0)
--		err(1, "unable to enter capability mode");
++		cmd = 0; /* required by isatty(3) in printf(3) */
  
- 	prevbuflen = thisbuflen = 0;
- 	prevline = thisline = NULL;
---- src.orig/coreutils/users/users.cc
-+++ src.freebsd/coreutils/users/users.cc
-@@ -30,9 +30,6 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <sys/capsicum.h>
--
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <utmpx.h>
-@@ -57,9 +54,6 @@
- 
- 	setutxent();
- 
--	if (caph_enter())
--		err(1, "Failed to enter capability mode.");
--
- 	while ((ut = getutxent()) != NULL)
- 		if (ut->ut_type == USER_PROCESS)
- 			names.insert(ut->ut_user);
+ 		if (caph_ioctls_limit(fileno(ofp), &cmd, 1) < 0) {
+ 			err(1, "unable to limit ioctls for %s",
 --- src.orig/coreutils/wc/wc.1
 +++ src.freebsd/coreutils/wc/wc.1
 @@ -130,7 +130,7 @@
@@ -7099,18 +6452,15 @@
  argument for
 --- src.orig/coreutils/wc/wc.c
 +++ src.freebsd/coreutils/wc/wc.c
-@@ -44,16 +44,16 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <sys/capsicum.h>
+@@ -47,6 +47,7 @@
+ #include <sys/capsicum.h>
  #include <sys/param.h>
  #include <sys/stat.h>
 +#include <sys/types.h>
  
--#include <capsicum_helpers.h>
+ #include <capsicum_helpers.h>
  #include <ctype.h>
- #include <err.h>
+@@ -54,6 +55,7 @@
  #include <errno.h>
  #include <fcntl.h>
  #include <locale.h>
@@ -7118,19 +6468,16 @@
  #include <stdint.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -63,10 +63,8 @@
- #include <wctype.h>
- #include <libxo/xo.h>
+@@ -66,6 +68,8 @@
+ #include <libcasper.h>
+ #include <casper/cap_fileargs.h>
  
--#include <libcasper.h>
--#include <casper/cap_fileargs.h>
 +#include "compat.h"
- 
--static fileargs_t *fa;
++
+ static fileargs_t *fa;
  static uintmax_t tlinect, twordct, tcharct, tlongline;
  static int doline, doword, dochar, domulti, dolongline;
- static volatile sig_atomic_t siginfo;
-@@ -78,7 +76,7 @@
+@@ -78,7 +82,7 @@
  static void	usage(void);
  
  static void
@@ -7139,59 +6486,7 @@
  {
  
  	siginfo = 1;
-@@ -96,7 +94,6 @@
- main(int argc, char *argv[])
- {
- 	int ch, errors, total;
--	cap_rights_t rights;
- 
- 	(void) setlocale(LC_CTYPE, "");
- 
-@@ -132,26 +129,6 @@
- 
- 	(void)signal(SIGINFO, siginfo_handler);
- 
--	fa = fileargs_init(argc, argv, O_RDONLY, 0,
--	    cap_rights_init(&rights, CAP_READ, CAP_FSTAT), FA_OPEN);
--	if (fa == NULL) {
--		xo_warn("Unable to init casper");
--		exit(1);
--	}
--
--	caph_cache_catpages();
--	if (caph_limit_stdio() < 0) {
--		xo_warn("Unable to limit stdio");
--		fileargs_free(fa);
--		exit(1);
--	}
--
--	if (caph_enter_casper() < 0) {
--		xo_warn("Unable to enter capability mode");
--		fileargs_free(fa);
--		exit(1);
--	}
--
- 	/* Wc's flags are on by default. */
- 	if (doline + doword + dochar + domulti + dolongline == 0)
- 		doline = doword = dochar = 1;
-@@ -185,7 +162,6 @@
- 		xo_close_container("total");
- 	}
- 
--	fileargs_free(fa);
- 	xo_close_container("wc");
- 	xo_finish();
- 	exit(errors == 0 ? 0 : 1);
-@@ -234,7 +210,7 @@
- 	linect = wordct = charct = llct = tmpll = 0;
- 	if (file == NULL)
- 		fd = STDIN_FILENO;
--	else if ((fd = fileargs_open(fa, file)) < 0) {
-+	else if ((fd = open(file, O_RDONLY, 0)) < 0) {
- 		xo_warn("%s: open", file);
- 		return (1);
- 	}
-@@ -313,7 +289,7 @@
+@@ -313,7 +317,7 @@
  			if (!domulti || MB_CUR_MAX == 1) {
  				clen = 1;
  				wch = (unsigned char)*p;
@@ -7716,37 +7011,9 @@
  		/* NOTREACHED */
  	}
  	if (status != 0) {
---- src.orig/coreutils/yes/yes.c
-+++ src.freebsd/coreutils/yes/yes.c
-@@ -43,7 +43,6 @@
- #endif
- #endif /* not lint */
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <stdio.h>
- #include <string.h>
-@@ -60,9 +59,6 @@
- 	size_t more;
- 	ssize_t ret;
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	if (argc > 1) {
- 		exp = argv[1];
- 		explen = strlen(exp) + 1;
 --- src.orig/diffutils/cmp/cmp.c
 +++ src.freebsd/diffutils/cmp/cmp.c
-@@ -47,7 +47,6 @@
- #include <sys/types.h>
- #include <sys/stat.h>
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <fcntl.h>
-@@ -58,9 +57,8 @@
+@@ -58,9 +58,8 @@
  #include <string.h>
  #include <unistd.h>
  
@@ -7757,7 +7024,7 @@
  
  bool	bflag, lflag, sflag, xflag, zflag;
  
-@@ -78,7 +76,7 @@
+@@ -78,7 +77,7 @@
  static void usage(void);
  
  static bool
@@ -7766,7 +7033,7 @@
  {
  	char *colon;
  
-@@ -100,7 +98,7 @@
+@@ -100,7 +99,7 @@
  main(int argc, char *argv[])
  {
  	struct stat sb1, sb2;
@@ -7775,7 +7042,7 @@
  	int ch, fd1, fd2, oflag;
  	bool special;
  	const char *file1, *file2;
-@@ -127,7 +125,7 @@
+@@ -127,7 +126,7 @@
  			lflag = true;
  			break;
  		case 'n':		/* Limit */
@@ -7784,29 +7051,6 @@
  				fprintf(stderr, "Invalid --bytes: %s\n",
  				    optarg);
  				usage();
-@@ -156,12 +154,6 @@
- 	if (argc < 2 || argc > 4)
- 		usage();
- 
--	/* Don't limit rights on stdin since it may be one of the inputs. */
--	if (caph_limit_stream(STDOUT_FILENO, CAPH_WRITE | CAPH_IGNORE_EBADF))
--		err(ERR_EXIT, "unable to limit rights on stdout");
--	if (caph_limit_stream(STDERR_FILENO, CAPH_WRITE | CAPH_IGNORE_EBADF))
--		err(ERR_EXIT, "unable to limit rights on stderr");
--
- 	/* Backward compatibility -- handle "-" meaning stdin. */
- 	special = false;
- 	if (strcmp(file1 = argv[0], "-") == 0) {
-@@ -216,9 +208,6 @@
- 			exit(ERR_EXIT);
- 	}
- 
--	/* FD rights are limited in c_special() and c_regular(). */
--	caph_cache_catpages();
--
- 	if (!special) {
- 		if (fstat(fd1, &sb1)) {
- 			if (!sflag)
 --- src.orig/diffutils/cmp/extern.h
 +++ src.freebsd/diffutils/cmp/extern.h
 @@ -34,6 +34,8 @@
@@ -7820,39 +7064,15 @@
  #define ERR_EXIT	2	/* error exit code */
 --- src.orig/diffutils/cmp/regular.c
 +++ src.freebsd/diffutils/cmp/regular.c
-@@ -41,8 +41,8 @@
+@@ -41,6 +41,7 @@
  #include <sys/param.h>
  #include <sys/mman.h>
  #include <sys/stat.h>
 +#include <sys/types.h>
  
--#include <capsicum_helpers.h>
+ #include <capsicum_helpers.h>
  #include <err.h>
- #include <limits.h>
- #include <signal.h>
-@@ -63,7 +63,6 @@
-     int fd2, const char *file2, off_t skip2, off_t len2, off_t limit)
- {
- 	struct sigaction act, oact;
--	cap_rights_t rights;
- 	u_char ch, *p1, *p2, *m1, *m2, *e1, *e2;
- 	off_t byte, length, line;
- 	off_t pagemask, off1, off2;
-@@ -100,13 +99,6 @@
- 		return;
- 	}
- 
--	if (caph_rights_limit(fd1, cap_rights_init(&rights, CAP_MMAP_R)) < 0)
--		err(1, "unable to limit rights for %s", file1);
--	if (caph_rights_limit(fd2, cap_rights_init(&rights, CAP_MMAP_R)) < 0)
--		err(1, "unable to limit rights for %s", file2);
--	if (caph_enter() < 0)
--		err(ERR_EXIT, "unable to enter capability mode");
--
- 	sigemptyset(&act.sa_mask);
- 	act.sa_flags = SA_NODEFER;
- 	act.sa_handler = segv_handler;
-@@ -181,7 +173,7 @@
+@@ -181,7 +182,7 @@
  }
  
  static void
@@ -7861,30 +7081,6 @@
  	static const char msg[] = "cmp: Input/output error (caught SIGSEGV)\n";
  
  	write(STDERR_FILENO, msg, sizeof(msg));
---- src.orig/diffutils/cmp/special.c
-+++ src.freebsd/diffutils/cmp/special.c
-@@ -40,7 +40,6 @@
- 
- #include <sys/types.h>
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <stdlib.h>
- #include <stdio.h>
-@@ -56,13 +55,6 @@
- 	FILE *fp1, *fp2;
- 	int dfound;
- 
--	if (caph_limit_stream(fd1, CAPH_READ) < 0)
--		err(ERR_EXIT, "caph_limit_stream(%s)", file1);
--	if (caph_limit_stream(fd2, CAPH_READ) < 0)
--		err(ERR_EXIT, "caph_limit_stream(%s)", file2);
--	if (caph_enter() < 0)
--		err(ERR_EXIT, "unable to enter capability mode");
--
- 	if ((fp1 = fdopen(fd1, "r")) == NULL)
- 		err(ERR_EXIT, "%s", file1);
- 	if ((fp2 = fdopen(fd2, "r")) == NULL)
 --- src.orig/diffutils/diff/diff.1
 +++ src.freebsd/diffutils/diff/diff.1
 @@ -82,7 +82,6 @@
@@ -8016,26 +7212,6 @@
  	if (strcmp(file, "-") != 0)
  		fclose(fp);
  }
---- src.orig/diffutils/diff/diff.h
-+++ src.freebsd/diffutils/diff/diff.h
-@@ -100,8 +100,16 @@
- extern struct	excludes *excludes_list;
- extern regex_t	ignore_re;
- 
--char	*splice(char *, char *);
-+char	*dsplice(char *, char *);
- int	diffreg(char *, char *, int, int);
- void	diffdir(char *, char *, int);
- void	print_only(const char *, size_t, const char *);
- void	print_status(int, char *, char *, const char *);
-+
-+#ifndef MIN
-+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-+#endif
-+
-+#ifndef MAX
-+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
-+#endif
 --- src.orig/diffutils/diff/diffdir.c
 +++ src.freebsd/diffutils/diff/diffdir.c
 @@ -35,6 +35,7 @@
@@ -8066,20 +7242,29 @@
  		status |= 2;
  		return;
  	}
+--- src.orig/diffutils/diff/diff.h
++++ src.freebsd/diffutils/diff/diff.h
+@@ -100,8 +100,16 @@
+ extern struct	excludes *excludes_list;
+ extern regex_t	ignore_re;
+ 
+-char	*splice(char *, char *);
++char	*dsplice(char *, char *);
+ int	diffreg(char *, char *, int, int);
+ void	diffdir(char *, char *, int);
+ void	print_only(const char *, size_t, const char *);
+ void	print_status(int, char *, char *, const char *);
++
++#ifndef MIN
++#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
++#endif
++
++#ifndef MAX
++#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
++#endif
 --- src.orig/diffutils/diff/diffreg.c
 +++ src.freebsd/diffutils/diff/diffreg.c
-@@ -69,10 +69,8 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <sys/capsicum.h>
- #include <sys/stat.h>
- 
--#include <capsicum_helpers.h>
- #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -85,10 +83,13 @@
+@@ -85,10 +85,13 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -8094,47 +7279,25 @@
  
  /*
   * diff - compare two files.
-@@ -259,8 +260,6 @@
+@@ -259,7 +262,6 @@
  {
  	FILE *f1, *f2;
  	int i, rval;
 -	struct pr *pr = NULL;
--	cap_rights_t rights_ro;
+ 	cap_rights_t rights_ro;
  
  	f1 = f2 = NULL;
- 	rval = D_SAME;
-@@ -339,29 +338,7 @@
+@@ -339,9 +341,6 @@
  		goto closem;
  	}
  
 -	if (lflag)
 -		pr = start_pr(file1, file2);
 -
--	if (capsicum) {
--		cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
--		if (caph_rights_limit(fileno(f1), &rights_ro) < 0)
--			err(2, "unable to limit rights on: %s", file1);
--		if (caph_rights_limit(fileno(f2), &rights_ro) < 0)
--			err(2, "unable to limit rights on: %s", file2);
--		if (fileno(f1) == STDIN_FILENO || fileno(f2) == STDIN_FILENO) {
--			/* stdin has already been limited */
--			if (caph_limit_stderr() == -1)
--				err(2, "unable to limit stderr");
--			if (caph_limit_stdout() == -1)
--				err(2, "unable to limit stdout");
--		} else if (caph_limit_stdio() == -1)
--				err(2, "unable to limit stdio");
--
--		caph_cache_catpages();
--		caph_cache_tzdata();
--		if (caph_enter() < 0)
--			err(2, "unable to enter capability mode");
--	}
-+	(void)capsicum;
- 
- 	switch (files_differ(f1, f2, flags)) {
- 	case 0:
-@@ -424,8 +401,6 @@
+ 	if (capsicum) {
+ 		cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
+ 		if (caph_rights_limit(fileno(f1), &rights_ro) < 0)
+@@ -424,8 +423,6 @@
  	output(file1, f1, file2, f2, flags);
  
  closem:
@@ -8143,7 +7306,7 @@
  	if (anychange) {
  		status |= 1;
  		if (rval == D_SAME)
-@@ -499,7 +474,7 @@
+@@ -499,7 +496,7 @@
  }
  
  char *
@@ -8152,7 +7315,7 @@
  {
  	char *tail, *buf;
  	size_t dirlen;
-@@ -1035,7 +1010,6 @@
+@@ -1035,7 +1032,6 @@
  	int ret;
  
  	ret = regexec(&ignore_re, line, 0, NULL, 0);
@@ -8160,7 +7323,7 @@
  	return (ret == 0);	/* if it matched, it should be ignored. */
  }
  
-@@ -1043,13 +1017,10 @@
+@@ -1043,13 +1039,10 @@
  ignoreline(char *line, bool skip_blanks)
  {
  
@@ -8178,7 +7341,7 @@
  	return (false);
  }
  
-@@ -1068,7 +1039,7 @@
+@@ -1068,7 +1061,7 @@
  	long curpos;
  	int i, nc;
  	const char *walk;
@@ -8187,7 +7350,7 @@
  
  	skip_blanks = (*pflags & D_SKIPBLANKLINES);
  restart:
-@@ -1086,7 +1057,9 @@
+@@ -1086,7 +1079,9 @@
  			for (i = a; i <= b; i++) {
  				line = preadline(fileno(f1),
  				    ixold[i] - ixold[i - 1], ixold[i - 1]);
@@ -8198,7 +7361,7 @@
  					goto proceed;
  			}
  		}
-@@ -1094,7 +1067,9 @@
+@@ -1094,7 +1089,9 @@
  			for (i = c; i <= d; i++) {
  				line = preadline(fileno(f2),
  				    ixnew[i] - ixnew[i - 1], ixnew[i - 1]);
@@ -8209,7 +7372,7 @@
  					goto proceed;
  			}
  		}
-@@ -1376,6 +1351,7 @@
+@@ -1376,6 +1373,7 @@
  		case '\0':
  			if ((flags & D_FORCEASCII) == 0)
  				return (RH_BINARY);
@@ -8217,7 +7380,7 @@
  		case '\r':
  			if (flags & D_STRIPCR) {
  				t = getc(f);
-@@ -1433,7 +1409,7 @@
+@@ -1433,7 +1431,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -8226,7 +7389,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1652,41 +1628,18 @@
+@@ -1652,41 +1650,18 @@
  static void
  print_header(const char *file1, const char *file2)
  {
@@ -9513,20 +8676,15 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  extern int yylex(void);
 --- src.orig/miscutils/col/col.c
 +++ src.freebsd/miscutils/col/col.c
-@@ -47,11 +47,9 @@
- #include <sys/cdefs.h>
- __FBSDID("$FreeBSD$");
- 
--#include <sys/capsicum.h>
--
--#include <capsicum_helpers.h>
+@@ -52,6 +52,7 @@
+ #include <capsicum_helpers.h>
  #include <err.h>
  #include <errno.h>
 +#include <limits.h>
  #include <locale.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -61,6 +59,8 @@
+@@ -61,6 +62,8 @@
  #include <wchar.h>
  #include <wctype.h>
  
@@ -9535,39 +8693,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #define	BS	'\b'		/* backspace */
  #define	TAB	'\t'		/* tab */
  #define	SPACE	' '		/* space */
-@@ -141,12 +141,6 @@
- 
- 	(void)setlocale(LC_CTYPE, "");
- 
--	if (caph_limit_stdio() == -1)
--		err(1, "unable to limit stdio");
--
--	if (caph_enter() < 0)
--		err(1, "unable to enter capability mode");
--
- 	max_bufd_lines = 256;
- 	compress_spaces = 1;		/* compress spaces into tabs */
- 	while ((opt = getopt(argc, argv, "bfhl:px")) != -1)
---- src.orig/miscutils/getopt/getopt.c
-+++ src.freebsd/miscutils/getopt/getopt.c
-@@ -6,7 +6,6 @@
-  * into the public domain and is thus not subject to any copyright.
-  */
- 
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <errno.h>
- #include <stdio.h>
-@@ -19,9 +18,6 @@
- 	int c;
- 	int status = 0;
- 
--	if (caph_limit_stdio() < 0 || caph_enter() < 0)
--		err(1, "capsicum");
--
- 	optind = 2;	/* Past the program name and the option letters. */
- 	while ((c = getopt(argc, argv, argv[1])) != -1)
- 		switch (c) {
 --- src.orig/miscutils/hexdump/conv.c
 +++ src.freebsd/miscutils/hexdump/conv.c
 @@ -104,7 +104,7 @@
@@ -9581,21 +8706,18 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  		else if (clen == (size_t)-1 || (clen == (size_t)-2 &&
 --- src.orig/miscutils/hexdump/display.c
 +++ src.freebsd/miscutils/hexdump/display.c
-@@ -38,12 +38,10 @@
- __FBSDID("$FreeBSD$");
+@@ -39,9 +39,9 @@
  
  #include <sys/param.h>
--#include <sys/capsicum.h>
+ #include <sys/capsicum.h>
 -#include <sys/conf.h>
  #include <sys/ioctl.h>
  #include <sys/stat.h>
 +#include <sys/types.h>
  
--#include <capsicum_helpers.h>
+ #include <capsicum_helpers.h>
  #include <ctype.h>
- #include <err.h>
- #include <errno.h>
-@@ -107,7 +105,7 @@
+@@ -107,7 +107,7 @@
  		for (pr = endfu->nextpr; pr; pr = pr->nextpr)
  			switch(pr->flags) {
  			case F_ADDRESS:
@@ -9604,7 +8726,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				break;
  			case F_TEXT:
  				(void)printf("%s", pr->fmt);
-@@ -131,7 +129,7 @@
+@@ -131,7 +131,7 @@
  
  	switch(pr->flags) {
  	case F_ADDRESS:
@@ -9613,7 +8735,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  		break;
  	case F_BPAD:
  		(void)printf(pr->fmt, "");
-@@ -164,15 +162,15 @@
+@@ -164,15 +164,15 @@
  	case F_INT:
  		switch(pr->bcnt) {
  		case 1:
@@ -9632,7 +8754,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			break;
  		case 8:
  			bcopy(bp, &s8, sizeof(s8));
-@@ -195,15 +193,15 @@
+@@ -195,15 +195,15 @@
  	case F_UINT:
  		switch(pr->bcnt) {
  		case 1:
@@ -9651,26 +8773,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			break;
  		case 8:
  			bcopy(bp, &u8, sizeof(u8));
-@@ -364,18 +362,6 @@
- 			statok = 0;
- 		}
- 
--		if (caph_limit_stream(fileno(stdin), CAPH_READ) < 0)
--			err(1, "unable to restrict %s",
--			    statok ? *_argv : "stdin");
--
--		/*
--		 * We've opened our last input file; enter capsicum sandbox.
--		 */
--		if (statok == 0 || *(_argv + 1) == NULL) {
--			if (caph_enter() < 0)
--				err(1, "unable to enter capability mode");
--		}
--
- 		if (skip)
- 			doskip(statok ? *_argv : "stdin", statok);
- 		if (*_argv)
-@@ -389,7 +375,6 @@
+@@ -389,7 +389,6 @@
  void
  doskip(const char *fname, int statok)
  {
@@ -9678,7 +8781,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	struct stat sb;
  
  	if (statok) {
-@@ -406,16 +391,8 @@
+@@ -406,16 +405,8 @@
  		return;
  	}
  	if (S_ISCHR(sb.st_mode) || S_ISBLK(sb.st_mode)) {
@@ -9697,32 +8800,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	}
  	if (fseeko(stdin, skip, SEEK_SET)) {
  		noseek();
---- src.orig/miscutils/hexdump/hexdump.c
-+++ src.freebsd/miscutils/hexdump/hexdump.c
-@@ -44,8 +44,6 @@
- __FBSDID("$FreeBSD$");
- 
- #include <sys/types.h>
--#include <sys/capsicum.h>
--#include <capsicum_helpers.h>
- #include <err.h>
- #include <locale.h>
- #include <stdlib.h>
-@@ -81,14 +79,6 @@
- 	for (tfs = fshead; tfs; tfs = tfs->nextfs)
- 		rewrite(tfs);
- 
--	/*
--	 * Cache NLS data, for strerror, for err(3), before entering capability
--	 * mode.
--	 */
--	caph_cache_catpages();
--	if (caph_limit_stdio() < 0)
--		err(1, "capsicum");
--
- 	(void)next(argv);
- 	display();
- 	exit(exitval);
 --- src.orig/miscutils/hexdump/odsyntax.c
 +++ src.freebsd/miscutils/hexdump/odsyntax.c
 @@ -309,7 +309,7 @@
@@ -10112,17 +9189,16 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  						}
 --- src.orig/miscutils/write/write.c
 +++ src.freebsd/miscutils/write/write.c
-@@ -48,27 +48,28 @@
- __FBSDID("$FreeBSD$");
+@@ -49,8 +49,6 @@
  
  #include <sys/param.h>
--#include <sys/capsicum.h>
+ #include <sys/capsicum.h>
 -#include <sys/filio.h>
 -#include <sys/signal.h>
  #include <sys/stat.h>
  #include <sys/time.h>
  
--#include <capsicum_helpers.h>
+@@ -58,17 +56,22 @@
  #include <ctype.h>
  #include <err.h>
  #include <errno.h>
@@ -10145,57 +9221,16 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  void done(int);
  void do_write(int, char *, char *, const char *);
  static void usage(void);
-@@ -80,8 +81,6 @@
+@@ -80,7 +83,7 @@
  int
  main(int argc, char **argv)
  {
 -	unsigned long cmds[] = { TIOCGETA, TIOCGWINSZ, FIODGNAME };
--	cap_rights_t rights;
++	unsigned long cmds[] = { 0 };
+ 	cap_rights_t rights;
  	struct passwd *pwd;
  	time_t atime;
- 	uid_t myuid;
-@@ -95,30 +94,6 @@
- 	devfd = open(_PATH_DEV, O_RDONLY);
- 	if (devfd < 0)
- 		err(1, "open(/dev)");
--	cap_rights_init(&rights, CAP_FCNTL, CAP_FSTAT, CAP_IOCTL, CAP_LOOKUP,
--	    CAP_PWRITE);
--	if (caph_rights_limit(devfd, &rights) < 0)
--		err(1, "can't limit devfd rights");
--
--	/*
--	 * Can't use capsicum helpers here because we need the additional
--	 * FIODGNAME ioctl.
--	 */
--	cap_rights_init(&rights, CAP_FCNTL, CAP_FSTAT, CAP_IOCTL, CAP_READ,
--	    CAP_WRITE);
--	if (caph_rights_limit(STDIN_FILENO, &rights) < 0 ||
--	    caph_rights_limit(STDOUT_FILENO, &rights) < 0 ||
--	    caph_rights_limit(STDERR_FILENO, &rights) < 0 ||
--	    caph_ioctls_limit(STDIN_FILENO, cmds, nitems(cmds)) < 0 ||
--	    caph_ioctls_limit(STDOUT_FILENO, cmds, nitems(cmds)) < 0 ||
--	    caph_ioctls_limit(STDERR_FILENO, cmds, nitems(cmds)) < 0 ||
--	    caph_fcntls_limit(STDIN_FILENO, CAP_FCNTL_GETFL) < 0 ||
--	    caph_fcntls_limit(STDOUT_FILENO, CAP_FCNTL_GETFL) < 0 ||
--	    caph_fcntls_limit(STDERR_FILENO, CAP_FCNTL_GETFL) < 0)
--		err(1, "can't limit stdio rights");
--
--	caph_cache_catpages();
--	caph_cache_tzdata();
- 
- 	/*
- 	 * Cache UTX database fds.
-@@ -137,9 +112,6 @@
- 			login = "???";
- 	}
- 
--	if (caph_enter() < 0)
--		err(1, "cap_enter");
--
- 	while (getopt(argc, argv, "") != -1)
- 		usage();
- 	argc -= optind;
-@@ -203,7 +175,8 @@
+@@ -203,7 +206,8 @@
  {
  	struct utmpx lu, *u;
  
@@ -10205,7 +9240,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	while ((u = getutxline(&lu)) != NULL)
  		if (u->ut_type == USER_PROCESS &&
  		    strcmp(user, u->ut_user) == 0) {
-@@ -244,7 +217,7 @@
+@@ -244,7 +248,7 @@
  				continue;	/* bad term? skip */
  			if (myuid && !msgsok)
  				continue;	/* skip ttys with msgs off */
@@ -10214,7 +9249,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				user_is_me = 1;
  				continue;	/* don't write to yourself */
  			}
-@@ -303,10 +276,9 @@
+@@ -303,10 +307,9 @@
  	fd = openat(devfd, tty, O_WRONLY);
  	if (fd < 0)
  		err(1, "openat(%s%s)", _PATH_DEV, tty);
@@ -10227,7 +9262,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  	(void)signal(SIGINT, done);
  	(void)signal(SIGHUP, done);
-@@ -328,7 +300,7 @@
+@@ -328,7 +331,7 @@
   * done - cleanup and exit
   */
  void

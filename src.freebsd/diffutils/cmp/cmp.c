@@ -47,6 +47,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <capsicum_helpers.h>
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -154,6 +155,12 @@ main(int argc, char *argv[])
 	if (argc < 2 || argc > 4)
 		usage();
 
+	/* Don't limit rights on stdin since it may be one of the inputs. */
+	if (caph_limit_stream(STDOUT_FILENO, CAPH_WRITE | CAPH_IGNORE_EBADF))
+		err(ERR_EXIT, "unable to limit rights on stdout");
+	if (caph_limit_stream(STDERR_FILENO, CAPH_WRITE | CAPH_IGNORE_EBADF))
+		err(ERR_EXIT, "unable to limit rights on stderr");
+
 	/* Backward compatibility -- handle "-" meaning stdin. */
 	special = false;
 	if (strcmp(file1 = argv[0], "-") == 0) {
@@ -207,6 +214,9 @@ main(int argc, char *argv[])
 		else
 			exit(ERR_EXIT);
 	}
+
+	/* FD rights are limited in c_special() and c_regular(). */
+	caph_cache_catpages();
 
 	if (!special) {
 		if (fstat(fd1, &sb1)) {

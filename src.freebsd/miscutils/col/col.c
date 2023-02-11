@@ -47,6 +47,9 @@ static char sccsid[] = "@(#)col.c	8.5 (Berkeley) 5/4/95";
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
+#include <sys/capsicum.h>
+
+#include <capsicum_helpers.h>
 #include <err.h>
 #include <errno.h>
 #include <limits.h>
@@ -140,6 +143,12 @@ main(int argc, char **argv)
 	const char *errstr;
 
 	(void)setlocale(LC_CTYPE, "");
+
+	if (caph_limit_stdio() == -1)
+		err(1, "unable to limit stdio");
+
+	if (caph_enter() < 0)
+		err(1, "unable to enter capability mode");
 
 	max_bufd_lines = 256;
 	compress_spaces = 1;		/* compress spaces into tabs */

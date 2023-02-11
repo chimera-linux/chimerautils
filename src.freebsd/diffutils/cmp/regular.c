@@ -43,6 +43,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/stat.h>
 #include <sys/types.h>
 
+#include <capsicum_helpers.h>
 #include <err.h>
 #include <limits.h>
 #include <signal.h>
@@ -63,6 +64,7 @@ c_regular(int fd1, const char *file1, off_t skip1, off_t len1,
     int fd2, const char *file2, off_t skip2, off_t len2, off_t limit)
 {
 	struct sigaction act, oact;
+	cap_rights_t rights;
 	u_char ch, *p1, *p2, *m1, *m2, *e1, *e2;
 	off_t byte, length, line;
 	off_t pagemask, off1, off2;
@@ -98,6 +100,13 @@ c_regular(int fd1, const char *file1, off_t skip1, off_t len1,
 		c_special(fd1, file1, skip1, fd2, file2, skip2, limit);
 		return;
 	}
+
+	if (caph_rights_limit(fd1, cap_rights_init(&rights, CAP_MMAP_R)) < 0)
+		err(1, "unable to limit rights for %s", file1);
+	if (caph_rights_limit(fd2, cap_rights_init(&rights, CAP_MMAP_R)) < 0)
+		err(1, "unable to limit rights for %s", file2);
+	if (caph_enter() < 0)
+		err(ERR_EXIT, "unable to enter capability mode");
 
 	sigemptyset(&act.sa_mask);
 	act.sa_flags = SA_NODEFER;

@@ -61,6 +61,9 @@ static const char sccsid[] = "@(#)forward.c	8.1 (Berkeley) 6/6/93";
 #include <string.h>
 #include <unistd.h>
 
+#include <libcasper.h>
+#include <casper/cap_fileargs.h>
+
 #include "extern.h"
 
 static void rlines(FILE *, const char *fn, off_t, struct stat *);
@@ -434,7 +437,8 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 			for (i = 0, file = files; i < no_files; i++, file++) {
 				if (!file->fp) {
 					file->fp =
-					    fopen(file->file_name, "r");
+					    fileargs_fopen(fa, file->file_name,
+					    "r");
 					if (file->fp != NULL &&
 					    fstat(fileno(file->fp), &file->st)
 					    == -1) {
@@ -447,7 +451,7 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 				}
 				if (fileno(file->fp) == STDIN_FILENO)
 					continue;
-				ftmp = fopen(file->file_name, "r");
+				ftmp = fileargs_fopen(fa, file->file_name, "r");
 				if (ftmp == NULL ||
 				    fstat(fileno(ftmp), &sb2) == -1) {
 					if (errno != ENOENT)
