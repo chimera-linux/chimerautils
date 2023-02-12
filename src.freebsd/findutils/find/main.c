@@ -70,7 +70,7 @@ int isoutput;			/* user specified output operator */
 int issort;         		/* do hierarchies in lexicographical order */
 int isxargs;			/* don't permit xargs delimiting chars */
 int mindepth = -1, maxdepth = -1; /* minimum and maximum depth */
-int regexp_flags = 0;	/* use the "basic" regexp by default*/
+int regexp_flags = REG_BASIC;	/* use the "basic" regexp by default*/
 int exitstatus;
 
 static void usage(void);

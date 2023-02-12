@@ -77,6 +77,7 @@ static void	endcolor_ansi(void);
 static void	endcolor(int);
 static int	colortype(mode_t);
 #endif
+static void	aclmode(char *, const FTSENT *);
 
 #define	IS_NOPRINT(p)	((p)->fts_number == NO_PRINT)
 
@@ -229,16 +230,23 @@ printlong(const DISPLAY *dp)
 			(void)printf("%*jd ",
 			    dp->s_block, howmany(sp->st_blocks, blocksize));
 		strmode(sp->st_mode, buf);
+		aclmode(buf, p);
 		np = p->fts_pointer;
 		(void)printf("%s %*ju %-*s  %-*s  ", buf, dp->s_nlink,
 		    (uintmax_t)sp->st_nlink, dp->s_user, np->user, dp->s_group,
 		    np->group);
+		if (f_flags)
+			(void)printf("%-*s ", dp->s_flags, np->flags);
+		if (f_label)
+			(void)printf("%-*s ", dp->s_label, np->label);
 		if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
 			printdev(dp->s_size, sp->st_rdev);
 		else
 			printsize(dp->s_size, sp->st_size);
 		if (f_accesstime)
 			printtime(sp->st_atime);
+		else if (f_birthtime)
+			printtime(sp->st_ctime);
 		else if (f_statustime)
 			printtime(sp->st_ctime);
 		else
@@ -744,4 +752,80 @@ printsize(size_t width, off_t bytes)
 		(void)printf(format, (u_int)width, bytes);
 	} else
 		(void)printf("%*jd ", (u_int)width, bytes);
+}
+
+/*
+ * Add a + after the standard rwxrwxrwx mode if the file has an
+ * ACL. strmode() reserves space at the end of the string.
+ */
+static void
+aclmode(char *buf, const FTSENT *p)
+{
+#if 0
+	char name[MAXPATHLEN + 1];
+	int ret, trivial;
+	static dev_t previous_dev = NODEV;
+	static int supports_acls = -1;
+	static int type = ACL_TYPE_ACCESS;
+	acl_t facl;
+
+	/*
+	 * XXX: ACLs are not supported on whiteouts and device files
+	 * residing on UFS.
+	 */
+	if (S_ISCHR(p->fts_statp->st_mode) || S_ISBLK(p->fts_statp->st_mode) ||
+	    S_ISWHT(p->fts_statp->st_mode))
+		return;
+
+	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
+		return;
+
+	if (p->fts_level == FTS_ROOTLEVEL)
+		snprintf(name, sizeof(name), "%s", p->fts_name);
+	else
+		snprintf(name, sizeof(name), "%s/%s",
+		    p->fts_parent->fts_accpath, p->fts_name);
+
+	if (previous_dev != p->fts_statp->st_dev) {
+		previous_dev = p->fts_statp->st_dev;
+		supports_acls = 0;
+
+		ret = lpathconf(name, _PC_ACL_NFS4);
+		if (ret > 0) {
+			type = ACL_TYPE_NFS4;
+			supports_acls = 1;
+		} else if (ret < 0 && errno != EINVAL) {
+			warn("%s", name);
+			return;
+		}
+		if (supports_acls == 0) {
+			ret = lpathconf(name, _PC_ACL_EXTENDED);
+		if (ret > 0) {
+				type = ACL_TYPE_ACCESS;
+				supports_acls = 1;
+			} else if (ret < 0 && errno != EINVAL) {
+				warn("%s", name);
+				return;
+			}
+		}
+	}
+	if (supports_acls == 0)
+		return;
+	facl = acl_get_link_np(name, type);
+	if (facl == NULL) {
+		warn("%s", name);
+		return;
+	}
+	if (acl_is_trivial_np(facl, &trivial)) {
+		acl_free(facl);
+		warn("%s", name);
+		return;
+	}
+	if (!trivial)
+		buf[10] = '+';
+	acl_free(facl);
+#else
+	(void)buf;
+	(void)p;
+#endif
 }

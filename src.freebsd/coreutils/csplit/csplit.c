@@ -379,7 +379,7 @@ do_rexp(const char *expr)
 	} else
 		ofs = 0;
 
-	if (regcomp(&cre, re, REG_NOSUB) != 0)
+	if (regcomp(&cre, re, REG_BASIC|REG_NOSUB) != 0)
 		errx(1, "%s: bad regular expression", re);
 
 	if (*expr == '/')

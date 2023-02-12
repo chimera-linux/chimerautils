@@ -117,9 +117,12 @@ int termwidth = 80;		/* default terminal width */
 
 /* flags */
        int f_accesstime;	/* use time of last access */
+       int f_birthtime;		/* use time of birth */
+       int f_flags;		/* show flags associated with a file */
        int f_humanval;		/* show human-readable file sizes */
        int f_inode;		/* print inode */
 static int f_kblocks;		/* print size in kilobytes */
+       int f_label;		/* show MAC label */
 static int f_listdir;		/* list actual directory, not contents */
 static int f_listdot;		/* list files beginning with . */
        int f_longform;		/* long listing format */
@@ -271,7 +274,7 @@ main(int argc, char *argv[])
 		colorflag = COLORFLAG_AUTO;
 #endif
 	while ((ch = getopt_long(argc, argv,
-	    "+1ABCD:FGHILPRSTWXabcdfghiklmnpqrstuwxy,", long_opts,
+	    "+1ABCD:FGHILPRSTXabcdfghiklmnpqrstuwxy,", long_opts,
 	    NULL)) != -1) {
 		switch (ch) {
 		/*
@@ -296,13 +299,20 @@ main(int argc, char *argv[])
 			f_longform = 0;
 			f_singlecol = 0;
 			break;
-		/* The -c and -u options override each other. */
+		/* The -c, -u, and -U options override each other. */
 		case 'c':
 			f_statustime = 1;
 			f_accesstime = 0;
+			f_birthtime = 0;
 			break;
 		case 'u':
 			f_accesstime = 1;
+			f_statustime = 0;
+			f_birthtime = 0;
+			break;
+		case 'U':
+			f_birthtime = 1;
+			f_accesstime = 0;
 			f_statustime = 0;
 			break;
 		case 'f':
@@ -377,6 +387,9 @@ main(int argc, char *argv[])
 		case 'W':
 			f_whiteout = 1;
 			break;
+		case 'Z':
+			f_label = 1;
+			break;
 		case 'b':
 			f_nonprint = 0;
 			f_octal = 0;
@@ -406,6 +419,9 @@ main(int argc, char *argv[])
 			break;
 		case 'n':
 			f_numericonly = 1;
+			break;
+		case 'o':
+			f_flags = 1;
 			break;
 		case 'p':
 			f_slash = 1;
@@ -552,6 +568,8 @@ main(int argc, char *argv[])
 			sortfcn = revsizecmp;
 		else if (f_accesstime)
 			sortfcn = revacccmp;
+		else if (f_birthtime)
+			sortfcn = revbirthcmp;
 		else if (f_statustime)
 			sortfcn = revstatcmp;
 		else		/* Use modification time. */
@@ -563,6 +581,8 @@ main(int argc, char *argv[])
 			sortfcn = sizecmp;
 		else if (f_accesstime)
 			sortfcn = acccmp;
+		else if (f_birthtime)
+			sortfcn = birthcmp;
 		else if (f_statustime)
 			sortfcn = statcmp;
 		else		/* Use modification time. */
@@ -619,7 +639,7 @@ traverse(int argc, char *argv[], int options)
 	 * If not recursing down this tree and don't need stat info, just get
 	 * the names.
 	 */
-	ch_options = !f_recursive &&
+	ch_options = !f_recursive && !f_label &&
 	    options & FTS_NOSTAT ? FTS_NAMEONLY : 0;
 
 	while (errno = 0, (p = fts_read(ftsp)) != NULL)
@@ -679,7 +699,8 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 	off_t maxsize;
 	long maxblock;
 	uintmax_t maxinode;
-	u_long btotal, maxlen, maxnlink;
+	u_long btotal, labelstrlen, maxlen, maxnlink;
+	u_long maxlabelstr;
 	u_int sizelen;
 	int maxflags;
 	gid_t maxgroup;
@@ -698,6 +719,7 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 	needstats = f_inode || f_longform || f_size;
 	flen = 0;
 	btotal = 0;
+	labelstrlen = 0;
 
 #define LS_COLWIDTHS_FIELDS	9
 	initmax = getenv("LS_COLWIDTHS");
@@ -737,6 +759,7 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 	maxflags = width[5];
 	maxsize = width[6];
 	maxlen = width[7];
+	maxlabelstr = width[8];
 
 	MAKENINES(maxinode);
 	MAKENINES(maxblock);
@@ -825,8 +848,76 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 					maxuser = ulen;
 				if ((glen = strlen(group)) > maxgroup)
 					maxgroup = glen;
+#if 0
+				if (f_flags) {
+					flags = fflagstostr(sp->st_flags);
+					if (flags != NULL && *flags == '\0') {
+						free(flags);
+						flags = strdup("-");
+					}
+					if (flags == NULL)
+						err(1, "fflagstostr");
+					flen = strlen(flags);
+					if (flen > (size_t)maxflags)
+						maxflags = flen;
+				} else
+					flen = 0;
+				labelstr = NULL;
+				if (f_label) {
+					char name[PATH_MAX + 1];
+					mac_t label;
+					int error;
 
-				if ((np = malloc(sizeof(NAMES) +
+					error = mac_prepare_file_label(&label);
+					if (error == -1) {
+						warn("MAC label for %s/%s",
+						    cur->fts_parent->fts_path,
+						    cur->fts_name);
+						goto label_out;
+					}
+
+					if (cur->fts_level == FTS_ROOTLEVEL)
+						snprintf(name, sizeof(name),
+						    "%s", cur->fts_name);
+					else
+						snprintf(name, sizeof(name),
+						    "%s/%s", cur->fts_parent->
+						    fts_accpath, cur->fts_name);
+
+					if (options & FTS_LOGICAL)
+						error = mac_get_file(name,
+						    label);
+					else
+						error = mac_get_link(name,
+						    label);
+					if (error == -1) {
+						warn("MAC label for %s/%s",
+						    cur->fts_parent->fts_path,
+						    cur->fts_name);
+						mac_free(label);
+						goto label_out;
+					}
+
+					error = mac_to_text(label,
+					    &labelstr);
+					if (error == -1) {
+						warn("MAC label for %s/%s",
+						    cur->fts_parent->fts_path,
+						    cur->fts_name);
+						mac_free(label);
+						goto label_out;
+					}
+					mac_free(label);
+label_out:
+					if (labelstr == NULL)
+						labelstr = strdup("-");
+					labelstrlen = strlen(labelstr);
+					if (labelstrlen > maxlabelstr)
+						maxlabelstr = labelstrlen;
+				} else
+					labelstrlen = 0;
+#endif
+				if ((np = malloc(sizeof(NAMES) + labelstrlen +
 				    ulen + glen + flen + 4)) == NULL)
 					err(1, "malloc");
 
@@ -865,6 +956,7 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 		d.btotal = btotal;
 		d.s_block = snprintf(NULL, 0, "%lu", howmany(maxblock, blocksize));
 		d.s_flags = maxflags;
+		d.s_label = maxlabelstr;
 		d.s_group = maxgroup;
 		d.s_inode = snprintf(NULL, 0, "%ju", maxinode);
 		d.s_nlink = snprintf(NULL, 0, "%lu", maxnlink);

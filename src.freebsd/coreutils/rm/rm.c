@@ -246,49 +246,75 @@ rm_tree(char **argv)
 				continue;
 		}
 
-		/*
-		 * If we can't read or search the directory, may still be
-		 * able to remove it.  Don't print out the un{read,search}able
-		 * message unless the remove fails.
-		 */
-		switch (p->fts_info) {
-		case FTS_DP:
-		case FTS_DNR:
-			rval = rmdir(p->fts_accpath);
-			if (rval == 0 || (fflag && errno == ENOENT)) {
-				if (rval == 0 && vflag)
-					(void)printf("%s\n",
-					    p->fts_path);
-				if (rval == 0 && info) {
-					info = 0;
-					(void)printf("%s\n",
-					    p->fts_path);
-				}
-				continue;
-			}
-			break;
-		case FTS_NS:
+		rval = 0;
+#if 0
+		if (!uid &&
+		    (p->fts_statp->st_flags & (UF_APPEND|UF_IMMUTABLE)) &&
+		    !(p->fts_statp->st_flags & (SF_APPEND|SF_IMMUTABLE)))
+			rval = lchflags(p->fts_accpath,
+				       p->fts_statp->st_flags &= ~(UF_APPEND|UF_IMMUTABLE));
+#endif
+		if (rval == 0) {
 			/*
-			 * Assume that since fts_read() couldn't stat
-			 * the file, it can't be unlinked.
+			 * If we can't read or search the directory, may still be
+			 * able to remove it.  Don't print out the un{read,search}able
+			 * message unless the remove fails.
 			 */
-			if (fflag)
-				continue;
-			/* FALLTHROUGH */
-		case FTS_F:
-		case FTS_NSOK:
-		default:
-			rval = unlink(p->fts_accpath);
-			if (rval == 0 || (fflag && errno == ENOENT)) {
-				if (rval == 0 && vflag)
-					(void)printf("%s\n",
-					    p->fts_path);
-				if (rval == 0 && info) {
-					info = 0;
-					(void)printf("%s\n",
-					    p->fts_path);
+			switch (p->fts_info) {
+			case FTS_DP:
+			case FTS_DNR:
+				rval = rmdir(p->fts_accpath);
+				if (rval == 0 || (fflag && errno == ENOENT)) {
+					if (rval == 0 && vflag)
+						(void)printf("%s\n",
+						    p->fts_path);
+					if (rval == 0 && info) {
+						info = 0;
+						(void)printf("%s\n",
+						    p->fts_path);
+					}
+					continue;
 				}
-				continue;
+				break;
+#if 0
+			case FTS_W:
+				rval = undelete(p->fts_accpath);
+				if (rval == 0 && (fflag && errno == ENOENT)) {
+					if (vflag)
+						(void)printf("%s\n",
+						    p->fts_path);
+					if (info) {
+						info = 0;
+						(void)printf("%s\n",
+						    p->fts_path);
+					}
+					continue;
+				}
+				break;
+#endif
+			case FTS_NS:
+				/*
+				 * Assume that since fts_read() couldn't stat
+				 * the file, it can't be unlinked.
+				 */
+				if (fflag)
+					continue;
+				/* FALLTHROUGH */
+			case FTS_F:
+			case FTS_NSOK:
+			default:
+				rval = unlink(p->fts_accpath);
+				if (rval == 0 || (fflag && errno == ENOENT)) {
+					if (rval == 0 && vflag)
+						(void)printf("%s\n",
+						    p->fts_path);
+					if (rval == 0 && info) {
+						info = 0;
+						(void)printf("%s\n",
+						    p->fts_path);
+					}
+					continue;
+				}
 			}
 		}
 		warn("%s", p->fts_path);

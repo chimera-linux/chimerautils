@@ -76,6 +76,8 @@ static int	copy(const char *, const char *);
 static int	do_move(const char *, const char *);
 static int	fastcopy(const char *, const char *, struct stat *);
 static void	usage(void);
+static void	preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
+		    const char *dest_path);
 
 int
 main(int argc, char *argv[])
@@ -324,8 +326,34 @@ err:		if (unlink(to))
 	}
 	if (fchmod(to_fd, sbp->st_mode))
 		warn("%s: set mode (was: 0%03o)", to, oldmode);
+	/*
+	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
+	 * for dest_file, then its ACLs shall reflect the ACLs of the
+	 * source_file.
+	 */
+	preserve_fd_acls(from_fd, to_fd, from, to);
 	(void)close(from_fd);
-
+	/*
+	 * XXX
+	 * NFS doesn't support chflags; ignore errors unless there's reason
+	 * to believe we're losing bits.  (Note, this still won't be right
+	 * if the server supports flags and we were trying to *remove* flags
+	 * on a file that we copied, i.e., that we didn't create.)
+	 */
+#if 0
+	if (fstat(to_fd, &tsb) == 0) {
+		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
+		    (tsb.st_flags & ~UF_ARCHIVE)) {
+			if (fchflags(to_fd,
+			    sbp->st_flags | (tsb.st_flags & UF_ARCHIVE)))
+				if (errno != EOPNOTSUPP ||
+				    ((sbp->st_flags & ~UF_ARCHIVE) != 0))
+					warn("%s: set flags (was: 0%07o)",
+					    to, sbp->st_flags);
+		}
+	} else
+		warn("%s: cannot stat", to);
+#endif
 	ts[0] = sbp->st_atim;
 	ts[1] = sbp->st_mtim;
 	if (futimens(to_fd, ts))
@@ -421,6 +449,66 @@ copy(const char *from, const char *to)
 		return (1);
 	}
 	return (0);
+}
+
+static void
+preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
+    const char *dest_path)
+{
+#if 0
+	acl_t acl;
+	acl_type_t acl_type;
+	int acl_supported = 0, ret, trivial;
+
+	ret = fpathconf(source_fd, _PC_ACL_NFS4);
+	if (ret > 0 ) {
+		acl_supported = 1;
+		acl_type = ACL_TYPE_NFS4;
+	} else if (ret < 0 && errno != EINVAL) {
+		warn("fpathconf(..., _PC_ACL_NFS4) failed for %s",
+		    source_path);
+		return;
+	}
+	if (acl_supported == 0) {
+		ret = fpathconf(source_fd, _PC_ACL_EXTENDED);
+		if (ret > 0 ) {
+			acl_supported = 1;
+			acl_type = ACL_TYPE_ACCESS;
+		} else if (ret < 0 && errno != EINVAL) {
+			warn("fpathconf(..., _PC_ACL_EXTENDED) failed for %s",
+			    source_path);
+			return;
+		}
+	}
+	if (acl_supported == 0)
+		return;
+
+	acl = acl_get_fd_np(source_fd, acl_type);
+	if (acl == NULL) {
+		warn("failed to get acl entries for %s", source_path);
+		return;
+	}
+	if (acl_is_trivial_np(acl, &trivial)) {
+		warn("acl_is_trivial() failed for %s", source_path);
+		acl_free(acl);
+		return;
+	}
+	if (trivial) {
+		acl_free(acl);
+		return;
+	}
+	if (acl_set_fd_np(dest_fd, acl, acl_type) < 0) {
+		warn("failed to set acl entries for %s", dest_path);
+		acl_free(acl);
+		return;
+	}
+	acl_free(acl);
+#else
+	(void)source_fd;
+	(void)dest_fd;
+	(void)source_path;
+	(void)dest_path;
+#endif
 }
 
 static void

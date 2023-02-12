@@ -122,9 +122,6 @@ after each symbolic link,
 an equals sign
 .Pq Ql =
 after each socket,
-a percent sign
-.Pq Ql %
-after each whiteout,
 and a vertical bar
 .Pq Ql \&|
 after each that is a
@@ -183,10 +180,6 @@ month, day, hour, minute, second, and year.
 The
 .Fl D
 option gives even more control over the output format.
-This option is not defined in
-.St -p1003.1-2008 .
-.It Fl W
-Display whiteouts when scanning directories.
 This option is not defined in
 .St -p1003.1-2008 .
 .It Fl a
@@ -548,8 +541,6 @@ Symbolic link.
 .Tn FIFO .
 .It Sy s
 Socket.
-.It Sy w
-Whiteout.
 .El
 .Pp
 The next three fields
