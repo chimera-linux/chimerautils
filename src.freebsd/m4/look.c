@@ -70,20 +70,20 @@ struct ohash macros;
 
 /* Support routines for hash tables.  */
 void *
-hash_calloc(size_t n, size_t s, void *u UNUSED)
+hash_calloc(size_t n, size_t s, void *u __unused)
 {
 	void *storage = xcalloc(n, s, "hash alloc");
 	return storage;
 }
 
 void
-hash_free(void *p, void *u UNUSED)
+hash_free(void *p, void *u __unused)
 {
 	free(p);
 }
 
 void *
-element_alloc(size_t s, void *u UNUSED)
+element_alloc(size_t s, void *u __unused)
 {
 	return xalloc(s, "element alloc");
 }

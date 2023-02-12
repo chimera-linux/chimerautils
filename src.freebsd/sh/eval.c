@@ -1259,7 +1259,7 @@ breakcmd(int argc, char **argv)
  * The `command' command.
  */
 int
-commandcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+commandcmd(int argc __unused, char **argv __unused)
 {
 	const char *path;
 	int ch;
@@ -1313,14 +1313,14 @@ returncmd(int argc, char **argv)
 
 
 int
-falsecmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+falsecmd(int argc __unused, char **argv __unused)
 {
 	return 1;
 }
 
 
 int
-truecmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+truecmd(int argc __unused, char **argv __unused)
 {
 	return 0;
 }
@@ -1351,7 +1351,7 @@ execcmd(int argc, char **argv)
 
 
 int
-timescmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+timescmd(int argc __unused, char **argv __unused)
 {
 	struct rusage ru;
 	long shumins, shsmins, chumins, chsmins;

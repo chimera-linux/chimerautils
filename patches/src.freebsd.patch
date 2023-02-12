@@ -1,34 +1,3 @@
---- src.orig/bc/bc/bc.y
-+++ src.freebsd/bc/bc/bc.y
-@@ -1094,7 +1094,7 @@
- 
- /* ARGSUSED */
- static void
--sigchld(int signo __unused)
-+sigchld(int signo __attribute__((unused)))
- {
- 	pid_t pid;
- 	int status, save_errno = errno;
---- src.orig/bc/bc/scan.l
-+++ src.freebsd/bc/bc/scan.l
-@@ -242,7 +242,7 @@
- 
- /* ARGSUSED */
- void
--abort_line(int sig __unused)
-+abort_line(int sig __attribute__((unused)))
- {
- 	static const char str1[] = "[\n]P\n";
- 	static const char str2[] = "[^C\n]P\n";
-@@ -265,7 +265,7 @@
-  * line after a ^C.
-  */
- unsigned char
--bc_eof(EditLine *e, int ch __unused)
-+bc_eof(EditLine *e, int ch __attribute__((unused)))
- {
- 	const struct lineinfo *info = el_line(e);
- 
 --- src.orig/bc/dc/bcode.c
 +++ src.freebsd/bc/dc/bcode.c
 @@ -72,7 +72,7 @@
@@ -316,15 +285,6 @@
  			cerr = 1;
 --- src.orig/coreutils/cat/cat.c
 +++ src.freebsd/coreutils/cat/cat.c
-@@ -244,7 +244,7 @@
- }
- 
- static void
--scanfiles(char *argv[], int cooked __unused)
-+scanfiles(char *argv[], int cooked __attribute__((unused)))
- {
- 	int fd, i;
- 	char *path;
 @@ -343,7 +343,6 @@
  				if (ferror(fp) && errno == EILSEQ) {
  					clearerr(fp);
@@ -373,18 +333,14 @@
  
  #include <sys/param.h>
  #include <sys/stat.h>
-@@ -60,10 +59,9 @@
+@@ -60,7 +59,6 @@
  static volatile sig_atomic_t siginfo;
  
  static void usage(void);
 -static int may_have_nfs4acl(const FTSENT *ent, int hflag);
  
  static void
--siginfo_handler(int sig __unused)
-+siginfo_handler(int sig __attribute__((unused)))
- {
- 
- 	siginfo = 1;
+ siginfo_handler(int sig __unused)
 @@ -75,14 +73,14 @@
  	FTS *ftsp;
  	FTSENT *p;
@@ -504,17 +460,6 @@
  signal (see the
  .Cm status
  argument for
---- src.orig/coreutils/chown/chown.c
-+++ src.freebsd/coreutils/chown/chown.c
-@@ -76,7 +76,7 @@
- static volatile sig_atomic_t siginfo;
- 
- static void
--siginfo_handler(int sig __unused)
-+siginfo_handler(int sig __attribute__((unused)))
- {
- 
- 	siginfo = 1;
 --- src.orig/coreutils/chroot/chroot.8
 +++ src.freebsd/coreutils/chroot/chroot.8
 @@ -39,7 +39,6 @@
@@ -624,15 +569,6 @@
  argument for
 --- src.orig/coreutils/cp/cp.c
 +++ src.freebsd/coreutils/cp/cp.c
-@@ -92,7 +92,7 @@
- enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
- 
- static int copy(char *[], enum op, int);
--static void siginfo(int __unused);
-+static void siginfo(int __attribute__((unused)));
- 
- int
- main(int argc, char *argv[])
 @@ -393,12 +393,9 @@
  			if (pflag) {
  				if (setfile(curr->fts_statp, -1))
@@ -647,15 +583,6 @@
  				    ((mode | S_IRWXU) & mask) != (mode & mask))
  					if (chmod(to.p_path, mode & mask) !=
  					    0) {
-@@ -515,7 +512,7 @@
- }
- 
- static void
--siginfo(int sig __unused)
-+siginfo(int sig __attribute__((unused)))
- {
- 
- 	info = 1;
 --- src.orig/coreutils/cp/utils.c
 +++ src.freebsd/coreutils/cp/utils.c
 @@ -38,7 +38,6 @@
@@ -880,15 +807,6 @@
  {
 --- src.orig/coreutils/csplit/csplit.c
 +++ src.freebsd/coreutils/csplit/csplit.c
-@@ -221,7 +221,7 @@
- }
- 
- static void
--handlesig(int sig __unused)
-+handlesig(int sig __attribute__((unused)))
- {
- 	const char msg[] = "csplit: caught signal, cleaning up\n";
- 
 @@ -237,8 +237,10 @@
  	FILE *fp;
  
@@ -913,15 +831,6 @@
  	if (*expr == '/')
 --- src.orig/coreutils/cut/cut.c
 +++ src.freebsd/coreutils/cut/cut.c
-@@ -241,7 +241,7 @@
- }
- 
- static int
--b_cut(FILE *fp, const char *fname __unused)
-+b_cut(FILE *fp, const char *fname __attribute__((unused)))
- {
- 	int ch, col;
- 	char *pos;
 @@ -277,14 +277,15 @@
  static int
  b_n_cut(FILE *fp, const char *fname)
@@ -1101,15 +1010,6 @@
  #include <sys/mtio.h>
  #include <sys/time.h>
  
-@@ -93,7 +90,7 @@
- volatile sig_atomic_t need_progress;
- 
- int
--main(int argc __unused, char *argv[])
-+main(int argc __attribute__((unused)), char *argv[])
- {
- 	struct itimerval itv = { { 1, 0 }, { 1, 0 } }; /* SIGALARM every second, if needed */
- 
 @@ -145,7 +142,7 @@
  	u_int cnt;
  	int iflags, oflags;
@@ -1188,26 +1088,6 @@
  void block(void);
  void block_close(void);
  void dd_out(int);
---- src.orig/coreutils/dd/misc.c
-+++ src.freebsd/coreutils/dd/misc.c
-@@ -133,7 +133,7 @@
- 
- /* ARGSUSED */
- void
--siginfo_handler(int signo __unused)
-+siginfo_handler(int signo __attribute__((unused)))
- {
- 
- 	need_summary = 1;
-@@ -141,7 +141,7 @@
- 
- /* ARGSUSED */
- void
--sigalarm_handler(int signo __unused)
-+sigalarm_handler(int signo __attribute__((unused)))
- {
- 
- 	need_progress = 1;
 --- src.orig/coreutils/dd/position.c
 +++ src.freebsd/coreutils/dd/position.c
 @@ -72,9 +72,9 @@
@@ -1826,12 +1706,9 @@
  #include <stdint.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -80,9 +81,8 @@
- static void	ignoreadd(const char *);
- static void	ignoreclean(void);
+@@ -82,7 +83,6 @@
  static int	ignorep(FTSENT *);
--static void	siginfo(int __unused);
-+static void	siginfo(int __attribute__((unused)));
+ static void	siginfo(int __unused);
  
 -static int	nodumpflag = 0;
  static int	Aflag, hflag;
@@ -1920,15 +1797,6 @@
  	SLIST_FOREACH(ign, &ignores, next)
  		if (fnmatch(ign->mask, ent->fts_name, 0) != FNM_NOMATCH)
  			return 1;
-@@ -556,7 +558,7 @@
- }
- 
- static void
--siginfo(int sig __unused)
-+siginfo(int sig __attribute__((unused)))
- {
- 
- 	info = 1;
 --- src.orig/coreutils/env/env.1
 +++ src.freebsd/coreutils/env/env.1
 @@ -40,12 +40,10 @@
@@ -2106,7 +1974,15 @@
  #include <err.h>
 --- src.orig/coreutils/expr/expr.y
 +++ src.freebsd/coreutils/expr/expr.y
-@@ -270,8 +270,7 @@
+@@ -8,6 +8,7 @@
+  * $FreeBSD$
+  */
+ 
++#include <sys/cdefs.h>
+ #include <sys/types.h>
+ 
+ #include <ctype.h>
+@@ -270,8 +271,7 @@
  	int c;
  
  	setlocale(LC_ALL, "");
@@ -2116,15 +1992,6 @@
  		av = argv + 1;
  		nonposix = 1;
  	} else {
-@@ -299,7 +298,7 @@
- }
- 
- int
--yyerror(const char *s __unused)
-+yyerror(const char *s __attribute__((unused)))
- {
- 	errx(ERR_EXIT, "syntax error");
- }
 --- src.orig/coreutils/factor/factor.c
 +++ src.freebsd/coreutils/factor/factor.c
 @@ -66,6 +66,7 @@
@@ -2486,17 +2353,6 @@
  		/* NOTREACHED */
  	case 1:				/* ln source */
  		exit(linkit(argv[0], ".", 1));
---- src.orig/coreutils/logname/logname.c
-+++ src.freebsd/coreutils/logname/logname.c
-@@ -50,7 +50,7 @@
- void usage(void);
- 
- int
--main(int argc, char *argv[] __unused)
-+main(int argc, char *argv[] __attribute__((unused)))
- {
- 	char *p;
- 
 --- src.orig/coreutils/ls/cmp.c
 +++ src.freebsd/coreutils/ls/cmp.c
 @@ -123,35 +123,6 @@
@@ -2762,7 +2618,7 @@
   */
  static void
 -display(const FTSENT *p, FTSENT *list, int options)
-+display(const FTSENT *p, FTSENT *list, int options __attribute__((unused)))
++display(const FTSENT *p, FTSENT *list, int options __unused)
  {
  	struct stat *sp;
  	DISPLAY d;
@@ -3348,15 +3204,6 @@
  
  #include "pr.h"
  #include "extern.h"
-@@ -1547,7 +1548,7 @@
-  * terminate():	when a SIGINT is recvd
-  */
- void
--terminate(int which_sig __unused)
-+terminate(int which_sig __attribute__((unused)))
- {
- 	flsh_errs();
- 	exit(1);
 @@ -1857,7 +1858,9 @@
  
  	(void) setlocale(LC_TIME, (Lflag != NULL) ? Lflag : "");
@@ -3419,15 +3266,6 @@
  static int rflag, Iflag, xflag;
  static uid_t uid;
  static volatile sig_atomic_t info;
-@@ -71,7 +72,7 @@
- static void	checkslash(char **);
- static void	rm_file(char **);
- static void	rm_tree(char **);
--static void siginfo(int __unused);
-+static void siginfo(int __attribute__((unused)));
- static void	usage(void);
- 
- /*
 @@ -109,7 +110,7 @@
  	}
  
@@ -3679,15 +3517,6 @@
  	}
  	(void)fflush(stderr);
  
-@@ -544,7 +492,7 @@
- }
- 
- static void
--siginfo(int sig __unused)
-+siginfo(int sig __attribute__((unused)))
- {
- 
- 	info = 1;
 --- src.orig/coreutils/seq/seq.c
 +++ src.freebsd/coreutils/seq/seq.c
 @@ -52,6 +52,8 @@
@@ -3719,17 +3548,6 @@
  signal is received, the estimate of the amount of seconds left to
  sleep is printed on the standard output.
  .Sh IMPLEMENTATION NOTES
---- src.orig/coreutils/sleep/sleep.c
-+++ src.freebsd/coreutils/sleep/sleep.c
-@@ -54,7 +54,7 @@
- 
- static volatile sig_atomic_t report_requested;
- static void
--report_request(int signo __unused)
-+report_request(int signo __attribute__((unused)))
- {
- 
- 	report_requested = 1;
 --- src.orig/coreutils/sort/bwstring.c
 +++ src.freebsd/coreutils/sort/bwstring.c
 @@ -478,40 +478,100 @@
@@ -3937,15 +3755,6 @@
  	return (top_level_str_coll(((*ss1)->str), ((*ss2)->str)));
  }
  
-@@ -811,7 +815,7 @@
-  */
- static int
- numcoll_impl(struct key_value *kv1, struct key_value *kv2,
--    size_t offset __unused, bool use_suffix)
-+    size_t offset __attribute__((unused)), bool use_suffix)
- {
- 	struct bwstring *s1, *s2;
- 	wchar_t sfrac1[MAX_NUM_SIZE + 1], sfrac2[MAX_NUM_SIZE + 1];
 @@ -981,6 +985,7 @@
  	return (numcoll_impl(kv1, kv2, offset, true));
  }
@@ -3954,16 +3763,7 @@
  /* Use hint space to memoize md5 computations, at least. */
  static void
  randomcoll_init_hint(struct key_value *kv, void *hash)
-@@ -995,7 +1000,7 @@
-  */
- static int
- randomcoll(struct key_value *kv1, struct key_value *kv2,
--    size_t offset __unused)
-+    size_t offset __attribute__((unused)))
- {
- 	struct bwstring *s1, *s2;
- 	MD5_CTX ctx1, ctx2;
-@@ -1037,13 +1042,14 @@
+@@ -1037,6 +1042,7 @@
  
  	return (memcmp(hash1, hash2, sizeof(hash1)));
  }
@@ -3971,32 +3771,6 @@
  
  /*
   * Implements version sort (-V).
-  */
- static int
- versioncoll(struct key_value *kv1, struct key_value *kv2,
--    size_t offset __unused)
-+    size_t offset __attribute__((unused)))
- {
- 	struct bwstring *s1, *s2;
- 
-@@ -1118,7 +1124,7 @@
-  */
- static int
- gnumcoll(struct key_value *kv1, struct key_value *kv2,
--    size_t offset __unused)
-+    size_t offset __attribute__((unused)))
- {
- 	double d1, d2;
- 	int err1, err2;
-@@ -1274,7 +1280,7 @@
-  * Implements month sort (-M).
-  */
- static int
--monthcoll(struct key_value *kv1, struct key_value *kv2, size_t offset __unused)
-+monthcoll(struct key_value *kv1, struct key_value *kv2, size_t offset __attribute__((unused)))
- {
- 	int val1, val2;
- 	bool key1_read, key2_read;
 --- src.orig/coreutils/sort/coll.h
 +++ src.freebsd/coreutils/sort/coll.h
 @@ -105,7 +105,7 @@
@@ -4279,17 +4053,6 @@
  				membuf = available_free_memory;
  			}
  		}
-@@ -445,8 +488,8 @@
-  * Signal handler that clears the temporary files.
-  */
- static void
--sig_handler(int sig __unused, siginfo_t *siginfo __unused,
--    void *context __unused)
-+sig_handler(int sig __attribute__((unused)), siginfo_t *siginfo __attribute__((unused)),
-+    void *context __attribute__((unused)))
- {
- 
- 	clear_tmp_files();
 @@ -585,11 +628,13 @@
  	case 'i':
  		sm->iflag = true;
@@ -4808,15 +4571,6 @@
  
  #include "stty.h"
  #include "extern.h"
-@@ -57,7 +59,7 @@
- }
- 
- void
--gprint(struct termios *tp, struct winsize *wp __unused, int ldisc __unused)
-+gprint(struct termios *tp, struct winsize *wp __attribute__((unused)), int ldisc __attribute__((unused)))
- {
- 	struct cchar *cp;
- 
 @@ -67,7 +69,7 @@
  	for (cp = cchars1; cp->name; ++cp)
  		(void)printf("%s=%x:", cp->name, tp->c_cc[cp->sub]);
@@ -5181,17 +4935,6 @@
 +	}
 +	errx(1, "unknown speed for baud %lu", b);
 +}
---- src.orig/coreutils/sync/sync.c
-+++ src.freebsd/coreutils/sync/sync.c
-@@ -45,7 +45,7 @@
- #include <unistd.h>
- 
- int
--main(int argc __unused, char *argv[] __unused)
-+main(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
- {
- 	sync();
- 	exit(0);
 --- src.orig/coreutils/tail/forward.c
 +++ src.freebsd/coreutils/tail/forward.c
 @@ -46,12 +46,16 @@
@@ -5809,16 +5552,18 @@
  			/*
 --- src.orig/coreutils/truncate/truncate.c
 +++ src.freebsd/coreutils/truncate/truncate.c
-@@ -27,7 +27,7 @@
+@@ -27,8 +27,10 @@
   *
   */
  
--static const char rcsid[] =
-+__attribute__((unused)) static const char rcsid[] =
++#if 0
+ static const char rcsid[] =
      "$FreeBSD$";
++#endif
  
  #include <sys/stat.h>
-@@ -39,6 +39,7 @@
+ 
+@@ -39,6 +41,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <unistd.h>
@@ -6198,15 +5943,6 @@
  #include <stdint.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -78,7 +80,7 @@
- static void	usage(void);
- 
- static void
--siginfo_handler(int sig __unused)
-+siginfo_handler(int sig __attribute__((unused)))
- {
- 
- 	siginfo = 1;
 @@ -313,7 +315,7 @@
  			if (!domulti || MB_CUR_MAX == 1) {
  				clen = 1;
@@ -6656,7 +6392,7 @@
   */
  static void
 -install(const char *from_name, const char *to_name, u_long fset, u_int flags)
-+install(const char *from_name, const char *to_name, u_long fset __attribute__((unused)), u_int flags)
++install(const char *from_name, const char *to_name, u_long fset __unused, u_int flags)
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
@@ -6680,16 +6416,7 @@
  		return;
  	}
  
-@@ -1068,14 +1080,14 @@
-  *	unless it points to pre-computed digest.
-  */
- static int
--compare(int from_fd, const char *from_name __unused, size_t from_len,
--	int to_fd, const char *to_name __unused, size_t to_len,
-+compare(int from_fd, const char *from_name __attribute__((unused)), size_t from_len,
-+	int to_fd, const char *to_name __attribute__((unused)), size_t to_len,
- 	char **dresp)
- {
+@@ -1075,7 +1087,7 @@
  	char *p, *q;
  	int rv;
  	int do_digest, done_compare;
@@ -6703,7 +6430,7 @@
   */
  static int
 -create_newfile(const char *path, int target, struct stat *sbp)
-+create_newfile(const char *path, int target, struct stat *sbp __attribute__((unused)))
++create_newfile(const char *path, int target, struct stat *sbp __unused)
  {
  	char backup[MAXPATHLEN];
  	int saved_errno = 0;
@@ -6775,15 +6502,6 @@
  
  #include <capsicum_helpers.h>
  #include <err.h>
-@@ -181,7 +182,7 @@
- }
- 
- static void
--segv_handler(int sig __unused) {
-+segv_handler(int sig __attribute__((unused))) {
- 	static const char msg[] = "cmp: Input/output error (caught SIGSEGV)\n";
- 
- 	write(STDERR_FILENO, msg, sizeof(msg));
 --- src.orig/diffutils/diff/diff.1
 +++ src.freebsd/diffutils/diff/diff.1
 @@ -82,7 +82,6 @@
@@ -6913,6 +6631,26 @@
  	if (strcmp(file, "-") != 0)
  		fclose(fp);
  }
+--- src.orig/diffutils/diff/diff.h
++++ src.freebsd/diffutils/diff/diff.h
+@@ -100,8 +100,16 @@
+ extern struct	excludes *excludes_list;
+ extern regex_t	ignore_re;
+ 
+-char	*splice(char *, char *);
++char	*dsplice(char *, char *);
+ int	diffreg(char *, char *, int, int);
+ void	diffdir(char *, char *, int);
+ void	print_only(const char *, size_t, const char *);
+ void	print_status(int, char *, char *, const char *);
++
++#ifndef MIN
++#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
++#endif
++
++#ifndef MAX
++#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
++#endif
 --- src.orig/diffutils/diff/diffdir.c
 +++ src.freebsd/diffutils/diff/diffdir.c
 @@ -57,7 +57,8 @@
@@ -6935,26 +6673,6 @@
  		status |= 2;
  		return;
  	}
---- src.orig/diffutils/diff/diff.h
-+++ src.freebsd/diffutils/diff/diff.h
-@@ -100,8 +100,16 @@
- extern struct	excludes *excludes_list;
- extern regex_t	ignore_re;
- 
--char	*splice(char *, char *);
-+char	*dsplice(char *, char *);
- int	diffreg(char *, char *, int, int);
- void	diffdir(char *, char *, int);
- void	print_only(const char *, size_t, const char *);
- void	print_status(int, char *, char *, const char *);
-+
-+#ifndef MIN
-+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-+#endif
-+
-+#ifndef MAX
-+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
-+#endif
 --- src.orig/diffutils/diff/diffreg.c
 +++ src.freebsd/diffutils/diff/diffreg.c
 @@ -85,8 +85,10 @@
@@ -7389,78 +7107,6 @@
  static PLAN *palloc(OPTION *);
  static long long find_parsenum(PLAN *, const char *, char *, char *);
  static long long find_parsetime(PLAN *, const char *, char *);
-@@ -371,7 +375,7 @@
-  *	Show files with EXTENDED ACL attributes.
-  */
- int
--f_acl(PLAN *plan __unused, FTSENT *entry)
-+f_acl(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	acl_t facl;
- 	acl_type_t acl_type;
-@@ -418,7 +422,7 @@
- #endif
- 
- PLAN *
--c_acl(OPTION *option, char ***argvp __unused)
-+c_acl(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_NOSTAT;
- 	return (palloc(option));
-@@ -430,7 +434,7 @@
-  *	True always.  Makes its best shot and continues on regardless.
-  */
- int
--f_delete(PLAN *plan __unused, FTSENT *entry)
-+f_delete(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	/* ignore these from fts */
- 	if (strcmp(entry->fts_accpath, ".") == 0 ||
-@@ -475,7 +479,7 @@
- }
- 
- PLAN *
--c_delete(OPTION *option, char ***argvp __unused)
-+c_delete(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 
- 	ftsoptions &= ~FTS_NOSTAT;	/* no optimise */
-@@ -500,7 +504,7 @@
-  *	Always true, used for -maxdepth, -mindepth, -xdev, -follow, and -true
-  */
- int
--f_always_true(PLAN *plan __unused, FTSENT *entry __unused)
-+f_always_true(PLAN *plan __attribute__((unused)), FTSENT *entry __attribute__((unused)))
- {
- 	return 1;
- }
-@@ -560,7 +564,7 @@
-  *	True if the file or directory is empty
-  */
- int
--f_empty(PLAN *plan __unused, FTSENT *entry)
-+f_empty(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	if (S_ISREG(entry->fts_statp->st_mode) &&
- 	    entry->fts_statp->st_size == 0)
-@@ -588,7 +592,7 @@
- }
- 
- PLAN *
--c_empty(OPTION *option, char ***argvp __unused)
-+c_empty(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_NOSTAT;
- 
-@@ -865,7 +869,7 @@
-  *	basis.
-  */
- PLAN *
--c_follow(OPTION *option, char ***argvp __unused)
-+c_follow(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_PHYSICAL;
- 	ftsoptions |= FTS_LOGICAL;
 @@ -874,6 +878,64 @@
  }
  
@@ -7594,38 +7240,9 @@
  			return new;
  		}
  		break;
-@@ -1028,7 +1083,7 @@
-  */
- 
- PLAN *
--c_ignore_readdir_race(OPTION *option, char ***argvp __unused)
-+c_ignore_readdir_race(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	if (strcmp(option->name, "-ignore_readdir_race") == 0)
- 		ignore_readdir_race = 1;
-@@ -1123,14 +1178,14 @@
-  *	Always true - prints the current entry to stdout in "ls" format.
-  */
+@@ -1261,7 +1316,9 @@
  int
--f_ls(PLAN *plan __unused, FTSENT *entry)
-+f_ls(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	printlong(entry->fts_path, entry->fts_accpath, entry->fts_statp);
- 	return 1;
- }
- 
- PLAN *
--c_ls(OPTION *option, char ***argvp __unused)
-+c_ls(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_NOSTAT;
- 	isoutput = 1;
-@@ -1259,13 +1314,15 @@
-  *	of the getgrnam() 9.2.1 [POSIX.1] function returns NULL.
-  */
- int
--f_nogroup(PLAN *plan __unused, FTSENT *entry)
-+f_nogroup(PLAN *plan __attribute__((unused)), FTSENT *entry)
+ f_nogroup(PLAN *plan __unused, FTSENT *entry)
  {
 -	return group_from_gid(entry->fts_statp->st_gid, 1) == NULL;
 +	struct group *gr;
@@ -7634,17 +7251,9 @@
  }
  
  PLAN *
--c_nogroup(OPTION *option, char ***argvp __unused)
-+c_nogroup(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_NOSTAT;
- 
-@@ -1279,13 +1336,15 @@
-  *	of the getpwuid() 9.2.2 [POSIX.1] function returns NULL.
-  */
+@@ -1281,7 +1338,9 @@
  int
--f_nouser(PLAN *plan __unused, FTSENT *entry)
-+f_nouser(PLAN *plan __attribute__((unused)), FTSENT *entry)
+ f_nouser(PLAN *plan __unused, FTSENT *entry)
  {
 -	return user_from_uid(entry->fts_statp->st_uid, 1) == NULL;
 +	struct passwd *pw;
@@ -7653,11 +7262,6 @@
  }
  
  PLAN *
--c_nouser(OPTION *option, char ***argvp __unused)
-+c_nouser(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_NOSTAT;
- 
 @@ -1320,7 +1379,7 @@
  	mode_t mode;
  
@@ -7667,131 +7271,6 @@
  	if (plan->flags & F_ATLEAST)
  		return (plan->m_data | mode) == mode;
  	else if (plan->flags & F_ANY)
-@@ -1365,14 +1424,14 @@
-  *	standard output.
-  */
- int
--f_print(PLAN *plan __unused, FTSENT *entry)
-+f_print(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	(void)puts(entry->fts_path);
- 	return 1;
- }
- 
- PLAN *
--c_print(OPTION *option, char ***argvp __unused)
-+c_print(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	isoutput = 1;
- 
-@@ -1386,7 +1445,7 @@
-  *	standard output followed by a NUL character
-  */
- int
--f_print0(PLAN *plan __unused, FTSENT *entry)
-+f_print0(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	fputs(entry->fts_path, stdout);
- 	fputc('\0', stdout);
-@@ -1401,7 +1460,7 @@
-  *	Prune a portion of the hierarchy.
-  */
- int
--f_prune(PLAN *plan __unused, FTSENT *entry)
-+f_prune(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	if (fts_set(tree, entry, FTS_SKIP))
- 		err(1, "%s", entry->fts_path);
-@@ -1480,7 +1539,7 @@
- /* c_simple covers c_prune, c_openparen, c_closeparen, c_not, c_or, c_true, c_false */
- 
- PLAN *
--c_simple(OPTION *option, char ***argvp __unused)
-+c_simple(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	return palloc(option);
- }
-@@ -1562,7 +1621,7 @@
-  *      than we expect based on its size.
-  */
- int
--f_sparse(PLAN *plan __unused, FTSENT *entry)
-+f_sparse(PLAN *plan __attribute__((unused)), FTSENT *entry)
- {
- 	off_t expected_blocks;
- 
-@@ -1571,7 +1630,7 @@
- }
- 
- PLAN *
--c_sparse(OPTION *option, char ***argvp __unused)
-+c_sparse(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions &= ~FTS_NOSTAT;
- 
-@@ -1692,7 +1751,7 @@
-  *	different device ID (st_dev, see stat() S5.6.2 [POSIX.1])
-  */
- PLAN *
--c_xdev(OPTION *option, char ***argvp __unused)
-+c_xdev(OPTION *option, char ***argvp __attribute__((unused)))
- {
- 	ftsoptions |= FTS_XDEV;
- 
-@@ -1723,13 +1782,13 @@
-  */
- 
- int
--f_openparen(PLAN *plan __unused, FTSENT *entry __unused)
-+f_openparen(PLAN *plan __attribute__((unused)), FTSENT *entry __attribute__((unused)))
- {
- 	abort();
- }
- 
- int
--f_closeparen(PLAN *plan __unused, FTSENT *entry __unused)
-+f_closeparen(PLAN *plan __attribute__((unused)), FTSENT *entry __attribute__((unused)))
- {
- 	abort();
- }
-@@ -1741,7 +1800,7 @@
-  * AND operator. Since AND is implicit, no node is allocated.
-  */
- PLAN *
--c_and(OPTION *option __unused, char ***argvp __unused)
-+c_and(OPTION *option __attribute__((unused)), char ***argvp __attribute__((unused)))
- {
- 	return NULL;
- }
-@@ -1795,7 +1854,7 @@
-  *	Always false.
-  */
- int
--f_false(PLAN *plan __unused, FTSENT *entry __unused)
-+f_false(PLAN *plan __attribute__((unused)), FTSENT *entry __attribute__((unused)))
- {
- 	return 0;
- }
-@@ -1808,7 +1867,7 @@
-  *	Exits the program
-  */
- int
--f_quit(PLAN *plan __unused, FTSENT *entry __unused)
-+f_quit(PLAN *plan __attribute__((unused)), FTSENT *entry __attribute__((unused)))
- {
- 	finish_execplus();
- 	exit(exitstatus);
---- src.orig/findutils/find/getdate.y
-+++ src.freebsd/findutils/find/getdate.y
-@@ -524,7 +524,7 @@
- 
- /* ARGSUSED */
- static int
--yyerror(const char *s __unused)
-+yyerror(const char *s __attribute__((unused)))
- {
-   return 0;
- }
 --- src.orig/findutils/find/ls.c
 +++ src.freebsd/findutils/find/ls.c
 @@ -38,6 +38,7 @@
@@ -7836,16 +7315,19 @@
  		(void)printf("%#8jx ", (uintmax_t)sb->st_rdev);
 --- src.orig/findutils/find/main.c
 +++ src.freebsd/findutils/find/main.c
-@@ -32,7 +32,7 @@
+@@ -32,9 +32,11 @@
   * SUCH DAMAGE.
   */
  
--static const char copyright[] =
-+__attribute__((unused)) static const char copyright[] =
++#if 0
+ static const char copyright[] =
  "@(#) Copyright (c) 1990, 1993, 1994\n\
  	The Regents of the University of California.  All rights reserved.\n";
++#endif
  
-@@ -68,7 +68,7 @@
+ #if 0
+ static char sccsid[] = "@(#)main.c	8.4 (Berkeley) 5/4/95";
+@@ -68,7 +70,7 @@
  int issort;         		/* do hierarchies in lexicographical order */
  int isxargs;			/* don't permit xargs delimiting chars */
  int mindepth = -1, maxdepth = -1; /* minimum and maximum depth */
@@ -8155,24 +7637,6 @@
  }
  #endif
  
-@@ -1231,7 +1243,7 @@
- }
- 
- static void
--got_sigint(int signo __unused)
-+got_sigint(int signo __attribute__((unused)))
- {
- 
- 	if (remove_file != NULL)
-@@ -1240,7 +1252,7 @@
- }
- 
- static void
--got_siginfo(int signo __unused)
-+got_siginfo(int signo __attribute__((unused)))
- {
- 
- 	print_info = 1;
 @@ -1250,7 +1262,7 @@
  setup_signals(void)
  {
@@ -8260,43 +7724,6 @@
  	u_int count, i;
  	struct s_zstate *zs;
 File src.orig/include is a regular file while file src.freebsd/include is a directory
---- src.orig/m4/look.c
-+++ src.freebsd/m4/look.c
-@@ -70,20 +70,20 @@
- 
- /* Support routines for hash tables.  */
- void *
--hash_calloc(size_t n, size_t s, void *u __unused)
-+hash_calloc(size_t n, size_t s, void *u UNUSED)
- {
- 	void *storage = xcalloc(n, s, "hash alloc");
- 	return storage;
- }
- 
- void
--hash_free(void *p, void *u __unused)
-+hash_free(void *p, void *u UNUSED)
- {
- 	free(p);
- }
- 
- void *
--element_alloc(size_t s, void *u __unused)
-+element_alloc(size_t s, void *u UNUSED)
- {
- 	return xalloc(s, "element alloc");
- }
---- src.orig/m4/misc.c
-+++ src.freebsd/m4/misc.c
-@@ -243,7 +243,7 @@
- }
- 
- void
--onintr(int signo __unused)
-+onintr(int signo UNUSED)
- {
- #define intrmessage	"m4: interrupted.\n"
- 	write(STDERR_FILENO, intrmessage, sizeof(intrmessage)-1);
 --- src.orig/m4/parser.y
 +++ src.freebsd/m4/parser.y
 @@ -20,6 +20,7 @@
@@ -8424,17 +7851,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	}
  	if (fseeko(stdin, skip, SEEK_SET)) {
  		noseek();
---- src.orig/miscutils/hexdump/odsyntax.c
-+++ src.freebsd/miscutils/hexdump/odsyntax.c
-@@ -309,7 +309,7 @@
- }
- 
- static const char *
--odformatfp(char fchar __unused, const char *fmt)
-+odformatfp(char fchar __attribute__((unused)), const char *fmt)
- {
- 	size_t isize;
- 	int digits;
 --- src.orig/miscutils/hexdump/parse.c
 +++ src.freebsd/miscutils/hexdump/parse.c
 @@ -52,7 +52,7 @@
@@ -8861,15 +8277,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  	(void)signal(SIGINT, done);
  	(void)signal(SIGHUP, done);
-@@ -328,7 +329,7 @@
-  * done - cleanup and exit
-  */
- void
--done(int n __unused)
-+done(int n __attribute__((unused)))
- {
- 	(void)printf("EOF\r\n");
- 	exit(0);
 --- src.orig/patch/backupfile.c
 +++ src.freebsd/patch/backupfile.c
 @@ -105,7 +105,7 @@
@@ -9075,26 +8482,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	switch(eval) {
  	case 0:
  		return (1);
---- src.orig/sh/alias.c
-+++ src.freebsd/sh/alias.c
-@@ -199,7 +199,7 @@
- }
- 
- int
--aliascmd(int argc __unused, char **argv __unused)
-+aliascmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	char *n, *v;
- 	int ret = 0;
-@@ -228,7 +228,7 @@
- }
- 
- int
--unaliascmd(int argc __unused, char **argv __unused)
-+unaliascmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	int i;
- 
 --- src.orig/sh/arith_yacc.c
 +++ src.freebsd/sh/arith_yacc.c
 @@ -199,6 +199,7 @@
@@ -9105,26 +8492,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	}
  }
  
---- src.orig/sh/cd.c
-+++ src.freebsd/sh/cd.c
-@@ -77,7 +77,7 @@
- static char *curdir = NULL;	/* current working directory */
- 
- int
--cdcmd(int argc __unused, char **argv __unused)
-+cdcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	const char *dest;
- 	const char *path;
-@@ -331,7 +331,7 @@
- }
- 
- int
--pwdcmd(int argc __unused, char **argv __unused)
-+pwdcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	char *p;
- 	int ch, phys;
 --- src.orig/sh/error.h
 +++ src.freebsd/sh/error.h
 @@ -83,12 +83,3 @@
@@ -9140,63 +8507,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
 -
 -#define setjmp(jmploc)	_setjmp(jmploc)
 -#define longjmp(jmploc, val)	_longjmp(jmploc, val)
---- src.orig/sh/eval.c
-+++ src.freebsd/sh/eval.c
-@@ -1259,7 +1259,7 @@
-  * The `command' command.
-  */
- int
--commandcmd(int argc __unused, char **argv __unused)
-+commandcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	const char *path;
- 	int ch;
-@@ -1313,14 +1313,14 @@
- 
- 
- int
--falsecmd(int argc __unused, char **argv __unused)
-+falsecmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	return 1;
- }
- 
- 
- int
--truecmd(int argc __unused, char **argv __unused)
-+truecmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	return 0;
- }
-@@ -1351,7 +1351,7 @@
- 
- 
- int
--timescmd(int argc __unused, char **argv __unused)
-+timescmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct rusage ru;
- 	long shumins, shsmins, chumins, chsmins;
---- src.orig/sh/exec.c
-+++ src.freebsd/sh/exec.c
-@@ -255,7 +255,7 @@
- 
- 
- int
--hashcmd(int argc __unused, char **argv __unused)
-+hashcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct tblentry **pp;
- 	struct tblentry *cmdp;
-@@ -513,7 +513,7 @@
-  */
- 
- void
--changepath(const char *newval __unused)
-+changepath(const char *newval __attribute__((unused)))
- {
- 	clearcmdentry();
- }
 --- src.orig/sh/expand.c
 +++ src.freebsd/sh/expand.c
 @@ -645,7 +645,8 @@
@@ -9226,15 +8536,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			if (enddir + namlen + 1 > expdir_end)
  				continue;
  			memcpy(enddir, dp->d_name, namlen + 1);
-@@ -1504,7 +1506,7 @@
-  */
- 
- int
--freebsd_wordexpcmd(int argc __unused, char **argv __unused)
-+freebsd_wordexpcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct arglist arglist;
- 	union node *args, *n;
 --- src.orig/sh/histedit.c
 +++ src.freebsd/sh/histedit.c
 @@ -74,9 +74,13 @@
@@ -9252,15 +8553,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  /*
   * Set history and editing status.  Called whenever the status may
-@@ -188,7 +192,7 @@
- }
- 
- int
--histcmd(int argc, char **argv __unused)
-+histcmd(int argc, char **argv __attribute__((unused)))
- {
- 	int ch;
- 	const char *editor = NULL;
 @@ -513,16 +517,17 @@
  	return ret;
  }
@@ -9294,14 +8586,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  		for (size_t k = 2; k <= i; k++) {
  			const char *l = matches[uniq] + curpos;
  			const char *r = matches[k] + curpos;
-@@ -639,18 +644,19 @@
-  * bind a key (tab by default) to execute the function.
-  */
- unsigned char
--sh_complete(EditLine *sel, int ch __unused)
-+sh_complete(EditLine *sel, int ch __attribute__((unused)))
- {
- 	return (unsigned char)fn_complete2(sel, NULL, sh_matches,
+@@ -645,6 +650,7 @@
  		L" \t\n\"\\'`@$><=;|&{(", NULL, NULL, (size_t)100,
  		NULL, &((int) {0}), NULL, NULL, FN_QUOTE_MATCH);
  }
@@ -9309,22 +8594,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  #else
  #include "error.h"
- 
- int
--histcmd(int argc __unused, char **argv __unused)
-+histcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 
- 	error("not compiled with history support");
-@@ -659,7 +665,7 @@
- }
- 
- int
--bindcmd(int argc __unused, char **argv __unused)
-+bindcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 
- 	error("not compiled with line editing support");
 --- src.orig/sh/input.c
 +++ src.freebsd/sh/input.c
 @@ -59,7 +59,9 @@
@@ -9337,71 +8606,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #include "trap.h"
  
  #define EOF_NLEFT -99		/* value of parsenleft when EOF pushed back */
---- src.orig/sh/jobs.c
-+++ src.freebsd/sh/jobs.c
-@@ -246,7 +246,7 @@
- 
- #if JOBS
- int
--fgcmd(int argc __unused, char **argv __unused)
-+fgcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct job *jp;
- 	pid_t pgrp;
-@@ -271,7 +271,7 @@
- 
- 
- int
--bgcmd(int argc __unused, char **argv __unused)
-+bgcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct job *jp;
- 
-@@ -314,7 +314,7 @@
- 
- 
- int
--jobscmd(int argc __unused, char *argv[] __unused)
-+jobscmd(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
- {
- 	char *id;
- 	int ch, mode;
-@@ -537,7 +537,7 @@
- 
- 
- int
--waitcmd(int argc __unused, char **argv __unused)
-+waitcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct job *job;
- 	int retval;
-@@ -615,7 +615,7 @@
- 
- 
- int
--jobidcmd(int argc __unused, char **argv __unused)
-+jobidcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct job *jp;
- 	int i;
-@@ -747,7 +747,7 @@
-  */
- 
- struct job *
--makejob(union node *node __unused, int nprocs)
-+makejob(union node *node __attribute__((unused)), int nprocs)
- {
- 	int i;
- 	struct job *jp;
-@@ -1129,7 +1129,7 @@
- 
- 
- static void
--dummy_handler(int sig __unused)
-+dummy_handler(int sig __attribute__((unused)))
- {
- }
- 
 --- src.orig/sh/jobs.h
 +++ src.freebsd/sh/jobs.h
 @@ -55,7 +55,7 @@
@@ -9435,33 +8639,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	char *stacknxt;
 --- src.orig/sh/miscbltin.c
 +++ src.freebsd/sh/miscbltin.c
-@@ -155,7 +155,7 @@
-  */
- 
- int
--readcmd(int argc __unused, char **argv __unused)
-+readcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	char **ap;
- 	int backslash;
-@@ -351,7 +351,7 @@
- 
- 
- int
--umaskcmd(int argc __unused, char **argv __unused)
-+umaskcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	char *ap;
- 	int mask;
-@@ -515,7 +515,7 @@
- }
- 
- int
--ulimitcmd(int argc __unused, char **argv __unused)
-+ulimitcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	rlim_t val = 0;
- 	enum limithow how = SOFT | HARD;
 @@ -567,7 +567,8 @@
  				error("bad number");
  			uval *= l->factor;
@@ -9745,15 +8922,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	struct passwd *pw;
  	uid_t euid;
  
-@@ -2024,7 +2025,7 @@
-  *    should be added here.
-  */
- char *
--getprompt(void *unused __unused)
-+getprompt(void *unused __attribute__((unused)))
- {
- 	static char ps[PROMPTLEN];
- 	const char *fmt;
 --- src.orig/sh/redir.c
 +++ src.freebsd/sh/redir.c
 @@ -175,7 +175,7 @@
@@ -9816,15 +8984,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			out1str("\n");
  			outlen = 0;
  		} else {
-@@ -152,7 +155,7 @@
-  * The trap builtin.
-  */
- int
--trapcmd(int argc __unused, char **argv)
-+trapcmd(int argc __attribute__((unused)), char **argv)
- {
- 	char *action;
- 	int signo;
 @@ -169,14 +172,15 @@
  	argv = argptr;
  
@@ -9844,41 +9003,3 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				} else {
  					out1fmt(" %d\n", signo);
  				}
---- src.orig/sh/var.c
-+++ src.freebsd/sh/var.c
-@@ -594,7 +594,7 @@
-  */
- 
- int
--showvarscmd(int argc __unused, char **argv __unused)
-+showvarscmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	struct var **vpp;
- 	struct var *vp;
-@@ -650,7 +650,7 @@
-  */
- 
- int
--exportcmd(int argc __unused, char **argv)
-+exportcmd(int argc __attribute__((unused)), char **argv)
- {
- 	struct var **vpp;
- 	struct var *vp;
-@@ -728,7 +728,7 @@
-  */
- 
- int
--localcmd(int argc __unused, char **argv __unused)
-+localcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	char *name;
- 
-@@ -849,7 +849,7 @@
-  */
- 
- int
--unsetcmd(int argc __unused, char **argv __unused)
-+unsetcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
- {
- 	char **ap;
- 	int i;

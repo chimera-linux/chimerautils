@@ -51,5 +51,6 @@
 #define __printf0like(x, y)
 #define __printflike(x, y) __attribute__((format(printf, x, y)))
 #define __DECONST(a, v) ((a)(v))
+#define __unused __attribute__((unused))
 
 #endif

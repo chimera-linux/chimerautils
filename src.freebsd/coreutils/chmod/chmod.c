@@ -61,7 +61,7 @@ static volatile sig_atomic_t siginfo;
 static void usage(void);
 
 static void
-siginfo_handler(int sig __attribute__((unused)))
+siginfo_handler(int sig __unused)
 {
 
 	siginfo = 1;

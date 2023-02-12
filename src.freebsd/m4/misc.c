@@ -243,7 +243,7 @@ getdiv(int n)
 }
 
 void
-onintr(int signo UNUSED)
+onintr(int signo __unused)
 {
 #define intrmessage	"m4: interrupted.\n"
 	write(STDERR_FILENO, intrmessage, sizeof(intrmessage)-1);

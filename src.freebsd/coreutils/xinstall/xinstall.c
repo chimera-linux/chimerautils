@@ -777,7 +777,7 @@ makelink(const char *from_name, const char *to_name,
  *	build a path name and install the file
  */
 static void
-install(const char *from_name, const char *to_name, u_long fset __attribute__((unused)), u_int flags)
+install(const char *from_name, const char *to_name, u_long fset __unused, u_int flags)
 {
 	struct stat from_sb, temp_sb, to_sb;
 	struct timespec tsb[2];
@@ -1080,8 +1080,8 @@ install(const char *from_name, const char *to_name, u_long fset __attribute__((u
  *	unless it points to pre-computed digest.
  */
 static int
-compare(int from_fd, const char *from_name __attribute__((unused)), size_t from_len,
-	int to_fd, const char *to_name __attribute__((unused)), size_t to_len,
+compare(int from_fd, const char *from_name __unused, size_t from_len,
+	int to_fd, const char *to_name __unused, size_t to_len,
 	char **dresp)
 {
 	char *p, *q;
@@ -1183,7 +1183,7 @@ create_tempfile(const char *path, char *temp, size_t tsize)
  *	create a new file, overwriting an existing one if necessary
  */
 static int
-create_newfile(const char *path, int target, struct stat *sbp __attribute__((unused)))
+create_newfile(const char *path, int target, struct stat *sbp __unused)
 {
 	char backup[MAXPATHLEN];
 	int saved_errno = 0;

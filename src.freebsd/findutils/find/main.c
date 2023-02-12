@@ -32,9 +32,11 @@
  * SUCH DAMAGE.
  */
 
-__attribute__((unused)) static const char copyright[] =
+#if 0
+static const char copyright[] =
 "@(#) Copyright (c) 1990, 1993, 1994\n\
 	The Regents of the University of California.  All rights reserved.\n";
+#endif
 
 #if 0
 static char sccsid[] = "@(#)main.c	8.4 (Berkeley) 5/4/95";

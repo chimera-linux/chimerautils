@@ -92,7 +92,7 @@ volatile sig_atomic_t info;
 enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
 
 static int copy(char *[], enum op, int);
-static void siginfo(int __attribute__((unused)));
+static void siginfo(int __unused);
 
 int
 main(int argc, char *argv[])
@@ -512,7 +512,7 @@ copy(char *argv[], enum op type, int fts_options)
 }
 
 static void
-siginfo(int sig __attribute__((unused)))
+siginfo(int sig __unused)
 {
 
 	info = 1;

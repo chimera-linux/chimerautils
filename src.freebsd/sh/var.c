@@ -594,7 +594,7 @@ var_compare(const void *a, const void *b)
  */
 
 int
-showvarscmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+showvarscmd(int argc __unused, char **argv __unused)
 {
 	struct var **vpp;
 	struct var *vp;
@@ -650,7 +650,7 @@ showvarscmd(int argc __attribute__((unused)), char **argv __attribute__((unused)
  */
 
 int
-exportcmd(int argc __attribute__((unused)), char **argv)
+exportcmd(int argc __unused, char **argv)
 {
 	struct var **vpp;
 	struct var *vp;
@@ -728,7 +728,7 @@ exportcmd(int argc __attribute__((unused)), char **argv)
  */
 
 int
-localcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+localcmd(int argc __unused, char **argv __unused)
 {
 	char *name;
 
@@ -849,7 +849,7 @@ setvarcmd(int argc, char **argv)
  */
 
 int
-unsetcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+unsetcmd(int argc __unused, char **argv __unused)
 {
 	char **ap;
 	int i;

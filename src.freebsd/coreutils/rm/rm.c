@@ -72,7 +72,7 @@ static void	checkdot(char **);
 static void	checkslash(char **);
 static void	rm_file(char **);
 static void	rm_tree(char **);
-static void siginfo(int __attribute__((unused)));
+static void siginfo(int __unused);
 static void	usage(void);
 
 /*
@@ -492,7 +492,7 @@ usage(void)
 }
 
 static void
-siginfo(int sig __attribute__((unused)))
+siginfo(int sig __unused)
 {
 
 	info = 1;

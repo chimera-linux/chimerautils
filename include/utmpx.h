@@ -25,26 +25,18 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef UTMPX_H
+#define UTMPX_H
 
 /* satisfy musl */
 #ifdef __unused
 #undef __unused
 #ifndef HAD___UNUSED
-#define HAD___UNUSED
+#define HAD___UNUSED 1
 #endif
 #endif
 
-#include_next <sys/stat.h>
-
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#endif
-
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
-#endif
+#include_next <utmpx.h>
 
 #ifdef HAD___UNUSED
 #define __unused __attribute__((unused))

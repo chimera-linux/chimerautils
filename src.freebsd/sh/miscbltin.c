@@ -155,7 +155,7 @@ fdctx_destroy(struct fdctx *fdc)
  */
 
 int
-readcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+readcmd(int argc __unused, char **argv __unused)
 {
 	char **ap;
 	int backslash;
@@ -351,7 +351,7 @@ readcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 
 
 int
-umaskcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+umaskcmd(int argc __unused, char **argv __unused)
 {
 	char *ap;
 	int mask;
@@ -515,7 +515,7 @@ printlimit(enum limithow how, const struct rlimit *limit,
 }
 
 int
-ulimitcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+ulimitcmd(int argc __unused, char **argv __unused)
 {
 	rlim_t val = 0;
 	enum limithow how = SOFT | HARD;

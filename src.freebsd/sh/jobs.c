@@ -246,7 +246,7 @@ setjobctl(int on)
 
 #if JOBS
 int
-fgcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+fgcmd(int argc __unused, char **argv __unused)
 {
 	struct job *jp;
 	pid_t pgrp;
@@ -271,7 +271,7 @@ fgcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 
 
 int
-bgcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+bgcmd(int argc __unused, char **argv __unused)
 {
 	struct job *jp;
 
@@ -314,7 +314,7 @@ restartjob(struct job *jp)
 
 
 int
-jobscmd(int argc __attribute__((unused)), char *argv[] __attribute__((unused)))
+jobscmd(int argc __unused, char *argv[] __unused)
 {
 	char *id;
 	int ch, mode;
@@ -537,7 +537,7 @@ freejob(struct job *jp)
 
 
 int
-waitcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+waitcmd(int argc __unused, char **argv __unused)
 {
 	struct job *job;
 	int retval;
@@ -615,7 +615,7 @@ waitcmdloop(struct job *job)
 
 
 int
-jobidcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+jobidcmd(int argc __unused, char **argv __unused)
 {
 	struct job *jp;
 	int i;
@@ -747,7 +747,7 @@ killjob(const char *name, int sig)
  */
 
 struct job *
-makejob(union node *node __attribute__((unused)), int nprocs)
+makejob(union node *node __unused, int nprocs)
 {
 	int i;
 	struct job *jp;
@@ -1129,7 +1129,7 @@ waitforjob(struct job *jp, int *signaled)
 
 
 static void
-dummy_handler(int sig __attribute__((unused)))
+dummy_handler(int sig __unused)
 {
 }
 

@@ -2025,7 +2025,7 @@ getusername(char *name, size_t namelen)
  *    should be added here.
  */
 char *
-getprompt(void *unused __attribute__((unused)))
+getprompt(void *unused __unused)
 {
 	static char ps[PROMPTLEN];
 	const char *fmt;

@@ -329,7 +329,7 @@ do_write(int devfd, char *tty, char *mytty, const char *login)
  * done - cleanup and exit
  */
 void
-done(int n __attribute__((unused)))
+done(int n __unused)
 {
 	(void)printf("EOF\r\n");
 	exit(0);

@@ -8,6 +8,7 @@
  * $FreeBSD$
  */
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 
 #include <ctype.h>
@@ -298,7 +299,7 @@ main(int argc, char *argv[])
 }
 
 int
-yyerror(const char *s __attribute__((unused)))
+yyerror(const char *s __unused)
 {
 	errx(ERR_EXIT, "syntax error");
 }

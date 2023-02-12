@@ -54,7 +54,7 @@ static void usage(void);
 
 static volatile sig_atomic_t report_requested;
 static void
-report_request(int signo __attribute__((unused)))
+report_request(int signo __unused)
 {
 
 	report_requested = 1;

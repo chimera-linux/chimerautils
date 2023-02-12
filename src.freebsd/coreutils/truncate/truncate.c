@@ -27,8 +27,10 @@
  *
  */
 
-__attribute__((unused)) static const char rcsid[] =
+#if 0
+static const char rcsid[] =
     "$FreeBSD$";
+#endif
 
 #include <sys/stat.h>
 

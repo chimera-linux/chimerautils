@@ -192,7 +192,7 @@ setterm(const char *term)
 }
 
 int
-histcmd(int argc, char **argv __attribute__((unused)))
+histcmd(int argc, char **argv __unused)
 {
 	int ch;
 	const char *editor = NULL;
@@ -644,7 +644,7 @@ out:
  * bind a key (tab by default) to execute the function.
  */
 unsigned char
-sh_complete(EditLine *sel, int ch __attribute__((unused)))
+sh_complete(EditLine *sel, int ch __unused)
 {
 	return (unsigned char)fn_complete2(sel, NULL, sh_matches,
 		L" \t\n\"\\'`@$><=;|&{(", NULL, NULL, (size_t)100,
@@ -656,7 +656,7 @@ sh_complete(EditLine *sel, int ch __attribute__((unused)))
 #include "error.h"
 
 int
-histcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+histcmd(int argc __unused, char **argv __unused)
 {
 
 	error("not compiled with history support");
@@ -665,7 +665,7 @@ histcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
 }
 
 int
-bindcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+bindcmd(int argc __unused, char **argv __unused)
 {
 
 	error("not compiled with line editing support");

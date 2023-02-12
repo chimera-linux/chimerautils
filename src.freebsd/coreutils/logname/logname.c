@@ -50,7 +50,7 @@ __FBSDID("$FreeBSD$");
 void usage(void);
 
 int
-main(int argc, char *argv[] __attribute__((unused)))
+main(int argc, char *argv[] __unused)
 {
 	char *p;
 

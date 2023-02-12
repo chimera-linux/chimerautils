@@ -1243,7 +1243,7 @@ unlink_input(const char *file, const struct stat *sb)
 }
 
 static void
-got_sigint(int signo __attribute__((unused)))
+got_sigint(int signo __unused)
 {
 
 	if (remove_file != NULL)
@@ -1252,7 +1252,7 @@ got_sigint(int signo __attribute__((unused)))
 }
 
 static void
-got_siginfo(int signo __attribute__((unused)))
+got_siginfo(int signo __unused)
 {
 
 	print_info = 1;

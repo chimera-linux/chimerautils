@@ -77,7 +77,7 @@ static char *getpwd2(void);
 static char *curdir = NULL;	/* current working directory */
 
 int
-cdcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+cdcmd(int argc __unused, char **argv __unused)
 {
 	const char *dest;
 	const char *path;
@@ -331,7 +331,7 @@ updatepwd(char *dir)
 }
 
 int
-pwdcmd(int argc __attribute__((unused)), char **argv __attribute__((unused)))
+pwdcmd(int argc __unused, char **argv __unused)
 {
 	char *p;
 	int ch, phys;

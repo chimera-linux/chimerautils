@@ -241,7 +241,7 @@ needpos(size_t n)
 }
 
 static int
-b_cut(FILE *fp, const char *fname __attribute__((unused)))
+b_cut(FILE *fp, const char *fname __unused)
 {
 	int ch, col;
 	char *pos;
