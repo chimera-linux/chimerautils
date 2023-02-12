@@ -214,10 +214,8 @@ f_count(char *arg)
 	uintmax_t res;
 
 	res = get_num(arg);
-	if (res == UINTMAX_MAX) {
-		errno = ERANGE;
-		err(1, "%s", oper);
-	}
+	if (res == UINTMAX_MAX)
+		errc(1, ERANGE, "%s", oper);
 	if (res == 0)
 		cpy_cnt = UINTMAX_MAX;
 	else

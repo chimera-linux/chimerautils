@@ -124,10 +124,8 @@ next(STR *s)
 		default:
 			clen = mbrtowc(&wch, s->str, MB_LEN_MAX, NULL);
 			if (clen == (size_t)-1 || clen == (size_t)-2 ||
-			    clen == 0) {
-				errno = EILSEQ;
-				err(1, NULL);
-			}
+			    clen == 0)
+				errc(1, EILSEQ, NULL);
 			is_octal = 0;
 			s->lastch = wch;
 			s->str += clen;
@@ -243,10 +241,8 @@ genequiv(STR *s)
 		s->str += 2;
 	} else {
 		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
-		if (clen == (size_t)-1 || clen == (size_t)-2 || clen == 0) {
-			errno = EILSEQ;
-			err(1, NULL);
-		}
+		if (clen == (size_t)-1 || clen == (size_t)-2 || clen == 0)
+			errc(1, EILSEQ, NULL);
 		s->equiv[0] = wc;
 		if (s->str[clen] != '=')
 			errx(1, "misplaced equivalence equals sign");
@@ -296,10 +292,8 @@ genrange(STR *s, int was_octal)
 		stopval = backslash(s, &octal);
 	else {
 		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
-		if (clen == (size_t)-1 || clen == (size_t)-2) {
-			errno = EILSEQ;
-			err(1, NULL);
-		}
+		if (clen == (size_t)-1 || clen == (size_t)-2)
+			errc(1, EILSEQ, NULL);
 		stopval = wc;
 		s->str += clen;
 	}
@@ -351,10 +345,8 @@ genseq(STR *s)
 		s->lastch = backslash(s, NULL);
 	else {
 		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
-		if (clen == (size_t)-1 || clen == (size_t)-2) {
-			errno = EILSEQ;
-			err(1, NULL);
-		}
+		if (clen == (size_t)-1 || clen == (size_t)-2)
+			errc(1, EILSEQ, NULL);
 		s->lastch = wc;
 		s->str += clen;
 	}

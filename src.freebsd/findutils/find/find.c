@@ -235,10 +235,8 @@ find_execute(PLAN *plan, char *paths[])
 	}
 	e = errno;
 	finish_execplus();
-	if (e && (!ignore_readdir_race || e != ENOENT)) {
-		errno = e;
-		err(1, "fts_read");
-	}
+	if (e && (!ignore_readdir_race || e != ENOENT))
+		errc(1, e, "fts_read");
 	f_fstypename(0); /* free allocated filesystem type resources */
 	return (exitstatus);
 }

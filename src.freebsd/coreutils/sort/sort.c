@@ -473,8 +473,7 @@ parse_memory_buffer_value(const char *value)
 				    100;
 				break;
 			default:
-				errno = EINVAL;
-				warn("%s", optarg);
+				warnc(EINVAL, "%s", optarg);
 				membuf = available_free_memory;
 			}
 		}
@@ -1101,8 +1100,7 @@ main(int argc, char **argv)
 
 				if (parse_k(optarg, &(keys[keys_num - 1]))
 				    < 0) {
-					errno = EINVAL;
-					err(2, "-k %s", optarg);
+					errc(2, EINVAL, "-k %s", optarg);
 				}
 
 				break;
@@ -1127,8 +1125,7 @@ main(int argc, char **argv)
 			case 't':
 				while (strlen(optarg) > 1) {
 					if (optarg[0] != '\\') {
-						errno = EINVAL;
-						err(2, "%s", optarg);
+						errc(2, EINVAL, "%s", optarg);
 					}
 					optarg += 1;
 					if (*optarg == '0') {

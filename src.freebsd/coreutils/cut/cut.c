@@ -415,8 +415,7 @@ f_cut(FILE *fp, const char *fname)
 		for (isdelim = 0, p = lbuf;; p += clen) {
 			clen = mbrtowc(&ch, p, lbuf + reallen - p, NULL);
 			if (clen == (size_t)-1 || clen == (size_t)-2) {
-				errno = EILSEQ;
-				warn("%s", fname);
+				warnc(EILSEQ, "%s", fname);
 				free(lbuf);
 				return (1);
 			}
@@ -443,8 +442,7 @@ f_cut(FILE *fp, const char *fname)
 				clen = mbrtowc(&ch, p, lbuf + reallen - p,
 				    NULL);
 				if (clen == (size_t)-1 || clen == (size_t)-2) {
-					errno = EILSEQ;
-					warn("%s", fname);
+					warnc(EILSEQ, "%s", fname);
 					free(lbuf);
 					return (1);
 				}

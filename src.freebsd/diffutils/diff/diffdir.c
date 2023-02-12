@@ -57,8 +57,7 @@ diffdir(char *p1, char *p2, int flags)
 
 	dirlen1 = strlcpy(path1, *p1 ? p1 : ".", sizeof(path1));
 	if (dirlen1 >= sizeof(path1) - 1) {
-		errno = ENAMETOOLONG;
-		warn("%s", p1);
+		warnc(ENAMETOOLONG, "%s", p1);
 		status |= 2;
 		return;
 	}
@@ -68,8 +67,7 @@ diffdir(char *p1, char *p2, int flags)
 	}
 	dirlen2 = strlcpy(path2, *p2 ? p2 : ".", sizeof(path2));
 	if (dirlen2 >= sizeof(path2) - 1) {
-		errno = ENAMETOOLONG;
-		warn("%s", p2);
+		warnc(ENAMETOOLONG, "%s", p2);
 		status |= 2;
 		return;
 	}

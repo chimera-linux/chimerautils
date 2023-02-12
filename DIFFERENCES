@@ -63,19 +63,6 @@ REG_EXTENDED to enable POSIX Extended Regular Expressions.  Where
 REG_BASIC appears in regcomp() calls, we remove it.
 
 
-errc() and warnc()
-------------------
-The errc() error message formatting function exists on FreeBSD but not
-Linux.  The difference between err() and errc() is that the error code
-is passed as the second argument for errc() whereas the err() function
-just looks at the global errno variable.  We can replace errc() calls
-with a setting of errno and a call to err() with the second parameter
-removed.
-
-All of the previous paragraph applies to warnc() as well where we
-replace it with a call to warn() in the same manner.
-
-
 IOV_MAX
 -------
 This is defined in glibc if you define _XOPEN_SOURCE.

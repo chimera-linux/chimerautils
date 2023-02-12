@@ -8,6 +8,7 @@ libcompat_sources = [
     'strmode.c',
     'expand_number.c',
     'vis.c',
+    '../../src.compat/err.c',
     '../../src.compat/strlfuncs.c',
     '../../src.compat/signames.c',
     '../../src.compat/strtonum.c',

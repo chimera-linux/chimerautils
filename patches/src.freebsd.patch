@@ -216,15 +216,7 @@
  argument for
 --- src.orig/coreutils/chmod/chmod.c
 +++ src.freebsd/coreutils/chmod/chmod.c
-@@ -41,7 +41,6 @@
- #endif /* not lint */
- #endif
- #include <sys/cdefs.h>
--__FBSDID("$FreeBSD$");
- 
- #include <sys/param.h>
- #include <sys/stat.h>
-@@ -60,7 +59,6 @@
+@@ -60,7 +60,6 @@
  static volatile sig_atomic_t siginfo;
  
  static void usage(void);
@@ -232,7 +224,7 @@
  
  static void
  siginfo_handler(int sig __unused)
-@@ -75,14 +73,14 @@
+@@ -75,14 +74,14 @@
  	FTS *ftsp;
  	FTSENT *p;
  	mode_t *set;
@@ -250,7 +242,7 @@
  		switch (ch) {
  		case 'H':
  			Hflag = 1;
-@@ -101,16 +99,6 @@
+@@ -101,16 +100,6 @@
  		case 'f':
  			fflag = 1;
  			break;
@@ -267,7 +259,7 @@
  		/*
  		 * XXX
  		 * "-[rwx]" are valid mode commands.  If they are the entire
-@@ -140,9 +128,6 @@
+@@ -140,9 +129,6 @@
  	(void)signal(SIGINFO, siginfo_handler);
  
  	if (Rflag) {
@@ -277,7 +269,7 @@
  		if (Lflag) {
  			fts_options = FTS_LOGICAL;
  		} else {
-@@ -152,8 +137,6 @@
+@@ -152,8 +138,6 @@
  				fts_options |= FTS_COMFOLLOW;
  			}
  		}
@@ -286,7 +278,7 @@
  	} else {
  		fts_options = FTS_LOGICAL;
  	}
-@@ -194,14 +177,6 @@
+@@ -194,14 +178,6 @@
  			break;
  		}
  		newmode = getmode(set, p->fts_statp->st_mode);
@@ -301,7 +293,7 @@
  		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
  		    && !fflag) {
  			warn("%s", p->fts_path);
-@@ -236,27 +211,3 @@
+@@ -236,27 +212,3 @@
  	    "usage: chmod [-fhv] [-R [-H | -L | -P]] mode file ...\n");
  	exit(1);
  }
@@ -694,20 +686,7 @@
  {
 --- src.orig/coreutils/csplit/csplit.c
 +++ src.freebsd/coreutils/csplit/csplit.c
-@@ -237,8 +237,10 @@
- 	FILE *fp;
- 
- 	if ((size_t)snprintf(currfile, sizeof(currfile), "%s%0*ld", prefix,
--	    (int)sufflen, nfiles) >= sizeof(currfile))
--		errc(1, ENAMETOOLONG, NULL);
-+	    (int)sufflen, nfiles) >= sizeof(currfile)) {
-+		errno = ENAMETOOLONG;
-+		err(1, NULL);
-+	}
- 	if ((fp = fopen(currfile, "w+")) == NULL)
- 		err(1, "%s", currfile);
- 	nfiles++;
-@@ -379,7 +381,7 @@
+@@ -379,7 +379,7 @@
  	} else
  		ofs = 0;
  
@@ -745,7 +724,7 @@
  	return (warned);
  }
  
-@@ -391,29 +393,31 @@
+@@ -391,21 +393,22 @@
  	int field, i, isdelim;
  	char *pos, *p;
  	int output;
@@ -779,30 +758,25 @@
  			reallen++;
  		}
  		output = 0;
- 		for (isdelim = 0, p = lbuf;; p += clen) {
+@@ -413,7 +416,7 @@
  			clen = mbrtowc(&ch, p, lbuf + reallen - p, NULL);
  			if (clen == (size_t)-1 || clen == (size_t)-2) {
--				warnc(EILSEQ, "%s", fname);
+ 				warnc(EILSEQ, "%s", fname);
 -				free(mlbuf);
-+				errno = EILSEQ;
-+				warn("%s", fname);
 +				free(lbuf);
  				return (1);
  			}
  			if (clen == 0)
-@@ -439,8 +443,9 @@
- 				clen = mbrtowc(&ch, p, lbuf + reallen - p,
+@@ -440,7 +443,7 @@
  				    NULL);
  				if (clen == (size_t)-1 || clen == (size_t)-2) {
--					warnc(EILSEQ, "%s", fname);
+ 					warnc(EILSEQ, "%s", fname);
 -					free(mlbuf);
-+					errno = EILSEQ;
-+					warn("%s", fname);
 +					free(lbuf);
  					return (1);
  				}
  				if (clen == 0)
-@@ -472,7 +477,7 @@
+@@ -472,7 +475,7 @@
  		}
  		(void)putchar('\n');
  	}
@@ -859,21 +833,6 @@
  		pututxline(&utx);
  
  		if ((p = getlogin()) == NULL)
---- src.orig/coreutils/dd/args.c
-+++ src.freebsd/coreutils/dd/args.c
-@@ -214,8 +214,10 @@
- 	uintmax_t res;
- 
- 	res = get_num(arg);
--	if (res == UINTMAX_MAX)
--		errc(1, ERANGE, "%s", oper);
-+	if (res == UINTMAX_MAX) {
-+		errno = ERANGE;
-+		err(1, "%s", oper);
-+	}
- 	if (res == 0)
- 		cpy_cnt = UINTMAX_MAX;
- 	else
 --- src.orig/coreutils/dd/dd.1
 +++ src.freebsd/coreutils/dd/dd.1
 @@ -417,7 +417,7 @@
@@ -2217,19 +2176,6 @@
  }
  
  static char *
-@@ -373,8 +376,10 @@
- 		return (NULL);
- 	for (tok = s;;) {
- 		n = mbrtowc(&c, s, MB_LEN_MAX, NULL);
--		if (n == (size_t)-1 || n == (size_t)-2)
--			errc(1, EILSEQ, NULL);	/* XXX */
-+		if (n == (size_t)-1 || n == (size_t)-2) {
-+			errno = EILSEQ;
-+			err(1, NULL);	/* XXX */
-+		}
- 		s += n;
- 		spanp = delim;
- 		do {
 --- src.orig/coreutils/ln/ln.c
 +++ src.freebsd/coreutils/ln/ln.c
 @@ -148,6 +148,7 @@
@@ -3046,32 +2992,6 @@
  usage(void)
  {
  
---- src.orig/coreutils/nl/nl.c
-+++ src.freebsd/coreutils/nl/nl.c
-@@ -151,15 +151,19 @@
- 			break;
- 		case 'd':
- 			clen = mbrlen(optarg, MB_CUR_MAX, NULL);
--			if (clen == (size_t)-1 || clen == (size_t)-2)
--				errc(EXIT_FAILURE, EILSEQ, NULL);
-+			if (clen == (size_t)-1 || clen == (size_t)-2) {
-+				errno = EILSEQ;
-+				err(EXIT_FAILURE, NULL);
-+			}
- 			if (clen != 0) {
- 				memcpy(delim1, optarg, delim1len = clen);
- 				clen = mbrlen(optarg + delim1len,
- 				    MB_CUR_MAX, NULL);
- 				if (clen == (size_t)-1 ||
--				    clen == (size_t)-2)
--					errc(EXIT_FAILURE, EILSEQ, NULL);
-+				    clen == (size_t)-2) {
-+					errno = EILSEQ;
-+					err(EXIT_FAILURE, NULL);
-+				}
- 				if (clen != 0) {
- 					memcpy(delim2, optarg + delim1len,
- 					    delim2len = clen);
 --- src.orig/coreutils/pr/pr.c
 +++ src.freebsd/coreutils/pr/pr.c
 @@ -65,6 +65,7 @@
@@ -3890,17 +3810,7 @@
  	}
  
  	if (getenv("GNUSORT_NUMERIC_COMPATIBILITY"))
-@@ -433,7 +473,8 @@
- 				    100;
- 				break;
- 			default:
--				warnc(EINVAL, "%s", optarg);
-+				errno = EINVAL;
-+				warn("%s", optarg);
- 				membuf = available_free_memory;
- 			}
- 		}
-@@ -585,11 +626,13 @@
+@@ -585,11 +625,13 @@
  	case 'i':
  		sm->iflag = true;
  		break;
@@ -3914,7 +3824,7 @@
  	case 'M':
  		initialise_months();
  		sm->Mflag = true;
-@@ -855,7 +898,7 @@
+@@ -855,7 +897,7 @@
  void
  fix_obsolete_keys(int *argc, char **argv)
  {
@@ -3923,7 +3833,7 @@
  
  	for (int i = 1; i < *argc; i++) {
  		char *arg1;
-@@ -911,6 +954,7 @@
+@@ -911,6 +953,7 @@
  	}
  }
  
@@ -3931,7 +3841,7 @@
  /*
   * Seed random sort
   */
-@@ -983,6 +1027,7 @@
+@@ -983,6 +1026,7 @@
  	MD5Init(&md5_ctx);
  	MD5Update(&md5_ctx, randseed, rd);
  }
@@ -3939,7 +3849,7 @@
  
  /*
   * Main function.
-@@ -991,7 +1036,9 @@
+@@ -991,7 +1035,9 @@
  main(int argc, char **argv)
  {
  	char *outfile, *real_outfile;
@@ -3949,27 +3859,7 @@
  	int c, result;
  	bool mef_flags[NUMBER_OF_MUTUALLY_EXCLUSIVE_FLAGS] =
  	    { false, false, false, false, false, false };
-@@ -1054,7 +1101,8 @@
- 
- 				if (parse_k(optarg, &(keys[keys_num - 1]))
- 				    < 0) {
--					errc(2, EINVAL, "-k %s", optarg);
-+					errno = EINVAL;
-+					err(2, "-k %s", optarg);
- 				}
- 
- 				break;
-@@ -1079,7 +1127,8 @@
- 			case 't':
- 				while (strlen(optarg) > 1) {
- 					if (optarg[0] != '\\') {
--						errc(2, EINVAL, "%s", optarg);
-+						errno = EINVAL;
-+						err(2, "%s", optarg);
- 					}
- 					optarg += 1;
- 					if (*optarg == '0') {
-@@ -1122,8 +1171,10 @@
+@@ -1122,8 +1168,10 @@
  						set_sort_modifier(sm, 'n');
  					else if (!strcmp(optarg, "month"))
  						set_sort_modifier(sm, 'M');
@@ -3980,7 +3870,7 @@
  					else
  						unknown(optarg);
  				}
-@@ -1152,9 +1203,11 @@
+@@ -1152,9 +1200,11 @@
  			case RADIXSORT_OPT:
  				sort_opts_vals.sort_method = SORT_RADIXSORT;
  				break;
@@ -3992,7 +3882,7 @@
  			case COMPRESSPROGRAM_OPT:
  				compress_program = strdup(optarg);
  				break;
-@@ -1247,8 +1300,10 @@
+@@ -1247,8 +1297,10 @@
  		}
  	}
  
@@ -5241,20 +5131,7 @@
  wint_t
  next(STR *s)
  {
-@@ -86,8 +124,10 @@
- 		default:
- 			clen = mbrtowc(&wch, s->str, MB_LEN_MAX, NULL);
- 			if (clen == (size_t)-1 || clen == (size_t)-2 ||
--			    clen == 0)
--				errc(1, EILSEQ, NULL);
-+			    clen == 0) {
-+				errno = EILSEQ;
-+				err(1, NULL);
-+			}
- 			is_octal = 0;
- 			s->lastch = wch;
- 			s->str += clen;
-@@ -116,7 +156,7 @@
+@@ -116,7 +154,7 @@
  	case CCLASS_LOWER:
  		s->cnt++;
  		ch = nextwctype(s->lastch, s->cclass);
@@ -5263,20 +5140,7 @@
  			s->state = NORMAL;
  			return (next(s));
  		}
-@@ -203,8 +243,10 @@
- 		s->str += 2;
- 	} else {
- 		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
--		if (clen == (size_t)-1 || clen == (size_t)-2 || clen == 0)
--			errc(1, EILSEQ, NULL);
-+		if (clen == (size_t)-1 || clen == (size_t)-2 || clen == 0) {
-+			errno = EILSEQ;
-+			err(1, NULL);
-+		}
- 		s->equiv[0] = wc;
- 		if (s->str[clen] != '=')
- 			errx(1, "misplaced equivalence equals sign");
-@@ -241,9 +283,10 @@
+@@ -241,9 +279,10 @@
  static int
  genrange(STR *s, int was_octal)
  {
@@ -5289,32 +5153,6 @@
  	size_t clen;
  	wchar_t wc;
  
-@@ -253,8 +296,10 @@
- 		stopval = backslash(s, &octal);
- 	else {
- 		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
--		if (clen == (size_t)-1 || clen == (size_t)-2)
--			errc(1, EILSEQ, NULL);
-+		if (clen == (size_t)-1 || clen == (size_t)-2) {
-+			errno = EILSEQ;
-+			err(1, NULL);
-+		}
- 		stopval = wc;
- 		s->str += clen;
- 	}
-@@ -306,8 +351,10 @@
- 		s->lastch = backslash(s, NULL);
- 	else {
- 		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
--		if (clen == (size_t)-1 || clen == (size_t)-2)
--			errc(1, EILSEQ, NULL);
-+		if (clen == (size_t)-1 || clen == (size_t)-2) {
-+			errno = EILSEQ;
-+			err(1, NULL);
-+		}
- 		s->lastch = wc;
- 		s->str += clen;
- 	}
 --- src.orig/coreutils/tr/tr.c
 +++ src.freebsd/coreutils/tr/tr.c
 @@ -78,6 +78,7 @@
@@ -6218,24 +6056,15 @@
  {
  	char backup[MAXPATHLEN];
  	int saved_errno = 0;
-@@ -1336,13 +1348,14 @@
+@@ -1336,7 +1348,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
 -		errc(error == EAGAIN || error == EPROCLIM || error == ENOMEM ?
--		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
-+		errno = error;
-+		err(EX_OSERR, "spawn %s", stripbin);
++		errc(error == EAGAIN || error == ENOMEM ?
+ 		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
  	}
  	if (waitpid(pid, &status, 0) == -1) {
- 		error = errno;
- 		(void)unlink(to_name);
--		errc(EX_SOFTWARE, error, "wait");
-+		errno = error;
-+		err(EX_SOFTWARE, "wait");
- 		/* NOTREACHED */
- 	}
- 	if (status != 0) {
 --- src.orig/diffutils/cmp/cmp.c
 +++ src.freebsd/diffutils/cmp/cmp.c
 @@ -78,7 +78,7 @@
@@ -6415,28 +6244,6 @@
  	if (strcmp(file, "-") != 0)
  		fclose(fp);
  }
---- src.orig/diffutils/diff/diffdir.c
-+++ src.freebsd/diffutils/diff/diffdir.c
-@@ -57,7 +57,8 @@
- 
- 	dirlen1 = strlcpy(path1, *p1 ? p1 : ".", sizeof(path1));
- 	if (dirlen1 >= sizeof(path1) - 1) {
--		warnc(ENAMETOOLONG, "%s", p1);
-+		errno = ENAMETOOLONG;
-+		warn("%s", p1);
- 		status |= 2;
- 		return;
- 	}
-@@ -67,7 +68,8 @@
- 	}
- 	dirlen2 = strlcpy(path2, *p2 ? p2 : ".", sizeof(path2));
- 	if (dirlen2 >= sizeof(path2) - 1) {
--		warnc(ENAMETOOLONG, "%s", p2);
-+		errno = ENAMETOOLONG;
-+		warn("%s", p2);
- 		status |= 2;
- 		return;
- 	}
 --- src.orig/diffutils/diff/diff.h
 +++ src.freebsd/diffutils/diff/diff.h
 @@ -100,8 +100,16 @@
@@ -6836,16 +6643,10 @@
  {
  
  	return (strcoll((*s1)->fts_name, (*s2)->fts_name));
-@@ -235,7 +235,10 @@
- 	}
- 	e = errno;
+@@ -237,5 +237,6 @@
  	finish_execplus();
--	if (e && (!ignore_readdir_race || e != ENOENT))
--		errc(1, e, "fts_read");
-+	if (e && (!ignore_readdir_race || e != ENOENT)) {
-+		errno = e;
-+		err(1, "fts_read");
-+	}
+ 	if (e && (!ignore_readdir_race || e != ENOENT))
+ 		errc(1, e, "fts_read");
 +	f_fstypename(0); /* free allocated filesystem type resources */
  	return (exitstatus);
  }
@@ -7733,20 +7534,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			errx(2, "%s: %s", file, strerror(EFBIG));
  		if (sb.st_size == 0) {
  			close(fd);
-@@ -182,8 +182,10 @@
- 	readp = string;
- 	writep = key;
- 	while ((clen = mbrtowc(&ch, readp, MB_LEN_MAX, NULL)) != 0) {
--		if (clen == (size_t)-1 || clen == (size_t)-2)
--			errc(2, EILSEQ, NULL);
-+		if (clen == (size_t)-1 || clen == (size_t)-2) {
-+			errno = EILSEQ;
-+			err(2, NULL);
-+		}
- 		if (fflag)
- 			ch = towlower(ch);
- 		if (!dflag || iswalnum(ch))
-@@ -197,7 +199,7 @@
+@@ -197,7 +197,7 @@
  }
  
  static int
@@ -7755,7 +7543,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  
  	front = binary_search(string, front, back);
-@@ -251,9 +253,9 @@
+@@ -251,9 +251,9 @@
  	while (p < back && *p++ != '\n');
  
  static char *
@@ -7767,7 +7555,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  	p = front + (back - front) / 2;
  	SKIP_PAST_NEWLINE(p, back);
-@@ -285,7 +287,7 @@
+@@ -285,7 +285,7 @@
   *	o front is before or at the first line to be printed.
   */
  static char *
@@ -7776,7 +7564,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	while (front < back) {
  		switch (compare(string, front, back)) {
-@@ -305,7 +307,7 @@
+@@ -305,7 +305,7 @@
   * Print as many lines as match string, starting at front.
   */
  static void
@@ -7785,7 +7573,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	for (; front < back && compare(string, front, back) == EQUAL; ++front) {
  		for (; front < back && *front != '\n'; ++front)
-@@ -330,7 +332,7 @@
+@@ -330,7 +330,7 @@
   * "back" terminated).
   */
  static int
@@ -8101,28 +7889,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  }
  
  
---- src.orig/sed/compile.c
-+++ src.freebsd/sed/compile.c
-@@ -827,11 +827,15 @@
- 			y->bytetab[i] = (btowc(i) != WEOF) ? i : 0;
- 		while (*op != '\0') {
- 			oclen = mbrlen(op, MB_LEN_MAX, &mbs1);
--			if (oclen == (size_t)-1 || oclen == (size_t)-2)
--				errc(1, EILSEQ, NULL);
-+			if (oclen == (size_t)-1 || oclen == (size_t)-2) {
-+				errno = EILSEQ;
-+				err(1, NULL);
-+			}
- 			nclen = mbrlen(np, MB_LEN_MAX, &mbs2);
--			if (nclen == (size_t)-1 || nclen == (size_t)-2)
--				errc(1, EILSEQ, NULL);
-+			if (nclen == (size_t)-1 || nclen == (size_t)-2) {
-+				errno = EILSEQ;
-+				err(1, NULL);
-+			}
- 			if (oclen == 1 && nclen == 1)
- 				y->bytetab[(u_char)*op] = *np;
- 			else {
 --- src.orig/sed/main.c
 +++ src.freebsd/sed/main.c
 @@ -262,7 +262,7 @@

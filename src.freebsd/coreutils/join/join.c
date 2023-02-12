@@ -376,10 +376,8 @@ mbssep(char **stringp, const wchar_t *delim)
 		return (NULL);
 	for (tok = s;;) {
 		n = mbrtowc(&c, s, MB_LEN_MAX, NULL);
-		if (n == (size_t)-1 || n == (size_t)-2) {
-			errno = EILSEQ;
-			err(1, NULL);	/* XXX */
-		}
+		if (n == (size_t)-1 || n == (size_t)-2)
+			errc(1, EILSEQ, NULL);	/* XXX */
 		s += n;
 		spanp = delim;
 		do {

@@ -1348,14 +1348,13 @@ strip(const char *to_name, int to_fd, const char *from_name, char **dresp)
 	    __DECONST(char **, args), environ);
 	if (error != 0) {
 		(void)unlink(to_name);
-		errno = error;
-		err(EX_OSERR, "spawn %s", stripbin);
+		errc(error == EAGAIN || error == ENOMEM ?
+		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
 	}
 	if (waitpid(pid, &status, 0) == -1) {
 		error = errno;
 		(void)unlink(to_name);
-		errno = error;
-		err(EX_SOFTWARE, "wait");
+		errc(EX_SOFTWARE, error, "wait");
 		/* NOTREACHED */
 	}
 	if (status != 0) {

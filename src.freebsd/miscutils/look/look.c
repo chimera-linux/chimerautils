@@ -182,10 +182,8 @@ prepkey(const char *string, wchar_t termchar)
 	readp = string;
 	writep = key;
 	while ((clen = mbrtowc(&ch, readp, MB_LEN_MAX, NULL)) != 0) {
-		if (clen == (size_t)-1 || clen == (size_t)-2) {
-			errno = EILSEQ;
-			err(2, NULL);
-		}
+		if (clen == (size_t)-1 || clen == (size_t)-2)
+			errc(2, EILSEQ, NULL);
 		if (fflag)
 			ch = towlower(ch);
 		if (!dflag || iswalnum(ch))
