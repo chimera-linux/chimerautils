@@ -15,8 +15,6 @@
 #include <string.h>
 #include <errno.h>
 
-#include "compat.h"
-
 #define ARRAY_SIZE(x) (sizeof(x) / sizeof(*x))
 
 static const struct ul_signal_name {
