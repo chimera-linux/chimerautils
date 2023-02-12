@@ -7496,15 +7496,6 @@
  }
  #endif
  
-@@ -1250,7 +1260,7 @@
- setup_signals(void)
- {
- 
--	signal(SIGINFO, got_siginfo);
-+	signal(SIGUSR1, got_siginfo);
- 	signal(SIGINT, got_sigint);
- }
- 
 --- src.orig/gzip/unxz.c
 +++ src.freebsd/gzip/unxz.c
 @@ -38,6 +38,7 @@

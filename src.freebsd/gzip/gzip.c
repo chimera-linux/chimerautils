@@ -1260,7 +1260,7 @@ static void
 setup_signals(void)
 {
 
-	signal(SIGUSR1, got_siginfo);
+	signal(SIGINFO, got_siginfo);
 	signal(SIGINT, got_sigint);
 }
 
