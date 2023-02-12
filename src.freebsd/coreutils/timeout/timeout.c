@@ -45,8 +45,6 @@ __FBSDID("$FreeBSD$");
 
 #define EXIT_TIMEOUT 124
 
-extern char *__progname;
-
 static sig_atomic_t sig_chld = 0;
 static sig_atomic_t sig_term = 0;
 static sig_atomic_t sig_alrm = 0;
@@ -58,7 +56,7 @@ usage(void)
 
 	fprintf(stderr, "Usage: %s [--signal sig | -s sig] [--preserve-status]"
 	    " [--kill-after time | -k time] [--foreground] <duration> <command>"
-	    " <arg ...>\n", __progname);
+	    " <arg ...>\n", getprogname());
 
 	exit(EX_USAGE);
 }

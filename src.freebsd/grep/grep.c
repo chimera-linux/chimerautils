@@ -53,8 +53,6 @@ __FBSDID("$FreeBSD$");
 
 #include "grep.h"
 
-extern char *__progname;
-
 const char	*errstr[] = {
 	"",
 /* 1*/	"(standard input)",
@@ -151,7 +149,7 @@ bool	 file_err;	/* file reading error */
 static void
 usage(void)
 {
-	fprintf(stderr, errstr[3], __progname);
+	fprintf(stderr, errstr[3], getprogname());
 	fprintf(stderr, "%s", errstr[4]);
 	fprintf(stderr, "%s", errstr[5]);
 	fprintf(stderr, "%s", errstr[6]);
@@ -335,7 +333,7 @@ main(int argc, char *argv[])
 	 * exhibit. In this way we can have all the functionalities in one
 	 * binary without the need of scripting and using ugly hacks.
 	 */
-	pn = __progname;
+	pn = getprogname();
 	switch (pn[0]) {
 	case 'e':
 		grepbehave = GREP_EXTENDED;
@@ -553,7 +551,7 @@ main(int argc, char *argv[])
 			filebehave = FILE_MMAP;
 			break;
 		case 'V':
-			printf(errstr[8], __progname, VERSION);
+			printf(errstr[8], getprogname(), VERSION);
 			exit(0);
 		case 'v':
 			vflag = true;

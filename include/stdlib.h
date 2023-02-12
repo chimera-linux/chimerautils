@@ -48,4 +48,12 @@ void *reallocf(void *ptr, size_t size);
 #define strtoq strtoll
 #endif
 
+#ifndef getprogname
+static inline const char *getprogname_impl(void) {
+    extern char *__progname;
+    return __progname;
+}
+#define getprogname getprogname_impl
+#endif
+
 #endif

@@ -54,8 +54,6 @@ static inline unsigned le32dec(const void *s) {
 	return (((unsigned)p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]);
 }
 
-extern const char *__progname;
-
 #define nitems(x) (sizeof((x)) / sizeof((x)[0]))
 
 #include <sys/param.h>
@@ -349,7 +347,7 @@ static const struct option longopts[] = {
 int
 main(int argc, char **argv)
 {
-	const char *progname = __progname;
+	const char *progname = getprogname();
 #ifndef SMALL
 	char *gzip;
 	int len;
@@ -2291,7 +2289,7 @@ usage(void)
     " -V --version         display program version\n"
     " -v --verbose         print extra statistics\n",
 #endif
-	    __progname);
+	    getprogname());
 	exit(0);
 }
 

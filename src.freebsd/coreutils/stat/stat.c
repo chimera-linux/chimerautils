@@ -69,8 +69,6 @@ __FBSDID("$FreeBSD$");
 #include <time.h>
 #include <unistd.h>
 
-extern char *__progname;
-
 #if HAVE_STRUCT_STAT_ST_FLAGS
 #define DEF_F "%#Xf "
 #define RAW_F "%f "
@@ -226,7 +224,7 @@ main(int argc, char *argv[])
 	statfmt = NULL;
 	timefmt = NULL;
 
-	if (strcmp(__progname, "readlink") == 0) {
+	if (strcmp(getprogname(), "readlink") == 0) {
 		am_readlink = 1;
 		options = "fn";
 		synopsis = "[-fn] [file ...]";
@@ -380,7 +378,7 @@ void
 usage(const char *synopsis)
 {
 
-	(void)fprintf(stderr, "usage: %s %s\n", __progname, synopsis);
+	(void)fprintf(stderr, "usage: %s %s\n", getprogname(), synopsis);
 	exit(1);
 }
 

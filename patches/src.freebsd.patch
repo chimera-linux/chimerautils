@@ -3517,26 +3517,6 @@
  	}
  	(void)fflush(stderr);
  
---- src.orig/coreutils/seq/seq.c
-+++ src.freebsd/coreutils/seq/seq.c
-@@ -52,6 +52,8 @@
- #define ISEXP(c)	((int)(c) == 'e' || (int)(c) == 'E')
- #define ISODIGIT(c)	((int)(c) >= '0' && (int)(c) <= '7')
- 
-+extern char *__progname;
-+
- /* Globals */
- 
- static const char *decimal_point = ".";	/* default */
-@@ -143,7 +145,7 @@
- 	if (errflg) {
- 		fprintf(stderr,
- 		    "usage: %s [-w] [-f format] [-s string] [-t string] [first [incr]] last\n",
--		    getprogname());
-+		    __progname);
- 		exit(1);
- 	}
- 
 --- src.orig/coreutils/sleep/sleep.1
 +++ src.freebsd/coreutils/sleep/sleep.1
 @@ -52,7 +52,7 @@
@@ -3927,7 +3907,7 @@
  #include <regex.h>
  #include <signal.h>
  #include <stdbool.h>
-@@ -55,16 +53,44 @@
+@@ -55,6 +53,30 @@
  #include "file.h"
  #include "sort.h"
  
@@ -3958,10 +3938,8 @@
  #ifndef WITHOUT_NLS
  #include <nl_types.h>
  nl_catd catalog = (nl_catd)-1;
- #endif
+@@ -62,9 +84,11 @@
  
-+extern const char *__progname;
-+
  #define	OPTIONS	"bcCdfghik:Mmno:RrsS:t:T:uVz"
  
 +#ifndef WITHOUT_LIBCRYPTO
@@ -3972,7 +3950,7 @@
  
  /*
   * Default messages to use when NLS is disabled or no catalogue
-@@ -91,7 +117,11 @@
+@@ -91,7 +115,11 @@
        "[--parallel thread_no] "
  #endif
        "[--human-numeric-sort] "
@@ -3984,7 +3962,7 @@
        "[--compress-program program] [file ...]\n" };
  
  struct sort_opts sort_opts_vals;
-@@ -133,7 +163,9 @@
+@@ -133,7 +161,9 @@
  #if defined(SORT_THREADS)
  	PARALLEL_OPT,
  #endif
@@ -3994,7 +3972,7 @@
  	COMPRESSPROGRAM_OPT,
  	QSORT_OPT,
  	MERGESORT_OPT,
-@@ -174,8 +206,10 @@
+@@ -174,8 +204,10 @@
  #endif
  				{ "qsort", no_argument, NULL, QSORT_OPT },
  				{ "radixsort", no_argument, NULL, RADIXSORT_OPT },
@@ -4005,16 +3983,7 @@
  				{ "reverse", no_argument, NULL, 'r' },
  				{ "sort", required_argument, NULL, SORT_OPT },
  				{ "stable", no_argument, NULL, 's' },
-@@ -212,7 +246,7 @@
- 
- 	out = opt_err ? stderr : stdout;
- 
--	fprintf(out, getstr(12), getprogname());
-+	fprintf(out, getstr(12), __progname);
- 	if (opt_err)
- 		exit(2);
- 	exit(0);
-@@ -329,16 +363,24 @@
+@@ -329,16 +361,24 @@
  	lc = localeconv();
  
  	if (lc) {
@@ -4043,7 +4012,7 @@
  	}
  
  	if (getenv("GNUSORT_NUMERIC_COMPATIBILITY"))
-@@ -433,7 +475,8 @@
+@@ -433,7 +473,8 @@
  				    100;
  				break;
  			default:
@@ -4053,7 +4022,7 @@
  				membuf = available_free_memory;
  			}
  		}
-@@ -585,11 +628,13 @@
+@@ -585,11 +626,13 @@
  	case 'i':
  		sm->iflag = true;
  		break;
@@ -4067,7 +4036,7 @@
  	case 'M':
  		initialise_months();
  		sm->Mflag = true;
-@@ -855,7 +900,7 @@
+@@ -855,7 +898,7 @@
  void
  fix_obsolete_keys(int *argc, char **argv)
  {
@@ -4076,7 +4045,7 @@
  
  	for (int i = 1; i < *argc; i++) {
  		char *arg1;
-@@ -911,6 +956,7 @@
+@@ -911,6 +954,7 @@
  	}
  }
  
@@ -4084,7 +4053,7 @@
  /*
   * Seed random sort
   */
-@@ -983,6 +1029,7 @@
+@@ -983,6 +1027,7 @@
  	MD5Init(&md5_ctx);
  	MD5Update(&md5_ctx, randseed, rd);
  }
@@ -4092,7 +4061,7 @@
  
  /*
   * Main function.
-@@ -991,7 +1038,9 @@
+@@ -991,7 +1036,9 @@
  main(int argc, char **argv)
  {
  	char *outfile, *real_outfile;
@@ -4102,7 +4071,7 @@
  	int c, result;
  	bool mef_flags[NUMBER_OF_MUTUALLY_EXCLUSIVE_FLAGS] =
  	    { false, false, false, false, false, false };
-@@ -1054,7 +1103,8 @@
+@@ -1054,7 +1101,8 @@
  
  				if (parse_k(optarg, &(keys[keys_num - 1]))
  				    < 0) {
@@ -4112,7 +4081,7 @@
  				}
  
  				break;
-@@ -1079,7 +1129,8 @@
+@@ -1079,7 +1127,8 @@
  			case 't':
  				while (strlen(optarg) > 1) {
  					if (optarg[0] != '\\') {
@@ -4122,7 +4091,7 @@
  					}
  					optarg += 1;
  					if (*optarg == '0') {
-@@ -1122,8 +1173,10 @@
+@@ -1122,8 +1171,10 @@
  						set_sort_modifier(sm, 'n');
  					else if (!strcmp(optarg, "month"))
  						set_sort_modifier(sm, 'M');
@@ -4133,7 +4102,7 @@
  					else
  						unknown(optarg);
  				}
-@@ -1152,9 +1205,11 @@
+@@ -1152,9 +1203,11 @@
  			case RADIXSORT_OPT:
  				sort_opts_vals.sort_method = SORT_RADIXSORT;
  				break;
@@ -4145,7 +4114,7 @@
  			case COMPRESSPROGRAM_OPT:
  				compress_program = strdup(optarg);
  				break;
-@@ -1247,8 +1302,10 @@
+@@ -1247,8 +1300,10 @@
  		}
  	}
  
@@ -4334,16 +4303,7 @@
  
  #include <ctype.h>
  #include <err.h>
-@@ -68,6 +69,8 @@
- #include <time.h>
- #include <unistd.h>
- 
-+extern char *__progname;
-+
- #if HAVE_STRUCT_STAT_ST_FLAGS
- #define DEF_F "%#Xf "
- #define RAW_F "%f "
-@@ -209,24 +212,21 @@
+@@ -209,17 +210,14 @@
  {
  	struct stat st;
  	int ch, rc, errs, am_readlink;
@@ -4362,15 +4322,7 @@
  	nonl = 0;
  	quiet = 0;
  	linkfail = 0;
- 	statfmt = NULL;
- 	timefmt = NULL;
- 
--	if (strcmp(getprogname(), "readlink") == 0) {
-+	if (strcmp(__progname, "readlink") == 0) {
- 		am_readlink = 1;
- 		options = "fn";
- 		synopsis = "[-fn] [file ...]";
-@@ -234,7 +234,7 @@
+@@ -234,7 +232,7 @@
  		fmtchar = 'f';
  		quiet = 1;
  	} else {
@@ -4379,7 +4331,7 @@
  		synopsis = "[-FLnq] [-f format | -l | -r | -s | -x] "
  		    "[-t timefmt] [file|handle ...]";
  	}
-@@ -244,9 +244,6 @@
+@@ -244,9 +242,6 @@
  		case 'F':
  			lsF = 1;
  			break;
@@ -4389,7 +4341,7 @@
  		case 'L':
  			usestat = 1;
  			break;
-@@ -324,37 +321,11 @@
+@@ -324,37 +319,11 @@
  	errs = 0;
  	do {
  		if (argc == 0) {
@@ -4429,16 +4381,7 @@
  				/*
  				 * Try stat() and if it fails, fall back to
  				 * lstat() just in case we're examining a
-@@ -409,7 +380,7 @@
- usage(const char *synopsis)
- {
- 
--	(void)fprintf(stderr, "usage: %s %s\n", getprogname(), synopsis);
-+	(void)fprintf(stderr, "usage: %s %s\n", __progname, synopsis);
- 	exit(1);
- }
- 
-@@ -619,8 +590,10 @@
+@@ -619,8 +588,10 @@
  {
  	u_int64_t data;
  	char *stmp, lfmt[24], tmp[20];
@@ -4451,7 +4394,7 @@
  	const struct timespec *tsp;
  	struct timespec ts;
  	struct tm *tm;
-@@ -717,10 +690,12 @@
+@@ -717,10 +688,12 @@
  	case SHOW_st_uid:
  		small = (sizeof(st->st_uid) == 4);
  		data = st->st_uid;
@@ -4466,7 +4409,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -730,10 +705,12 @@
+@@ -730,10 +703,12 @@
  	case SHOW_st_gid:
  		small = (sizeof(st->st_gid) == 4);
  		data = st->st_gid;
@@ -4481,7 +4424,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -741,15 +718,15 @@
+@@ -741,15 +716,15 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -4500,7 +4443,7 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
-@@ -1093,7 +1070,7 @@
+@@ -1093,7 +1068,7 @@
  #define hex2nibble(c) (c <= '9' ? c - '0' : toupper(c) - 'A' + 10)
  int
  hex2byte(const char c[2]) {
@@ -5254,25 +5197,7 @@
  #include <sys/time.h>
  #include <sys/wait.h>
  
-@@ -45,6 +45,8 @@
- 
- #define EXIT_TIMEOUT 124
- 
-+extern char *__progname;
-+
- static sig_atomic_t sig_chld = 0;
- static sig_atomic_t sig_term = 0;
- static sig_atomic_t sig_alrm = 0;
-@@ -56,7 +58,7 @@
- 
- 	fprintf(stderr, "Usage: %s [--signal sig | -s sig] [--preserve-status]"
- 	    " [--kill-after time | -k time] [--foreground] <duration> <command>"
--	    " <arg ...>\n", getprogname());
-+	    " <arg ...>\n", __progname);
- 
- 	exit(EX_USAGE);
- }
-@@ -104,16 +106,19 @@
+@@ -104,16 +104,19 @@
  {
  	int sig, i;
  	const char *errstr;
@@ -5295,7 +5220,7 @@
  			return (i);
  	}
  
-@@ -174,8 +179,7 @@
+@@ -174,8 +177,7 @@
  	bool do_second_kill = false;
  	bool child_done = false;
  	struct sigaction signals;
@@ -5305,7 +5230,7 @@
  	int signums[] = {
  		-1,
  		SIGTERM,
-@@ -228,8 +232,8 @@
+@@ -228,8 +230,8 @@
  
  	if (!foreground) {
  		/* Acquire a reaper */
@@ -5316,7 +5241,7 @@
  	}
  
  	memset(&signals, 0, sizeof(signals));
-@@ -297,9 +301,8 @@
+@@ -297,9 +299,8 @@
  				if (foreground) {
  					break;
  				} else {
@@ -5328,7 +5253,7 @@
  						break;
  				}
  			}
-@@ -308,10 +311,8 @@
+@@ -308,10 +309,8 @@
  
  			timedout = true;
  			if (!foreground) {
@@ -5341,7 +5266,7 @@
  			} else
  				kill(pid, killsig);
  
-@@ -325,10 +326,8 @@
+@@ -325,10 +324,8 @@
  
  		} else if (sig_term) {
  			if (!foreground) {
@@ -5354,7 +5279,7 @@
  			} else
  				kill(pid, sig_term);
  
-@@ -348,7 +347,7 @@
+@@ -348,7 +345,7 @@
  	}
  
  	if (!foreground)
@@ -5739,25 +5664,6 @@
  	return (n);
  }
  
---- src.orig/coreutils/tty/tty.c
-+++ src.freebsd/coreutils/tty/tty.c
-@@ -48,6 +48,8 @@
- #include <stdlib.h>
- #include <unistd.h>
- 
-+extern char *__progname;
-+
- static void usage(void);
- 
- int
-@@ -77,6 +79,6 @@
- static void
- usage(void)
- {
--	fprintf(stderr, "usage: %s [-s]\n", getprogname());
-+	fprintf(stderr, "usage: %s [-s]\n", __progname);
- 	exit(2);
- }
 --- src.orig/coreutils/uname/uname.c
 +++ src.freebsd/coreutils/uname/uname.c
 @@ -49,15 +49,14 @@
@@ -6631,26 +6537,6 @@
  	if (strcmp(file, "-") != 0)
  		fclose(fp);
  }
---- src.orig/diffutils/diff/diff.h
-+++ src.freebsd/diffutils/diff/diff.h
-@@ -100,8 +100,16 @@
- extern struct	excludes *excludes_list;
- extern regex_t	ignore_re;
- 
--char	*splice(char *, char *);
-+char	*dsplice(char *, char *);
- int	diffreg(char *, char *, int, int);
- void	diffdir(char *, char *, int);
- void	print_only(const char *, size_t, const char *);
- void	print_status(int, char *, char *, const char *);
-+
-+#ifndef MIN
-+#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
-+#endif
-+
-+#ifndef MAX
-+#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
-+#endif
 --- src.orig/diffutils/diff/diffdir.c
 +++ src.freebsd/diffutils/diff/diffdir.c
 @@ -57,7 +57,8 @@
@@ -6673,6 +6559,26 @@
  		status |= 2;
  		return;
  	}
+--- src.orig/diffutils/diff/diff.h
++++ src.freebsd/diffutils/diff/diff.h
+@@ -100,8 +100,16 @@
+ extern struct	excludes *excludes_list;
+ extern regex_t	ignore_re;
+ 
+-char	*splice(char *, char *);
++char	*dsplice(char *, char *);
+ int	diffreg(char *, char *, int, int);
+ void	diffdir(char *, char *, int);
+ void	print_only(const char *, size_t, const char *);
+ void	print_status(int, char *, char *, const char *);
++
++#ifndef MIN
++#define MIN(X, Y) (((X) < (Y)) ? (X) : (Y))
++#endif
++
++#ifndef MAX
++#define MAX(X, Y) (((X) > (Y)) ? (X) : (Y))
++#endif
 --- src.orig/diffutils/diff/diffreg.c
 +++ src.freebsd/diffutils/diff/diffreg.c
 @@ -85,8 +85,10 @@
@@ -7465,16 +7371,7 @@
  #endif
 --- src.orig/grep/grep.c
 +++ src.freebsd/grep/grep.c
-@@ -53,6 +53,8 @@
- 
- #include "grep.h"
- 
-+extern char *__progname;
-+
- const char	*errstr[] = {
- 	"",
- /* 1*/	"(standard input)",
-@@ -67,7 +69,11 @@
+@@ -67,7 +67,11 @@
  
  /* Flags passed to regcomp() and regexec() */
  int		 cflags = REG_NOSUB | REG_NEWLINE;
@@ -7486,33 +7383,6 @@
  
  bool		 matchall;
  
-@@ -145,7 +151,7 @@
- static void
- usage(void)
- {
--	fprintf(stderr, errstr[3], getprogname());
-+	fprintf(stderr, errstr[3], __progname);
- 	fprintf(stderr, "%s", errstr[4]);
- 	fprintf(stderr, "%s", errstr[5]);
- 	fprintf(stderr, "%s", errstr[6]);
-@@ -329,7 +335,7 @@
- 	 * exhibit. In this way we can have all the functionalities in one
- 	 * binary without the need of scripting and using ugly hacks.
- 	 */
--	pn = getprogname();
-+	pn = __progname;
- 	switch (pn[0]) {
- 	case 'e':
- 		grepbehave = GREP_EXTENDED;
-@@ -547,7 +553,7 @@
- 			filebehave = FILE_MMAP;
- 			break;
- 		case 'V':
--			printf(errstr[8], getprogname(), VERSION);
-+			printf(errstr[8], __progname, VERSION);
- 			exit(0);
- 		case 'v':
- 			vflag = true;
 --- src.orig/grep/grep.h
 +++ src.freebsd/grep/grep.h
 @@ -31,12 +31,10 @@
@@ -7573,7 +7443,7 @@
  				continue;
 --- src.orig/gzip/gzip.c
 +++ src.freebsd/gzip/gzip.c
-@@ -49,13 +49,23 @@
+@@ -49,13 +49,21 @@
   *	- make bzip2/compress -v/-t/-l support work as well as possible
   */
  
@@ -7582,8 +7452,6 @@
 +	const unsigned char *p = (const unsigned char *)s;
 +	return (((unsigned)p[3] << 24) | (p[2] << 16) | (p[1] << 8) | p[0]);
 +}
-+
-+extern const char *__progname;
 +
 +#define nitems(x) (sizeof((x)) / sizeof((x)[0]))
 +
@@ -7598,16 +7466,7 @@
  #include <stdio.h>
  #include <string.h>
  #include <stdlib.h>
-@@ -339,7 +349,7 @@
- int
- main(int argc, char **argv)
- {
--	const char *progname = getprogname();
-+	const char *progname = __progname;
- #ifndef SMALL
- 	char *gzip;
- 	int len;
-@@ -388,7 +398,7 @@
+@@ -388,7 +396,7 @@
  			break;
  		case 'V':
  			display_version();
@@ -7616,7 +7475,7 @@
  #ifndef SMALL
  		case 'a':
  			fprintf(stderr, "%s: option --ascii ignored on this system\n", progname);
-@@ -401,7 +411,7 @@
+@@ -401,7 +409,7 @@
  			break;
  		case 'L':
  			display_license();
@@ -7625,7 +7484,7 @@
  		case 'N':
  			nflag = 0;
  			Nflag = 1;
-@@ -1140,9 +1150,11 @@
+@@ -1140,9 +1148,11 @@
  	if (futimens(fd, times) < 0)
  		maybe_warn("couldn't futimens: %s", file);
  
@@ -7637,22 +7496,13 @@
  }
  #endif
  
-@@ -1250,7 +1262,7 @@
+@@ -1250,7 +1260,7 @@
  setup_signals(void)
  {
  
 -	signal(SIGINFO, got_siginfo);
 +	signal(SIGUSR1, got_siginfo);
  	signal(SIGINT, got_sigint);
- }
- 
-@@ -2279,7 +2291,7 @@
-     " -V --version         display program version\n"
-     " -v --verbose         print extra statistics\n",
- #endif
--	    getprogname());
-+	    __progname);
- 	exit(0);
  }
  
 --- src.orig/gzip/unxz.c
@@ -8415,25 +8265,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			else {
 --- src.orig/sed/main.c
 +++ src.freebsd/sed/main.c
-@@ -68,6 +68,8 @@
- #include "defs.h"
- #include "extern.h"
- 
-+extern const char *__progname;
-+
- /*
-  * Linked list of units (strings and files) to be compiled
-  */
-@@ -213,7 +215,7 @@
- 	(void)fprintf(stderr,
- 	    "usage: %s script [-Ealnru] [-i extension] [file ...]\n"
- 	    "\t%s [-Ealnu] [-i extension] [-e script] ... [-f script_file]"
--	    " ... [file ...]\n", getprogname(), getprogname());
-+	    " ... [file ...]\n", __progname, __progname);
- 	exit(1);
- }
- 
-@@ -262,7 +264,7 @@
+@@ -262,7 +262,7 @@
  			state = ST_STRING;
  			goto again;
  		default:

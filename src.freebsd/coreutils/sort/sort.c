@@ -82,8 +82,6 @@ void MD5Final(unsigned char digest[MD5_DIGEST_LENGTH], MD5_CTX *context)
 nl_catd catalog = (nl_catd)-1;
 #endif
 
-extern const char *__progname;
-
 #define	OPTIONS	"bcCdfghik:Mmno:RrsS:t:T:uVz"
 
 #ifndef WITHOUT_LIBCRYPTO
@@ -246,7 +244,7 @@ usage(bool opt_err)
 
 	out = opt_err ? stderr : stdout;
 
-	fprintf(out, getstr(12), __progname);
+	fprintf(out, getstr(12), getprogname());
 	if (opt_err)
 		exit(2);
 	exit(0);
