@@ -56,8 +56,6 @@ static char sccsid[] = "@(#)chmod.c	8.8 (Berkeley) 4/1/94";
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-
 static volatile sig_atomic_t siginfo;
 
 static void usage(void);

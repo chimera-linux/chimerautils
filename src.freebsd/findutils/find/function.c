@@ -64,8 +64,6 @@ __FBSDID("$FreeBSD$");
 
 #include "find.h"
 
-#include "compat.h"
-
 #ifndef REG_STARTEND
 #define REG_STARTEND 0
 #endif

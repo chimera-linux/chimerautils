@@ -25,17 +25,13 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef UNISTD_H
+#define UNISTD_H
 
-#include_next <sys/stat.h>
+#include_next <unistd.h>
+#include <sys/stat.h>
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#endif
-
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
-#endif
+mode_t getmode(const void *, mode_t);
+void *setmode(const char *);
 
 #endif

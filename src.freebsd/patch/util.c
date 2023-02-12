@@ -46,7 +46,6 @@
 #include "util.h"
 #include "backupfile.h"
 #include "pathnames.h"
-#include "compat.h"
 
 /* Rename a file, copying it if necessary. */
 

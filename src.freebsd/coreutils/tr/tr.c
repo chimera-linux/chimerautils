@@ -62,7 +62,6 @@ static const char sccsid[] = "@(#)tr.c	8.2 (Berkeley) 5/4/95";
 #include "cmap.h"
 #include "cset.h"
 #include "extern.h"
-#include "compat.h"
 
 static STR s1 = { STRING1, NORMAL, 0, OOBCH, 0, { 0, OOBCH }, NULL, NULL };
 static STR s2 = { STRING2, NORMAL, 0, OOBCH, 0, { 0, OOBCH }, NULL, NULL };

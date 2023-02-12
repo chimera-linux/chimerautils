@@ -75,7 +75,6 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 
 #include "extern.h"
-#include "compat.h"
 
 #define	STRIP_TRAILING_SLASH(p) {					\
 	while ((p).p_end > (p).p_path + 1 && (p).p_end[-1] == '/')	\

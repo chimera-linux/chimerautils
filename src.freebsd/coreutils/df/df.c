@@ -54,6 +54,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/mount.h>
 #include <err.h>
 #include <getopt.h>
+#include <libutil.h>
 #include <locale.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -64,8 +65,6 @@ __FBSDID("$FreeBSD$");
 #include <libxo/xo.h>
 #include <assert.h>
 #include <mntent.h>
-
-#include "compat.h"
 
 #define UNITS_SI	1
 #define UNITS_2		2

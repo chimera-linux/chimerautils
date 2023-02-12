@@ -69,7 +69,6 @@ __FBSDID("$FreeBSD$");
 
 #include "dd.h"
 #include "extern.h"
-#include "compat.h"
 
 static void dd_close(void);
 static void dd_in(void);

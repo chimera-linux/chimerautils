@@ -46,6 +46,7 @@ __FBSDID("$FreeBSD$");
 #include <err.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <libutil.h>
 #include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,8 +56,6 @@ __FBSDID("$FreeBSD$");
 
 #include "dd.h"
 #include "extern.h"
-
-#include "compat.h"
 
 double
 secs_elapsed(void)

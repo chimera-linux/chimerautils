@@ -62,8 +62,6 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <unistd.h>
 
-#include "compat.h"
-
 static void	a_gid(const char *);
 static void	a_uid(const char *);
 static void	chownerr(const char *);

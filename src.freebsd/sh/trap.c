@@ -61,7 +61,6 @@ __FBSDID("$FreeBSD$");
 #ifndef NO_HISTORY
 #include "myhistedit.h"
 #endif
-#include "compat.h"
 
 /*
  * Sigmode records the current value of the signal handlers for the various

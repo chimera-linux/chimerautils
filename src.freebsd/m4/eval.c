@@ -60,7 +60,6 @@ __FBSDID("$FreeBSD$");
 #include "stdd.h"
 #include "extern.h"
 #include "pathnames.h"
-#include "compat.h"
 
 static void	dodefn(const char *);
 static void	dopushdef(const char *, const char *);

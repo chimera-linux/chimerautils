@@ -25,17 +25,17 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef SIGNAL_H
+#define SIGNAL_H
 
-#include_next <sys/stat.h>
+#include_next <signal.h>
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#ifndef SIGINFO
+#define SIGINFO SIGUSR1
 #endif
 
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
-#endif
+int signame_to_signum(const char *sig);
+const char *signum_to_signame(int signum);
+int get_signame_by_idx(size_t idx, const char **signame, int *signum);
 
 #endif

@@ -41,7 +41,7 @@ __attribute__((unused)) static const char rcsid[] =
 #include <unistd.h>
 #include <stdint.h>
 
-#include "compat.h"
+#include <libutil.h>
 
 static void	usage(void);
 

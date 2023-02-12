@@ -47,6 +47,7 @@ __FBSDID("$FreeBSD$");
 #include <errno.h>
 #include <fts.h>
 #include <langinfo.h>
+#include <libutil.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdint.h>
@@ -63,8 +64,6 @@ __FBSDID("$FreeBSD$");
 
 #include "ls.h"
 #include "extern.h"
-
-#include "compat.h"
 
 static int	printaname(const FTSENT *, u_long, u_long);
 static void	printdev(size_t, dev_t);

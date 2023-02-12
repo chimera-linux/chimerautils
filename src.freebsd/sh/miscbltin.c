@@ -63,7 +63,6 @@ __FBSDID("$FreeBSD$");
 #include "mystring.h"
 #include "syntax.h"
 #include "trap.h"
-#include "compat.h"
 
 #undef eflag
 

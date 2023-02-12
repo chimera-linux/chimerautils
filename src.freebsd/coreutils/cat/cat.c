@@ -73,7 +73,6 @@ __FBSDID("$FreeBSD$");
 #include <libcasper.h>
 #include <casper/cap_fileargs.h>
 #include <casper/cap_net.h>
-#include "compat.h"
 
 static int bflag, eflag, lflag, nflag, sflag, tflag, vflag;
 static int rval;

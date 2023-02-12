@@ -28,7 +28,6 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 
 #include "extern.h"
-#include "compat.h"
 
 static char diff_path[] = "/usr/bin/diff";
 

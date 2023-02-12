@@ -50,7 +50,6 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 
 #include "find.h"
-#include "compat.h"
 
 #if defined(__linux__) && !defined(__GLIBC__)
 #include <rpmatch.h>

@@ -70,8 +70,6 @@ __FBSDID("$FreeBSD$");
 
 #include <openssl/evp.h>
 
-#include "compat.h"
-
 /*
  * We need to build xinstall during the bootstrap stage when building on a
  * non-FreeBSD system. Linux does not have the st_flags and st_birthtime

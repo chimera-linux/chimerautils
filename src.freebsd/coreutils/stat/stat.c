@@ -69,8 +69,6 @@ __FBSDID("$FreeBSD$");
 #include <time.h>
 #include <unistd.h>
 
-#include "compat.h"
-
 extern char *__progname;
 
 #if HAVE_STRUCT_STAT_ST_FLAGS

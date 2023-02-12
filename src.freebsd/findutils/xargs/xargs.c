@@ -67,7 +67,6 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 
 #include "pathnames.h"
-#include "compat.h"
 
 static void	parse_input(int, char *[]);
 static void	prerun(int, char *[]);

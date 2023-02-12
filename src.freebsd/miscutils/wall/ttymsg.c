@@ -51,7 +51,6 @@ static const char sccsid[] = "@(#)ttymsg.c	8.2 (Berkeley) 11/16/93";
 #include <unistd.h>
 
 #include "ttymsg.h"
-#include "compat.h"
 
 /*
  * Display the contents of a uio structure on a terminal.  Used by wall(1),

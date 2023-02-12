@@ -60,8 +60,6 @@ __FBSDID("$FreeBSD$");
 #include "bltin/bltin.h"
 #endif
 
-#include "compat.h"
-
 static void nosig(const char *);
 static void printsignals(FILE *);
 static void usage(void);

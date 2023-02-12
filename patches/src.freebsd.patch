@@ -11,15 +11,7 @@
  	int status, save_errno = errno;
 --- src.orig/bc/bc/scan.l
 +++ src.freebsd/bc/bc/scan.l
-@@ -31,6 +31,7 @@
- #include "extern.h"
- #include "bc.h"
- #include "pathnames.h"
-+#include "compat.h"
- 
- int		lineno;
- bool		interactive;
-@@ -242,7 +243,7 @@
+@@ -242,7 +242,7 @@
  
  /* ARGSUSED */
  void
@@ -28,7 +20,7 @@
  {
  	static const char str1[] = "[\n]P\n";
  	static const char str2[] = "[^C\n]P\n";
-@@ -265,7 +266,7 @@
+@@ -265,7 +265,7 @@
   * line after a ^C.
   */
  unsigned char
@@ -95,15 +87,7 @@
  			else
 --- src.orig/bc/dc/inout.c
 +++ src.freebsd/bc/dc/inout.c
-@@ -25,6 +25,7 @@
- #include <string.h>
- 
- #include "extern.h"
-+#include "compat.h"
- 
- #define MAX_CHARS_PER_LINE 68
- 
-@@ -192,7 +193,7 @@
+@@ -192,7 +192,7 @@
  	bool dot = false, sign = false;
  
  	n = new_number();
@@ -112,7 +96,7 @@
  
  	while ((ch = (*src->vtable->readchar)(src)) != EOF) {
  
-@@ -230,8 +231,8 @@
+@@ -230,8 +230,8 @@
  		base_n = BN_new();
  		exponent = BN_new();
  		divisor = new_number();
@@ -123,28 +107,6 @@
  
  		bn_check(BN_add_word(base_n, base));
  		bn_check(BN_add_word(exponent, iscale));
---- src.orig/compat/expand_number.c
-+++ src.freebsd/compat/expand_number.c
-@@ -34,7 +34,6 @@
- #include <ctype.h>
- #include <errno.h>
- #include <inttypes.h>
--#include <libutil.h>
- #include <stdint.h>
- 
- int
---- src.orig/compat/humanize_number.c
-+++ src.freebsd/compat/humanize_number.c
-@@ -43,7 +43,8 @@
- #include <stdlib.h>
- #include <string.h>
- #include <locale.h>
--#include <libutil.h>
-+
-+#include "compat.h"
- 
- static const int maxscale = 6;
- 
 --- src.orig/compat/merge.c
 +++ src.freebsd/compat/merge.c
 @@ -38,6 +38,8 @@
@@ -156,7 +118,7 @@
  /*
   * Hybrid exponential search/linear search merge sort with hybrid
   * natural/pairwise first pass.  Requires about .3% more comparisons
-@@ -52,11 +54,15 @@
+@@ -52,11 +54,13 @@
   * (The default is pairwise merging.)
   */
  
@@ -167,8 +129,6 @@
  #include <stdlib.h>
  #include <string.h>
 +#include <stdint.h>
-+
-+#include "compat.h"
  
  #ifdef I_AM_MERGESORT_B
  #include "block_abi.h"
@@ -356,15 +316,7 @@
  			cerr = 1;
 --- src.orig/coreutils/cat/cat.c
 +++ src.freebsd/coreutils/cat/cat.c
-@@ -73,6 +73,7 @@
- #include <libcasper.h>
- #include <casper/cap_fileargs.h>
- #include <casper/cap_net.h>
-+#include "compat.h"
- 
- static int bflag, eflag, lflag, nflag, sflag, tflag, vflag;
- static int rval;
-@@ -244,7 +245,7 @@
+@@ -244,7 +244,7 @@
  }
  
  static void
@@ -373,7 +325,7 @@
  {
  	int fd, i;
  	char *path;
-@@ -343,7 +344,6 @@
+@@ -343,7 +343,6 @@
  				if (ferror(fp) && errno == EILSEQ) {
  					clearerr(fp);
  					/* Resync attempt. */
@@ -421,12 +373,7 @@
  
  #include <sys/param.h>
  #include <sys/stat.h>
-@@ -57,13 +56,14 @@
- #include <string.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
+@@ -60,10 +59,9 @@
  static volatile sig_atomic_t siginfo;
  
  static void usage(void);
@@ -438,7 +385,7 @@
  {
  
  	siginfo = 1;
-@@ -75,14 +75,14 @@
+@@ -75,14 +73,14 @@
  	FTS *ftsp;
  	FTSENT *p;
  	mode_t *set;
@@ -456,7 +403,7 @@
  		switch (ch) {
  		case 'H':
  			Hflag = 1;
-@@ -101,16 +101,6 @@
+@@ -101,16 +99,6 @@
  		case 'f':
  			fflag = 1;
  			break;
@@ -473,7 +420,7 @@
  		/*
  		 * XXX
  		 * "-[rwx]" are valid mode commands.  If they are the entire
-@@ -140,9 +130,6 @@
+@@ -140,9 +128,6 @@
  	(void)signal(SIGINFO, siginfo_handler);
  
  	if (Rflag) {
@@ -483,7 +430,7 @@
  		if (Lflag) {
  			fts_options = FTS_LOGICAL;
  		} else {
-@@ -152,8 +139,6 @@
+@@ -152,8 +137,6 @@
  				fts_options |= FTS_COMFOLLOW;
  			}
  		}
@@ -492,7 +439,7 @@
  	} else {
  		fts_options = FTS_LOGICAL;
  	}
-@@ -194,14 +179,6 @@
+@@ -194,14 +177,6 @@
  			break;
  		}
  		newmode = getmode(set, p->fts_statp->st_mode);
@@ -507,7 +454,7 @@
  		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
  		    && !fflag) {
  			warn("%s", p->fts_path);
-@@ -236,27 +213,3 @@
+@@ -236,27 +211,3 @@
  	    "usage: chmod [-fhv] [-R [-H | -L | -P]] mode file ...\n");
  	exit(1);
  }
@@ -559,16 +506,7 @@
  argument for
 --- src.orig/coreutils/chown/chown.c
 +++ src.freebsd/coreutils/chown/chown.c
-@@ -62,6 +62,8 @@
- #include <string.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
- static void	a_gid(const char *);
- static void	a_uid(const char *);
- static void	chownerr(const char *);
-@@ -76,7 +78,7 @@
+@@ -76,7 +76,7 @@
  static volatile sig_atomic_t siginfo;
  
  static void
@@ -686,15 +624,7 @@
  argument for
 --- src.orig/coreutils/cp/cp.c
 +++ src.freebsd/coreutils/cp/cp.c
-@@ -75,6 +75,7 @@
- #include <unistd.h>
- 
- #include "extern.h"
-+#include "compat.h"
- 
- #define	STRIP_TRAILING_SLASH(p) {					\
- 	while ((p).p_end > (p).p_path + 1 && (p).p_end[-1] == '/')	\
-@@ -92,7 +93,7 @@
+@@ -92,7 +92,7 @@
  enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
  
  static int copy(char *[], enum op, int);
@@ -703,7 +633,7 @@
  
  int
  main(int argc, char *argv[])
-@@ -393,12 +394,9 @@
+@@ -393,12 +393,9 @@
  			if (pflag) {
  				if (setfile(curr->fts_statp, -1))
  					rval = 1;
@@ -717,7 +647,7 @@
  				    ((mode | S_IRWXU) & mask) != (mode & mask))
  					if (chmod(to.p_path, mode & mask) !=
  					    0) {
-@@ -515,7 +513,7 @@
+@@ -515,7 +512,7 @@
  }
  
  static void
@@ -736,7 +666,7 @@
  #include <sys/param.h>
  #include <sys/stat.h>
  #ifdef VM_AND_BUFFER_CACHE_SYNCHRONIZED
-@@ -52,11 +51,14 @@
+@@ -52,6 +51,7 @@
  #include <limits.h>
  #include <stdio.h>
  #include <stdlib.h>
@@ -744,14 +674,7 @@
  #include <sysexits.h>
  #include <unistd.h>
  
- #include "extern.h"
- 
-+#include "compat.h"
-+
- #define	cp_pct(x, y)	((y == 0) ? 0 : (int)(100.0 * (x) / (y)))
- 
- /*
-@@ -99,11 +101,9 @@
+@@ -99,11 +99,9 @@
  	static char *buf = NULL;
  	static size_t bufsize;
  	struct stat *fs;
@@ -764,7 +687,7 @@
  #ifdef VM_AND_BUFFER_CACHE_SYNCHRONIZED
  	char *p;
  #endif
-@@ -236,9 +236,14 @@
+@@ -236,9 +234,14 @@
  				if (use_copy_file_range) {
  					rcount = copy_file_range(from_fd, NULL,
  					    to_fd, NULL, SSIZE_MAX, 0);
@@ -781,7 +704,7 @@
  					}
  				}
  				if (!use_copy_file_range) {
-@@ -281,8 +286,6 @@
+@@ -281,8 +284,6 @@
  	if (!lflag && !sflag) {
  		if (pflag && setfile(fs, to_fd))
  			rval = 1;
@@ -790,7 +713,7 @@
  		if (close(to_fd)) {
  			warn("%s", to.p_path);
  			rval = 1;
-@@ -409,163 +412,14 @@
+@@ -409,163 +410,14 @@
  
  	if (!gotstat || fs->st_mode != ts.st_mode)
  		if (fdval ? fchmod(fd, fs->st_mode) :
@@ -1094,7 +1017,7 @@
  
 --- src.orig/coreutils/date/date.c
 +++ src.freebsd/coreutils/date/date.c
-@@ -58,9 +58,13 @@
+@@ -58,6 +58,8 @@
  #include <syslog.h>
  #include <unistd.h>
  #include <utmpx.h>
@@ -1103,12 +1026,7 @@
  
  #include "vary.h"
  
-+#include "compat.h"
-+
- #ifndef	TM_YEAR_BASE
- #define	TM_YEAR_BASE	1900
- #endif
-@@ -164,7 +168,14 @@
+@@ -164,7 +166,14 @@
  	if (!rflag && time(&tval) == -1)
  		err(1, "time");
  
@@ -1124,7 +1042,7 @@
  
  	if (Rflag)
  		format = rfc2822_format;
-@@ -344,14 +355,18 @@
+@@ -344,14 +353,18 @@
  	if (!jflag) {
  		utx.ut_type = OLD_TIME;
  		memset(utx.ut_id, 0, sizeof(utx.ut_id));
@@ -1147,16 +1065,7 @@
  		if ((p = getlogin()) == NULL)
 --- src.orig/coreutils/dd/args.c
 +++ src.freebsd/coreutils/dd/args.c
-@@ -55,6 +55,8 @@
- #include "dd.h"
- #include "extern.h"
- 
-+#include "compat.h"
-+
- static int	c_arg(const void *, const void *);
- static int	c_conv(const void *, const void *);
- static int	c_iflag(const void *, const void *);
-@@ -214,8 +216,10 @@
+@@ -214,8 +214,10 @@
  	uintmax_t res;
  
  	res = get_num(arg);
@@ -1192,15 +1101,7 @@
  #include <sys/mtio.h>
  #include <sys/time.h>
  
-@@ -72,6 +69,7 @@
- 
- #include "dd.h"
- #include "extern.h"
-+#include "compat.h"
- 
- static void dd_close(void);
- static void dd_in(void);
-@@ -93,7 +91,7 @@
+@@ -93,7 +90,7 @@
  volatile sig_atomic_t need_progress;
  
  int
@@ -1209,7 +1110,7 @@
  {
  	struct itimerval itv = { { 1, 0 }, { 1, 0 } }; /* SIGALARM every second, if needed */
  
-@@ -145,7 +143,7 @@
+@@ -145,7 +142,7 @@
  	u_int cnt;
  	int iflags, oflags;
  	cap_rights_t rights;
@@ -1218,7 +1119,7 @@
  
  	if (in.name == NULL) {
  		in.name = "stdin";
-@@ -179,7 +177,7 @@
+@@ -179,7 +176,7 @@
  			oflags = fcntl(out.fd, F_GETFL);
  			if (oflags == -1)
  				err(1, "unable to get fd flags for stdout");
@@ -1227,7 +1128,7 @@
  			if (fcntl(out.fd, F_SETFL, oflags) == -1)
  				err(1, "unable to set fd flags for stdout");
  		}
-@@ -188,7 +186,7 @@
+@@ -188,7 +185,7 @@
  		if (!(ddflags & (C_SEEK | C_NOTRUNC)))
  			oflags |= O_TRUNC;
  		if (ddflags & C_OFSYNC)
@@ -1236,7 +1137,7 @@
  		if (ddflags & C_ODIRECT)
  			oflags |= O_DIRECT;
  		out.fd = open(out.name, O_RDWR | oflags, DEFFILEMODE);
-@@ -316,23 +314,16 @@
+@@ -316,23 +313,16 @@
  getfdtype(IO *io)
  {
  	struct stat sb;
@@ -1289,24 +1190,7 @@
  void dd_out(int);
 --- src.orig/coreutils/dd/misc.c
 +++ src.freebsd/coreutils/dd/misc.c
-@@ -46,7 +46,6 @@
- #include <err.h>
- #include <errno.h>
- #include <inttypes.h>
--#include <libutil.h>
- #include <signal.h>
- #include <stdio.h>
- #include <stdlib.h>
-@@ -57,6 +56,8 @@
- #include "dd.h"
- #include "extern.h"
- 
-+#include "compat.h"
-+
- double
- secs_elapsed(void)
- {
-@@ -133,7 +134,7 @@
+@@ -133,7 +133,7 @@
  
  /* ARGSUSED */
  void
@@ -1315,7 +1199,7 @@
  {
  
  	need_summary = 1;
-@@ -141,7 +142,7 @@
+@@ -141,7 +141,7 @@
  
  /* ARGSUSED */
  void
@@ -1390,7 +1274,7 @@
  .Fl P
 --- src.orig/coreutils/df/df.c
 +++ src.freebsd/coreutils/df/df.c
-@@ -50,11 +50,10 @@
+@@ -50,8 +50,8 @@
  
  #include <sys/param.h>
  #include <sys/stat.h>
@@ -1399,18 +1283,13 @@
 -#include <sys/sysctl.h>
  #include <err.h>
  #include <getopt.h>
--#include <libutil.h>
- #include <locale.h>
- #include <stdint.h>
- #include <stdio.h>
-@@ -63,10 +62,40 @@
+ #include <libutil.h>
+@@ -63,10 +63,38 @@
  #include <sysexits.h>
  #include <unistd.h>
  #include <libxo/xo.h>
 +#include <assert.h>
 +#include <mntent.h>
-+
-+#include "compat.h"
  
  #define UNITS_SI	1
  #define UNITS_2		2
@@ -1444,7 +1323,7 @@
  /* Maximum widths of various fields. */
  struct maxwidths {
  	int	mntfrom;
-@@ -78,20 +107,20 @@
+@@ -78,20 +106,20 @@
  	int	ifree;
  };
  
@@ -1472,7 +1351,7 @@
  
  static __inline int
  imax(int a, int b)
-@@ -99,7 +128,7 @@
+@@ -99,7 +127,7 @@
  	return (a > b ? a : b);
  }
  
@@ -1481,7 +1360,7 @@
  static int	  thousands;
  static int	  skipvfs_l, skipvfs_t;
  static const char **vfslist_l, **vfslist_t;
-@@ -114,9 +143,9 @@
+@@ -114,9 +142,9 @@
  main(int argc, char *argv[])
  {
  	struct stat stbuf;
@@ -1493,7 +1372,7 @@
  	char *mntpt;
  	int i, mntsize;
  	int ch, rv;
-@@ -125,13 +154,12 @@
+@@ -125,13 +153,12 @@
  	memset(&maxwidths, 0, sizeof(maxwidths));
  	memset(&totalbuf, 0, sizeof(totalbuf));
  	totalbuf.f_bsize = DEV_BSIZE;
@@ -1508,7 +1387,7 @@
  	    NULL)) != -1)
  		switch (ch) {
  		case 'a':
-@@ -176,7 +204,7 @@
+@@ -176,7 +203,7 @@
  			/* Ignore duplicate -l */
  			if (lflag)
  				break;
@@ -1517,7 +1396,7 @@
  			lflag = 1;
  			break;
  		case 'm':
-@@ -184,7 +212,6 @@
+@@ -184,7 +211,6 @@
  			hflag = 0;
  			break;
  		case 'n':
@@ -1525,7 +1404,7 @@
  			break;
  		case 't':
  			if (vfslist_t != NULL)
-@@ -205,32 +232,28 @@
+@@ -205,32 +231,28 @@
  	argv += optind;
  
  	rv = 0;
@@ -1568,7 +1447,7 @@
  			if (mntpt == NULL) {
  				xo_warnx("%s: not mounted", *argv);
  				rv = 1;
-@@ -239,46 +262,27 @@
+@@ -239,46 +261,27 @@
  		} else {
  			mntpt = *argv;
  		}
@@ -1625,7 +1504,7 @@
  
  	xo_close_list("filesystem");
  
-@@ -287,19 +291,21 @@
+@@ -287,19 +290,21 @@
  
  	xo_close_container("storage-system-information");
  	xo_finish();
@@ -1653,7 +1532,7 @@
  	}
  	return (NULL);
  }
-@@ -376,45 +382,8 @@
+@@ -376,45 +381,8 @@
  	return (result);
  }
  
@@ -1700,7 +1579,7 @@
  {
  
  	prthumanval("  {:blocks/%6s}", sfsp->f_blocks * sfsp->f_bsize);
-@@ -458,7 +427,7 @@
+@@ -458,7 +426,7 @@
  }
  
  /*
@@ -1709,7 +1588,7 @@
   */
  static intmax_t
  fsbtoblk(int64_t num, uint64_t fsbs, u_long bs)
-@@ -470,7 +439,7 @@
+@@ -470,7 +438,7 @@
   * Print out status about a file system.
   */
  static void
@@ -1718,7 +1597,7 @@
  {
  	static long blocksize;
  	static int headerlen, timesthrough = 0;
-@@ -544,7 +513,7 @@
+@@ -544,7 +512,7 @@
  		    mwp->avail, fsbtoblk(sfsp->f_bavail,
  		    sfsp->f_bsize, blocksize));
  	}
@@ -1727,7 +1606,7 @@
  	    availblks == 0 ? 100.0 : (double)used / (double)availblks * 100.0);
  	if (iflag) {
  		inodes = sfsp->f_files;
-@@ -566,23 +535,23 @@
+@@ -566,23 +534,23 @@
  			(double)used / (double)inodes * 100.0);
  	} else
  		xo_emit("  ");
@@ -1760,7 +1639,7 @@
  }
  
  /*
-@@ -590,7 +559,7 @@
+@@ -590,7 +558,7 @@
   * the file system specified by `sfsp'.
   */
  static void
@@ -1769,7 +1648,7 @@
  {
  	static long blocksize = 0;
  	int dummy;
-@@ -642,69 +611,95 @@
+@@ -642,69 +610,95 @@
  	exit(EX_USAGE);
  }
  
@@ -1850,13 +1729,13 @@
 -	if (sysctlbyname("vfs.conflist", NULL, &buflen, NULL, 0) < 0) {
 -		xo_warn("sysctl(vfs.conflist)");
 -		return (NULL);
--	}
++	    mntsize++;
+ 	}
 -	xvfsp = malloc(buflen);
 -	if (xvfsp == NULL) {
 -		xo_warnx("malloc failed");
 -		return (NULL);
-+	    mntsize++;
- 	}
+-	}
 -	keep_xvfsp = xvfsp;
 -	if (sysctlbyname("vfs.conflist", xvfsp, &buflen, NULL, 0) < 0) {
 -		xo_warn("sysctl(vfs.conflist)");
@@ -1939,26 +1818,15 @@
  that cannot be opened, and so on.
 --- src.orig/coreutils/du/du.c
 +++ src.freebsd/coreutils/du/du.c
-@@ -54,8 +54,8 @@
- #include <fnmatch.h>
- #include <fts.h>
+@@ -56,6 +56,7 @@
  #include <getopt.h>
--#include <libutil.h>
+ #include <libutil.h>
  #include <locale.h>
 +#include <signal.h>
  #include <stdint.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -63,6 +63,8 @@
- #include <sysexits.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
- #define SI_OPT	(CHAR_MAX + 1)
- 
- #define UNITS_2		1
-@@ -80,9 +82,8 @@
+@@ -80,9 +81,8 @@
  static void	ignoreadd(const char *);
  static void	ignoreclean(void);
  static int	ignorep(FTSENT *);
@@ -1969,7 +1837,7 @@
  static int	Aflag, hflag;
  static long	blocksize, cblocksize;
  static volatile sig_atomic_t info;
-@@ -121,7 +122,7 @@
+@@ -121,7 +121,7 @@
  	depth = INT_MAX;
  	SLIST_INIT(&ignores);
  
@@ -1978,7 +1846,7 @@
  	    long_options, NULL)) != -1)
  		switch (ch) {
  		case 'A':
-@@ -187,19 +188,23 @@
+@@ -187,19 +187,23 @@
  			hflag = 0;
  			blocksize = 1048576;
  			break;
@@ -2008,7 +1876,7 @@
  		case 'x':
  			ftsoptions |= FTS_XDEV;
  			break;
-@@ -281,18 +286,18 @@
+@@ -281,18 +285,18 @@
  			curblocks = Aflag ?
  			    howmany(p->fts_statp->st_size, cblocksize) :
  			    howmany(p->fts_statp->st_blocks, cblocksize);
@@ -2031,7 +1899,7 @@
  					    cblocksize, blocksize),
  					    p->fts_path);
  				}
-@@ -334,9 +339,9 @@
+@@ -334,9 +338,9 @@
  				}
  			}
  
@@ -2043,7 +1911,7 @@
  	}
  
  	if (errno)
-@@ -547,8 +552,6 @@
+@@ -547,8 +551,6 @@
  {
  	struct ignentry *ign;
  
@@ -2052,7 +1920,7 @@
  	SLIST_FOREACH(ign, &ignores, next)
  		if (fnmatch(ign->mask, ent->fts_name, 0) != FNM_NOMATCH)
  			return 1;
-@@ -556,7 +559,7 @@
+@@ -556,7 +558,7 @@
  }
  
  static void
@@ -2236,14 +2104,6 @@
  #include <sys/stat.h>
  #include <sys/param.h>
  #include <err.h>
-@@ -44,6 +45,7 @@
- #include <unistd.h>
- 
- #include "envopts.h"
-+#include "compat.h"
- 
- static const char *
- 		 expand_vars(int in_thisarg, char **thisarg_p, char **dest_p,
 --- src.orig/coreutils/expr/expr.y
 +++ src.freebsd/coreutils/expr/expr.y
 @@ -270,8 +270,7 @@
@@ -2618,16 +2478,7 @@
  		do {
 --- src.orig/coreutils/ln/ln.c
 +++ src.freebsd/coreutils/ln/ln.c
-@@ -56,6 +56,8 @@
- #include <string.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
- static int	fflag;			/* Unlink existing files. */
- static int	Fflag;			/* Remove empty directories also. */
- static int	hflag;			/* Check new name for symlink first. */
-@@ -148,6 +150,7 @@
+@@ -148,6 +148,7 @@
  	switch(argc) {
  	case 0:
  		usage();
@@ -2796,16 +2647,7 @@
  
  #include <ctype.h>
  #include <dirent.h>
-@@ -75,6 +75,8 @@
- #include "ls.h"
- #include "extern.h"
- 
-+#include "compat.h"
-+
- /*
-  * Upward approximation of the maximum number of characters needed to
-  * represent a value of integral type t as a string, excluding the
-@@ -98,7 +100,7 @@
+@@ -98,7 +98,7 @@
  	} while(0)
  
  static void	 display(const FTSENT *, FTSENT *, int);
@@ -2814,7 +2656,7 @@
  static void	 traverse(int, char **, int);
  
  #define	COLOR_OPT	(CHAR_MAX + 1)
-@@ -117,12 +119,9 @@
+@@ -117,12 +117,9 @@
  
  /* flags */
         int f_accesstime;	/* use time of last access */
@@ -2827,7 +2669,7 @@
  static int f_listdir;		/* list actual directory, not contents */
  static int f_listdot;		/* list files beginning with . */
         int f_longform;		/* long listing format */
-@@ -274,7 +273,7 @@
+@@ -274,7 +271,7 @@
  		colorflag = COLORFLAG_AUTO;
  #endif
  	while ((ch = getopt_long(argc, argv,
@@ -2836,7 +2678,7 @@
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
-@@ -299,21 +298,14 @@
+@@ -299,21 +296,14 @@
  			f_longform = 0;
  			f_singlecol = 0;
  			break;
@@ -2859,7 +2701,7 @@
  			break;
  		case 'f':
  			f_nosort = 1;
-@@ -387,9 +379,6 @@
+@@ -387,9 +377,6 @@
  		case 'W':
  			f_whiteout = 1;
  			break;
@@ -2869,7 +2711,7 @@
  		case 'b':
  			f_nonprint = 0;
  			f_octal = 0;
-@@ -420,9 +409,6 @@
+@@ -420,9 +407,6 @@
  		case 'n':
  			f_numericonly = 1;
  			break;
@@ -2879,7 +2721,7 @@
  		case 'p':
  			f_slash = 1;
  			f_type = 1;
-@@ -458,8 +444,6 @@
+@@ -458,8 +442,6 @@
  				errx(2, "unsupported --color value '%s' (must be always, auto, or never)",
  				    optarg);
  			break;
@@ -2888,7 +2730,7 @@
  #endif
  		default:
  		case '?':
-@@ -570,8 +554,6 @@
+@@ -570,8 +552,6 @@
  			sortfcn = revsizecmp;
  		else if (f_accesstime)
  			sortfcn = revacccmp;
@@ -2897,7 +2739,7 @@
  		else if (f_statustime)
  			sortfcn = revstatcmp;
  		else		/* Use modification time. */
-@@ -583,8 +565,6 @@
+@@ -583,8 +563,6 @@
  			sortfcn = sizecmp;
  		else if (f_accesstime)
  			sortfcn = acccmp;
@@ -2906,7 +2748,7 @@
  		else if (f_statustime)
  			sortfcn = statcmp;
  		else		/* Use modification time. */
-@@ -641,7 +621,7 @@
+@@ -641,7 +619,7 @@
  	 * If not recursing down this tree and don't need stat info, just get
  	 * the names.
  	 */
@@ -2915,7 +2757,7 @@
  	    options & FTS_NOSTAT ? FTS_NAMEONLY : 0;
  
  	while (errno = 0, (p = fts_read(ftsp)) != NULL)
-@@ -692,7 +672,7 @@
+@@ -692,7 +670,7 @@
   * points to the parent directory of the display list.
   */
  static void
@@ -2924,7 +2766,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -701,8 +681,7 @@
+@@ -701,8 +679,7 @@
  	off_t maxsize;
  	long maxblock;
  	uintmax_t maxinode;
@@ -2934,7 +2776,7 @@
  	u_int sizelen;
  	int maxflags;
  	gid_t maxgroup;
-@@ -710,8 +689,9 @@
+@@ -710,8 +687,9 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -2945,7 +2787,7 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -759,7 +739,6 @@
+@@ -759,7 +737,6 @@
  	maxflags = width[5];
  	maxsize = width[6];
  	maxlen = width[7];
@@ -2953,7 +2795,7 @@
  
  	MAKENINES(maxinode);
  	MAKENINES(maxblock);
-@@ -768,7 +747,6 @@
+@@ -768,7 +745,6 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -2961,7 +2803,7 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -823,96 +801,34 @@
+@@ -823,96 +799,34 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -3077,7 +2919,7 @@
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
  
-@@ -929,17 +845,6 @@
+@@ -929,17 +843,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -3095,7 +2937,7 @@
  				cur->fts_pointer = np;
  			}
  		}
-@@ -962,7 +867,6 @@
+@@ -962,7 +865,6 @@
  		d.btotal = btotal;
  		d.s_block = snprintf(NULL, 0, "%lu", howmany(maxblock, blocksize));
  		d.s_flags = maxflags;
@@ -3103,7 +2945,7 @@
  		d.s_group = maxgroup;
  		d.s_inode = snprintf(NULL, 0, "%ju", maxinode);
  		d.s_nlink = snprintf(NULL, 0, "%lu", maxnlink);
-@@ -989,7 +893,7 @@
+@@ -989,7 +891,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -3125,7 +2967,7 @@
  extern int f_inode;		/* print inode */
 --- src.orig/coreutils/ls/print.c
 +++ src.freebsd/coreutils/ls/print.c
-@@ -42,13 +42,11 @@
+@@ -42,7 +42,6 @@
  
  #include <sys/param.h>
  #include <sys/stat.h>
@@ -3133,22 +2975,7 @@
  
  #include <err.h>
  #include <errno.h>
- #include <fts.h>
- #include <langinfo.h>
--#include <libutil.h>
- #include <limits.h>
- #include <stdio.h>
- #include <stdint.h>
-@@ -66,6 +64,8 @@
- #include "ls.h"
- #include "extern.h"
- 
-+#include "compat.h"
-+
- static int	printaname(const FTSENT *, u_long, u_long);
- static void	printdev(size_t, dev_t);
- static void	printlink(const FTSENT *);
-@@ -78,7 +78,6 @@
+@@ -78,7 +77,6 @@
  static void	endcolor(int);
  static int	colortype(mode_t);
  #endif
@@ -3156,7 +2983,7 @@
  
  #define	IS_NOPRINT(p)	((p)->fts_number == NO_PRINT)
  
-@@ -231,23 +230,16 @@
+@@ -231,23 +229,16 @@
  			(void)printf("%*jd ",
  			    dp->s_block, howmany(sp->st_blocks, blocksize));
  		strmode(sp->st_mode, buf);
@@ -3180,7 +3007,7 @@
  		else if (f_statustime)
  			printtime(sp->st_ctime);
  		else
-@@ -464,8 +456,11 @@
+@@ -464,8 +455,11 @@
  	const char *format;
  	static int d_first = -1;
  
@@ -3194,7 +3021,7 @@
  	if (now == 0)
  		now = time(NULL);
  
-@@ -511,9 +506,6 @@
+@@ -511,9 +505,6 @@
  	case S_IFSOCK:
  		(void)putchar('=');
  		return (1);
@@ -3204,7 +3031,7 @@
  	default:
  		break;
  	}
-@@ -617,7 +609,7 @@
+@@ -617,7 +608,7 @@
  	switch (mode & S_IFMT) {
  	case S_IFDIR:
  		if (mode & S_IWOTH)
@@ -3213,7 +3040,7 @@
  				printcolor(C_WSDIR);
  			else
  				printcolor(C_WDIR);
-@@ -754,74 +746,3 @@
+@@ -754,74 +745,3 @@
  	} else
  		(void)printf("%*jd ", (u_int)width, bytes);
  }
@@ -3302,28 +3129,6 @@
  #endif
  		      " [file ...]\n");
  	exit(1);
---- src.orig/coreutils/mkdir/mkdir.c
-+++ src.freebsd/coreutils/mkdir/mkdir.c
-@@ -55,6 +55,8 @@
- #include <sysexits.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
- static int	build(char *, mode_t);
- static void	usage(void);
- 
---- src.orig/coreutils/mkfifo/mkfifo.c
-+++ src.freebsd/coreutils/mkfifo/mkfifo.c
-@@ -53,6 +53,8 @@
- #include <string.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
- #define	BASEMODE	S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | \
- 			S_IROTH | S_IWOTH
- 
 --- src.orig/coreutils/mknod/mknod.c
 +++ src.freebsd/coreutils/mknod/mknod.c
 @@ -48,6 +48,7 @@
@@ -3350,16 +3155,7 @@
  
  #include <err.h>
  #include <errno.h>
-@@ -67,6 +67,8 @@
- #include <sysexits.h>
- #include <unistd.h>
- 
-+#include "compat.h"
-+
- /* Exit code for a failed exec. */
- #define EXEC_FAILED 127
- 
-@@ -76,8 +78,6 @@
+@@ -76,8 +76,6 @@
  static int	do_move(const char *, const char *);
  static int	fastcopy(const char *, const char *, struct stat *);
  static void	usage(void);
@@ -3368,7 +3164,7 @@
  
  int
  main(int argc, char *argv[])
-@@ -178,6 +178,8 @@
+@@ -178,6 +176,8 @@
  	struct stat sb;
  	int ask, ch, first;
  	char modep[15];
@@ -3377,7 +3173,7 @@
  
  	/*
  	 * Check access.  If interactive and file exists, ask user if it
-@@ -203,10 +205,15 @@
+@@ -203,10 +203,15 @@
  			ask = 1;
  		} else if (access(to, W_OK) && !stat(to, &sb) && isatty(STDIN_FILENO)) {
  			strmode(sb.st_mode, modep);
@@ -3395,7 +3191,7 @@
  			ask = 1;
  		}
  		if (ask) {
-@@ -231,7 +238,6 @@
+@@ -231,7 +236,6 @@
  	}
  
  	if (errno == EXDEV) {
@@ -3403,7 +3199,7 @@
  		char path[PATH_MAX];
  
  		/*
-@@ -248,11 +254,6 @@
+@@ -248,11 +252,6 @@
  				warn("cannot resolve %s: %s", from, path);
  				return (1);
  			}
@@ -3415,7 +3211,7 @@
  		}
  	} else {
  		warn("rename %s to %s", from, to);
-@@ -280,7 +281,6 @@
+@@ -280,7 +279,6 @@
  	static char *bp = NULL;
  	mode_t oldmode;
  	int nread, from_fd, to_fd;
@@ -3423,7 +3219,7 @@
  
  	if ((from_fd = open(from, O_RDONLY, 0)) < 0) {
  		warn("fastcopy: open() failed (from): %s", from);
-@@ -326,32 +326,7 @@
+@@ -326,32 +324,7 @@
  	}
  	if (fchmod(to_fd, sbp->st_mode))
  		warn("%s: set mode (was: 0%03o)", to, oldmode);
@@ -3456,7 +3252,7 @@
  
  	ts[0] = sbp->st_atim;
  	ts[1] = sbp->st_mtim;
-@@ -451,59 +426,6 @@
+@@ -451,59 +424,6 @@
  }
  
  static void
@@ -3607,7 +3403,7 @@
  .Xr getopt 3 ,
 --- src.orig/coreutils/rm/rm.c
 +++ src.freebsd/coreutils/rm/rm.c
-@@ -54,13 +54,16 @@
+@@ -54,13 +54,14 @@
  #include <grp.h>
  #include <locale.h>
  #include <pwd.h>
@@ -3619,13 +3415,11 @@
  #include <unistd.h>
  
 -static int dflag, eval, fflag, iflag, vflag, Wflag, stdin_ok;
-+#include "compat.h"
-+
 +static int dflag, eval, fflag, iflag, vflag, stdin_ok;
  static int rflag, Iflag, xflag;
  static uid_t uid;
  static volatile sig_atomic_t info;
-@@ -71,7 +74,7 @@
+@@ -71,7 +72,7 @@
  static void	checkslash(char **);
  static void	rm_file(char **);
  static void	rm_tree(char **);
@@ -3634,7 +3428,7 @@
  static void	usage(void);
  
  /*
-@@ -109,7 +112,7 @@
+@@ -109,7 +110,7 @@
  	}
  
  	rflag = xflag = 0;
@@ -3643,7 +3437,7 @@
  		switch(ch) {
  		case 'd':
  			dflag = 1;
-@@ -135,9 +138,6 @@
+@@ -135,9 +136,6 @@
  		case 'v':
  			vflag = 1;
  			break;
@@ -3653,7 +3447,7 @@
  		case 'x':
  			xflag = 1;
  			break;
-@@ -198,8 +198,6 @@
+@@ -198,8 +196,6 @@
  	flags = FTS_PHYSICAL;
  	if (!needstat)
  		flags |= FTS_NOSTAT;
@@ -3662,7 +3456,7 @@
  	if (xflag)
  		flags |= FTS_XDEV;
  	if (!(fts = fts_open(argv, flags, NULL))) {
-@@ -238,12 +236,6 @@
+@@ -238,12 +234,6 @@
  				(void)fts_set(fts, p, FTS_SKIP);
  				p->fts_number = SKIPPED;
  			}
@@ -3675,7 +3469,7 @@
  			continue;
  		case FTS_DP:
  			/* Post-order: see if user skipped. */
-@@ -256,77 +248,51 @@
+@@ -256,77 +246,51 @@
  				continue;
  		}
  
@@ -3793,7 +3587,7 @@
  		warn("%s", p->fts_path);
  		eval = 1;
  	}
-@@ -349,18 +315,10 @@
+@@ -349,18 +313,10 @@
  	while ((f = *argv++) != NULL) {
  		/* Assume if can't stat the file, can't unlink it. */
  		if (lstat(f, &sb)) {
@@ -3815,7 +3609,7 @@
  			continue;
  		}
  
-@@ -369,21 +327,12 @@
+@@ -369,21 +325,12 @@
  			eval = 1;
  			continue;
  		}
@@ -3842,7 +3636,7 @@
  		if (rval && (!fflag || errno != ENOENT)) {
  			warn("%s", f);
  			eval = 1;
-@@ -401,7 +350,9 @@
+@@ -401,7 +348,9 @@
  check(const char *path, const char *name, struct stat *sp)
  {
  	int ch, first;
@@ -3853,7 +3647,7 @@
  
  	/* Check -i first. */
  	if (iflag)
-@@ -413,21 +364,20 @@
+@@ -413,21 +362,20 @@
  		 * because their permissions are meaningless.  Check stdin_ok
  		 * first because we may not have stat'ed the file.
  		 */
@@ -3885,7 +3679,7 @@
  	}
  	(void)fflush(stderr);
  
-@@ -544,7 +494,7 @@
+@@ -544,7 +492,7 @@
  }
  
  static void
@@ -3927,13 +3721,7 @@
  .Sh IMPLEMENTATION NOTES
 --- src.orig/coreutils/sleep/sleep.c
 +++ src.freebsd/coreutils/sleep/sleep.c
-@@ -50,11 +50,13 @@
- #include <stdlib.h>
- #include <time.h>
- 
-+#include "compat.h"
-+
- static void usage(void);
+@@ -54,7 +54,7 @@
  
  static volatile sig_atomic_t report_requested;
  static void
@@ -4250,16 +4038,7 @@
  #endif
  #include <semaphore.h>
  #include <stdio.h>
-@@ -52,6 +53,8 @@
- #include "file.h"
- #include "radixsort.h"
- 
-+#include "compat.h"
-+
- unsigned long long free_memory = 1000000;
- unsigned long long available_free_memory = 1000000;
- 
-@@ -632,7 +635,7 @@
+@@ -632,7 +633,7 @@
  			size_t sz = 0;
  			int fd, flags;
  
@@ -4268,7 +4047,7 @@
  
  			fd = open(fsrc, O_RDONLY);
  			if (fd < 0)
-@@ -654,6 +657,7 @@
+@@ -654,6 +655,7 @@
  				close(fd);
  				break;
  			}
@@ -4276,7 +4055,7 @@
  
  			ret->fd = fd;
  			ret->mmapaddr = addr;
-@@ -1560,7 +1564,7 @@
+@@ -1560,7 +1562,7 @@
  			pthread_attr_t attr;
  
  			pthread_attr_init(&attr);
@@ -4285,7 +4064,7 @@
  
  			for (;;) {
  				int res = pthread_create(&pth, &attr,
-@@ -1569,7 +1573,7 @@
+@@ -1569,7 +1571,7 @@
  				if (res >= 0)
  					break;
  				if (errno == EAGAIN) {
@@ -4304,16 +4083,7 @@
  #endif
  #include <stdlib.h>
  #include <string.h>
-@@ -47,6 +48,8 @@
- #include "coll.h"
- #include "radixsort.h"
- 
-+#include "compat.h"
-+
- #define DEFAULT_SORT_FUNC_RADIXSORT mergesort
- 
- #define TINY_NODE(sl) ((sl)->tosort_num < 65)
-@@ -647,7 +650,7 @@
+@@ -647,7 +648,7 @@
  			pthread_t pth;
  
  			pthread_attr_init(&attr);
@@ -4322,7 +4092,7 @@
  
  			for (;;) {
  				int res = pthread_create(&pth, &attr,
-@@ -655,7 +658,7 @@
+@@ -655,7 +656,7 @@
  				if (res >= 0)
  					break;
  				if (errno == EAGAIN) {
@@ -4331,7 +4101,7 @@
  					continue;
  				}
  				err(2, NULL);
-@@ -684,7 +687,9 @@
+@@ -684,7 +685,9 @@
  		pthread_mutexattr_t mattr;
  
  		pthread_mutexattr_init(&mattr);
@@ -4671,20 +4441,10 @@
   * sort.c
 --- src.orig/coreutils/split/split.c
 +++ src.freebsd/coreutils/split/split.c
-@@ -51,7 +51,6 @@
- #include <errno.h>
- #include <fcntl.h>
- #include <inttypes.h>
--#include <libutil.h>
- #include <limits.h>
- #include <locale.h>
- #include <stdbool.h>
-@@ -63,6 +62,12 @@
+@@ -63,6 +63,10 @@
  #include <regex.h>
  #include <sysexits.h>
  
-+#include "compat.h"
-+
 +#ifndef REG_STARTEND
 +#define REG_STARTEND 0
 +#endif
@@ -4692,7 +4452,7 @@
  #define DEFLINE	1000			/* Default num lines per file. */
  
  static off_t	 bytecnt;		/* Byte count to split on. */
-@@ -89,6 +94,7 @@
+@@ -89,6 +93,7 @@
  	int ch;
  	int error;
  	char *ep, *p;
@@ -4700,7 +4460,7 @@
  
  	setlocale(LC_ALL, "");
  
-@@ -120,7 +126,8 @@
+@@ -120,7 +125,8 @@
  			break;
  		case 'b':		/* Byte count. */
  			errno = 0;
@@ -4811,18 +4571,16 @@
  
  #include <ctype.h>
  #include <err.h>
-@@ -68,6 +69,10 @@
+@@ -68,6 +69,8 @@
  #include <time.h>
  #include <unistd.h>
  
-+#include "compat.h"
-+
 +extern char *__progname;
 +
  #if HAVE_STRUCT_STAT_ST_FLAGS
  #define DEF_F "%#Xf "
  #define RAW_F "%f "
-@@ -209,24 +214,21 @@
+@@ -209,24 +212,21 @@
  {
  	struct stat st;
  	int ch, rc, errs, am_readlink;
@@ -4849,7 +4607,7 @@
  		am_readlink = 1;
  		options = "fn";
  		synopsis = "[-fn] [file ...]";
-@@ -234,7 +236,7 @@
+@@ -234,7 +234,7 @@
  		fmtchar = 'f';
  		quiet = 1;
  	} else {
@@ -4858,7 +4616,7 @@
  		synopsis = "[-FLnq] [-f format | -l | -r | -s | -x] "
  		    "[-t timefmt] [file|handle ...]";
  	}
-@@ -244,9 +246,6 @@
+@@ -244,9 +244,6 @@
  		case 'F':
  			lsF = 1;
  			break;
@@ -4868,7 +4626,7 @@
  		case 'L':
  			usestat = 1;
  			break;
-@@ -324,37 +323,11 @@
+@@ -324,37 +321,11 @@
  	errs = 0;
  	do {
  		if (argc == 0) {
@@ -4908,7 +4666,7 @@
  				/*
  				 * Try stat() and if it fails, fall back to
  				 * lstat() just in case we're examining a
-@@ -409,7 +382,7 @@
+@@ -409,7 +380,7 @@
  usage(const char *synopsis)
  {
  
@@ -4917,7 +4675,7 @@
  	exit(1);
  }
  
-@@ -619,8 +592,10 @@
+@@ -619,8 +590,10 @@
  {
  	u_int64_t data;
  	char *stmp, lfmt[24], tmp[20];
@@ -4930,7 +4688,7 @@
  	const struct timespec *tsp;
  	struct timespec ts;
  	struct tm *tm;
-@@ -717,10 +692,12 @@
+@@ -717,10 +690,12 @@
  	case SHOW_st_uid:
  		small = (sizeof(st->st_uid) == 4);
  		data = st->st_uid;
@@ -4945,7 +4703,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -730,10 +707,12 @@
+@@ -730,10 +705,12 @@
  	case SHOW_st_gid:
  		small = (sizeof(st->st_gid) == 4);
  		data = st->st_gid;
@@ -4960,7 +4718,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -741,15 +720,15 @@
+@@ -741,15 +718,15 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -4979,7 +4737,7 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
-@@ -1093,7 +1072,7 @@
+@@ -1093,7 +1070,7 @@
  #define hex2nibble(c) (c <= '9' ? c - '0' : toupper(c) - 'A' + 10)
  int
  hex2byte(const char c[2]) {
@@ -5365,7 +5123,7 @@
  .Ar number
 --- src.orig/coreutils/stty/stty.c
 +++ src.freebsd/coreutils/stty/stty.c
-@@ -51,9 +51,12 @@
+@@ -51,6 +51,8 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -5374,11 +5132,7 @@
  
  #include "stty.h"
  #include "extern.h"
-+#include "compat.h"
- 
- int
- main(int argc, char *argv[])
-@@ -129,10 +132,11 @@
+@@ -129,10 +131,11 @@
  
  		if (isdigit(**argv)) {
  			speed_t speed;
@@ -5757,12 +5511,8 @@
  #include <sys/time.h>
  #include <sys/wait.h>
  
-@@ -43,8 +43,12 @@
- #include <sysexits.h>
- #include <unistd.h>
+@@ -45,6 +45,8 @@
  
-+#include "compat.h"
-+
  #define EXIT_TIMEOUT 124
  
 +extern char *__progname;
@@ -5770,7 +5520,7 @@
  static sig_atomic_t sig_chld = 0;
  static sig_atomic_t sig_term = 0;
  static sig_atomic_t sig_alrm = 0;
-@@ -56,7 +60,7 @@
+@@ -56,7 +58,7 @@
  
  	fprintf(stderr, "Usage: %s [--signal sig | -s sig] [--preserve-status]"
  	    " [--kill-after time | -k time] [--foreground] <duration> <command>"
@@ -5779,7 +5529,7 @@
  
  	exit(EX_USAGE);
  }
-@@ -104,16 +108,19 @@
+@@ -104,16 +106,19 @@
  {
  	int sig, i;
  	const char *errstr;
@@ -5802,7 +5552,7 @@
  			return (i);
  	}
  
-@@ -174,8 +181,7 @@
+@@ -174,8 +179,7 @@
  	bool do_second_kill = false;
  	bool child_done = false;
  	struct sigaction signals;
@@ -5812,7 +5562,7 @@
  	int signums[] = {
  		-1,
  		SIGTERM,
-@@ -228,8 +234,8 @@
+@@ -228,8 +232,8 @@
  
  	if (!foreground) {
  		/* Acquire a reaper */
@@ -5823,7 +5573,7 @@
  	}
  
  	memset(&signals, 0, sizeof(signals));
-@@ -297,9 +303,8 @@
+@@ -297,9 +301,8 @@
  				if (foreground) {
  					break;
  				} else {
@@ -5835,7 +5585,7 @@
  						break;
  				}
  			}
-@@ -308,10 +313,8 @@
+@@ -308,10 +311,8 @@
  
  			timedout = true;
  			if (!foreground) {
@@ -5848,7 +5598,7 @@
  			} else
  				kill(pid, killsig);
  
-@@ -325,10 +328,8 @@
+@@ -325,10 +326,8 @@
  
  		} else if (sig_term) {
  			if (!foreground) {
@@ -5861,7 +5611,7 @@
  			} else
  				kill(pid, sig_term);
  
-@@ -348,7 +349,7 @@
+@@ -348,7 +347,7 @@
  	}
  
  	if (!foreground)
@@ -5900,16 +5650,7 @@
 +#define iswrune(v) (iswprint(v) || iswcntrl(v))
 --- src.orig/coreutils/tr/str.c
 +++ src.freebsd/coreutils/tr/str.c
-@@ -51,6 +51,8 @@
- 
- #include "extern.h"
- 
-+#include "compat.h"
-+
- static int      backslash(STR *, int *);
- static int	bracket(STR *);
- static void	genclass(STR *);
-@@ -58,6 +60,44 @@
+@@ -58,6 +58,44 @@
  static int      genrange(STR *, int);
  static void	genseq(STR *);
  
@@ -5954,7 +5695,7 @@
  wint_t
  next(STR *s)
  {
-@@ -86,8 +126,10 @@
+@@ -86,8 +124,10 @@
  		default:
  			clen = mbrtowc(&wch, s->str, MB_LEN_MAX, NULL);
  			if (clen == (size_t)-1 || clen == (size_t)-2 ||
@@ -5967,7 +5708,7 @@
  			is_octal = 0;
  			s->lastch = wch;
  			s->str += clen;
-@@ -116,7 +158,7 @@
+@@ -116,7 +156,7 @@
  	case CCLASS_LOWER:
  		s->cnt++;
  		ch = nextwctype(s->lastch, s->cclass);
@@ -5976,7 +5717,7 @@
  			s->state = NORMAL;
  			return (next(s));
  		}
-@@ -203,8 +245,10 @@
+@@ -203,8 +243,10 @@
  		s->str += 2;
  	} else {
  		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
@@ -5989,7 +5730,7 @@
  		s->equiv[0] = wc;
  		if (s->str[clen] != '=')
  			errx(1, "misplaced equivalence equals sign");
-@@ -241,9 +285,10 @@
+@@ -241,9 +283,10 @@
  static int
  genrange(STR *s, int was_octal)
  {
@@ -6002,7 +5743,7 @@
  	size_t clen;
  	wchar_t wc;
  
-@@ -253,8 +298,10 @@
+@@ -253,8 +296,10 @@
  		stopval = backslash(s, &octal);
  	else {
  		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
@@ -6015,7 +5756,7 @@
  		stopval = wc;
  		s->str += clen;
  	}
-@@ -306,8 +353,10 @@
+@@ -306,8 +351,10 @@
  		s->lastch = backslash(s, NULL);
  	else {
  		clen = mbrtowc(&wc, s->str, MB_LEN_MAX, NULL);
@@ -6030,15 +5771,7 @@
  	}
 --- src.orig/coreutils/tr/tr.c
 +++ src.freebsd/coreutils/tr/tr.c
-@@ -62,6 +62,7 @@
- #include "cmap.h"
- #include "cset.h"
- #include "extern.h"
-+#include "compat.h"
- 
- static STR s1 = { STRING1, NORMAL, 0, OOBCH, 0, { 0, OOBCH }, NULL, NULL };
- static STR s2 = { STRING2, NORMAL, 0, OOBCH, 0, { 0, OOBCH }, NULL, NULL };
-@@ -78,6 +79,7 @@
+@@ -78,6 +78,7 @@
  	int n, *p;
  	int Cflag, cflag, dflag, sflag, isstring2;
  	wint_t ch, cnt, lastch;
@@ -6046,7 +5779,7 @@
  
  	(void)setlocale(LC_ALL, "");
  
-@@ -88,8 +90,8 @@
+@@ -88,8 +89,8 @@
  		err(1, "unable to enter capability mode");
  
  	Cflag = cflag = dflag = sflag = 0;
@@ -6057,7 +5790,7 @@
  		case 'C':
  			Cflag = 1;
  			cflag = 0;
-@@ -119,6 +121,7 @@
+@@ -119,6 +120,7 @@
  	default:
  		usage();
  		/* NOTREACHED */
@@ -6065,7 +5798,7 @@
  	case 1:
  		isstring2 = 0;
  		break;
-@@ -307,7 +310,7 @@
+@@ -307,7 +309,7 @@
  
  		s2.str = argv[1];
  		s2.state = NORMAL;
@@ -6085,16 +5818,13 @@
      "$FreeBSD$";
  
  #include <sys/stat.h>
-@@ -39,8 +39,9 @@
+@@ -39,6 +39,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <unistd.h>
 +#include <stdint.h>
  
--#include <libutil.h>
-+#include "compat.h"
- 
- static void	usage(void);
+ #include <libutil.h>
  
 --- src.orig/coreutils/tsort/tsort.c
 +++ src.freebsd/coreutils/tsort/tsort.c
@@ -6468,16 +6198,7 @@
  #include <stdint.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -66,6 +68,8 @@
- #include <libcasper.h>
- #include <casper/cap_fileargs.h>
- 
-+#include "compat.h"
-+
- static fileargs_t *fa;
- static uintmax_t tlinect, twordct, tcharct, tlongline;
- static int doline, doword, dochar, domulti, dolongline;
-@@ -78,7 +82,7 @@
+@@ -78,7 +80,7 @@
  static void	usage(void);
  
  static void
@@ -6486,7 +6207,7 @@
  {
  
  	siginfo = 1;
-@@ -313,7 +317,7 @@
+@@ -313,7 +315,7 @@
  			if (!domulti || MB_CUR_MAX == 1) {
  				clen = 1;
  				wch = (unsigned char)*p;
@@ -6497,7 +6218,7 @@
  					errno = EILSEQ;
 --- src.orig/coreutils/who/who.c
 +++ src.freebsd/coreutils/who/who.c
-@@ -45,10 +45,11 @@
+@@ -45,7 +45,6 @@
  #include <stdlib.h>
  #include <string.h>
  #include <time.h>
@@ -6505,12 +6226,7 @@
  #include <unistd.h>
  #include <utmpx.h>
  
-+#include "compat.h"
-+
- static void	heading(void);
- static void	process_utmp(void);
- static void	quick(void);
-@@ -118,7 +119,7 @@
+@@ -118,7 +117,7 @@
  		usage();
  
  	if (*argv != NULL) {
@@ -6519,7 +6235,7 @@
  			err(1, "%s", *argv);
  	}
  
-@@ -171,8 +172,10 @@
+@@ -171,8 +170,10 @@
  	struct tm *tm;
  	char state;
  
@@ -6532,7 +6248,7 @@
  
  	state = '?';
  	idle = 0;
-@@ -288,7 +291,7 @@
+@@ -288,7 +289,7 @@
  	else
  		name = "?";
  	strlcpy(ut.ut_user, name, sizeof ut.ut_user);
@@ -6650,18 +6366,16 @@
  #include <spawn.h>
  #include <stdint.h>
  #include <stdio.h>
-@@ -73,7 +68,9 @@
+@@ -73,7 +68,7 @@
  #include <unistd.h>
  #include <vis.h>
  
 -#include "mtree.h"
 +#include <openssl/evp.h>
-+
-+#include "compat.h"
  
  /*
   * We need to build xinstall during the bootstrap stage when building on a
-@@ -99,13 +96,7 @@
+@@ -99,13 +94,7 @@
  #define	NOCHANGEBITS	(UF_IMMUTABLE | UF_APPEND | SF_IMMUTABLE | SF_APPEND)
  #define	BACKUP_SUFFIX	".old"
  
@@ -6676,7 +6390,7 @@
  
  static enum {
  	DIGEST_NONE = 0,
-@@ -165,7 +156,7 @@
+@@ -165,7 +154,7 @@
  	fset = 0;
  	iflags = 0;
  	group = owner = NULL;
@@ -6685,7 +6399,7 @@
  	     -1)
  		switch((char)ch) {
  		case 'B':
-@@ -186,10 +177,12 @@
+@@ -186,10 +175,12 @@
  		case 'd':
  			dodir = 1;
  			break;
@@ -6698,7 +6412,7 @@
  		case 'g':
  			haveopt_g = 1;
  			group = optarg;
-@@ -236,11 +229,13 @@
+@@ -236,11 +227,13 @@
  			mode = getmode(set, 0);
  			free(set);
  			break;
@@ -6712,7 +6426,7 @@
  		case 'o':
  			haveopt_o = 1;
  			owner = optarg;
-@@ -310,30 +305,38 @@
+@@ -310,30 +303,38 @@
  
  	/* get group and owner id's */
  	if (group != NULL && !dounpriv) {
@@ -6753,7 +6467,7 @@
  
  	if (metafile != NULL) {
  		if ((metafp = fopen(metafile, "a")) == NULL)
-@@ -384,8 +387,7 @@
+@@ -384,8 +385,7 @@
  		if (stat(*argv, &from_sb))
  			err(EX_OSERR, "%s", *argv);
  		if (!S_ISREG(to_sb.st_mode)) {
@@ -6763,7 +6477,7 @@
  		}
  		if (to_sb.st_dev == from_sb.st_dev &&
  		    to_sb.st_ino == from_sb.st_ino)
-@@ -400,91 +402,106 @@
+@@ -400,91 +400,106 @@
  static char *
  digest_file(const char *name)
  {
@@ -6795,7 +6509,7 @@
 +	if (!buf) {
 +		fclose(f);
 +		errx(1, "unable to allocate buffer");
-+	}
+ 	}
 +
 +	digest_init(&ctx);
 +	for (;;) {
@@ -6810,7 +6524,7 @@
 +				errx(1, "unable to read file %s", name);
 +			}
 +		}
- 	}
++	}
 +
 +	fclose(f);
 +	return digest_end(&ctx, NULL);
@@ -6920,7 +6634,7 @@
  }
  
  /*
-@@ -529,7 +546,7 @@
+@@ -529,7 +544,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
  {
@@ -6929,7 +6643,7 @@
  	int ret;
  
  	if (safecopy && target_sb != NULL) {
-@@ -714,7 +731,6 @@
+@@ -714,7 +729,6 @@
  				errx(1, "resolved pathname too long");
  		}
  		strcpy(to_name_copy, to_name);
@@ -6937,7 +6651,7 @@
  		if (strlcat(dst, cp, sizeof(dst)) > sizeof(dst))
  			errx(1, "resolved pathname too long");
  		free(to_name_copy);
-@@ -763,7 +779,7 @@
+@@ -763,7 +777,7 @@
   *	build a path name and install the file
   */
  static void
@@ -6946,7 +6660,7 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -783,8 +799,7 @@
+@@ -783,8 +797,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
  			if (!S_ISREG(from_sb.st_mode)) {
@@ -6956,7 +6670,7 @@
  			}
  		}
  		/* Build the target path. */
-@@ -818,8 +833,7 @@
+@@ -818,8 +831,7 @@
  	}
  
  	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode)) {
@@ -6966,7 +6680,7 @@
  		return;
  	}
  
-@@ -1068,14 +1082,14 @@
+@@ -1068,14 +1080,14 @@
   *	unless it points to pre-computed digest.
   */
  static int
@@ -6984,7 +6698,7 @@
  
  	rv = 0;
  	if (from_len != to_len)
-@@ -1171,7 +1185,7 @@
+@@ -1171,7 +1183,7 @@
   *	create a new file, overwriting an existing one if necessary
   */
  static int
@@ -6993,7 +6707,7 @@
  {
  	char backup[MAXPATHLEN];
  	int saved_errno = 0;
-@@ -1336,13 +1350,14 @@
+@@ -1336,13 +1348,14 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
@@ -7013,18 +6727,7 @@
  	if (status != 0) {
 --- src.orig/diffutils/cmp/cmp.c
 +++ src.freebsd/diffutils/cmp/cmp.c
-@@ -58,9 +58,8 @@
- #include <string.h>
- #include <unistd.h>
- 
--#include <libutil.h>
--
- #include "extern.h"
-+#include "compat.h"
- 
- bool	bflag, lflag, sflag, xflag, zflag;
- 
-@@ -78,7 +77,7 @@
+@@ -78,7 +78,7 @@
  static void usage(void);
  
  static bool
@@ -7033,7 +6736,7 @@
  {
  	char *colon;
  
-@@ -100,7 +99,7 @@
+@@ -100,7 +100,7 @@
  main(int argc, char *argv[])
  {
  	struct stat sb1, sb2;
@@ -7042,7 +6745,7 @@
  	int ch, fd1, fd2, oflag;
  	bool special;
  	const char *file1, *file2;
-@@ -127,7 +126,7 @@
+@@ -127,7 +127,7 @@
  			lflag = true;
  			break;
  		case 'n':		/* Limit */
@@ -7128,18 +6831,16 @@
  .Ar label
 --- src.orig/diffutils/diff/diff.c
 +++ src.freebsd/diffutils/diff/diff.c
-@@ -37,8 +37,9 @@
- 
+@@ -38,7 +38,7 @@
  #include "diff.h"
  #include "xmalloc.h"
-+#include "compat.h"
  
 -int	 lflag, Nflag, Pflag, rflag, sflag, Tflag, cflag, Wflag;
 +int	 Nflag, Pflag, rflag, sflag, Tflag, cflag, Wflag;
  int	 diff_format, diff_context, status, ignore_file_case, suppress_common;
  int	 tabsize = 8, width = 130;
  char	*start, *ifdefname, *diffargs, *label[2], *ignore_pats;
-@@ -47,7 +48,7 @@
+@@ -47,7 +47,7 @@
  struct excludes *excludes_list;
  regex_t	 ignore_re;
  
@@ -7148,7 +6849,7 @@
  enum {
  	OPT_TSIZE = CHAR_MAX + 1,
  	OPT_STRIPCR,
-@@ -71,7 +72,6 @@
+@@ -71,7 +71,6 @@
  	{ "ignore-blank-lines",		no_argument,		0,	'B' },
  	{ "ignore-matching-lines",	required_argument,	0,	'I' },
  	{ "ignore-case",		no_argument,		0,	'i' },
@@ -7156,7 +6857,7 @@
  	{ "label",			required_argument,	0,	'L' },
  	{ "new-file",			no_argument,		0,	'N' },
  	{ "rcs",			no_argument,		0,	'n' },
-@@ -198,9 +198,6 @@
+@@ -198,9 +197,6 @@
  			else
  				usage();
  			break;
@@ -7166,7 +6867,7 @@
  		case 'N':
  			Nflag = 1;
  			break;
-@@ -379,12 +376,12 @@
+@@ -379,12 +375,12 @@
  		diffdir(argv[0], argv[1], dflags);
  	} else {
  		if (S_ISDIR(stb1.st_mode)) {
@@ -7181,7 +6882,7 @@
  			if (stat(argv[1], &stb2) == -1)
  				err(2, "%s", argv[1]);
  		}
-@@ -418,20 +415,23 @@
+@@ -418,20 +414,23 @@
  read_excludes_file(char *file)
  {
  	FILE *fp;
@@ -7214,15 +6915,7 @@
  }
 --- src.orig/diffutils/diff/diffdir.c
 +++ src.freebsd/diffutils/diff/diffdir.c
-@@ -35,6 +35,7 @@
- #include <limits.h>
- 
- #include "diff.h"
-+#include "compat.h"
- 
- static int selectfile(const struct dirent *);
- static void diffit(struct dirent *, char *, size_t, char *, size_t, int);
-@@ -57,7 +58,8 @@
+@@ -57,7 +57,8 @@
  
  	dirlen1 = strlcpy(path1, *p1 ? p1 : ".", sizeof(path1));
  	if (dirlen1 >= sizeof(path1) - 1) {
@@ -7232,7 +6925,7 @@
  		status |= 2;
  		return;
  	}
-@@ -67,7 +69,8 @@
+@@ -67,7 +68,8 @@
  	}
  	dirlen2 = strlcpy(path2, *p2 ? p2 : ".", sizeof(path2));
  	if (dirlen2 >= sizeof(path2) - 1) {
@@ -7264,7 +6957,7 @@
 +#endif
 --- src.orig/diffutils/diff/diffreg.c
 +++ src.freebsd/diffutils/diff/diffreg.c
-@@ -85,10 +85,13 @@
+@@ -85,8 +85,10 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -7275,11 +6968,8 @@
 -#include "pr.h"
  #include "diff.h"
  #include "xmalloc.h"
-+#include "compat.h"
  
- /*
-  * diff - compare two files.
-@@ -259,7 +262,6 @@
+@@ -259,7 +261,6 @@
  {
  	FILE *f1, *f2;
  	int i, rval;
@@ -7287,7 +6977,7 @@
  	cap_rights_t rights_ro;
  
  	f1 = f2 = NULL;
-@@ -339,9 +341,6 @@
+@@ -339,9 +340,6 @@
  		goto closem;
  	}
  
@@ -7297,7 +6987,7 @@
  	if (capsicum) {
  		cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
  		if (caph_rights_limit(fileno(f1), &rights_ro) < 0)
-@@ -424,8 +423,6 @@
+@@ -424,8 +422,6 @@
  	output(file1, f1, file2, f2, flags);
  
  closem:
@@ -7306,7 +6996,7 @@
  	if (anychange) {
  		status |= 1;
  		if (rval == D_SAME)
-@@ -499,7 +496,7 @@
+@@ -499,7 +495,7 @@
  }
  
  char *
@@ -7315,7 +7005,7 @@
  {
  	char *tail, *buf;
  	size_t dirlen;
-@@ -1035,7 +1032,6 @@
+@@ -1035,7 +1031,6 @@
  	int ret;
  
  	ret = regexec(&ignore_re, line, 0, NULL, 0);
@@ -7323,7 +7013,7 @@
  	return (ret == 0);	/* if it matched, it should be ignored. */
  }
  
-@@ -1043,13 +1039,10 @@
+@@ -1043,13 +1038,10 @@
  ignoreline(char *line, bool skip_blanks)
  {
  
@@ -7341,7 +7031,7 @@
  	return (false);
  }
  
-@@ -1068,7 +1061,7 @@
+@@ -1068,7 +1060,7 @@
  	long curpos;
  	int i, nc;
  	const char *walk;
@@ -7350,7 +7040,7 @@
  
  	skip_blanks = (*pflags & D_SKIPBLANKLINES);
  restart:
-@@ -1086,7 +1079,9 @@
+@@ -1086,7 +1078,9 @@
  			for (i = a; i <= b; i++) {
  				line = preadline(fileno(f1),
  				    ixold[i] - ixold[i - 1], ixold[i - 1]);
@@ -7361,7 +7051,7 @@
  					goto proceed;
  			}
  		}
-@@ -1094,7 +1089,9 @@
+@@ -1094,7 +1088,9 @@
  			for (i = c; i <= d; i++) {
  				line = preadline(fileno(f2),
  				    ixnew[i] - ixnew[i - 1], ixnew[i - 1]);
@@ -7372,7 +7062,7 @@
  					goto proceed;
  			}
  		}
-@@ -1376,6 +1373,7 @@
+@@ -1376,6 +1372,7 @@
  		case '\0':
  			if ((flags & D_FORCEASCII) == 0)
  				return (RH_BINARY);
@@ -7380,7 +7070,7 @@
  		case '\r':
  			if (flags & D_STRIPCR) {
  				t = getc(f);
-@@ -1433,7 +1431,7 @@
+@@ -1433,7 +1430,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -7389,7 +7079,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1652,41 +1650,18 @@
+@@ -1652,41 +1649,18 @@
  static void
  print_header(const char *file1, const char *file2)
  {
@@ -7437,15 +7127,7 @@
  /*
 --- src.orig/diffutils/sdiff/sdiff.c
 +++ src.freebsd/diffutils/sdiff/sdiff.c
-@@ -28,6 +28,7 @@
- #include <unistd.h>
- 
- #include "extern.h"
-+#include "compat.h"
- 
- static char diff_path[] = "/usr/bin/diff";
- 
-@@ -260,16 +261,19 @@
+@@ -260,16 +260,19 @@
  		case 'E':
  		case 'i':
  		case 't':
@@ -7471,15 +7153,7 @@
  			break;
 --- src.orig/ed/main.c
 +++ src.freebsd/ed/main.c
-@@ -59,6 +59,7 @@
- #include <setjmp.h>
- 
- #include "ed.h"
-+#include "compat.h"
- 
- 
- #ifdef _POSIX_SOURCE
-@@ -212,6 +213,7 @@
+@@ -212,6 +212,7 @@
  		switch (status) {
  		case EOF:
  			quit(0);
@@ -7487,7 +7161,7 @@
  		case EMOD:
  			modified = 0;
  			fputs("?\n", stderr);		/* give warning */
-@@ -231,6 +233,7 @@
+@@ -231,6 +232,7 @@
  			} else if (garrulous)
  				fprintf(stderr, "%s\n", errmsg);
  			quit(3);
@@ -7704,12 +7378,10 @@
  
  #include <dirent.h>
  #include <err.h>
-@@ -64,6 +64,12 @@
+@@ -64,6 +64,10 @@
  
  #include "find.h"
  
-+#include "compat.h"
-+
 +#ifndef REG_STARTEND
 +#define REG_STARTEND 0
 +#endif
@@ -7717,7 +7389,7 @@
  static PLAN *palloc(OPTION *);
  static long long find_parsenum(PLAN *, const char *, char *, char *);
  static long long find_parsetime(PLAN *, const char *, char *);
-@@ -371,7 +377,7 @@
+@@ -371,7 +375,7 @@
   *	Show files with EXTENDED ACL attributes.
   */
  int
@@ -7726,7 +7398,7 @@
  {
  	acl_t facl;
  	acl_type_t acl_type;
-@@ -418,7 +424,7 @@
+@@ -418,7 +422,7 @@
  #endif
  
  PLAN *
@@ -7735,7 +7407,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  	return (palloc(option));
-@@ -430,7 +436,7 @@
+@@ -430,7 +434,7 @@
   *	True always.  Makes its best shot and continues on regardless.
   */
  int
@@ -7744,7 +7416,7 @@
  {
  	/* ignore these from fts */
  	if (strcmp(entry->fts_accpath, ".") == 0 ||
-@@ -475,7 +481,7 @@
+@@ -475,7 +479,7 @@
  }
  
  PLAN *
@@ -7753,7 +7425,7 @@
  {
  
  	ftsoptions &= ~FTS_NOSTAT;	/* no optimise */
-@@ -500,7 +506,7 @@
+@@ -500,7 +504,7 @@
   *	Always true, used for -maxdepth, -mindepth, -xdev, -follow, and -true
   */
  int
@@ -7762,7 +7434,7 @@
  {
  	return 1;
  }
-@@ -560,7 +566,7 @@
+@@ -560,7 +564,7 @@
   *	True if the file or directory is empty
   */
  int
@@ -7771,7 +7443,7 @@
  {
  	if (S_ISREG(entry->fts_statp->st_mode) &&
  	    entry->fts_statp->st_size == 0)
-@@ -588,7 +594,7 @@
+@@ -588,7 +592,7 @@
  }
  
  PLAN *
@@ -7780,7 +7452,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -865,7 +871,7 @@
+@@ -865,7 +869,7 @@
   *	basis.
   */
  PLAN *
@@ -7789,7 +7461,7 @@
  {
  	ftsoptions &= ~FTS_PHYSICAL;
  	ftsoptions |= FTS_LOGICAL;
-@@ -874,6 +880,64 @@
+@@ -874,6 +878,64 @@
  }
  
  #if HAVE_STRUCT_STATFS_F_FSTYPENAME
@@ -7854,7 +7526,7 @@
  /*
   * -fstype functions --
   *
-@@ -884,9 +948,9 @@
+@@ -884,9 +946,9 @@
  {
  	static dev_t curdev;	/* need a guaranteed illegal dev value */
  	static int first = 1;
@@ -7867,7 +7539,7 @@
  	char *p, save[2] = {0,0};
  
  	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
-@@ -897,7 +961,7 @@
+@@ -897,7 +959,7 @@
  		curdev = entry->fts_statp->st_dev;
  
  		/*
@@ -7876,7 +7548,7 @@
  		 * not where it points.
  		 */
  		if (entry->fts_info == FTS_SL ||
-@@ -913,7 +977,7 @@
+@@ -913,7 +975,7 @@
  		} else
  			p = NULL;
  
@@ -7885,7 +7557,7 @@
  			if (!ignore_readdir_race || errno != ENOENT) {
  				warn("statfs: %s", entry->fts_accpath);
  				exitstatus = 1;
-@@ -932,14 +996,14 @@
+@@ -932,14 +994,14 @@
  		 * Further tests may need both of these values, so
  		 * always copy both of them.
  		 */
@@ -7903,7 +7575,7 @@
  	default:
  		abort();
  	}
-@@ -956,17 +1020,10 @@
+@@ -956,17 +1018,10 @@
  
  	new = palloc(option);
  	switch (*fsname) {
@@ -7922,7 +7594,7 @@
  			return new;
  		}
  		break;
-@@ -1028,7 +1085,7 @@
+@@ -1028,7 +1083,7 @@
   */
  
  PLAN *
@@ -7931,7 +7603,7 @@
  {
  	if (strcmp(option->name, "-ignore_readdir_race") == 0)
  		ignore_readdir_race = 1;
-@@ -1123,14 +1180,14 @@
+@@ -1123,14 +1178,14 @@
   *	Always true - prints the current entry to stdout in "ls" format.
   */
  int
@@ -7948,7 +7620,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  	isoutput = 1;
-@@ -1259,13 +1316,15 @@
+@@ -1259,13 +1314,15 @@
   *	of the getgrnam() 9.2.1 [POSIX.1] function returns NULL.
   */
  int
@@ -7967,7 +7639,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -1279,13 +1338,15 @@
+@@ -1279,13 +1336,15 @@
   *	of the getpwuid() 9.2.2 [POSIX.1] function returns NULL.
   */
  int
@@ -7986,7 +7658,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -1320,7 +1381,7 @@
+@@ -1320,7 +1379,7 @@
  	mode_t mode;
  
  	mode = entry->fts_statp->st_mode &
@@ -7995,7 +7667,7 @@
  	if (plan->flags & F_ATLEAST)
  		return (plan->m_data | mode) == mode;
  	else if (plan->flags & F_ANY)
-@@ -1365,14 +1426,14 @@
+@@ -1365,14 +1424,14 @@
   *	standard output.
   */
  int
@@ -8012,7 +7684,7 @@
  {
  	isoutput = 1;
  
-@@ -1386,7 +1447,7 @@
+@@ -1386,7 +1445,7 @@
   *	standard output followed by a NUL character
   */
  int
@@ -8021,7 +7693,7 @@
  {
  	fputs(entry->fts_path, stdout);
  	fputc('\0', stdout);
-@@ -1401,7 +1462,7 @@
+@@ -1401,7 +1460,7 @@
   *	Prune a portion of the hierarchy.
   */
  int
@@ -8030,7 +7702,7 @@
  {
  	if (fts_set(tree, entry, FTS_SKIP))
  		err(1, "%s", entry->fts_path);
-@@ -1480,7 +1541,7 @@
+@@ -1480,7 +1539,7 @@
  /* c_simple covers c_prune, c_openparen, c_closeparen, c_not, c_or, c_true, c_false */
  
  PLAN *
@@ -8039,7 +7711,7 @@
  {
  	return palloc(option);
  }
-@@ -1562,7 +1623,7 @@
+@@ -1562,7 +1621,7 @@
   *      than we expect based on its size.
   */
  int
@@ -8048,7 +7720,7 @@
  {
  	off_t expected_blocks;
  
-@@ -1571,7 +1632,7 @@
+@@ -1571,7 +1630,7 @@
  }
  
  PLAN *
@@ -8057,7 +7729,7 @@
  {
  	ftsoptions &= ~FTS_NOSTAT;
  
-@@ -1692,7 +1753,7 @@
+@@ -1692,7 +1751,7 @@
   *	different device ID (st_dev, see stat() S5.6.2 [POSIX.1])
   */
  PLAN *
@@ -8066,7 +7738,7 @@
  {
  	ftsoptions |= FTS_XDEV;
  
-@@ -1723,13 +1784,13 @@
+@@ -1723,13 +1782,13 @@
   */
  
  int
@@ -8082,7 +7754,7 @@
  {
  	abort();
  }
-@@ -1741,7 +1802,7 @@
+@@ -1741,7 +1800,7 @@
   * AND operator. Since AND is implicit, no node is allocated.
   */
  PLAN *
@@ -8091,7 +7763,7 @@
  {
  	return NULL;
  }
-@@ -1795,7 +1856,7 @@
+@@ -1795,7 +1854,7 @@
   *	Always false.
   */
  int
@@ -8100,7 +7772,7 @@
  {
  	return 0;
  }
-@@ -1808,7 +1869,7 @@
+@@ -1808,7 +1867,7 @@
   *	Exits the program
   */
  int
@@ -8130,16 +7802,7 @@
  
  #include <err.h>
  #include <errno.h>
-@@ -53,6 +54,8 @@
- 
- #include "find.h"
- 
-+#include "compat.h"
-+
- /* Derived from the print routines in the ls(1) source code. */
- 
- static void printlink(char *);
-@@ -62,13 +65,29 @@
+@@ -62,13 +63,29 @@
  printlong(char *name, char *accpath, struct stat *sb)
  {
  	char modep[15];
@@ -8193,27 +7856,24 @@
  static void usage(void);
 --- src.orig/findutils/find/misc.c
 +++ src.freebsd/findutils/find/misc.c
-@@ -50,6 +50,11 @@
- #include <string.h>
+@@ -51,6 +51,10 @@
  
  #include "find.h"
-+#include "compat.h"
-+
+ 
 +#if defined(__linux__) && !defined(__GLIBC__)
 +#include <rpmatch.h>
 +#endif
- 
++
  /*
   * brace_subst --
+  *	Replace occurrences of {} in s1 with s2 and return the result string.
 --- src.orig/findutils/xargs/strnsubst.c
 +++ src.freebsd/findutils/xargs/strnsubst.c
-@@ -15,6 +15,9 @@
+@@ -15,6 +15,7 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
 +#include <stdint.h>
-+
-+#include "compat.h"
  
  void	strnsubst(char **, const char *, const char *, size_t);
  
@@ -8229,15 +7889,7 @@
  #include <err.h>
  #include <errno.h>
  #include <fcntl.h>
-@@ -67,6 +67,7 @@
- #include <unistd.h>
- 
- #include "pathnames.h"
-+#include "compat.h"
- 
- static void	parse_input(int, char *[]);
- static void	prerun(int, char *[]);
-@@ -92,7 +93,7 @@
+@@ -92,7 +92,7 @@
  static const char *eofstr;
  static int count, insingle, indouble, oflag, pflag, tflag, Rflag, rval, zflag;
  static int cnt, Iflag, jfound, Lflag, Sflag, wasquoted, xflag;
@@ -8246,7 +7898,7 @@
  static pid_t *childpids;
  
  static volatile int childerr;
-@@ -597,6 +598,7 @@
+@@ -597,6 +597,7 @@
  	case -1:
  		warn("vfork");
  		xexit(*argv, 1);
@@ -8254,7 +7906,7 @@
  	case 0:
  		if (oflag) {
  			if ((fd = open(_PATH_TTY, O_RDONLY)) == -1)
-@@ -691,7 +693,7 @@
+@@ -691,7 +692,7 @@
  static void
  pids_init(void)
  {
@@ -8263,7 +7915,7 @@
  
  	if ((childpids = malloc(maxprocs * sizeof(*childpids))) == NULL)
  		errx(1, "malloc failed");
-@@ -750,7 +752,7 @@
+@@ -750,7 +751,7 @@
  static int
  findslot(pid_t pid)
  {
@@ -8272,7 +7924,7 @@
  
  	for (slot = 0; slot < maxprocs; slot++)
  		if (childpids[slot] == pid)
-@@ -772,22 +774,22 @@
+@@ -772,22 +773,22 @@
  prompt(void)
  {
  	regex_t cre;
@@ -8464,16 +8116,7 @@
  #include <stdio.h>
  #include <string.h>
  #include <stdlib.h>
-@@ -69,6 +79,8 @@
- #include <getopt.h>
- #include <time.h>
- 
-+#include "compat.h"
-+
- /* what type of file are we dealing with */
- enum filetype {
- 	FT_GZIP,
-@@ -339,7 +351,7 @@
+@@ -339,7 +349,7 @@
  int
  main(int argc, char **argv)
  {
@@ -8482,7 +8125,7 @@
  #ifndef SMALL
  	char *gzip;
  	int len;
-@@ -388,7 +400,7 @@
+@@ -388,7 +398,7 @@
  			break;
  		case 'V':
  			display_version();
@@ -8491,7 +8134,7 @@
  #ifndef SMALL
  		case 'a':
  			fprintf(stderr, "%s: option --ascii ignored on this system\n", progname);
-@@ -401,7 +413,7 @@
+@@ -401,7 +411,7 @@
  			break;
  		case 'L':
  			display_license();
@@ -8500,7 +8143,7 @@
  		case 'N':
  			nflag = 0;
  			Nflag = 1;
-@@ -1140,9 +1152,11 @@
+@@ -1140,9 +1150,11 @@
  	if (futimens(fd, times) < 0)
  		maybe_warn("couldn't futimens: %s", file);
  
@@ -8512,7 +8155,7 @@
  }
  #endif
  
-@@ -1231,7 +1245,7 @@
+@@ -1231,7 +1243,7 @@
  }
  
  static void
@@ -8521,7 +8164,7 @@
  {
  
  	if (remove_file != NULL)
-@@ -1240,7 +1254,7 @@
+@@ -1240,7 +1252,7 @@
  }
  
  static void
@@ -8530,7 +8173,7 @@
  {
  
  	print_info = 1;
-@@ -1250,7 +1264,7 @@
+@@ -1250,7 +1262,7 @@
  setup_signals(void)
  {
  
@@ -8539,7 +8182,7 @@
  	signal(SIGINT, got_sigint);
  }
  
-@@ -2279,7 +2293,7 @@
+@@ -2279,7 +2291,7 @@
      " -V --version         display program version\n"
      " -v --verbose         print extra statistics\n",
  #endif
@@ -8617,16 +8260,6 @@
  	u_int count, i;
  	struct s_zstate *zs;
 File src.orig/include is a regular file while file src.freebsd/include is a directory
---- src.orig/m4/eval.c
-+++ src.freebsd/m4/eval.c
-@@ -60,6 +60,7 @@
- #include "stdd.h"
- #include "extern.h"
- #include "pathnames.h"
-+#include "compat.h"
- 
- static void	dodefn(const char *);
- static void	dopushdef(const char *, const char *);
 --- src.orig/m4/look.c
 +++ src.freebsd/m4/look.c
 @@ -70,20 +70,20 @@
@@ -8684,15 +8317,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #include <locale.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -61,6 +62,8 @@
- #include <wchar.h>
- #include <wctype.h>
- 
-+#include "compat.h"
-+
- #define	BS	'\b'		/* backspace */
- #define	TAB	'\t'		/* tab */
- #define	SPACE	' '		/* space */
 --- src.orig/miscutils/hexdump/conv.c
 +++ src.freebsd/miscutils/hexdump/conv.c
 @@ -104,7 +104,7 @@
@@ -8813,14 +8437,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	int digits;
 --- src.orig/miscutils/hexdump/parse.c
 +++ src.freebsd/miscutils/hexdump/parse.c
-@@ -46,13 +46,14 @@
- #include <ctype.h>
- #include <string.h>
- #include "hexdump.h"
-+#include "compat.h"
- 
- FU *endfu;					/* format at end-of-data */
- 
+@@ -52,7 +52,7 @@
  void
  addfile(const char *name)
  {
@@ -8829,7 +8446,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	FILE *fp;
  	int ch;
  	char buf[2048 + 1];
-@@ -77,7 +78,7 @@
+@@ -77,7 +77,7 @@
  void
  add(const char *fmt)
  {
@@ -8838,7 +8455,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	static FS **nextfs;
  	FS *tfs;
  	FU *tfu, **nextfu;
-@@ -153,7 +154,7 @@
+@@ -153,7 +153,7 @@
  {
  	FU *fu;
  	int bcnt, cursize;
@@ -8847,7 +8464,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	int prec;
  
  	/* figure out the data block size needed for each format unit */
-@@ -210,8 +211,8 @@
+@@ -210,8 +210,8 @@
  	enum { NOTOKAY, USEBCNT, USEPREC } sokay;
  	PR *pr, **nextpr;
  	FU *fu;
@@ -8858,7 +8475,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	int nconv, prec;
  
  	prec = 0;
-@@ -290,9 +291,10 @@
+@@ -290,9 +290,10 @@
  				goto isint;
  			case 'o': case 'u': case 'x': case 'X':
  				pr->flags = F_UINT;
@@ -8872,7 +8489,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				switch(fu->bcnt) {
  				case 0: case 4:
  					pr->bcnt = 4;
-@@ -334,6 +336,7 @@
+@@ -334,6 +335,7 @@
  				switch(sokay) {
  				case NOTOKAY:
  					badsfmt();
@@ -8880,7 +8497,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				case USEBCNT:
  					pr->bcnt = fu->bcnt;
  					break;
-@@ -354,9 +357,10 @@
+@@ -354,9 +356,10 @@
  					++p2;
  					switch(p1[2]) {
  					case 'd': case 'o': case'x':
@@ -8896,19 +8513,15 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  						p1[3] = '\0';
 --- src.orig/miscutils/kill/kill.c
 +++ src.freebsd/miscutils/kill/kill.c
-@@ -60,9 +60,10 @@
- #include "bltin/bltin.h"
- #endif
+@@ -62,7 +62,6 @@
  
-+#include "compat.h"
-+
  static void nosig(const char *);
  static void printsignals(FILE *);
 -static int signame_to_signum(const char *);
  static void usage(void);
  
  int
-@@ -91,9 +92,9 @@
+@@ -91,9 +90,9 @@
  				errx(2, "illegal signal number: %s", *argv);
  			if (numsig >= 128)
  				numsig -= 128;
@@ -8920,7 +8533,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			return (0);
  		}
  		printsignals(stdout);
-@@ -157,20 +158,6 @@
+@@ -157,20 +156,6 @@
  	return (errors);
  }
  
@@ -8941,7 +8554,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  static void
  nosig(const char *name)
  {
-@@ -189,9 +176,9 @@
+@@ -189,9 +174,9 @@
  {
  	int n;
  
@@ -9142,15 +8755,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #include <sys/types.h>
  #include <sys/uio.h>
  #include <dirent.h>
-@@ -50,6 +51,7 @@
- #include <unistd.h>
- 
- #include "ttymsg.h"
-+#include "compat.h"
- 
- /*
-  * Display the contents of a uio structure on a terminal.  Used by wall(1),
-@@ -68,6 +70,7 @@
+@@ -68,6 +69,7 @@
  	static char errbuf[1024];
  	char *p;
  	int forked;
@@ -9158,7 +8763,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  	forked = 0;
  	if (iovcnt > (int)(sizeof(localiov) / sizeof(localiov[0])))
-@@ -143,7 +146,8 @@
+@@ -143,7 +145,8 @@
  			/* wait at most tmout seconds */
  			(void) signal(SIGALRM, SIG_DFL);
  			(void) signal(SIGTERM, SIG_DFL); /* XXX */
@@ -9198,7 +8803,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #include <sys/stat.h>
  #include <sys/time.h>
  
-@@ -58,17 +56,22 @@
+@@ -58,13 +56,16 @@
  #include <ctype.h>
  #include <err.h>
  #include <errno.h>
@@ -9215,13 +8820,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #include <utmpx.h>
  #include <wchar.h>
  #include <wctype.h>
- 
-+#include "compat.h"
-+
- void done(int);
- void do_write(int, char *, char *, const char *);
- static void usage(void);
-@@ -80,7 +83,7 @@
+@@ -80,7 +81,7 @@
  int
  main(int argc, char **argv)
  {
@@ -9230,7 +8829,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	cap_rights_t rights;
  	struct passwd *pwd;
  	time_t atime;
-@@ -203,7 +206,8 @@
+@@ -203,7 +204,8 @@
  {
  	struct utmpx lu, *u;
  
@@ -9240,7 +8839,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	while ((u = getutxline(&lu)) != NULL)
  		if (u->ut_type == USER_PROCESS &&
  		    strcmp(user, u->ut_user) == 0) {
-@@ -244,7 +248,7 @@
+@@ -244,7 +246,7 @@
  				continue;	/* bad term? skip */
  			if (myuid && !msgsok)
  				continue;	/* skip ttys with msgs off */
@@ -9249,7 +8848,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				user_is_me = 1;
  				continue;	/* don't write to yourself */
  			}
-@@ -303,10 +307,9 @@
+@@ -303,10 +305,9 @@
  	fd = openat(devfd, tty, O_WRONLY);
  	if (fd < 0)
  		err(1, "openat(%s%s)", _PATH_DEV, tty);
@@ -9262,7 +8861,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  	(void)signal(SIGINT, done);
  	(void)signal(SIGHUP, done);
-@@ -328,7 +331,7 @@
+@@ -328,7 +329,7 @@
   * done - cleanup and exit
   */
  void
@@ -9337,15 +8936,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
 --- src.orig/patch/patch.c
 +++ src.freebsd/patch/patch.c
-@@ -46,6 +46,7 @@
- #include "inp.h"
- #include "backupfile.h"
- #include "pathnames.h"
-+#include "compat.h"
- 
- mode_t		filemode = 0644;
- 
-@@ -558,7 +559,11 @@
+@@ -558,7 +558,11 @@
  	Argv_last = Argv;
  	if (!Argc)
  		return;
@@ -9359,15 +8950,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  		case 'b':
 --- src.orig/patch/pch.c
 +++ src.freebsd/patch/pch.c
-@@ -43,6 +43,7 @@
- #include "util.h"
- #include "pch.h"
- #include "pathnames.h"
-+#include "compat.h"
- 
- /* Patch (diff listing) abstract type. */
- 
-@@ -1214,14 +1215,15 @@
+@@ -1214,14 +1214,15 @@
  size_t
  pgets(bool do_indent)
  {
@@ -9389,7 +8972,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  				buf_size *= 2;
  			free(buf);
  			buf = malloc(buf_size);
-@@ -1240,8 +1242,10 @@
+@@ -1240,8 +1241,10 @@
  		}
  		memcpy(buf, line, len - skipped);
  		buf[len - skipped] = '\0';
@@ -9400,16 +8983,6 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
 +	return (len > 0) ? len : 0;
  }
  
- 
---- src.orig/patch/util.c
-+++ src.freebsd/patch/util.c
-@@ -46,6 +46,7 @@
- #include "util.h"
- #include "backupfile.h"
- #include "pathnames.h"
-+#include "compat.h"
- 
- /* Rename a file, copying it if necessary. */
  
 --- src.orig/sed/compile.c
 +++ src.freebsd/sed/compile.c
@@ -9435,17 +9008,16 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			else {
 --- src.orig/sed/main.c
 +++ src.freebsd/sed/main.c
-@@ -67,6 +67,9 @@
- 
+@@ -68,6 +68,8 @@
  #include "defs.h"
  #include "extern.h"
-+#include "compat.h"
-+
-+extern const char *__progname;
  
++extern const char *__progname;
++
  /*
   * Linked list of units (strings and files) to be compiled
-@@ -213,7 +216,7 @@
+  */
+@@ -213,7 +215,7 @@
  	(void)fprintf(stderr,
  	    "usage: %s script [-Ealnru] [-i extension] [file ...]\n"
  	    "\t%s [-Ealnu] [-i extension] [-e script] ... [-f script_file]"
@@ -9454,7 +9026,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	exit(1);
  }
  
-@@ -262,7 +265,7 @@
+@@ -262,7 +264,7 @@
  			state = ST_STRING;
  			goto again;
  		default:
@@ -9863,15 +9435,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	char *stacknxt;
 --- src.orig/sh/miscbltin.c
 +++ src.freebsd/sh/miscbltin.c
-@@ -63,6 +63,7 @@
- #include "mystring.h"
- #include "syntax.h"
- #include "trap.h"
-+#include "compat.h"
- 
- #undef eflag
- 
-@@ -155,7 +156,7 @@
+@@ -155,7 +155,7 @@
   */
  
  int
@@ -9880,7 +9444,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	char **ap;
  	int backslash;
-@@ -351,7 +352,7 @@
+@@ -351,7 +351,7 @@
  
  
  int
@@ -9889,7 +9453,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	char *ap;
  	int mask;
-@@ -515,7 +516,7 @@
+@@ -515,7 +515,7 @@
  }
  
  int
@@ -9898,7 +9462,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	rlim_t val = 0;
  	enum limithow how = SOFT | HARD;
-@@ -567,7 +568,8 @@
+@@ -567,7 +567,8 @@
  				error("bad number");
  			uval *= l->factor;
  			val = (rlim_t)uval;
@@ -10115,15 +9679,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  /*
 --- src.orig/sh/parser.c
 +++ src.freebsd/sh/parser.c
-@@ -65,6 +65,7 @@
- #ifndef NO_HISTORY
- #include "myhistedit.h"
- #endif
-+#include "compat.h"
- 
- /*
-  * Shell command parser.
-@@ -592,6 +593,9 @@
+@@ -592,6 +592,9 @@
  	case TRP:
  		if (!redir)
  			synexpect(-1);
@@ -10133,7 +9689,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	case TWORD:
  		tokpushback++;
  		n1 = simplecmd(rpp, redir);
-@@ -1092,7 +1096,6 @@
+@@ -1092,7 +1095,6 @@
  	struct jmploc jmploc;
  	struct jmploc *const savehandler = handler;
  	size_t savelen;
@@ -10141,7 +9697,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	const int bq_startlinno = plinno;
  	char *volatile ostr = NULL;
  	struct parsefile *const savetopfile = getcurrentfile();
-@@ -1180,18 +1183,16 @@
+@@ -1180,18 +1182,16 @@
  	(*nlpp)->next = NULL;
  
  	if (oldstyle) {
@@ -10165,7 +9721,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  	(*nlpp)->n = n;
          if (oldstyle) {
-@@ -1240,12 +1241,13 @@
+@@ -1240,12 +1240,13 @@
  readcstyleesc(char *out)
  {
  	int c, vc, i, n;
@@ -10180,7 +9736,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	case '\n':
  		plinno++;
  		if (doprompt)
-@@ -1989,7 +1991,7 @@
+@@ -1989,7 +1990,7 @@
  static void
  getusername(char *name, size_t namelen)
  {
@@ -10189,7 +9745,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	struct passwd *pw;
  	uid_t euid;
  
-@@ -2024,7 +2026,7 @@
+@@ -2024,7 +2025,7 @@
   *    should be added here.
   */
  char *
@@ -10211,7 +9767,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	memory[fd] = 0;
 --- src.orig/sh/trap.c
 +++ src.freebsd/sh/trap.c
-@@ -58,8 +58,10 @@
+@@ -58,8 +58,9 @@
  #include "trap.h"
  #include "mystring.h"
  #include "builtins.h"
@@ -10219,11 +9775,10 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #include "myhistedit.h"
 -
 +#endif
-+#include "compat.h"
  
  /*
   * Sigmode records the current value of the signal handlers for the various
-@@ -111,10 +113,11 @@
+@@ -111,10 +112,11 @@
  
  		if (strncasecmp(sig, "SIG", 3) == 0)
  			sig += 3;
@@ -10238,7 +9793,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	}
  	return (-1);
  }
-@@ -129,16 +132,17 @@
+@@ -129,16 +131,17 @@
  	int n, outlen;
  
  	outlen = 0;
@@ -10261,7 +9816,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  			out1str("\n");
  			outlen = 0;
  		} else {
-@@ -152,7 +156,7 @@
+@@ -152,7 +155,7 @@
   * The trap builtin.
   */
  int
@@ -10270,7 +9825,7 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	char *action;
  	int signo;
-@@ -169,14 +173,15 @@
+@@ -169,14 +172,15 @@
  	argv = argptr;
  
  	if (*argv == NULL) {

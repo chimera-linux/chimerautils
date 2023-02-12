@@ -57,8 +57,6 @@ __FBSDID("$FreeBSD$");
 
 #include "extern.h"
 
-#include "compat.h"
-
 #define	cp_pct(x, y)	((y == 0) ? 0 : (int)(100.0 * (x) / (y)))
 
 /*

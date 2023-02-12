@@ -46,7 +46,6 @@ __FBSDID("$FreeBSD$");
 #include <ctype.h>
 #include <string.h>
 #include "hexdump.h"
-#include "compat.h"
 
 FU *endfu;					/* format at end-of-data */
 

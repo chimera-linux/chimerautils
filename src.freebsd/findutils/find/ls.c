@@ -54,8 +54,6 @@ __FBSDID("$FreeBSD$");
 
 #include "find.h"
 
-#include "compat.h"
-
 /* Derived from the print routines in the ls(1) source code. */
 
 static void printlink(char *);

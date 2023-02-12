@@ -75,8 +75,6 @@ __FBSDID("$FreeBSD$");
 #include "ls.h"
 #include "extern.h"
 
-#include "compat.h"
-
 /*
  * Upward approximation of the maximum number of characters needed to
  * represent a value of integral type t as a string, excluding the

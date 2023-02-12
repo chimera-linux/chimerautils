@@ -35,7 +35,6 @@ __FBSDID("$FreeBSD$");
 #include <limits.h>
 
 #include "diff.h"
-#include "compat.h"
 
 static int selectfile(const struct dirent *);
 static void diffit(struct dirent *, char *, size_t, char *, size_t, int);

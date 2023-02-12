@@ -48,8 +48,6 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 #include <utmpx.h>
 
-#include "compat.h"
-
 static void	heading(void);
 static void	process_utmp(void);
 static void	quick(void);

@@ -25,17 +25,13 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef WCHAR_H
+#define WCHAR_H
 
-#include_next <sys/stat.h>
+#include_next <wchar.h>
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
-#endif
-
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+#ifndef iswascii
+#define iswascii(wc) (((wc) & ~0x7F) == 0)
 #endif
 
 #endif

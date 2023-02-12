@@ -53,8 +53,6 @@ __FBSDID("$FreeBSD$");
 #include "file.h"
 #include "radixsort.h"
 
-#include "compat.h"
-
 unsigned long long free_memory = 1000000;
 unsigned long long available_free_memory = 1000000;
 

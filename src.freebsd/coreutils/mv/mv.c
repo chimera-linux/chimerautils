@@ -67,8 +67,6 @@ __FBSDID("$FreeBSD$");
 #include <sysexits.h>
 #include <unistd.h>
 
-#include "compat.h"
-
 /* Exit code for a failed exec. */
 #define EXEC_FAILED 127
 

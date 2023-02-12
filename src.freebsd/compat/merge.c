@@ -62,8 +62,6 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <stdint.h>
 
-#include "compat.h"
-
 #ifdef I_AM_MERGESORT_B
 #include "block_abi.h"
 #define	DECLARE_CMP	DECLARE_BLOCK(int, cmp, const void *, const void *)

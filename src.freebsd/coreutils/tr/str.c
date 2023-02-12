@@ -51,8 +51,6 @@ static const char sccsid[] = "@(#)str.c	8.2 (Berkeley) 4/28/95";
 
 #include "extern.h"
 
-#include "compat.h"
-
 static int      backslash(STR *, int *);
 static int	bracket(STR *);
 static void	genclass(STR *);

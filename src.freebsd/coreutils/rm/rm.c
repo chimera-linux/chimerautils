@@ -61,8 +61,6 @@ __FBSDID("$FreeBSD$");
 #include <sysexits.h>
 #include <unistd.h>
 
-#include "compat.h"
-
 static int dflag, eval, fflag, iflag, vflag, stdin_ok;
 static int rflag, Iflag, xflag;
 static uid_t uid;

@@ -62,8 +62,6 @@ __FBSDID("$FreeBSD$");
 #include <wchar.h>
 #include <wctype.h>
 
-#include "compat.h"
-
 #define	BS	'\b'		/* backspace */
 #define	TAB	'\t'		/* tab */
 #define	SPACE	' '		/* space */

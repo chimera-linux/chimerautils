@@ -48,8 +48,6 @@ __FBSDID("$FreeBSD$");
 #include "coll.h"
 #include "radixsort.h"
 
-#include "compat.h"
-
 #define DEFAULT_SORT_FUNC_RADIXSORT mergesort
 
 #define TINY_NODE(sl) ((sl)->tosort_num < 65)

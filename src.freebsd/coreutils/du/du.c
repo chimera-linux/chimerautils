@@ -54,6 +54,7 @@ __FBSDID("$FreeBSD$");
 #include <fnmatch.h>
 #include <fts.h>
 #include <getopt.h>
+#include <libutil.h>
 #include <locale.h>
 #include <signal.h>
 #include <stdint.h>
@@ -62,8 +63,6 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <sysexits.h>
 #include <unistd.h>
-
-#include "compat.h"
 
 #define SI_OPT	(CHAR_MAX + 1)
 

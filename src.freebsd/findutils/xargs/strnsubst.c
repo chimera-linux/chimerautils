@@ -17,8 +17,6 @@ __FBSDID("$FreeBSD$");
 #include <unistd.h>
 #include <stdint.h>
 
-#include "compat.h"
-
 void	strnsubst(char **, const char *, const char *, size_t);
 
 /*

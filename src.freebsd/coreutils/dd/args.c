@@ -55,8 +55,6 @@ __FBSDID("$FreeBSD$");
 #include "dd.h"
 #include "extern.h"
 
-#include "compat.h"
-
 static int	c_arg(const void *, const void *);
 static int	c_conv(const void *, const void *);
 static int	c_iflag(const void *, const void *);

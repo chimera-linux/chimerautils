@@ -43,7 +43,6 @@
 #include "util.h"
 #include "pch.h"
 #include "pathnames.h"
-#include "compat.h"
 
 /* Patch (diff listing) abstract type. */
 

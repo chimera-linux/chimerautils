@@ -63,8 +63,6 @@ __FBSDID("$FreeBSD$");
 
 #include "vary.h"
 
-#include "compat.h"
-
 #ifndef	TM_YEAR_BASE
 #define	TM_YEAR_BASE	1900
 #endif

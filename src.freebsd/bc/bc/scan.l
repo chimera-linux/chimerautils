@@ -31,7 +31,6 @@ __FBSDID("$FreeBSD$");
 #include "extern.h"
 #include "bc.h"
 #include "pathnames.h"
-#include "compat.h"
 
 int		lineno;
 bool		interactive;

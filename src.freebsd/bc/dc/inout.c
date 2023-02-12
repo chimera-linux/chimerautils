@@ -25,7 +25,6 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 
 #include "extern.h"
-#include "compat.h"
 
 #define MAX_CHARS_PER_LINE 68
 

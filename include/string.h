@@ -25,17 +25,20 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef STRING_H
+#define STRING_H
 
-#include_next <sys/stat.h>
+#include_next <string.h>
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#include "config.h"
+
+void strmode(int, char *);
+
+#ifndef HAVE_STRLCPY
+size_t strlcpy(char *d, const char *s, size_t n);
 #endif
-
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+#ifndef HAVE_STRLCAT
+size_t strlcat(char *d, const char *s, size_t n);
 #endif
 
 #endif

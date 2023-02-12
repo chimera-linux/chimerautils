@@ -56,7 +56,6 @@ __FBSDID("$FreeBSD$");
 
 #include "stty.h"
 #include "extern.h"
-#include "compat.h"
 
 int
 main(int argc, char *argv[])

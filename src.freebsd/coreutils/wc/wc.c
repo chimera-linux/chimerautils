@@ -68,8 +68,6 @@ __FBSDID("$FreeBSD$");
 #include <libcasper.h>
 #include <casper/cap_fileargs.h>
 
-#include "compat.h"
-
 static fileargs_t *fa;
 static uintmax_t tlinect, twordct, tcharct, tlongline;
 static int doline, doword, dochar, domulti, dolongline;

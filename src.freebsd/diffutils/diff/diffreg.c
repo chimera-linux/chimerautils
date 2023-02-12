@@ -91,7 +91,6 @@ __FBSDID("$FreeBSD$");
 
 #include "diff.h"
 #include "xmalloc.h"
-#include "compat.h"
 
 /*
  * diff - compare two files.

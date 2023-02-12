@@ -58,8 +58,9 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <unistd.h>
 
+#include <libutil.h>
+
 #include "extern.h"
-#include "compat.h"
 
 bool	bflag, lflag, sflag, xflag, zflag;
 

@@ -70,8 +70,6 @@ __FBSDID("$FreeBSD$");
 #include <wchar.h>
 #include <wctype.h>
 
-#include "compat.h"
-
 void done(int);
 void do_write(int, char *, char *, const char *);
 static void usage(void);

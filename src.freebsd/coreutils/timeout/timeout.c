@@ -43,8 +43,6 @@ __FBSDID("$FreeBSD$");
 #include <sysexits.h>
 #include <unistd.h>
 
-#include "compat.h"
-
 #define EXIT_TIMEOUT 124
 
 extern char *__progname;

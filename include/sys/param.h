@@ -25,17 +25,36 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef SYS_PARAM_H
+#define SYS_PARAM_H
 
-#include_next <sys/stat.h>
+#include_next <sys/param.h>
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+/* max raw I/O transfer size */
+/*
+ * XXX: this is _probably_ going to be 1M on the system if it were
+ * running FreeBSD.  What is the corresponding Linux parameter here
+ * and the sanctioned way to retrieve it?
+ */
+#ifndef MAXPHYS
+#define MAXPHYS (1024 * 1024)
 #endif
 
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+/*
+ * File system parameters and macros.
+ *
+ * MAXBSIZE - Filesystems are made out of blocks of at most MAXBSIZE
+ *            bytes per block.  MAXBSIZE may be made larger without
+ *            effecting any existing filesystems as long as it does
+ *            not exceed MAXPHYS, and may be made smaller at the
+ *            risk of not being able to use filesystems which
+ *            require a block size exceeding MAXBSIZE.
+ */
+#ifndef MAXBSIZE
+#define MAXBSIZE 65536 /* must be power of 2 */
 #endif
+
+#define roundup2(x, y)  (((x)+((y)-1))&(~((y)-1))) /* if y is powers of two */
+#define nitems(x) (sizeof((x)) / sizeof((x)[0]))
 
 #endif

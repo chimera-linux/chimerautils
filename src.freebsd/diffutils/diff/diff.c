@@ -37,7 +37,6 @@ __FBSDID("$FreeBSD$");
 
 #include "diff.h"
 #include "xmalloc.h"
-#include "compat.h"
 
 int	 Nflag, Pflag, rflag, sflag, Tflag, cflag, Wflag;
 int	 diff_format, diff_context, status, ignore_file_case, suppress_common;

@@ -25,17 +25,27 @@
  * SUCH DAMAGE.
  */
 
-#ifndef SYS_STAT_H
-#define SYS_STAT_H
+#ifndef STDLIB_H
+#define STDLIB_H
 
-#include_next <sys/stat.h>
+#include_next <stdlib.h>
 
-#ifndef DEFFILEMODE
-#define DEFFILEMODE (S_IRUSR|S_IWUSR|S_IRGRP|S_IWGRP|S_IROTH|S_IWOTH)
+#include "config.h"
+
+int mergesort(void *, size_t, size_t, int (*)(const void *, const void *));
+int heapsort(void *, size_t, size_t, int (*)(const void *, const void *));
+char *getbsize(int *, long *);
+
+#ifndef HAVE_STRTONUM
+long long strtonum(const char *nptr, long long minv, long long maxv, const char **errstr);
 #endif
 
-#ifndef ALLPERMS
-#define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
+#ifndef HAVE_REALLOCF
+void *reallocf(void *ptr, size_t size);
+#endif
+
+#ifndef HAVE_STRTOQ
+#define strtoq strtoll
 #endif
 
 #endif
