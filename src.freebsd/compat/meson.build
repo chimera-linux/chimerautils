@@ -17,5 +17,6 @@ libcompat_sources = [
 libcompat = static_library(
     'compat',
     libcompat_sources,
-    include_directories : [inc, cinc],
+    include_directories: [inc, cinc],
+    c_args: ['-DHAVE_NBTOOL_CONFIG_H'],
 )
