@@ -1379,7 +1379,7 @@ f_perm(PLAN *plan, FTSENT *entry)
 	mode_t mode;
 
 	mode = entry->fts_statp->st_mode &
-	    (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO);
+	    (S_ISUID|S_ISGID|S_ISTXT|S_IRWXU|S_IRWXG|S_IRWXO);
 	if (plan->flags & F_ATLEAST)
 		return (plan->m_data | mode) == mode;
 	else if (plan->flags & F_ANY)

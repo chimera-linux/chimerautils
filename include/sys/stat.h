@@ -46,6 +46,10 @@
 #define ALLPERMS (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO)
 #endif
 
+#ifndef S_ISTXT
+#define S_ISTXT S_ISVTX
+#endif
+
 #ifdef HAD___UNUSED
 #define __unused __attribute__((unused))
 #endif

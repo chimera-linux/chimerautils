@@ -204,12 +204,12 @@ setmode(const char *p)
 		}
 		if (errno == ERANGE && (perml == LONG_MAX || perml == LONG_MIN))
 			goto out;
-		if (perml & ~(STANDARD_BITS|S_ISVTX)) {
+		if (perml & ~(STANDARD_BITS|S_ISTXT)) {
 			errno = EINVAL;
 			goto out;
 		}
 		perm = (mode_t)perml;
-		ADDCMD('=', (STANDARD_BITS|S_ISVTX), perm, mask);
+		ADDCMD('=', (STANDARD_BITS|S_ISTXT), perm, mask);
 		set->cmd = 0;
 		return (saveset);
 	}
@@ -247,7 +247,7 @@ getop:		if ((op = *p++) != '+' && op != '-' && op != '=') {
 		if (op == '=')
 			equalopdone = 0;
 
-		who &= ~S_ISVTX;
+		who &= ~S_ISTXT;
 		for (perm = 0, permXbits = 0;; ++p) {
 			switch (*p) {
 			case 'r':
@@ -261,8 +261,8 @@ getop:		if ((op = *p++) != '+' && op != '-' && op != '=') {
 			case 't':
 				/* If only "other" bits ignore sticky. */
 				if (!who || who & ~S_IRWXO) {
-					who |= S_ISVTX;
-					perm |= S_ISVTX;
+					who |= S_ISTXT;
+					perm |= S_ISTXT;
 				}
 				break;
 			case 'w':

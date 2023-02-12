@@ -395,7 +395,7 @@ copy(char *argv[], enum op type, int fts_options)
 					rval = 1;
 			} else {
 				mode = curr->fts_statp->st_mode;
-				if ((mode & (S_ISUID | S_ISGID | S_ISVTX)) ||
+				if ((mode & (S_ISUID | S_ISGID | S_ISTXT)) ||
 				    ((mode | S_IRWXU) & mask) != (mode & mask))
 					if (chmod(to.p_path, mode & mask) !=
 					    0) {

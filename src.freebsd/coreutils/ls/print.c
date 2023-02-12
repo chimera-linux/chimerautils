@@ -608,7 +608,7 @@ colortype(mode_t mode)
 	switch (mode & S_IFMT) {
 	case S_IFDIR:
 		if (mode & S_IWOTH)
-			if (mode & S_ISVTX)
+			if (mode & S_ISTXT)
 				printcolor(C_WSDIR);
 			else
 				printcolor(C_WDIR);

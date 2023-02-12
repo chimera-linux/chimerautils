@@ -123,41 +123,6 @@
  
  #define	SET_LEN	6		/* initial # of bitcmd struct to malloc */
  #define	SET_LEN_INCR 4		/* # of bitcmd structs to add as needed */
-@@ -208,12 +204,12 @@
- 		}
- 		if (errno == ERANGE && (perml == LONG_MAX || perml == LONG_MIN))
- 			goto out;
--		if (perml & ~(STANDARD_BITS|S_ISTXT)) {
-+		if (perml & ~(STANDARD_BITS|S_ISVTX)) {
- 			errno = EINVAL;
- 			goto out;
- 		}
- 		perm = (mode_t)perml;
--		ADDCMD('=', (STANDARD_BITS|S_ISTXT), perm, mask);
-+		ADDCMD('=', (STANDARD_BITS|S_ISVTX), perm, mask);
- 		set->cmd = 0;
- 		return (saveset);
- 	}
-@@ -251,7 +247,7 @@
- 		if (op == '=')
- 			equalopdone = 0;
- 
--		who &= ~S_ISTXT;
-+		who &= ~S_ISVTX;
- 		for (perm = 0, permXbits = 0;; ++p) {
- 			switch (*p) {
- 			case 'r':
-@@ -265,8 +261,8 @@
- 			case 't':
- 				/* If only "other" bits ignore sticky. */
- 				if (!who || who & ~S_IRWXO) {
--					who |= S_ISTXT;
--					perm |= S_ISTXT;
-+					who |= S_ISVTX;
-+					perm |= S_ISVTX;
- 				}
- 				break;
- 			case 'w':
 @@ -346,9 +342,7 @@
  get_current_umask(void)
  {
@@ -495,7 +460,7 @@
  argument for
 --- src.orig/coreutils/cp/cp.c
 +++ src.freebsd/coreutils/cp/cp.c
-@@ -393,12 +393,9 @@
+@@ -393,9 +393,6 @@
  			if (pflag) {
  				if (setfile(curr->fts_statp, -1))
  					rval = 1;
@@ -504,11 +469,7 @@
 -					rval = 1;
  			} else {
  				mode = curr->fts_statp->st_mode;
--				if ((mode & (S_ISUID | S_ISGID | S_ISTXT)) ||
-+				if ((mode & (S_ISUID | S_ISGID | S_ISVTX)) ||
- 				    ((mode | S_IRWXU) & mask) != (mode & mask))
- 					if (chmod(to.p_path, mode & mask) !=
- 					    0) {
+ 				if ((mode & (S_ISUID | S_ISGID | S_ISTXT)) ||
 --- src.orig/coreutils/cp/utils.c
 +++ src.freebsd/coreutils/cp/utils.c
 @@ -38,7 +38,6 @@
@@ -2813,15 +2774,6 @@
  	default:
  		break;
  	}
-@@ -617,7 +608,7 @@
- 	switch (mode & S_IFMT) {
- 	case S_IFDIR:
- 		if (mode & S_IWOTH)
--			if (mode & S_ISTXT)
-+			if (mode & S_ISVTX)
- 				printcolor(C_WSDIR);
- 			else
- 				printcolor(C_WDIR);
 @@ -754,74 +745,3 @@
  	} else
  		(void)printf("%*jd ", (u_int)width, bytes);
@@ -7094,15 +7046,6 @@
  }
  
  PLAN *
-@@ -1320,7 +1379,7 @@
- 	mode_t mode;
- 
- 	mode = entry->fts_statp->st_mode &
--	    (S_ISUID|S_ISGID|S_ISTXT|S_IRWXU|S_IRWXG|S_IRWXO);
-+	    (S_ISUID|S_ISGID|S_ISVTX|S_IRWXU|S_IRWXG|S_IRWXO);
- 	if (plan->flags & F_ATLEAST)
- 		return (plan->m_data | mode) == mode;
- 	else if (plan->flags & F_ANY)
 --- src.orig/findutils/find/ls.c
 +++ src.freebsd/findutils/find/ls.c
 @@ -38,6 +38,7 @@
