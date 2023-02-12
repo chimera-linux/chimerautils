@@ -56,6 +56,7 @@ __FBSDID("$FreeBSD$");
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <sched.h>
 
 static void usage(void);
 
@@ -68,13 +69,15 @@ main(int argc, char *argv[])
 	const char	*shell;
 	gid_t		gid, *gidlist;
 	uid_t		uid;
-	int			ch, gids;
+	int		ch, error, gids;
 	long		ngroups_max;
+	bool		nonprivileged;
 
 	gid = 0;
 	uid = 0;
 	user = group = grouplist = NULL;
-	while ((ch = getopt(argc, argv, "G:g:u:")) != -1) {
+	nonprivileged = false;
+	while ((ch = getopt(argc, argv, "G:g:u:n")) != -1) {
 		switch(ch) {
 		case 'u':
 			user = optarg;
@@ -90,6 +93,9 @@ main(int argc, char *argv[])
 			grouplist = optarg;
 			if (*grouplist == '\0')
 				usage();
+			break;
+		case 'n':
+			nonprivileged = true;
 			break;
 		case '?':
 		default:
@@ -154,6 +160,12 @@ main(int argc, char *argv[])
 		}
 	}
 
+	if (nonprivileged) {
+		error = unshare(CLONE_NEWUSER);
+		if (error != 0)
+			err(1, "unshare");
+	}
+
 	if (chdir(argv[0]) == -1 || chroot(".") == -1)
 		err(1, "%s", argv[0]);
 
@@ -180,6 +192,6 @@ static void
 usage(void)
 {
 	(void)fprintf(stderr, "usage: chroot [-g group] [-G group,group,...] "
-	    "[-u user] newroot [command]\n");
+	    "[-u user] [-n] newroot [command]\n");
 	exit(1);
 }

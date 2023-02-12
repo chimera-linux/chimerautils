@@ -39,6 +39,7 @@
 .Op Fl G Ar group Ns Op Cm \&, Ns Ar group  ...
 .Op Fl g Ar group
 .Op Fl u Ar user
+.Op Fl n
 .Ar newroot
 .Op Ar command Op Ar arg ...
 .Sh DESCRIPTION
@@ -61,6 +62,12 @@ Run the command with the permissions of the specified
 .It Fl u Ar user
 Run the command as the
 .Ar user .
+.It Fl n
+Use the
+.Dv CLONE_NEWUSER
+.Xr unshare 2
+parameter before chrooting, effectively unsharing the user namespace.
+This makes it possible to chroot without superuser privileges.
 .El
 .Sh ENVIRONMENT
 The following environment variable is referenced by

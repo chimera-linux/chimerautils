@@ -345,20 +345,10 @@
  argument for
 --- src.orig/coreutils/chroot/chroot.8
 +++ src.freebsd/coreutils/chroot/chroot.8
-@@ -39,7 +39,6 @@
- .Op Fl G Ar group Ns Op Cm \&, Ns Ar group  ...
- .Op Fl g Ar group
- .Op Fl u Ar user
--.Op Fl n
- .Ar newroot
- .Op Ar command Op Ar arg ...
- .Sh DESCRIPTION
-@@ -62,16 +61,6 @@
- .It Fl u Ar user
- Run the command as the
+@@ -64,14 +64,10 @@
  .Ar user .
--.It Fl n
--Use the
+ .It Fl n
+ Use the
 -.Dv PROC_NO_NEW_PRIVS_CTL
 -.Xr procctl 2
 -command before chrooting, effectively disabling SUID/SGID bits
@@ -367,6 +357,10 @@
 -.Dv security.bsd.unprivileged_chroot
 -sysctl is set to 1, it will make it possible to chroot without
 -superuser privileges.
++.Dv CLONE_NEWUSER
++.Xr unshare 2
++parameter before chrooting, effectively unsharing the user namespace.
++This makes it possible to chroot without superuser privileges.
  .El
  .Sh ENVIRONMENT
  The following environment variable is referenced by
@@ -380,56 +374,36 @@
  
  #include <ctype.h>
  #include <err.h>
-@@ -69,15 +68,13 @@
+@@ -57,6 +56,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <sched.h>
+ 
+ static void usage(void);
+ 
+@@ -69,7 +69,7 @@
  	const char	*shell;
  	gid_t		gid, *gidlist;
  	uid_t		uid;
 -	int		arg, ch, error, gids;
-+	int			ch, gids;
++	int		ch, error, gids;
  	long		ngroups_max;
--	bool		nonprivileged;
+ 	bool		nonprivileged;
  
- 	gid = 0;
- 	uid = 0;
- 	user = group = grouplist = NULL;
--	nonprivileged = false;
--	while ((ch = getopt(argc, argv, "G:g:u:n")) != -1) {
-+	while ((ch = getopt(argc, argv, "G:g:u:")) != -1) {
- 		switch(ch) {
- 		case 'u':
- 			user = optarg;
-@@ -94,9 +91,6 @@
- 			if (*grouplist == '\0')
- 				usage();
- 			break;
--		case 'n':
--			nonprivileged = true;
--			break;
- 		case '?':
- 		default:
- 			usage();
-@@ -160,13 +154,6 @@
- 		}
+@@ -161,10 +161,9 @@
  	}
  
--	if (nonprivileged) {
+ 	if (nonprivileged) {
 -		arg = PROC_NO_NEW_PRIVS_ENABLE;
 -		error = procctl(P_PID, getpid(), PROC_NO_NEW_PRIVS_CTL, &arg);
--		if (error != 0)
++		error = unshare(CLONE_NEWUSER);
+ 		if (error != 0)
 -			err(1, "procctl");
--	}
--
- 	if (chdir(argv[0]) == -1 || chroot(".") == -1)
- 		err(1, "%s", argv[0]);
++			err(1, "unshare");
+ 	}
  
-@@ -193,6 +180,6 @@
- usage(void)
- {
- 	(void)fprintf(stderr, "usage: chroot [-g group] [-G group,group,...] "
--	    "[-u user] [-n] newroot [command]\n");
-+	    "[-u user] newroot [command]\n");
- 	exit(1);
- }
+ 	if (chdir(argv[0]) == -1 || chroot(".") == -1)
 --- src.orig/coreutils/cp/cp.1
 +++ src.freebsd/coreutils/cp/cp.1
 @@ -172,7 +172,7 @@
