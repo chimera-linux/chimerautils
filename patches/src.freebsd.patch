@@ -2833,15 +2833,17 @@
  				if (*len + 1 >= rb->fgetwln_z_buffer_size) {
 --- src.orig/coreutils/sort/coll.c
 +++ src.freebsd/coreutils/sort/coll.c
-@@ -37,7 +37,6 @@
+@@ -37,7 +37,9 @@
  #include <langinfo.h>
  #include <limits.h>
  #include <math.h>
--#include <md5.h>
++#ifndef WITHOUT_LIBCRYPTO
+ #include <md5.h>
++#endif
  #include <stdlib.h>
  #include <string.h>
  #include <wchar.h>
-@@ -60,7 +59,9 @@
+@@ -60,7 +62,9 @@
  static int monthcoll(struct key_value*, struct key_value *, size_t offset);
  static int numcoll(struct key_value*, struct key_value *, size_t offset);
  static int hnumcoll(struct key_value*, struct key_value *, size_t offset);
@@ -2851,7 +2853,7 @@
  static int versioncoll(struct key_value*, struct key_value *, size_t offset);
  
  /*
-@@ -473,8 +474,10 @@
+@@ -473,8 +477,10 @@
  		return (gnumcoll);
  	else if (sm->Mflag)
  		return (monthcoll);
@@ -2862,7 +2864,7 @@
  	else if (sm->Vflag)
  		return (versioncoll);
  	else
-@@ -607,18 +610,18 @@
+@@ -607,18 +613,18 @@
   * Compare two sort list items, according to the sort specs.
   */
  int
@@ -2885,7 +2887,7 @@
  }
  
  LSCDEF(1)
-@@ -662,9 +665,10 @@
+@@ -662,9 +668,10 @@
   * Compare two sort list items, only by their original string.
   */
  int
@@ -2898,7 +2900,7 @@
  	return (top_level_str_coll(((*ss1)->str), ((*ss2)->str)));
  }
  
-@@ -981,6 +985,7 @@
+@@ -981,6 +988,7 @@
  	return (numcoll_impl(kv1, kv2, offset, true));
  }
  
@@ -2906,7 +2908,7 @@
  /* Use hint space to memoize md5 computations, at least. */
  static void
  randomcoll_init_hint(struct key_value *kv, void *hash)
-@@ -1037,6 +1042,7 @@
+@@ -1037,6 +1045,7 @@
  
  	return (memcmp(hash1, hash2, sizeof(hash1)));
  }
@@ -3062,46 +3064,17 @@
  #include <sys/types.h>
  
  #include <err.h>
-@@ -40,7 +39,6 @@
+@@ -40,7 +39,9 @@
  #include <getopt.h>
  #include <limits.h>
  #include <locale.h>
--#include <md5.h>
++#ifndef WITHOUT_LIBCRYPTO
+ #include <md5.h>
++#endif
  #include <regex.h>
  #include <signal.h>
  #include <stdbool.h>
-@@ -55,6 +53,30 @@
- #include "file.h"
- #include "sort.h"
- 
-+#ifndef WITHOUT_LIBCRYPTO
-+void MD5Init(MD5_CTX *context)
-+{
-+	context->mdctx = EVP_MD_CTX_new();
-+	if (!context)
-+		errx(1, "could not init MD5 context");
-+
-+	if (!EVP_DigestInit_ex(context->mdctx, EVP_md5(), NULL))
-+		errx(1, "could not init MD5 digest");
-+}
-+
-+void MD5Update(MD5_CTX *context, const void *data, unsigned int len)
-+{
-+	if (!EVP_DigestUpdate(context->mdctx, data, len))
-+		errx(1, "could not update MD5 digest");
-+}
-+
-+void MD5Final(unsigned char digest[MD5_DIGEST_LENGTH], MD5_CTX *context)
-+{
-+	if (!EVP_DigestFinal(context->mdctx, digest, NULL))
-+		errx(1, "could not finalize MD5 digest");
-+}
-+#endif /* WITHOUT_LIBCRYPTO */
-+
- #ifndef WITHOUT_NLS
- #include <nl_types.h>
- nl_catd catalog = (nl_catd)-1;
-@@ -62,9 +84,11 @@
+@@ -62,9 +63,11 @@
  
  #define	OPTIONS	"bcCdfghik:Mmno:RrsS:t:T:uVz"
  
@@ -3113,7 +3086,7 @@
  
  /*
   * Default messages to use when NLS is disabled or no catalogue
-@@ -91,7 +115,11 @@
+@@ -91,7 +94,11 @@
        "[--parallel thread_no] "
  #endif
        "[--human-numeric-sort] "
@@ -3125,7 +3098,7 @@
        "[--compress-program program] [file ...]\n" };
  
  struct sort_opts sort_opts_vals;
-@@ -133,7 +161,9 @@
+@@ -133,7 +140,9 @@
  #if defined(SORT_THREADS)
  	PARALLEL_OPT,
  #endif
@@ -3135,7 +3108,7 @@
  	COMPRESSPROGRAM_OPT,
  	QSORT_OPT,
  	MERGESORT_OPT,
-@@ -174,8 +204,10 @@
+@@ -174,8 +183,10 @@
  #endif
  				{ "qsort", no_argument, NULL, QSORT_OPT },
  				{ "radixsort", no_argument, NULL, RADIXSORT_OPT },
@@ -3146,7 +3119,7 @@
  				{ "reverse", no_argument, NULL, 'r' },
  				{ "sort", required_argument, NULL, SORT_OPT },
  				{ "stable", no_argument, NULL, 's' },
-@@ -329,16 +361,24 @@
+@@ -329,16 +340,24 @@
  	lc = localeconv();
  
  	if (lc) {
@@ -3175,7 +3148,7 @@
  	}
  
  	if (getenv("GNUSORT_NUMERIC_COMPATIBILITY"))
-@@ -585,11 +625,13 @@
+@@ -585,11 +604,13 @@
  	case 'i':
  		sm->iflag = true;
  		break;
@@ -3189,7 +3162,7 @@
  	case 'M':
  		initialise_months();
  		sm->Mflag = true;
-@@ -855,7 +897,7 @@
+@@ -855,7 +876,7 @@
  void
  fix_obsolete_keys(int *argc, char **argv)
  {
@@ -3198,7 +3171,7 @@
  
  	for (int i = 1; i < *argc; i++) {
  		char *arg1;
-@@ -911,6 +953,7 @@
+@@ -911,6 +932,7 @@
  	}
  }
  
@@ -3206,7 +3179,7 @@
  /*
   * Seed random sort
   */
-@@ -983,6 +1026,7 @@
+@@ -983,6 +1005,7 @@
  	MD5Init(&md5_ctx);
  	MD5Update(&md5_ctx, randseed, rd);
  }
@@ -3214,7 +3187,7 @@
  
  /*
   * Main function.
-@@ -991,7 +1035,9 @@
+@@ -991,7 +1014,9 @@
  main(int argc, char **argv)
  {
  	char *outfile, *real_outfile;
@@ -3224,7 +3197,7 @@
  	int c, result;
  	bool mef_flags[NUMBER_OF_MUTUALLY_EXCLUSIVE_FLAGS] =
  	    { false, false, false, false, false, false };
-@@ -1122,8 +1168,10 @@
+@@ -1122,8 +1147,10 @@
  						set_sort_modifier(sm, 'n');
  					else if (!strcmp(optarg, "month"))
  						set_sort_modifier(sm, 'M');
@@ -3235,7 +3208,7 @@
  					else
  						unknown(optarg);
  				}
-@@ -1152,9 +1200,11 @@
+@@ -1152,9 +1179,11 @@
  			case RADIXSORT_OPT:
  				sort_opts_vals.sort_method = SORT_RADIXSORT;
  				break;
@@ -3247,7 +3220,7 @@
  			case COMPRESSPROGRAM_OPT:
  				compress_program = strdup(optarg);
  				break;
-@@ -1247,8 +1297,10 @@
+@@ -1247,8 +1276,10 @@
  		}
  	}
  
@@ -3260,38 +3233,17 @@
  	if (strcmp(outfile, "-")) {
 --- src.orig/coreutils/sort/sort.h
 +++ src.freebsd/coreutils/sort/sort.h
-@@ -39,7 +39,10 @@
+@@ -39,7 +39,9 @@
  #include <wchar.h>
  
  #include <sys/types.h>
--#include <md5.h>
-+
 +#ifndef WITHOUT_LIBCRYPTO
-+#include <openssl/evp.h>
+ #include <md5.h>
 +#endif
  
  #define	VERSION	"2.3-FreeBSD"
  
-@@ -61,15 +64,31 @@
- extern size_t nthreads;
- #endif
- 
-+/* bsdutils additions */
-+
-+#ifndef WITHOUT_LIBCRYPTO
-+#define MD5_DIGEST_LENGTH 16
-+
-+typedef struct {
-+	EVP_MD_CTX *mdctx;
-+} MD5_CTX;
-+
-+void MD5Init(MD5_CTX *context);
-+void MD5Update(MD5_CTX *context, const void *data, unsigned int len);
-+void MD5Final(unsigned char digest[MD5_DIGEST_LENGTH], MD5_CTX *context);
-+#endif
-+
- /*
-  * If true, we output some debug information.
+@@ -66,10 +68,12 @@
   */
  extern bool debug_sort;
  
@@ -5075,45 +5027,16 @@
  utility with
 --- src.orig/coreutils/xinstall/xinstall.c
 +++ src.freebsd/coreutils/xinstall/xinstall.c
-@@ -57,13 +57,8 @@
- #include <fcntl.h>
- #include <grp.h>
- #include <libgen.h>
--#include <md5.h>
- #include <paths.h>
- #include <pwd.h>
--#include <ripemd.h>
--#include <sha.h>
--#include <sha256.h>
--#include <sha512.h>
- #include <spawn.h>
- #include <stdint.h>
- #include <stdio.h>
-@@ -73,7 +68,7 @@
+@@ -73,8 +73,6 @@
  #include <unistd.h>
  #include <vis.h>
  
 -#include "mtree.h"
-+#include <openssl/evp.h>
- 
+-
  /*
   * We need to build xinstall during the bootstrap stage when building on a
-@@ -99,13 +94,7 @@
- #define	NOCHANGEBITS	(UF_IMMUTABLE | UF_APPEND | SF_IMMUTABLE | SF_APPEND)
- #define	BACKUP_SUFFIX	".old"
- 
--typedef union {
--	MD5_CTX		MD5;
--	RIPEMD160_CTX	RIPEMD160;
--	SHA1_CTX	SHA1;
--	SHA256_CTX	SHA256;
--	SHA512_CTX	SHA512;
--}	DIGEST_CTX;
-+typedef EVP_MD_CTX *DIGEST_CTX;
- 
- static enum {
- 	DIGEST_NONE = 0,
-@@ -165,7 +154,7 @@
+  * non-FreeBSD system. Linux does not have the st_flags and st_birthtime
+@@ -165,7 +163,7 @@
  	fset = 0;
  	iflags = 0;
  	group = owner = NULL;
@@ -5122,7 +5045,7 @@
  	     -1)
  		switch((char)ch) {
  		case 'B':
-@@ -186,10 +175,12 @@
+@@ -186,10 +184,12 @@
  		case 'd':
  			dodir = 1;
  			break;
@@ -5135,7 +5058,7 @@
  		case 'g':
  			haveopt_g = 1;
  			group = optarg;
-@@ -236,11 +227,13 @@
+@@ -236,11 +236,13 @@
  			mode = getmode(set, 0);
  			free(set);
  			break;
@@ -5149,7 +5072,7 @@
  		case 'o':
  			haveopt_o = 1;
  			owner = optarg;
-@@ -310,30 +303,38 @@
+@@ -310,30 +312,38 @@
  
  	/* get group and owner id's */
  	if (group != NULL && !dounpriv) {
@@ -5190,7 +5113,7 @@
  
  	if (metafile != NULL) {
  		if ((metafp = fopen(metafile, "a")) == NULL)
-@@ -384,8 +385,7 @@
+@@ -384,8 +394,7 @@
  		if (stat(*argv, &from_sb))
  			err(EX_OSERR, "%s", *argv);
  		if (!S_ISREG(to_sb.st_mode)) {
@@ -5200,164 +5123,7 @@
  		}
  		if (to_sb.st_dev == from_sb.st_dev &&
  		    to_sb.st_ino == from_sb.st_ino)
-@@ -400,91 +400,106 @@
- static char *
- digest_file(const char *name)
- {
-+	DIGEST_CTX ctx;
-+	FILE *f;
-+	char *buf;
- 
--	switch (digesttype) {
--	case DIGEST_MD5:
--		return (MD5File(name, NULL));
--	case DIGEST_RIPEMD160:
--		return (RIPEMD160_File(name, NULL));
--	case DIGEST_SHA1:
--		return (SHA1_File(name, NULL));
--	case DIGEST_SHA256:
--		return (SHA256_File(name, NULL));
--	case DIGEST_SHA512:
--		return (SHA512_File(name, NULL));
--	default:
--		return (NULL);
-+	if (digesttype == DIGEST_NONE)
-+		return NULL;
-+
-+	f = fopen(name, "rb");
-+	if (!f)
-+		errx(1, "unable to open file %s", name);
-+
-+	buf = malloc(16 * 1024);
-+	if (!buf) {
-+		fclose(f);
-+		errx(1, "unable to allocate buffer");
- 	}
-+
-+	digest_init(&ctx);
-+	for (;;) {
-+		size_t n = fread(buf, 1, 16 * 1024, f);
-+		digest_update(&ctx, buf, n);
-+		if (n != (16 * 1024)) {
-+			if (feof(f))
-+				break;
-+			if (ferror(f)) {
-+				free(buf);
-+				fclose(f);
-+				errx(1, "unable to read file %s", name);
-+			}
-+		}
-+	}
-+
-+	fclose(f);
-+	return digest_end(&ctx, NULL);
- }
- 
- static void
- digest_init(DIGEST_CTX *c)
- {
-+	const EVP_MD *digestmd = NULL;
- 
- 	switch (digesttype) {
- 	case DIGEST_NONE:
- 		break;
- 	case DIGEST_MD5:
--		MD5Init(&(c->MD5));
-+		digestmd = EVP_md5();
- 		break;
- 	case DIGEST_RIPEMD160:
--		RIPEMD160_Init(&(c->RIPEMD160));
-+		digestmd = EVP_ripemd160();
- 		break;
- 	case DIGEST_SHA1:
--		SHA1_Init(&(c->SHA1));
-+		digestmd = EVP_sha1();
- 		break;
- 	case DIGEST_SHA256:
--		SHA256_Init(&(c->SHA256));
-+		digestmd = EVP_sha256();
- 		break;
- 	case DIGEST_SHA512:
--		SHA512_Init(&(c->SHA512));
-+		digestmd = EVP_sha512();
- 		break;
- 	}
-+
-+	if (digestmd) {
-+		*c = EVP_MD_CTX_new();
-+		if (!c || !EVP_DigestInit_ex(*c, digestmd, NULL))
-+			errx(1, "failed to initialize digest");
-+	}
- }
- 
- static void
- digest_update(DIGEST_CTX *c, const char *data, size_t len)
- {
-+	if (digesttype == DIGEST_NONE)
-+		return;
- 
--	switch (digesttype) {
--	case DIGEST_NONE:
--		break;
--	case DIGEST_MD5:
--		MD5Update(&(c->MD5), data, len);
--		break;
--	case DIGEST_RIPEMD160:
--		RIPEMD160_Update(&(c->RIPEMD160), data, len);
--		break;
--	case DIGEST_SHA1:
--		SHA1_Update(&(c->SHA1), data, len);
--		break;
--	case DIGEST_SHA256:
--		SHA256_Update(&(c->SHA256), data, len);
--		break;
--	case DIGEST_SHA512:
--		SHA512_Update(&(c->SHA512), data, len);
--		break;
--	}
-+	EVP_DigestUpdate(*c, data, len);
- }
- 
- static char *
- digest_end(DIGEST_CTX *c, char *buf)
- {
-+	unsigned char digbuf[EVP_MAX_MD_SIZE + 1];
- 
--	switch (digesttype) {
--	case DIGEST_MD5:
--		return (MD5End(&(c->MD5), buf));
--	case DIGEST_RIPEMD160:
--		return (RIPEMD160_End(&(c->RIPEMD160), buf));
--	case DIGEST_SHA1:
--		return (SHA1_End(&(c->SHA1), buf));
--	case DIGEST_SHA256:
--		return (SHA256_End(&(c->SHA256), buf));
--	case DIGEST_SHA512:
--		return (SHA512_End(&(c->SHA512), buf));
--	default:
--		return (NULL);
-+	if ((digesttype == DIGEST_NONE) || !*c)
-+		return NULL;
-+
-+	unsigned int mdlen = 0;
-+	if (!EVP_DigestFinal(*c, digbuf, &mdlen))
-+		errx(1, "failed to finalize digest");
-+
-+	if (!buf) {
-+		buf = malloc(mdlen * 2 + 1);
-+		if (!buf)
-+			errx(1, "unable to allocate buffer");
- 	}
-+
-+	for (unsigned int i = 0; i < mdlen; ++i) {
-+	    sprintf(buf + (i * 2), "%02x", digbuf[i]);
-+	}
-+
-+	return buf;
- }
- 
- /*
-@@ -529,7 +544,7 @@
+@@ -529,7 +538,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
  {
@@ -5366,7 +5132,7 @@
  	int ret;
  
  	if (safecopy && target_sb != NULL) {
-@@ -714,7 +729,6 @@
+@@ -714,7 +723,6 @@
  				errx(1, "resolved pathname too long");
  		}
  		strcpy(to_name_copy, to_name);
@@ -5374,7 +5140,7 @@
  		if (strlcat(dst, cp, sizeof(dst)) > sizeof(dst))
  			errx(1, "resolved pathname too long");
  		free(to_name_copy);
-@@ -763,7 +777,7 @@
+@@ -763,7 +771,7 @@
   *	build a path name and install the file
   */
  static void
@@ -5383,7 +5149,7 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -783,8 +797,7 @@
+@@ -783,8 +791,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
  			if (!S_ISREG(from_sb.st_mode)) {
@@ -5393,7 +5159,7 @@
  			}
  		}
  		/* Build the target path. */
-@@ -818,8 +831,7 @@
+@@ -818,8 +825,7 @@
  	}
  
  	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode)) {
@@ -5403,16 +5169,23 @@
  		return;
  	}
  
-@@ -1075,7 +1087,7 @@
- 	char *p, *q;
- 	int rv;
- 	int do_digest, done_compare;
--	DIGEST_CTX ctx;
-+	DIGEST_CTX ctx = NULL;
+@@ -1134,13 +1140,13 @@
+ 			lseek(to_fd, 0, SEEK_SET);
+ 		}
+ 	} else
+-		rv = 1;	/* don't bother in this case */
++		return 1;	/* don't bother in this case */
  
- 	rv = 0;
- 	if (from_len != to_len)
-@@ -1171,7 +1183,7 @@
+ 	if (do_digest) {
+ 		if (rv == 0)
+ 			*dresp = digest_end(&ctx, NULL);
+ 		else
+-			(void)digest_end(&ctx, NULL);
++			free(digest_end(&ctx, NULL));
+ 	}
+ 
+ 	return rv;
+@@ -1171,7 +1177,7 @@
   *	create a new file, overwriting an existing one if necessary
   */
  static int
@@ -5421,7 +5194,7 @@
  {
  	char backup[MAXPATHLEN];
  	int saved_errno = 0;
-@@ -1336,7 +1348,7 @@
+@@ -1336,7 +1342,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);

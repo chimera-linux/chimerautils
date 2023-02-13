@@ -57,8 +57,13 @@ __FBSDID("$FreeBSD$");
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#include <md5.h>
 #include <paths.h>
 #include <pwd.h>
+#include <ripemd.h>
+#include <sha.h>
+#include <sha256.h>
+#include <sha512.h>
 #include <spawn.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -67,8 +72,6 @@ __FBSDID("$FreeBSD$");
 #include <sysexits.h>
 #include <unistd.h>
 #include <vis.h>
-
-#include <openssl/evp.h>
 
 /*
  * We need to build xinstall during the bootstrap stage when building on a
@@ -94,7 +97,13 @@ __FBSDID("$FreeBSD$");
 #define	NOCHANGEBITS	(UF_IMMUTABLE | UF_APPEND | SF_IMMUTABLE | SF_APPEND)
 #define	BACKUP_SUFFIX	".old"
 
-typedef EVP_MD_CTX *DIGEST_CTX;
+typedef union {
+	MD5_CTX		MD5;
+	RIPEMD160_CTX	RIPEMD160;
+	SHA1_CTX	SHA1;
+	SHA256_CTX	SHA256;
+	SHA512_CTX	SHA512;
+}	DIGEST_CTX;
 
 static enum {
 	DIGEST_NONE = 0,
@@ -400,106 +409,91 @@ main(int argc, char *argv[])
 static char *
 digest_file(const char *name)
 {
-	DIGEST_CTX ctx;
-	FILE *f;
-	char *buf;
 
-	if (digesttype == DIGEST_NONE)
-		return NULL;
-
-	f = fopen(name, "rb");
-	if (!f)
-		errx(1, "unable to open file %s", name);
-
-	buf = malloc(16 * 1024);
-	if (!buf) {
-		fclose(f);
-		errx(1, "unable to allocate buffer");
+	switch (digesttype) {
+	case DIGEST_MD5:
+		return (MD5File(name, NULL));
+	case DIGEST_RIPEMD160:
+		return (RIPEMD160_File(name, NULL));
+	case DIGEST_SHA1:
+		return (SHA1_File(name, NULL));
+	case DIGEST_SHA256:
+		return (SHA256_File(name, NULL));
+	case DIGEST_SHA512:
+		return (SHA512_File(name, NULL));
+	default:
+		return (NULL);
 	}
-
-	digest_init(&ctx);
-	for (;;) {
-		size_t n = fread(buf, 1, 16 * 1024, f);
-		digest_update(&ctx, buf, n);
-		if (n != (16 * 1024)) {
-			if (feof(f))
-				break;
-			if (ferror(f)) {
-				free(buf);
-				fclose(f);
-				errx(1, "unable to read file %s", name);
-			}
-		}
-	}
-
-	fclose(f);
-	return digest_end(&ctx, NULL);
 }
 
 static void
 digest_init(DIGEST_CTX *c)
 {
-	const EVP_MD *digestmd = NULL;
 
 	switch (digesttype) {
 	case DIGEST_NONE:
 		break;
 	case DIGEST_MD5:
-		digestmd = EVP_md5();
+		MD5Init(&(c->MD5));
 		break;
 	case DIGEST_RIPEMD160:
-		digestmd = EVP_ripemd160();
+		RIPEMD160_Init(&(c->RIPEMD160));
 		break;
 	case DIGEST_SHA1:
-		digestmd = EVP_sha1();
+		SHA1_Init(&(c->SHA1));
 		break;
 	case DIGEST_SHA256:
-		digestmd = EVP_sha256();
+		SHA256_Init(&(c->SHA256));
 		break;
 	case DIGEST_SHA512:
-		digestmd = EVP_sha512();
+		SHA512_Init(&(c->SHA512));
 		break;
-	}
-
-	if (digestmd) {
-		*c = EVP_MD_CTX_new();
-		if (!c || !EVP_DigestInit_ex(*c, digestmd, NULL))
-			errx(1, "failed to initialize digest");
 	}
 }
 
 static void
 digest_update(DIGEST_CTX *c, const char *data, size_t len)
 {
-	if (digesttype == DIGEST_NONE)
-		return;
 
-	EVP_DigestUpdate(*c, data, len);
+	switch (digesttype) {
+	case DIGEST_NONE:
+		break;
+	case DIGEST_MD5:
+		MD5Update(&(c->MD5), data, len);
+		break;
+	case DIGEST_RIPEMD160:
+		RIPEMD160_Update(&(c->RIPEMD160), data, len);
+		break;
+	case DIGEST_SHA1:
+		SHA1_Update(&(c->SHA1), data, len);
+		break;
+	case DIGEST_SHA256:
+		SHA256_Update(&(c->SHA256), data, len);
+		break;
+	case DIGEST_SHA512:
+		SHA512_Update(&(c->SHA512), data, len);
+		break;
+	}
 }
 
 static char *
 digest_end(DIGEST_CTX *c, char *buf)
 {
-	unsigned char digbuf[EVP_MAX_MD_SIZE + 1];
 
-	if ((digesttype == DIGEST_NONE) || !*c)
-		return NULL;
-
-	unsigned int mdlen = 0;
-	if (!EVP_DigestFinal(*c, digbuf, &mdlen))
-		errx(1, "failed to finalize digest");
-
-	if (!buf) {
-		buf = malloc(mdlen * 2 + 1);
-		if (!buf)
-			errx(1, "unable to allocate buffer");
+	switch (digesttype) {
+	case DIGEST_MD5:
+		return (MD5End(&(c->MD5), buf));
+	case DIGEST_RIPEMD160:
+		return (RIPEMD160_End(&(c->RIPEMD160), buf));
+	case DIGEST_SHA1:
+		return (SHA1_End(&(c->SHA1), buf));
+	case DIGEST_SHA256:
+		return (SHA256_End(&(c->SHA256), buf));
+	case DIGEST_SHA512:
+		return (SHA512_End(&(c->SHA512), buf));
+	default:
+		return (NULL);
 	}
-
-	for (unsigned int i = 0; i < mdlen; ++i) {
-	    sprintf(buf + (i * 2), "%02x", digbuf[i]);
-	}
-
-	return buf;
 }
 
 /*
@@ -1087,7 +1081,7 @@ compare(int from_fd, const char *from_name __unused, size_t from_len,
 	char *p, *q;
 	int rv;
 	int do_digest, done_compare;
-	DIGEST_CTX ctx = NULL;
+	DIGEST_CTX ctx;
 
 	rv = 0;
 	if (from_len != to_len)
@@ -1146,13 +1140,13 @@ compare(int from_fd, const char *from_name __unused, size_t from_len,
 			lseek(to_fd, 0, SEEK_SET);
 		}
 	} else
-		rv = 1;	/* don't bother in this case */
+		return 1;	/* don't bother in this case */
 
 	if (do_digest) {
 		if (rv == 0)
 			*dresp = digest_end(&ctx, NULL);
 		else
-			(void)digest_end(&ctx, NULL);
+			free(digest_end(&ctx, NULL));
 	}
 
 	return rv;

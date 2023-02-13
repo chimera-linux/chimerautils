@@ -39,6 +39,9 @@ __FBSDID("$FreeBSD$");
 #include <getopt.h>
 #include <limits.h>
 #include <locale.h>
+#ifndef WITHOUT_LIBCRYPTO
+#include <md5.h>
+#endif
 #include <regex.h>
 #include <signal.h>
 #include <stdbool.h>
@@ -52,30 +55,6 @@ __FBSDID("$FreeBSD$");
 #include "coll.h"
 #include "file.h"
 #include "sort.h"
-
-#ifndef WITHOUT_LIBCRYPTO
-void MD5Init(MD5_CTX *context)
-{
-	context->mdctx = EVP_MD_CTX_new();
-	if (!context)
-		errx(1, "could not init MD5 context");
-
-	if (!EVP_DigestInit_ex(context->mdctx, EVP_md5(), NULL))
-		errx(1, "could not init MD5 digest");
-}
-
-void MD5Update(MD5_CTX *context, const void *data, unsigned int len)
-{
-	if (!EVP_DigestUpdate(context->mdctx, data, len))
-		errx(1, "could not update MD5 digest");
-}
-
-void MD5Final(unsigned char digest[MD5_DIGEST_LENGTH], MD5_CTX *context)
-{
-	if (!EVP_DigestFinal(context->mdctx, digest, NULL))
-		errx(1, "could not finalize MD5 digest");
-}
-#endif /* WITHOUT_LIBCRYPTO */
 
 #ifndef WITHOUT_NLS
 #include <nl_types.h>
