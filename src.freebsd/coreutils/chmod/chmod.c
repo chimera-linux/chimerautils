@@ -202,8 +202,9 @@ done:	argv += optind;
 		if (may_have_nfs4acl(p, hflag) == 0 &&
 		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
 				continue;
-		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
-		    && !fflag) {
+		/* on linux we need to skip symlinks */
+		if ((!atflag || !S_ISLNK(p->fts_statp->st_mode))
+		    && chmod(p->fts_accpath, newmode) == -1 && !fflag) {
 			warn("%s", p->fts_path);
 			rval = 1;
 		} else if (vflag || siginfo) {
@@ -211,6 +212,10 @@ done:	argv += optind;
 
 			if (vflag > 1 || siginfo) {
 				char m1[12], m2[12];
+
+				/* do not give misleading information */
+				if (S_ISLNK(p->fts_statp->st_mode))
+					newmode = p->fts_statp->st_mode;
 
 				strmode(p->fts_statp->st_mode, m1);
 				strmode((p->fts_statp->st_mode &
