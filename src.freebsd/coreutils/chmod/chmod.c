@@ -203,6 +203,7 @@ done:	argv += optind;
 		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
 				continue;
 		/* on linux we need to skip symlinks */
+		errno = 0;
 		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
 		    && !fflag && (errno != ENOTSUP)) {
 			warn("%s", p->fts_path);

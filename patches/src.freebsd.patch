@@ -225,11 +225,12 @@
  		switch (ch) {
  		case 'H':
  			Hflag = 1;
-@@ -202,16 +202,23 @@
+@@ -202,16 +202,24 @@
  		if (may_have_nfs4acl(p, hflag) == 0 &&
  		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
  				continue;
 +		/* on linux we need to skip symlinks */
++		errno = 0;
  		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
 -		    && !fflag) {
 +		    && !fflag && (errno != ENOTSUP)) {
@@ -250,7 +251,7 @@
  				strmode(p->fts_statp->st_mode, m1);
  				strmode((p->fts_statp->st_mode &
  				    S_IFMT) | newmode, m2);
-@@ -240,6 +247,7 @@
+@@ -240,6 +248,7 @@
  static int
  may_have_nfs4acl(const FTSENT *ent, int hflag)
  {
@@ -258,7 +259,7 @@
  	int ret;
  	static dev_t previous_dev = NODEV;
  	static int supports_acls = -1;
-@@ -259,4 +267,9 @@
+@@ -259,4 +268,9 @@
  	}
  
  	return (supports_acls);
