@@ -203,18 +203,20 @@ done:	argv += optind;
 		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
 				continue;
 		/* on linux we need to skip symlinks */
-		if ((!atflag || !S_ISLNK(p->fts_statp->st_mode))
-		    && chmod(p->fts_accpath, newmode) == -1 && !fflag) {
+		if (fchmodat(AT_FDCWD, p->fts_accpath, newmode, atflag) == -1
+		    && !fflag && (errno != ENOTSUP)) {
 			warn("%s", p->fts_path);
 			rval = 1;
 		} else if (vflag || siginfo) {
+			int olderr = errno;
+
 			(void)printf("%s", p->fts_path);
 
 			if (vflag > 1 || siginfo) {
 				char m1[12], m2[12];
 
-				/* do not give misleading information */
-				if (S_ISLNK(p->fts_statp->st_mode))
+				/* do not give misleading information for linux symlinks */
+				if (olderr == ENOTSUP)
 					newmode = p->fts_statp->st_mode;
 
 				strmode(p->fts_statp->st_mode, m1);
