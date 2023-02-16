@@ -73,7 +73,7 @@ static inline int	 applies(struct s_command *);
 static void		 do_tr(struct s_tr *);
 static void		 flush_appends(void);
 static void		 lputs(char *, size_t);
-static int		 regexec_e(regex_t *, const char *, int, int, size_t,
+static int		 regexec_e(regex_t *, char *, int, int, size_t,
 			     size_t);
 static void		 regsub(SPACE *, char *, char *);
 static int		 substitute(struct s_command *);
@@ -665,14 +665,10 @@ lputs(char *s, size_t len)
 }
 
 static int
-regexec_e(regex_t *preg, const char *string, int eflags, int nomatch,
+regexec_e(regex_t *preg, char *string, int eflags, int nomatch,
 	size_t start, size_t stop)
 {
 	int eval;
-#ifndef REG_STARTEND
-	char *buf;
-	size_t slen;
-#endif
 
 	if (preg == NULL) {
 		if (defpreg == NULL)
@@ -682,18 +678,15 @@ regexec_e(regex_t *preg, const char *string, int eflags, int nomatch,
 
 	/* Set anchors */
 #ifndef REG_STARTEND
-	buf = malloc(stop - start + 1);
-	if (!buf)
-		errx(1, "out of memory");
-	slen = stop - start;
-	memcpy(buf, string + start, slen);
-	buf[slen] = '\0';
-	eval = regexec(defpreg, buf, nomatch ? 0 : maxnsub + 1, match, eflags);
+	char old = string[stop];
+	string[stop] = '\0';
+	eval = regexec(defpreg, string + start,
+	    nomatch ? 0 : maxnsub + 1, match, eflags);
+	string[stop] = old;
 	for (size_t i = 0; i <= (nomatch ? 0 : maxnsub); ++i) {
 		match[i].rm_so += start;
 		match[i].rm_eo += start;
 	}
-	free(buf);
 #else
 	match[0].rm_so = start;
 	match[0].rm_eo = stop;

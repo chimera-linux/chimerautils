@@ -471,18 +471,17 @@ litexec(const struct pat *pat, const char *string, size_t nmatch,
 
 #ifndef REG_STARTEND
 static int regexec_startend(
-    const regex_t *restrict preg, const char *restrict str, size_t nmatch,
+    const regex_t *restrict preg, char *restrict str, size_t nmatch,
     regmatch_t pmatch[restrict], int eflags
 ) {
 	regoff_t so = pmatch[0].rm_so;
 	regoff_t eo = pmatch[0].rm_eo;
-	char *buf = malloc(eo - so + 1);
-	memcpy(buf, str + pmatch[0].rm_so, eo - so);
-	buf[eo - so] = '\0';
-	int ret = regexec(preg, buf, nmatch, pmatch, eflags);
+	char old = str[eo];
+	str[eo] = '\0';
+	int ret = regexec(preg, str + so, nmatch, pmatch, eflags);
+	str[eo] = old;
 	pmatch[0].rm_so += so;
 	pmatch[0].rm_eo += so;
-	free(buf);
 	return ret;
 }
 #else
@@ -490,7 +489,7 @@ static int regexec_startend(
     const regex_t *restrict preg, const char *restrict str, size_t nmatch,
     regmatch_t pmatch[restrict], int eflags
 ) {
-	return regexec(preg, str, nmatch, pmatch, eflags);
+	return regexec(preg, str, nmatch, pmatch, eflags|REG_STARTEND);
 }
 #endif
 
@@ -508,7 +507,7 @@ procline(struct parsec *pc)
 	wchar_t wbegin, wend;
 	size_t st, nst;
 	unsigned int i;
-	int r = 0, leflags = eflags;
+	int r = 0, leflags = 0;
 	size_t startm = 0, matchidx;
 	unsigned int retry;
 	bool lastmatched, matched;

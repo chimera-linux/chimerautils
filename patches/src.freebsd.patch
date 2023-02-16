@@ -6196,15 +6196,14 @@
  #endif
 --- src.orig/grep/grep.c
 +++ src.freebsd/grep/grep.c
-@@ -67,7 +67,11 @@
+@@ -65,9 +65,8 @@
+ /* 8*/	"%s (BSD grep, GNU compatible) %s\n",
+ };
  
- /* Flags passed to regcomp() and regexec() */
+-/* Flags passed to regcomp() and regexec() */
++/* Flags passed to regcomp() */
  int		 cflags = REG_NOSUB | REG_NEWLINE;
-+#ifdef REG_STARTEND
- int		 eflags = REG_STARTEND;
-+#else
-+int		 eflags = 0;
-+#endif
+-int		 eflags = REG_STARTEND;
  
  bool		 matchall;
  
@@ -6223,26 +6222,36 @@
  
  extern const char		*errstr[];
  
+@@ -112,8 +110,8 @@
+ 	bool		cntlines;			/* Count lines? */
+ };
+ 
+-/* Flags passed to regcomp() and regexec() */
+-extern int	 cflags, eflags;
++/* Flags passed to regcomp() */
++extern int	 cflags;
+ 
+ /* Command line flags */
+ extern bool	 Eflag, Fflag, Gflag, Hflag, Lflag,
 --- src.orig/grep/util.c
 +++ src.freebsd/grep/util.c
-@@ -469,6 +469,31 @@
+@@ -469,6 +469,30 @@
  
  #define iswword(x)	(iswalnum((x)) || (x) == L'_')
  
 +#ifndef REG_STARTEND
 +static int regexec_startend(
-+    const regex_t *restrict preg, const char *restrict str, size_t nmatch,
++    const regex_t *restrict preg, char *restrict str, size_t nmatch,
 +    regmatch_t pmatch[restrict], int eflags
 +) {
 +	regoff_t so = pmatch[0].rm_so;
 +	regoff_t eo = pmatch[0].rm_eo;
-+	char *buf = malloc(eo - so + 1);
-+	memcpy(buf, str + pmatch[0].rm_so, eo - so);
-+	buf[eo - so] = '\0';
-+	int ret = regexec(preg, buf, nmatch, pmatch, eflags);
++	char old = str[eo];
++	str[eo] = '\0';
++	int ret = regexec(preg, str + so, nmatch, pmatch, eflags);
++	str[eo] = old;
 +	pmatch[0].rm_so += so;
 +	pmatch[0].rm_eo += so;
-+	free(buf);
 +	return ret;
 +}
 +#else
@@ -6250,14 +6259,23 @@
 +    const regex_t *restrict preg, const char *restrict str, size_t nmatch,
 +    regmatch_t pmatch[restrict], int eflags
 +) {
-+	return regexec(preg, str, nmatch, pmatch, eflags);
++	return regexec(preg, str, nmatch, pmatch, eflags|REG_STARTEND);
 +}
 +#endif
 +
  /*
   * Processes a line comparing it with the specified patterns.  Each pattern
   * is looped to be compared along with the full string, saving each and every
-@@ -536,7 +561,7 @@
+@@ -483,7 +507,7 @@
+ 	wchar_t wbegin, wend;
+ 	size_t st, nst;
+ 	unsigned int i;
+-	int r = 0, leflags = eflags;
++	int r = 0, leflags = 0;
+ 	size_t startm = 0, matchidx;
+ 	unsigned int retry;
+ 	bool lastmatched, matched;
+@@ -536,7 +560,7 @@
  				r = litexec(&pattern[i], pc->ln.dat, 1, &pmatch);
  			else
  #endif
@@ -7057,34 +7075,38 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  		if ((p = fgets(buf, n, f)) != NULL) {
 --- src.orig/sed/process.c
 +++ src.freebsd/sed/process.c
-@@ -669,6 +669,10 @@
+@@ -73,7 +73,7 @@
+ static void		 do_tr(struct s_tr *);
+ static void		 flush_appends(void);
+ static void		 lputs(char *, size_t);
+-static int		 regexec_e(regex_t *, const char *, int, int, size_t,
++static int		 regexec_e(regex_t *, char *, int, int, size_t,
+ 			     size_t);
+ static void		 regsub(SPACE *, char *, char *);
+ static int		 substitute(struct s_command *);
+@@ -665,7 +665,7 @@
+ }
+ 
+ static int
+-regexec_e(regex_t *preg, const char *string, int eflags, int nomatch,
++regexec_e(regex_t *preg, char *string, int eflags, int nomatch,
  	size_t start, size_t stop)
  {
  	int eval;
-+#ifndef REG_STARTEND
-+	char *buf;
-+	size_t slen;
-+#endif
- 
- 	if (preg == NULL) {
- 		if (defpreg == NULL)
-@@ -677,11 +681,26 @@
+@@ -677,11 +677,23 @@
  		defpreg = preg;
  
  	/* Set anchors */
 +#ifndef REG_STARTEND
-+	buf = malloc(stop - start + 1);
-+	if (!buf)
-+		errx(1, "out of memory");
-+	slen = stop - start;
-+	memcpy(buf, string + start, slen);
-+	buf[slen] = '\0';
-+	eval = regexec(defpreg, buf, nomatch ? 0 : maxnsub + 1, match, eflags);
++	char old = string[stop];
++	string[stop] = '\0';
++	eval = regexec(defpreg, string + start,
++	    nomatch ? 0 : maxnsub + 1, match, eflags);
++	string[stop] = old;
 +	for (size_t i = 0; i <= (nomatch ? 0 : maxnsub); ++i) {
 +		match[i].rm_so += start;
 +		match[i].rm_eo += start;
 +	}
-+	free(buf);
 +#else
  	match[0].rm_so = start;
  	match[0].rm_eo = stop;
