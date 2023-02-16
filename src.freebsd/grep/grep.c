@@ -65,8 +65,9 @@ const char	*errstr[] = {
 /* 8*/	"%s (BSD grep, GNU compatible) %s\n",
 };
 
-/* Flags passed to regcomp() */
+/* Flags passed to regcomp() and regexec() */
 int		 cflags = REG_NOSUB | REG_NEWLINE;
+int		 eflags = 0;
 
 bool		 matchall;
 

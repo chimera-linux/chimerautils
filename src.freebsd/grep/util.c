@@ -489,7 +489,7 @@ static int regexec_startend(
     const regex_t *restrict preg, const char *restrict str, size_t nmatch,
     regmatch_t pmatch[restrict], int eflags
 ) {
-	return regexec(preg, str, nmatch, pmatch, eflags|REG_STARTEND);
+	return regexec(preg, str, nmatch, pmatch, eflags | REG_STARTEND);
 }
 #endif
 
@@ -507,7 +507,7 @@ procline(struct parsec *pc)
 	wchar_t wbegin, wend;
 	size_t st, nst;
 	unsigned int i;
-	int r = 0, leflags = 0;
+	int r = 0, leflags = eflags;
 	size_t startm = 0, matchidx;
 	unsigned int retry;
 	bool lastmatched, matched;

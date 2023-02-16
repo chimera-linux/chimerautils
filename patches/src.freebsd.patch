@@ -6196,14 +6196,12 @@
  #endif
 --- src.orig/grep/grep.c
 +++ src.freebsd/grep/grep.c
-@@ -65,9 +65,8 @@
- /* 8*/	"%s (BSD grep, GNU compatible) %s\n",
- };
+@@ -67,7 +67,7 @@
  
--/* Flags passed to regcomp() and regexec() */
-+/* Flags passed to regcomp() */
+ /* Flags passed to regcomp() and regexec() */
  int		 cflags = REG_NOSUB | REG_NEWLINE;
 -int		 eflags = REG_STARTEND;
++int		 eflags = 0;
  
  bool		 matchall;
  
@@ -6222,17 +6220,6 @@
  
  extern const char		*errstr[];
  
-@@ -112,8 +110,8 @@
- 	bool		cntlines;			/* Count lines? */
- };
- 
--/* Flags passed to regcomp() and regexec() */
--extern int	 cflags, eflags;
-+/* Flags passed to regcomp() */
-+extern int	 cflags;
- 
- /* Command line flags */
- extern bool	 Eflag, Fflag, Gflag, Hflag, Lflag,
 --- src.orig/grep/util.c
 +++ src.freebsd/grep/util.c
 @@ -469,6 +469,30 @@
@@ -6259,22 +6246,13 @@
 +    const regex_t *restrict preg, const char *restrict str, size_t nmatch,
 +    regmatch_t pmatch[restrict], int eflags
 +) {
-+	return regexec(preg, str, nmatch, pmatch, eflags|REG_STARTEND);
++	return regexec(preg, str, nmatch, pmatch, eflags | REG_STARTEND);
 +}
 +#endif
 +
  /*
   * Processes a line comparing it with the specified patterns.  Each pattern
   * is looped to be compared along with the full string, saving each and every
-@@ -483,7 +507,7 @@
- 	wchar_t wbegin, wend;
- 	size_t st, nst;
- 	unsigned int i;
--	int r = 0, leflags = eflags;
-+	int r = 0, leflags = 0;
- 	size_t startm = 0, matchidx;
- 	unsigned int retry;
- 	bool lastmatched, matched;
 @@ -536,7 +560,7 @@
  				r = litexec(&pattern[i], pc->ln.dat, 1, &pmatch);
  			else

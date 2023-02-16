@@ -110,8 +110,8 @@ struct parsec {
 	bool		cntlines;			/* Count lines? */
 };
 
-/* Flags passed to regcomp() */
-extern int	 cflags;
+/* Flags passed to regcomp() and regexec() */
+extern int	 cflags, eflags;
 
 /* Command line flags */
 extern bool	 Eflag, Fflag, Gflag, Hflag, Lflag,
