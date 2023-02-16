@@ -278,22 +278,6 @@ commands from
 to
 .Fl P
 (physical directory layout).
-.It Fl p Li privileged
-Turn on privileged mode.
-This mode is enabled on startup
-if either the effective user or group ID is not equal to the
-real user or group ID.
-Turning this mode off sets the
-effective user and group IDs to the real user and group IDs.
-When this mode is enabled for interactive shells, the file
-.Pa /etc/suid_profile
-is sourced instead of
-.Pa ~/.profile
-after
-.Pa /etc/profile
-is sourced, and the contents of the
-.Ev ENV
-variable are ignored.
 .It Fl s Li stdin
 Read commands from standard input (set automatically
 if no file arguments are present).

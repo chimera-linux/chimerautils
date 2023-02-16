@@ -91,11 +91,11 @@ procargs(int argc, char **argv)
 	char *scriptname;
 
 	argptr = argv;
+	lflag = argptr[0] && argptr[0][0] == '-';
 	if (argc > 0)
 		argptr++;
 	for (i = 0; i < NOPTS; i++)
 		optval[i] = 2;
-	privileged = (getuid() != geteuid() || getgid() != getegid());
 	options(1);
 	if (*argptr == NULL && minusc == NULL)
 		sflag = 1;
@@ -198,6 +198,8 @@ options(int cmdline)
 				if (q == NULL || minusc != NULL)
 					error("Bad -c option");
 				minusc = q;
+			} else if (c == 'l' && cmdline) {
+				lflag |= 1;
 			} else if (c == 'o') {
 				minus_o(*argptr, val);
 				if (*argptr)
@@ -284,12 +286,6 @@ minus_o(char *name, int val)
 static void
 setoptionbyindex(int idx, int val)
 {
-	if (&optval[idx] == &privileged && !val && privileged) {
-		if (setgid(getgid()) == -1)
-			error("setgid");
-		if (setuid(getuid()) == -1)
-			error("setuid");
-	}
 	optval[idx] = val;
 	if (val) {
 		/* #%$ hack for ksh semantics */

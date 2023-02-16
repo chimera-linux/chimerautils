@@ -139,19 +139,16 @@ main(int argc, char *argv[])
 	INTON;
 	if (iflag)
 		chkmail(1);
-	if (argv[0] && argv[0][0] == '-') {
+	if (lflag) {
 		state = 1;
 		read_profile("/etc/profile");
 state1:
 		state = 2;
-		if (privileged == 0)
-			read_profile("${HOME-}/.profile");
-		else
-			read_profile("/etc/suid_profile");
+		read_profile("${HOME-}/.profile");
 	}
 state2:
 	state = 3;
-	if (!privileged && iflag) {
+	if (iflag) {
 		if ((shinit = lookupvar("ENV")) != NULL && *shinit != '\0') {
 			state = 3;
 			read_profile(shinit);

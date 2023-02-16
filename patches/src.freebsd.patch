@@ -7232,7 +7232,30 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  int backgndpidset(void);
 --- src.orig/sh/main.c
 +++ src.freebsd/sh/main.c
-@@ -341,4 +341,5 @@
+@@ -139,19 +139,16 @@
+ 	INTON;
+ 	if (iflag)
+ 		chkmail(1);
+-	if (argv[0] && argv[0][0] == '-') {
++	if (lflag) {
+ 		state = 1;
+ 		read_profile("/etc/profile");
+ state1:
+ 		state = 2;
+-		if (privileged == 0)
+-			read_profile("${HOME-}/.profile");
+-		else
+-			read_profile("/etc/suid_profile");
++		read_profile("${HOME-}/.profile");
+ 	}
+ state2:
+ 	state = 3;
+-	if (!privileged && iflag) {
++	if (iflag) {
+ 		if ((shinit = lookupvar("ENV")) != NULL && *shinit != '\0') {
+ 			state = 3;
+ 			read_profile(shinit);
+@@ -341,4 +338,5 @@
  		exitshell(number(argv[1]));
  	else
  		exitshell_savedstatus();
@@ -7415,6 +7438,85 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  
  void histedit(void);
  void sethistsize(const char *);
+--- src.orig/sh/options.c
++++ src.freebsd/sh/options.c
+@@ -91,11 +91,11 @@
+ 	char *scriptname;
+ 
+ 	argptr = argv;
++	lflag = argptr[0] && argptr[0][0] == '-';
+ 	if (argc > 0)
+ 		argptr++;
+ 	for (i = 0; i < NOPTS; i++)
+ 		optval[i] = 2;
+-	privileged = (getuid() != geteuid() || getgid() != getegid());
+ 	options(1);
+ 	if (*argptr == NULL && minusc == NULL)
+ 		sflag = 1;
+@@ -198,6 +198,8 @@
+ 				if (q == NULL || minusc != NULL)
+ 					error("Bad -c option");
+ 				minusc = q;
++			} else if (c == 'l' && cmdline) {
++				lflag |= 1;
+ 			} else if (c == 'o') {
+ 				minus_o(*argptr, val);
+ 				if (*argptr)
+@@ -284,12 +286,6 @@
+ static void
+ setoptionbyindex(int idx, int val)
+ {
+-	if (&optval[idx] == &privileged && !val && privileged) {
+-		if (setgid(getgid()) == -1)
+-			error("setgid");
+-		if (setuid(getuid()) == -1)
+-			error("setuid");
+-	}
+ 	optval[idx] = val;
+ 	if (val) {
+ 		/* #%$ hack for ksh semantics */
+--- src.orig/sh/options.h
++++ src.freebsd/sh/options.h
+@@ -62,21 +62,22 @@
+ #define	aflag optval[12]
+ #define	bflag optval[13]
+ #define	uflag optval[14]
+-#define	privileged optval[15]
+-#define	Tflag optval[16]
+-#define	Pflag optval[17]
+-#define	hflag optval[18]
+-#define	nologflag optval[19]
+-#define	pipefailflag optval[20]
++#define	Tflag optval[15]
++#define	Pflag optval[16]
++#define	hflag optval[17]
++#define	nologflag optval[18]
++#define	pipefailflag optval[19]
+ 
+-#define NSHORTOPTS	19
+-#define NOPTS		21
++#define NSHORTOPTS	18
++#define NOPTS		20
+ 
++extern char lflag;
+ extern char optval[NOPTS];
+ extern const char optletter[NSHORTOPTS];
+ #ifdef DEFINE_OPTIONS
++char lflag;
+ char optval[NOPTS];
+-const char optletter[NSHORTOPTS] = "efIimnsxvVECabupTPh";
++const char optletter[NSHORTOPTS] = "efIimnsxvVECabuTPh";
+ static const unsigned char optname[] =
+ 	"\007errexit"
+ 	"\006noglob"
+@@ -93,7 +94,6 @@
+ 	"\011allexport"
+ 	"\006notify"
+ 	"\007nounset"
+-	"\012privileged"
+ 	"\012trapsasync"
+ 	"\010physical"
+ 	"\010trackall"
 --- src.orig/sh/output.c
 +++ src.freebsd/sh/output.c
 @@ -71,7 +71,7 @@
@@ -7546,6 +7648,31 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  	int e;
  
  	memory[fd] = 0;
+--- src.orig/sh/sh.1
++++ src.freebsd/sh/sh.1
+@@ -278,22 +278,6 @@
+ to
+ .Fl P
+ (physical directory layout).
+-.It Fl p Li privileged
+-Turn on privileged mode.
+-This mode is enabled on startup
+-if either the effective user or group ID is not equal to the
+-real user or group ID.
+-Turning this mode off sets the
+-effective user and group IDs to the real user and group IDs.
+-When this mode is enabled for interactive shells, the file
+-.Pa /etc/suid_profile
+-is sourced instead of
+-.Pa ~/.profile
+-after
+-.Pa /etc/profile
+-is sourced, and the contents of the
+-.Ev ENV
+-variable are ignored.
+ .It Fl s Li stdin
+ Read commands from standard input (set automatically
+ if no file arguments are present).
 --- src.orig/sh/trap.c
 +++ src.freebsd/sh/trap.c
 @@ -58,8 +58,9 @@

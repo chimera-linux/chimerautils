@@ -62,21 +62,22 @@ struct shparam {
 #define	aflag optval[12]
 #define	bflag optval[13]
 #define	uflag optval[14]
-#define	privileged optval[15]
-#define	Tflag optval[16]
-#define	Pflag optval[17]
-#define	hflag optval[18]
-#define	nologflag optval[19]
-#define	pipefailflag optval[20]
+#define	Tflag optval[15]
+#define	Pflag optval[16]
+#define	hflag optval[17]
+#define	nologflag optval[18]
+#define	pipefailflag optval[19]
 
-#define NSHORTOPTS	19
-#define NOPTS		21
+#define NSHORTOPTS	18
+#define NOPTS		20
 
+extern char lflag;
 extern char optval[NOPTS];
 extern const char optletter[NSHORTOPTS];
 #ifdef DEFINE_OPTIONS
+char lflag;
 char optval[NOPTS];
-const char optletter[NSHORTOPTS] = "efIimnsxvVECabupTPh";
+const char optletter[NSHORTOPTS] = "efIimnsxvVECabuTPh";
 static const unsigned char optname[] =
 	"\007errexit"
 	"\006noglob"
@@ -93,7 +94,6 @@ static const unsigned char optname[] =
 	"\011allexport"
 	"\006notify"
 	"\007nounset"
-	"\012privileged"
 	"\012trapsasync"
 	"\010physical"
 	"\010trackall"
