@@ -30,7 +30,7 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/param.h>
+#include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 #ifndef lint
 static const char copyright[] =
@@ -41,6 +41,7 @@ static const char copyright[] =
 static const char sccsid[] = "@(#)script.c	8.1 (Berkeley) 6/6/93";
 #endif
 
+#include <sys/param.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>

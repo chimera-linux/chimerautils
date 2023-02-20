@@ -7145,7 +7145,23 @@
  .Nm
 --- src.orig/miscutils/script/script.c
 +++ src.freebsd/miscutils/script/script.c
-@@ -47,8 +47,6 @@
+@@ -30,7 +30,7 @@
+  * SUCH DAMAGE.
+  */
+ 
+-#include <sys/param.h>
++#include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ #ifndef lint
+ static const char copyright[] =
+@@ -41,14 +41,13 @@
+ static const char sccsid[] = "@(#)script.c	8.1 (Berkeley) 6/6/93";
+ #endif
+ 
++#include <sys/param.h>
+ #include <sys/wait.h>
+ #include <sys/stat.h>
+ #include <sys/ioctl.h>
  #include <sys/time.h>
  #include <sys/queue.h>
  #include <sys/uio.h>
@@ -7154,7 +7170,7 @@
  
  #include <err.h>
  #include <errno.h>
-@@ -61,6 +59,10 @@
+@@ -61,6 +60,10 @@
  #include <string.h>
  #include <termios.h>
  #include <unistd.h>
@@ -7165,7 +7181,7 @@
  
  #define DEF_BUF 65536
  
-@@ -83,7 +85,7 @@
+@@ -83,7 +86,7 @@
  static int child;
  static const char *fname;
  static char *fmfname;
@@ -7174,7 +7190,7 @@
  static int usesleep, rawout, showexit;
  static TAILQ_HEAD(, buf_elm) obuf_list = TAILQ_HEAD_INITIALIZER(obuf_list);
  
-@@ -111,17 +113,14 @@
+@@ -111,17 +114,14 @@
  	struct buf_elm *be;
  	int aflg, Fflg, kflg, pflg, ch, k, n, fcm;
  	int flushtime, readstdin;
@@ -7193,7 +7209,7 @@
  		switch(ch) {
  		case 'a':
  			aflg = 1;
-@@ -134,9 +133,6 @@
+@@ -134,9 +134,6 @@
  		case 'F':
  			Fflg = 1;
  			break;
@@ -7203,7 +7219,7 @@
  		case 'k':
  			kflg = 1;
  			break;
-@@ -171,20 +167,6 @@
+@@ -171,20 +168,6 @@
  	if ((fscript = fopen(fname, pflg ? "r" : aflg ? "a" : "w")) == NULL)
  		err(1, "%s", fname);
  
@@ -7224,7 +7240,7 @@
  	if (pflg)
  		playback(fscript);
  
-@@ -225,10 +207,6 @@
+@@ -225,10 +208,6 @@
  			}
  		}
  		fflush(fscript);
@@ -7235,7 +7251,7 @@
  	}
  	if (ttyflg) {
  		rtt = tt;
-@@ -243,14 +221,6 @@
+@@ -243,14 +222,6 @@
  		done(1);
  	}
  	if (child == 0) {
@@ -7250,7 +7266,7 @@
  		doshell(argv);
  	}
  	close(slave);
-@@ -417,10 +387,6 @@
+@@ -417,10 +388,6 @@
  			    ctime(&tvec));
  		}
  		(void)printf("\nScript done, output file is %s\n", fname);
@@ -7261,7 +7277,7 @@
  	}
  	(void)fclose(fscript);
  	(void)close(master);
-@@ -468,10 +434,10 @@
+@@ -468,10 +435,10 @@
  
  #define swapstamp(stamp) do { \
  	if (stamp.scr_direction > 0xff) { \
