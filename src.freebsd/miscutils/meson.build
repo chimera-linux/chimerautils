@@ -12,6 +12,7 @@ subdir('renice')
 subdir('rev')
 subdir('script')
 subdir('wall')
+subdir('whereis')
 subdir('write')
 
 if libtinfo.found()

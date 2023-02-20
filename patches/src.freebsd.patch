@@ -7339,6 +7339,137 @@
  							ingroup = 1;
  							break;
  						}
+--- src.orig/miscutils/whereis/pathnames.h
++++ src.freebsd/miscutils/whereis/pathnames.h
+@@ -31,6 +31,7 @@
+ #define PATH_LIBEXEC "/usr/libexec"
+ 
+ /* Where to look for sources. */
++#if 0
+ #define PATH_SOURCES					\
+ "/usr/src/bin:/usr/src/usr.bin:/usr/src/sbin:"		\
+ "/usr/src/usr.sbin:/usr/src/libexec:"			\
+@@ -41,6 +42,9 @@
+ "/usr/src/secure/sbin:/usr/src/secure/usr.sbin:"	\
+ "/usr/src/secure/libexec:/usr/src/crypto:"		\
+ "/usr/src/games"
++#else
++#define PATH_SOURCES "/usr/src"
++#endif
+ 
+ /* Each subdirectory of PATH_PORTS will be appended to PATH_SOURCES. */
+ #define PATH_PORTS "/usr/ports"
+--- src.orig/miscutils/whereis/whereis.1
++++ src.freebsd/miscutils/whereis/whereis.1
+@@ -60,11 +60,7 @@
+ .Ql ,v
+ from a source code control system.
+ .Pp
+-The default path searched is the string returned by the
+-.Xr sysctl 8
+-utility for the
+-.Dq user.cs_path
+-string, with
++The default path searched is the standard utilities path, with
+ .Pa /usr/libexec
+ and the current user's
+ .Ev $PATH
+@@ -73,9 +69,7 @@
+ .Ev $MANPATH .
+ Program sources are located in a list of known standard places,
+ including all the subdirectories of
+-.Pa /usr/src
+-and
+-.Pa /usr/ports .
++.Pa /usr/src .
+ .Pp
+ The following options are available:
+ .Bl -tag -width indent
+@@ -153,8 +147,7 @@
+ .Xr find 1 ,
+ .Xr locate 1 ,
+ .Xr man 1 ,
+-.Xr which 1 ,
+-.Xr sysctl 8
++.Xr which 1
+ .Sh HISTORY
+ The
+ .Nm
+--- src.orig/miscutils/whereis/whereis.c
++++ src.freebsd/miscutils/whereis/whereis.c
+@@ -37,7 +37,6 @@
+ __FBSDID("$FreeBSD$");
+ 
+ #include <sys/stat.h>
+-#include <sys/sysctl.h>
+ 
+ #include <dirent.h>
+ #include <err.h>
+@@ -49,6 +48,7 @@
+ #include <string.h>
+ #include <sysexits.h>
+ #include <unistd.h>
++#include <paths.h>
+ 
+ #include "pathnames.h"
+ 
+@@ -254,14 +254,14 @@
+ static void
+ defaults(void)
+ {
+-	size_t s;
+ 	char *b, buf[BUFSIZ], *cp;
+ 	int nele;
+ 	FILE *p;
++#if 0
+ 	DIR *dir;
+ 	struct stat sb;
+ 	struct dirent *dirp;
+-	const int oid[2] = {CTL_USER, USER_CS_PATH};
++#endif
+ 
+ 	/* default to -bms if none has been specified */
+ 	if (!opt_b && !opt_m && !opt_s)
+@@ -270,12 +270,8 @@
+ 	/* -b defaults to default path + /usr/libexec +
+ 	 * user's path */
+ 	if (!bindirs) {
+-		if (sysctl(oid, 2, NULL, &s, NULL, 0) == -1)
+-			err(EX_OSERR, "sysctl(\"user.cs_path\")");
+-		if ((b = malloc(s + 1)) == NULL)
++		if ((b = strdup(_PATH_STDPATH)) == NULL)
+ 			abort();
+-		if (sysctl(oid, 2, b, &s, NULL, 0) == -1)
+-			err(EX_OSERR, "sysctl(\"user.cs_path\")");
+ 		nele = 0;
+ 		decolonify(b, &bindirs, &nele);
+ 		bindirs = realloc(bindirs, (nele + 2) * sizeof(char *));
+@@ -315,7 +311,7 @@
+ 			abort();
+ 		nele = 0;
+ 		decolonify(b, &sourcedirs, &nele);
+-
++#if 0
+ 		if (stat(PATH_PORTS, &sb) == -1) {
+ 			if (errno == ENOENT)
+ 				/* no /usr/ports, we are done */
+@@ -353,7 +349,7 @@
+ 			    (dirp->d_name[0] >= 'A' && dirp->d_name[0] <= 'Z') ||
+ 			    strcmp(dirp->d_name, "distfiles") == 0)
+ 				continue;
+-			if ((b = malloc(sizeof PATH_PORTS + 1 + dirp->d_namlen))
++			if ((b = malloc(sizeof PATH_PORTS + 1 + strlen(dirp->d_name)))
+ 			    == NULL)
+ 				abort();
+ 			strcpy(b, PATH_PORTS);
+@@ -373,6 +369,7 @@
+ 			sourcedirs[nele] = NULL;
+ 		}
+ 		closedir(dir);
++#endif
+ 	}
+ }
+ 
 --- src.orig/miscutils/write/write.c
 +++ src.freebsd/miscutils/write/write.c
 @@ -49,8 +49,6 @@
