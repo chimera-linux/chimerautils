@@ -25,24 +25,10 @@
  * SUCH DAMAGE.
  */
 
-#ifndef LIBCASPER_H
-#define LIBCASPER_H
+#ifndef CASPER_CAP_SYSLOG_H
+#define CASPER_CAP_SYSLOG_H
 
-typedef struct cap_channel_t cap_channel_t;
-
-static cap_channel_t *_chan = (void *)0xDEADBEEF;
-
-static inline cap_channel_t *cap_init(void) {
-    return _chan;
-}
-
-static inline void cap_close(cap_channel_t *chan) {
-    (void)chan;
-}
-
-static inline cap_channel_t *cap_service_open(const cap_channel_t *chan, const char *name) {
-    (void)name;
-    return (cap_channel_t *)chan;
-}
+#define cap_openlog(chan, ident, logopt, facility) openlog(ident, logopt, facility)
+#define cap_syslog(chan, ...) syslog(__VA_ARGS__)
 
 #endif

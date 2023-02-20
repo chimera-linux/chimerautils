@@ -6805,6 +6805,32 @@
  			(void)fprintf(fp, "\n");
  		else
  			(void)fprintf(fp, " ");
+--- src.orig/miscutils/logger/logger.c
++++ src.freebsd/miscutils/logger/logger.c
+@@ -343,8 +343,22 @@
+ 			errx(1, "address family mismatch");
+ 			
+ 		if (ss_src[res->ai_family]) {
++			socklen_t alen;
++			switch (res->ai_family) {
++			case AF_INET:
++				alen = sizeof(struct sockaddr_in);
++				break;
++#ifdef INET6
++			case AF_INET6:
++				alen = sizeof(struct sockaddr_in6);
++				break;
++#endif
++			default:
++				/* should be unreachable */
++				errx(1, "invalid address family");
++			}
+ 			error = bind(s, sstosa(ss_src[res->ai_family]),
+-				    ss_src[res->ai_family]->ss_len);
++				    alen);
+ 			if (error < 0)
+ 				err(1, "bind");
+ 		}
 --- src.orig/miscutils/look/look.c
 +++ src.freebsd/miscutils/look/look.c
 @@ -82,12 +82,12 @@
