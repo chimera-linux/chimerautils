@@ -96,6 +96,7 @@ static char sccsid[] = "@(#)locate.code.c	8.1 (Berkeley) 6/6/93";
  */
 
 #include <sys/param.h>
+#include <sys/types.h>
 #include <err.h>
 #include <errno.h>
 #include <stdlib.h>

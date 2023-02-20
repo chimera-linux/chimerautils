@@ -81,6 +81,7 @@ static const char rcsid[] =
  */
 
 #include <sys/param.h>
+#include <sys/types.h>
 #include <ctype.h>
 #include <err.h>
 #include <fnmatch.h>

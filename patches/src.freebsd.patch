@@ -6114,7 +6114,15 @@
   *	Replace occurrences of {} in s1 with s2 and return the result string.
 --- src.orig/findutils/locate/bigram/locate.bigram.c
 +++ src.freebsd/findutils/locate/bigram/locate.bigram.c
-@@ -80,7 +80,7 @@
+@@ -64,6 +64,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <sys/param.h>			/* for MAXPATHLEN */
++#include <sys/types.h>
+ #include "locate.h"
+ 
+ u_char buf1[MAXPATHLEN] = " ";
+@@ -80,7 +81,7 @@
  	if (caph_limit_stdio() < 0 || caph_enter() < 0)
  		err(1, "capsicum");
  
@@ -6125,7 +6133,15 @@
  		 * We don't need remove newline character '\n'.
 --- src.orig/findutils/locate/code/locate.code.c
 +++ src.freebsd/findutils/locate/code/locate.code.c
-@@ -148,7 +148,7 @@
+@@ -96,6 +96,7 @@
+  */
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <err.h>
+ #include <errno.h>
+ #include <stdlib.h>
+@@ -148,7 +149,7 @@
  		err(1, "%s", argv[0]);
  
  	/* First copy bigram array to stdout. */
@@ -6134,7 +6150,7 @@
  
  	if (fwrite(bigrams, 1, BGBUFSIZE, stdout) != BGBUFSIZE)
  		err(1, "stdout");
-@@ -169,7 +169,7 @@
+@@ -169,7 +170,7 @@
  	path = buf2;
  	oldcount = 0;
  
@@ -6214,6 +6230,16 @@
  .El
  .Sh SEE ALSO
  .Xr find 1 ,
+--- src.orig/findutils/locate/locate/locate.c
++++ src.freebsd/findutils/locate/locate/locate.c
+@@ -81,6 +81,7 @@
+  */
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <ctype.h>
+ #include <err.h>
+ #include <fnmatch.h>
 --- src.orig/findutils/locate/locate/locate.rc
 +++ src.freebsd/findutils/locate/locate/locate.rc
 @@ -1,7 +1,6 @@
@@ -6289,6 +6315,16 @@
  : ${find:=find}
  
  if [ -z "$SEARCHPATHS" ]; then
+--- src.orig/findutils/locate/locate/util.c
++++ src.freebsd/findutils/locate/locate/util.c
+@@ -44,6 +44,7 @@
+ #include <string.h>
+ #include <err.h>
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <arpa/inet.h>
+ #include <stdio.h>
+ 
 --- src.orig/findutils/xargs/strnsubst.c
 +++ src.freebsd/findutils/xargs/strnsubst.c
 @@ -15,6 +15,7 @@

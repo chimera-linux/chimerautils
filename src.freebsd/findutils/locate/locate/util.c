@@ -44,6 +44,7 @@
 #include <string.h>
 #include <err.h>
 #include <sys/param.h>
+#include <sys/types.h>
 #include <arpa/inet.h>
 #include <stdio.h>
 
