@@ -7574,15 +7574,22 @@
  .Nm
 --- src.orig/miscutils/whereis/whereis.c
 +++ src.freebsd/miscutils/whereis/whereis.c
-@@ -37,7 +37,6 @@
+@@ -32,12 +32,12 @@
+  * was pretty inferior in functionality.
+  */
+ 
+-#include <sys/types.h>
++#include <sys/cdefs.h>
+ 
  __FBSDID("$FreeBSD$");
  
++#include <sys/types.h>
  #include <sys/stat.h>
 -#include <sys/sysctl.h>
  
  #include <dirent.h>
  #include <err.h>
-@@ -49,6 +48,7 @@
+@@ -49,6 +49,7 @@
  #include <string.h>
  #include <sysexits.h>
  #include <unistd.h>
@@ -7590,7 +7597,7 @@
  
  #include "pathnames.h"
  
-@@ -254,14 +254,14 @@
+@@ -254,14 +255,14 @@
  static void
  defaults(void)
  {
@@ -7607,7 +7614,7 @@
  
  	/* default to -bms if none has been specified */
  	if (!opt_b && !opt_m && !opt_s)
-@@ -270,12 +270,8 @@
+@@ -270,12 +271,8 @@
  	/* -b defaults to default path + /usr/libexec +
  	 * user's path */
  	if (!bindirs) {
@@ -7621,7 +7628,7 @@
  		nele = 0;
  		decolonify(b, &bindirs, &nele);
  		bindirs = realloc(bindirs, (nele + 2) * sizeof(char *));
-@@ -315,7 +311,7 @@
+@@ -315,7 +312,7 @@
  			abort();
  		nele = 0;
  		decolonify(b, &sourcedirs, &nele);
@@ -7630,7 +7637,7 @@
  		if (stat(PATH_PORTS, &sb) == -1) {
  			if (errno == ENOENT)
  				/* no /usr/ports, we are done */
-@@ -353,7 +349,7 @@
+@@ -353,7 +350,7 @@
  			    (dirp->d_name[0] >= 'A' && dirp->d_name[0] <= 'Z') ||
  			    strcmp(dirp->d_name, "distfiles") == 0)
  				continue;
@@ -7639,7 +7646,7 @@
  			    == NULL)
  				abort();
  			strcpy(b, PATH_PORTS);
-@@ -373,6 +369,7 @@
+@@ -373,6 +370,7 @@
  			sourcedirs[nele] = NULL;
  		}
  		closedir(dir);

@@ -32,10 +32,11 @@
  * was pretty inferior in functionality.
  */
 
-#include <sys/types.h>
+#include <sys/cdefs.h>
 
 __FBSDID("$FreeBSD$");
 
+#include <sys/types.h>
 #include <sys/stat.h>
 
 #include <dirent.h>
