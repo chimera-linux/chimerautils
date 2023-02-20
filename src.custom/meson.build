@@ -14,5 +14,6 @@ subdir('hostid')
 subdir('nproc')
 
 if libcrypto.found()
+    subdir('mcookie')
     subdir('md5sum')
 endif
