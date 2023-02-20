@@ -21,9 +21,18 @@ fail_exit() {
 rm -rf src.orig
 mkdir -p src.orig src.freebsd
 
+SRCTAR=
+if [ -n "$1" ]; then
+    [ -r "$1" ] || fail_exit
+    SRCTAR=$(realpath "$1")
+fi
+
 cd ${TMPDIR}
-curl -L --retry 3 --ftp-pasv -O ${SRC} || fail_exit
-xz -dc src.txz | tar -xf -
+if [ -z "$SRCTAR" ]; then
+    SRCTAR="src.txz"
+    curl -L --retry 3 --ftp-pasv -O ${SRC} || fail_exit
+fi
+xz -dc "$SRCTAR" | tar -xf -
 
 copy_cmd() {
     p="$1"
