@@ -1,3 +1,4 @@
+subdir('calendar')
 subdir('col')
 subdir('colrm')
 subdir('column')
@@ -12,5 +13,6 @@ subdir('wall')
 subdir('write')
 
 if libtinfo.found()
+    subdir('ncal')
     subdir('ul')
 endif

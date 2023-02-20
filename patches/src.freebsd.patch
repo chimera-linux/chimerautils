@@ -145,6 +145,38 @@
  	return (mask);
  }
  
+--- src.orig/compat/stringlist.c
++++ src.freebsd/compat/stringlist.c
+@@ -30,13 +30,11 @@
+ __RCSID("$NetBSD: stringlist.c,v 1.2 1997/01/17 07:26:20 lukem Exp $");
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <stdio.h>
+ #include <string.h>
+ #include <err.h>
+ #include <stdlib.h>
+ #include <stringlist.h>
+-#include "un-namespace.h"
+ 
+ #define _SL_CHUNKSIZE	20
+ 
+@@ -50,13 +48,13 @@
+ 
+ 	sl = malloc(sizeof(StringList));
+ 	if (sl == NULL)
+-		_err(1, "stringlist: %m");
++		err(1, "stringlist: %m");
+ 
+ 	sl->sl_cur = 0;
+ 	sl->sl_max = _SL_CHUNKSIZE;
+ 	sl->sl_str = malloc(sl->sl_max * sizeof(char *));
+ 	if (sl->sl_str == NULL)
+-		_err(1, "stringlist: %m");
++		err(1, "stringlist: %m");
+ 	return sl;
+ }
+ 
 --- src.orig/compat/vis.c
 +++ src.freebsd/compat/vis.c
 @@ -64,7 +64,6 @@
@@ -6385,7 +6417,6 @@
  {
  	u_int count, i;
  	struct s_zstate *zs;
-File src.orig/include is a regular file while file src.freebsd/include is a directory
 --- src.orig/m4/parser.y
 +++ src.freebsd/m4/parser.y
 @@ -20,6 +20,7 @@
@@ -6396,6 +6427,135 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  #define YYSTYPE	int32_t
  extern int32_t end_result;
  extern int yylex(void);
+--- src.orig/miscutils/calendar/calendar.1
++++ src.freebsd/miscutils/calendar/calendar.1
+@@ -263,9 +263,9 @@
+ .It Pa ~/.calendar/nomail
+ do not send mail if this file exists.
+ .It Pa /usr/share/calendar
+-system wide location of calendar files provided as part of the base system.
++system wide location of calendar files.
+ .It Pa /usr/local/share/calendar
+-system wide location for calendar files provided by a port or package.
++alternate system wide location for calendar files.
+ .El
+ .Pp
+ The order of precedence in searches for a calendar file is:
+@@ -273,7 +273,7 @@
+ Files of similar names are ignored in lower precedence locations.
+ .Pp
+ The following default calendar files are provided by the
+-deskutils/calendar-data port.
++chimerautils-calendar-data package.
+ .Pp
+ .Bl -tag -width calendar.southafrica -compact
+ .It Pa calendar.all
+@@ -292,10 +292,6 @@
+ Calendar of events in Croatia.
+ .It Pa calendar.dutch
+ Calendar of events in the Netherlands.
+-.It Pa calendar.freebsd
+-Birthdays of
+-.Fx
+-committers.
+ .It Pa calendar.french
+ Calendar of events in France.
+ .It Pa calendar.german
+--- src.orig/miscutils/calendar/calendar.c
++++ src.freebsd/miscutils/calendar/calendar.c
+@@ -48,7 +48,6 @@
+ #include <err.h>
+ #include <errno.h>
+ #include <locale.h>
+-#include <login_cap.h>
+ #include <langinfo.h>
+ #include <pwd.h>
+ #include <stdio.h>
+@@ -222,12 +221,6 @@
+ 			if (pid < 0)
+ 				err(1, "fork");
+ 			if (pid == 0) {
+-				login_cap_t *lc;
+-
+-				lc = login_getpwclass(pw);
+-				if (setusercontext(lc, pw, pw->pw_uid,
+-				    LOGIN_SETALL) != 0)
+-					errx(1, "setusercontext");
+ 				setenv("HOME", pw->pw_dir, 1);
+ 				cal();
+ 				exit(0);
+--- src.orig/miscutils/calendar/events.c
++++ src.freebsd/miscutils/calendar/events.c
+@@ -36,6 +36,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <time.h>
+ #ifdef WITH_ICONV
+ #include <iconv.h>
+ #include <errno.h>
+@@ -204,7 +205,10 @@
+ 	char dbuf[80];
+ 	static int d_first;
+ 
+-	d_first = (*nl_langinfo(D_MD_ORDER) == 'd');
++	d_first = 0;
++	if (strlen(nl_langinfo(D_FMT)) >= 2 && nl_langinfo(D_FMT)[1] == 'd')
++		d_first = 1;
++
+ 
+ 	while (walkthrough_dates(&e) != 0) {
+ 		if (e) {
+--- src.orig/miscutils/calendar/io.c
++++ src.freebsd/miscutils/calendar/io.c
+@@ -120,9 +120,6 @@
+ 	FILE *fp;
+ 	char *home = getenv("HOME");
+ 	unsigned int i;
+-	struct stat sb;
+-	static bool warned = false;
+-	static char calendarhome[MAXPATHLEN];
+ 
+ 	if (home == NULL || *home == '\0') {
+ 		warnx("Cannot get home directory");
+@@ -135,27 +132,18 @@
+ 	}
+ 
+ 	for (i = 0; i < nitems(calendarHomes); i++) {
+-		if (snprintf(calendarhome, sizeof (calendarhome), calendarHomes[i],
+-			getlocalbase()) >= (int)sizeof (calendarhome))
+-			continue;
+-
+-		if (chdir(calendarhome) != 0)
++		if (chdir(calendarHomes[i]) != 0)
+ 			continue;
+ 
+ 		if ((fp = fopen(file, "r")) != NULL) {
+ 			cal_home = home;
+-			cal_dir = calendarhome;
++			cal_dir = calendarHomes[i];
+ 			cal_file = file;
+ 			return (fp);
+ 		}
+ 	}
+ 
+ 	warnx("can't open calendar file \"%s\"", file);
+-	if (!warned && stat(_PATH_INCLUDE_LOCAL, &sb) != 0) {
+-		warnx("calendar data files now provided by calendar-data pkg.");
+-		warned = true;
+-	}
+-
+ 	return (NULL);
+ }
+ 
+--- src.orig/miscutils/calendar/pathnames.h
++++ src.freebsd/miscutils/calendar/pathnames.h
+@@ -35,4 +35,4 @@
+ #include <paths.h>
+ 
+ #define	_PATH_INCLUDE	"/usr/share/calendar"
+-#define	_PATH_INCLUDE_LOCAL	"%s/share/calendar"
++#define	_PATH_INCLUDE_LOCAL	"/usr/local/share/calendar"
 --- src.orig/miscutils/col/col.c
 +++ src.freebsd/miscutils/col/col.c
 @@ -52,6 +52,7 @@
@@ -6733,6 +6893,127 @@ File src.orig/include is a regular file while file src.freebsd/include is a dire
  {
  	wchar_t ch1, ch2;
  	size_t len2;
+--- src.orig/miscutils/ncal/ncal.c
++++ src.freebsd/miscutils/ncal/ncal.c
+@@ -545,8 +545,11 @@
+ 	char    buf[MAX_WIDTH];
+ 	static int d_first = -1;
+ 
+-	if (d_first < 0)
+-		d_first = (*nl_langinfo(D_MD_ORDER) == 'd');
++	if (d_first < 0) {
++		d_first = 0;
++		if (strlen(nl_langinfo(D_FMT)) >= 2 && nl_langinfo(D_FMT)[1] == 'd')
++			d_first = 1;
++	}
+ 	/* force orthodox easter for years before 1583 */
+ 	if (y < 1583)
+ 		orthodox = 1;
+@@ -628,12 +631,12 @@
+ 
+ 		/* Empty line between two rows of months */
+ 		if (m != m1)
+-			printf("\n");
++			wprintf(L"\n");
+ 
+ 		/* Year at the top. */
+ 		if (printyearheader && M2Y(m) != prevyear) {
+ 			sprintf(s, "%d", M2Y(m));
+-			printf("%s\n", center(t, s, mpl * mw));
++			wprintf(L"%s\n", center(t, s, mpl * mw));
+ 			prevyear = M2Y(m);
+ 		}
+ 
+@@ -647,7 +650,7 @@
+ 				    L"%-ls %d", year[i].name, M2Y(m + i));
+ 				wprintf(L"%-*ls  ", mw, wcenter(ws1, ws, mw));
+ 			}
+-		printf("\n");
++		wprintf(L"\n");
+ 
+ 		/* Day of the week names. */
+ 		for (i = 0; i < count; i++) {
+@@ -657,15 +660,15 @@
+ 				wdss, wds.names[3], wdss, wds.names[4],
+ 				wdss, wds.names[5]);
+ 		}
+-		printf("\n");
++		wprintf(L"\n");
+ 
+ 		/* And the days of the month. */
+ 		for (i = 0; i != 6; i++) {
+ 			for (j = 0; j < count; j++)
+-				printf("%-*s  ",
++				wprintf(L"%-*s  ",
+ 				    MW(mw, year[j].extralen[i]),
+ 					year[j].lines[i]+1);
+-			printf("\n");
++			wprintf(L"\n");
+ 		}
+ 
+ 		m += mpl;
+@@ -715,12 +718,12 @@
+ 
+ 		/* Empty line between two rows of months. */
+ 		if (m != m1)
+-			printf("\n");
++			wprintf(L"\n");
+ 
+ 		/* Year at the top. */
+ 		if (printyearheader && M2Y(m) != prevyear) {
+ 			sprintf(s, "%d", M2Y(m));
+-			printf("%s\n", center(t, s, mpl * mw));
++			wprintf(L"%s\n", center(t, s, mpl * mw));
+ 			prevyear = M2Y(m);
+ 		}
+ 
+@@ -732,7 +735,7 @@
+ 			else
+ 				wprintf(L"%-ls %-*d", year[i].name,
+ 				    mw - wcslen(year[i].name) - 1, M2Y(m + i));
+-		printf("\n");
++		wprintf(L"\n");
+ 
+ 		/* And the days of the month. */
+ 		for (i = 0; i != 7; i++) {
+@@ -741,18 +744,18 @@
+ 
+ 			/* Full months */
+ 			for (j = 0; j < count; j++)
+-				printf("%-*s",
++				wprintf(L"%-*s",
+ 				    MW(mw, year[j].extralen[i]),
+ 					year[j].lines[i]);
+-			printf("\n");
++			wprintf(L"\n");
+ 		}
+ 
+ 		/* Week numbers. */
+ 		if (flag_weeks) {
+-			printf("  ");
++			wprintf(L"  ");
+ 			for (i = 0; i < count; i++)
+-				printf("%-*s", mw, year[i].weeks);
+-			printf("\n");
++				wprintf(L"%-*s", mw, year[i].weeks);
++			wprintf(L"\n");
+ 		}
+ 
+ 		m += mpl;
+@@ -1054,9 +1057,12 @@
+ center(char *s, char *t, int w)
+ {
+ 	char blanks[MAX_WIDTH];
++	int nblank;
+ 
+ 	memset(blanks, ' ', sizeof(blanks));
+-	sprintf(s, "%.*s%s", (int)(w - strlen(t)) / 2, blanks, t);
++	nblank = (int)(w - strlen(t)) / 2;
++	memcpy(s, blanks, nblank);
++	sprintf(s + nblank, "%s", t);
+ 	return (s);
+ }
+ 
 --- src.orig/miscutils/rev/rev.c
 +++ src.freebsd/miscutils/rev/rev.c
 @@ -57,6 +57,46 @@

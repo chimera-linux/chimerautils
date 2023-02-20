@@ -164,6 +164,7 @@ usr.bin/dc
 # mostly util-linux
 CMDS_MISC="
 bin/kill
+usr.bin/calendar
 usr.bin/col
 usr.bin/colrm
 usr.bin/column
@@ -171,6 +172,7 @@ usr.bin/getopt
 usr.bin/hexdump
 usr.bin/look
 usr.bin/mesg
+usr.bin/ncal
 usr.bin/renice
 usr.bin/rev
 usr.bin/ul
@@ -209,7 +211,7 @@ copy_cmd usr.bin/sed
 copy_cmd usr.bin/which
 
 # 'compat' is our static library with a subset of BSD library functions
-mkdir -p ${CWD}/src.orig/compat
+mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
 cp -p usr/src/lib/libutil/expand_number.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/gen/getbsize.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/stdlib/heapsort.c ${CWD}/src.orig/compat
@@ -218,12 +220,14 @@ cp -p usr/src/lib/libc/stdlib/merge.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libopenbsd/ohash.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/gen/setmode.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/string/strmode.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/gen/stringlist.c ${CWD}/src.orig/compat
 cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/src.orig/compat
+cp -p usr/src/include/stringlist.h ${CWD}/src.orig/include
 cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.orig/include
 cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.orig/include
 
-${CWD}/src.freebsd/compat
 cp ${CWD}/src.orig/compat/* ${CWD}/src.freebsd/compat
+cp ${CWD}/src.orig/include/* ${CWD}/src.freebsd/include
 
 # These files are needed for the factor command
 cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src.orig/coreutils/factor
@@ -238,6 +242,14 @@ rm -rf ${CWD}/src.freebsd/coreutils/sort/nls
 # sort manpage
 mv ${CWD}/src.orig/coreutils/sort/sort.1.in ${CWD}/src.orig/coreutils/sort/sort.1
 mv ${CWD}/src.freebsd/coreutils/sort/sort.1.in ${CWD}/src.freebsd/coreutils/sort/sort.1
+
+# libcalendar internal copy for ncal(1)
+cp -p usr/src/lib/libcalendar/easter.c ${CWD}/src.orig/miscutils/ncal/easter.c
+cp -p usr/src/lib/libcalendar/calendar.c ${CWD}/src.orig/miscutils/ncal/calendar.c
+cp -p usr/src/lib/libcalendar/calendar.h ${CWD}/src.orig/miscutils/ncal/calendar.h
+cp -p usr/src/lib/libcalendar/easter.c ${CWD}/src.freebsd/miscutils/ncal/easter.c
+cp -p usr/src/lib/libcalendar/calendar.c ${CWD}/src.freebsd/miscutils/ncal/calendar.c
+cp -p usr/src/lib/libcalendar/calendar.h ${CWD}/src.freebsd/miscutils/ncal/calendar.h
 
 # fix sh generator permissions
 chmod 755 ${CWD}/src.orig/sh/mkbuiltins
