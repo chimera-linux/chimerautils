@@ -11,6 +11,7 @@ project(
 bindir = get_option('bindir')
 sbindir = get_option('sbindir')
 man1dir = join_paths(get_option('mandir'), 'man1')
+man8dir = join_paths(get_option('mandir'), 'man8')
 
 cc = meson.get_compiler('c')
 cpp = meson.get_compiler('cpp')

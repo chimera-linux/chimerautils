@@ -6112,6 +6112,183 @@
  /*
   * brace_subst --
   *	Replace occurrences of {} in s1 with s2 and return the result string.
+--- src.orig/findutils/locate/bigram/locate.bigram.c
++++ src.freebsd/findutils/locate/bigram/locate.bigram.c
+@@ -80,7 +80,7 @@
+ 	if (caph_limit_stdio() < 0 || caph_enter() < 0)
+ 		err(1, "capsicum");
+ 
+-     	while (fgets(path, sizeof(buf2), stdin) != NULL) {
++     	while (fgets((char *)path, sizeof(buf2), stdin) != NULL) {
+ 
+ 		/* 
+ 		 * We don't need remove newline character '\n'.
+--- src.orig/findutils/locate/code/locate.code.c
++++ src.freebsd/findutils/locate/code/locate.code.c
+@@ -148,7 +148,7 @@
+ 		err(1, "%s", argv[0]);
+ 
+ 	/* First copy bigram array to stdout. */
+-	(void)fgets(bigrams, BGBUFSIZE + 1, fp);
++	(void)fgets((char *)bigrams, BGBUFSIZE + 1, fp);
+ 
+ 	if (fwrite(bigrams, 1, BGBUFSIZE, stdout) != BGBUFSIZE)
+ 		err(1, "stdout");
+@@ -169,7 +169,7 @@
+ 	path = buf2;
+ 	oldcount = 0;
+ 
+-	while (fgets(path, sizeof(buf2), stdin) != NULL) {
++	while (fgets((char *)path, sizeof(buf2), stdin) != NULL) {
+ 
+ 		/* skip empty lines */
+ 		if (*path == '\n')
+--- src.orig/findutils/locate/locate/fastfind.c
++++ src.freebsd/findutils/locate/locate/fastfind.c
+@@ -151,7 +151,7 @@
+ 	/* use a lookup table for case insensitive search */
+ 	u_char table[UCHAR_MAX + 1];
+ 
+-	tolower_word(pathpart);
++	tolower_word((u_char *)pathpart);
+ #endif /* FF_ICASE*/
+ 
+ 	/* init bigram table */
+@@ -168,8 +168,8 @@
+ #endif /* FF_MMAP */
+ 
+ 	/* find optimal (last) char for searching */
+-	for (p = pathpart; *p != '\0'; p++)
+-		if (strchr(LOCATE_REG, *p) != NULL)
++	for (p = (u_char *)pathpart; *p != '\0'; p++)
++		if (strchr(LOCATE_REG, *(char *)p) != NULL)
+ 			break;
+ 
+ 	if (*p == '\0')
+@@ -177,8 +177,8 @@
+ 	else
+ 		globflag = 1;
+ 
+-	p = pathpart;
+-	patend = patprep(p);
++	p = (u_char *)pathpart;
++	patend = (u_char *)patprep(pathpart);
+ 	cc = *patend;
+ 
+ #ifdef FF_ICASE
+@@ -306,9 +306,9 @@
+ 					found = 1;
+ 					if (!globflag || 
+ #ifndef FF_ICASE
+-					    !fnmatch(pathpart, path, 0)) 
++					    !fnmatch(pathpart, (char *)path, 0)) 
+ #else 
+-					    !fnmatch(pathpart, path, 
++					    !fnmatch(pathpart, (char *)path, 
+ 						     FNM_CASEFOLD))
+ #endif /* !FF_ICASE */						
+ 					{
+@@ -316,7 +316,7 @@
+ 							counter++;
+ 						else if (f_limit) {
+ 							counter++;
+-							if (f_limit >= counter)
++							if (f_limit >= (int)counter)
+ 								(void)printf("%s%c",path,separator);
+ 							else 
+ 								errx(0, "[show only %d lines]", counter - 1);
+--- src.orig/findutils/locate/locate/locate.1
++++ src.freebsd/findutils/locate/locate/locate.1
+@@ -188,13 +188,11 @@
+ option was specified.
+ .El
+ .Sh FILES
+-.Bl -tag -width /etc/periodic/weekly/310.locate -compact
++.Bl -tag -width /usr/libexec/locate.updatedb -compact
+ .It Pa /var/db/locate.database
+ locate database
+ .It Pa /usr/libexec/locate.updatedb
+ Script to update the locate database
+-.It Pa /etc/periodic/weekly/310.locate
+-Script that starts the database rebuild
+ .El
+ .Sh SEE ALSO
+ .Xr find 1 ,
+--- src.orig/findutils/locate/locate/locate.rc
++++ src.freebsd/findutils/locate/locate/locate.rc
+@@ -1,7 +1,6 @@
+ #
+ # /etc/locate.rc -  command script for updatedb(8)
+ #
+-# $FreeBSD$
+ 
+ #
+ # All commented values are the defaults
+@@ -16,7 +15,7 @@
+ #SEARCHPATHS="/"
+ 
+ # paths unwanted in output
+-#PRUNEPATHS="/tmp /usr/tmp /var/tmp /var/db/portsnap /var/db/freebsd-update"
++#PRUNEPATHS="/tmp /var/tmp"
+ 
+ # directories unwanted in output
+ #PRUNEDIRS=".zfs"
+@@ -25,9 +24,10 @@
+ # and if the SEARCHPATHS starts in such a filesystem locate will build
+ # an empty database.
+ #
+-# the default list contains all local file systems that are not synthetic,
+-# loopback mounts, or read-only, according to lsvfs.
+-#
+-# be careful if you add 'nfs' or other network file system types or file
+-# systems that generally reside on slow or removable devices like cd9660
+-#FILESYSTEMS="ufs ext2fs zfs xfs"
++# the default list contains filesystems known to be read-write,
++# non-virtual on-disk file systems; it is not possible to compute
++# this list reliably, so change it to your liking
++#
++# be careful if you add NFS or other network file system types or file
++# systems that generally reside on slow or removable devices (e.g. iso9660)
++#FILESYSTEMS="ext2 ext3 ext4 xfs vfat exfat ntfs ntfs3 f2fs zfs btrfs reiserfs reiser4 jfs"
+--- src.orig/findutils/locate/locate/locate.updatedb.8
++++ src.freebsd/findutils/locate/locate/locate.updatedb.8
+@@ -43,9 +43,6 @@
+ .Nm
+ utility updates the database used by
+ .Xr locate 1 .
+-It is typically run once a week by the
+-.Pa /etc/periodic/weekly/310.locate
+-script.
+ .Pp
+ The contents of the newly built database can be controlled by the
+ .Pa /etc/locate.rc
+@@ -63,8 +60,7 @@
+ the configuration file
+ .El
+ .Sh SEE ALSO
+-.Xr locate 1 ,
+-.Xr periodic 8
++.Xr locate 1
+ .Rs
+ .%A Woods, James A.
+ .%D 1983
+--- src.orig/findutils/locate/locate/updatedb.sh
++++ src.freebsd/findutils/locate/locate/updatedb.sh
+@@ -53,11 +53,10 @@
+ : ${mklocatedb:=locate.mklocatedb}	 # make locate database program
+ : ${FCODES:=/var/db/locate.database}	 # the database
+ : ${SEARCHPATHS="/"}		# directories to be put in the database
+-: ${PRUNEPATHS="/tmp /usr/tmp /var/tmp /var/db/portsnap /var/db/freebsd-update"} # unwanted directories
++: ${PRUNEPATHS="/tmp /var/tmp"} # unwanted directories
+ : ${PRUNEDIRS=".zfs"}	# unwanted directories, in any parent
+-: ${FILESYSTEMS="$(lsvfs | tail -n +3 | \
+-	egrep -vw "loopback|network|synthetic|read-only|0" | \
+-	cut -d " " -f1)"}		# allowed filesystems
++# allowed filesystems
++: ${FILESYSTEMS="ext2 ext3 ext4 xfs vfat exfat ntfs ntfs3 f2fs zfs btrfs reiserfs reiser4 jfs"}
+ : ${find:=find}
+ 
+ if [ -z "$SEARCHPATHS" ]; then
 --- src.orig/findutils/xargs/strnsubst.c
 +++ src.freebsd/findutils/xargs/strnsubst.c
 @@ -15,6 +15,7 @@

@@ -154,6 +154,11 @@ CMDS_FIND="
 usr.bin/find
 usr.bin/xargs
 "
+CMDS_FIND_LOCATE="
+usr.bin/locate/bigram
+usr.bin/locate/code
+usr.bin/locate/locate
+"
 
 # bc
 CMDS_BC="
@@ -193,6 +198,10 @@ done
 
 for p in ${CMDS_FIND}; do
     copy_cmd "$p" findutils
+done
+
+for p in ${CMDS_FIND_LOCATE}; do
+    copy_cmd "$p" findutils/locate
 done
 
 for p in ${CMDS_BC}; do
