@@ -1,4 +1,4 @@
-md5sum = executable('basenc', ['basenc.c'],
+baseenc = executable('basenc', ['basenc.c'],
     include_directories: inc_main,
     install: true
 )

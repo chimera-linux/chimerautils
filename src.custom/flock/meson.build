@@ -1,4 +1,4 @@
-hostid = executable('hostid', ['hostid.c'],
+flock = executable('flock', ['flock.c'],
     include_directories: inc_main,
     install: true
 )

@@ -466,7 +466,7 @@ int main(int argc, char **argv) {
         return 0;
     } else if (opt_version) {
         printf(
-"%s (bsdutils-extra) " PROJECT_VERSION "\n"
+"%s (" PROJECT_NAME ") " PROJECT_VERSION "\n"
 "Copyright (C) 2021 Daniel Kolesa\n"
 "SPDX-License-Identifier: BSD-2-Clause\n",
             __progname
