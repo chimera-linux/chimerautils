@@ -10,6 +10,7 @@ subdir('look')
 subdir('mesg')
 subdir('renice')
 subdir('rev')
+subdir('script')
 subdir('wall')
 subdir('write')
 

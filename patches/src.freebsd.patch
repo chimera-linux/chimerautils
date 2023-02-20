@@ -7117,6 +7117,165 @@
  	exit(rval);
  }
  
+--- src.orig/miscutils/script/script.1
++++ src.freebsd/miscutils/script/script.1
+@@ -93,13 +93,6 @@
+ .Xr mkfifo 1
+ and another user may watch the live session using a utility like
+ .Xr cat 1 .
+-.It Fl f
+-Create
+-.Ar file.filemon
+-or
+-.Pa typescript.filemon
+-using
+-.Xr filemon 4 .
+ .It Fl k
+ Log keys sent to the program as well as output.
+ .It Fl p
+@@ -241,8 +234,7 @@
+ for the
+ .Em history
+ mechanism
+-.Pc ,
+-.Xr filemon 4
++.Pc
+ .Sh HISTORY
+ The
+ .Nm
+--- src.orig/miscutils/script/script.c
++++ src.freebsd/miscutils/script/script.c
+@@ -47,8 +47,6 @@
+ #include <sys/time.h>
+ #include <sys/queue.h>
+ #include <sys/uio.h>
+-#include <sys/endian.h>
+-#include <dev/filemon/filemon.h>
+ 
+ #include <err.h>
+ #include <errno.h>
+@@ -61,6 +59,10 @@
+ #include <string.h>
+ #include <termios.h>
+ #include <unistd.h>
++#include <time.h>
++#include <pty.h>
++#include <utmp.h>
++#include <byteswap.h>
+ 
+ #define DEF_BUF 65536
+ 
+@@ -83,7 +85,7 @@
+ static int child;
+ static const char *fname;
+ static char *fmfname;
+-static int fflg, qflg, ttyflg;
++static int qflg, ttyflg;
+ static int usesleep, rawout, showexit;
+ static TAILQ_HEAD(, buf_elm) obuf_list = TAILQ_HEAD_INITIALIZER(obuf_list);
+ 
+@@ -111,17 +113,14 @@
+ 	struct buf_elm *be;
+ 	int aflg, Fflg, kflg, pflg, ch, k, n, fcm;
+ 	int flushtime, readstdin;
+-	int fm_fd, fm_log;
+ 
+ 	aflg = Fflg = kflg = pflg = 0;
+ 	usesleep = 1;
+ 	rawout = 0;
+ 	flushtime = 30;
+-	fm_fd = -1;	/* Shut up stupid "may be used uninitialized" GCC
+-			   warning. (not needed w/clang) */
+ 	showexit = 0;
+ 
+-	while ((ch = getopt(argc, argv, "adeFfkpqrt:")) != -1)
++	while ((ch = getopt(argc, argv, "adeFkpqrt:")) != -1)
+ 		switch(ch) {
+ 		case 'a':
+ 			aflg = 1;
+@@ -134,9 +133,6 @@
+ 		case 'F':
+ 			Fflg = 1;
+ 			break;
+-		case 'f':
+-			fflg = 1;
+-			break;
+ 		case 'k':
+ 			kflg = 1;
+ 			break;
+@@ -171,20 +167,6 @@
+ 	if ((fscript = fopen(fname, pflg ? "r" : aflg ? "a" : "w")) == NULL)
+ 		err(1, "%s", fname);
+ 
+-	if (fflg) {
+-		asprintf(&fmfname, "%s.filemon", fname);
+-		if (!fmfname)
+-			err(1, "%s.filemon", fname);
+-		if ((fm_fd = open("/dev/filemon", O_RDWR | O_CLOEXEC)) == -1)
+-			err(1, "open(\"/dev/filemon\", O_RDWR)");
+-		if ((fm_log = open(fmfname,
+-		    O_WRONLY | O_CREAT | O_TRUNC | O_CLOEXEC,
+-		    S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH)) == -1)
+-			err(1, "open(%s)", fmfname);
+-		if (ioctl(fm_fd, FILEMON_SET_FD, &fm_log) < 0)
+-			err(1, "Cannot set filemon log file descriptor");
+-	}
+-
+ 	if (pflg)
+ 		playback(fscript);
+ 
+@@ -225,10 +207,6 @@
+ 			}
+ 		}
+ 		fflush(fscript);
+-		if (fflg) {
+-			(void)printf("Filemon started, output file is %s\n",
+-			    fmfname);
+-		}
+ 	}
+ 	if (ttyflg) {
+ 		rtt = tt;
+@@ -243,14 +221,6 @@
+ 		done(1);
+ 	}
+ 	if (child == 0) {
+-		if (fflg) {
+-			int pid;
+-
+-			pid = getpid();
+-			if (ioctl(fm_fd, FILEMON_SET_PID, &pid) < 0)
+-				err(1, "Cannot set filemon PID");
+-		}
+-
+ 		doshell(argv);
+ 	}
+ 	close(slave);
+@@ -417,10 +387,6 @@
+ 			    ctime(&tvec));
+ 		}
+ 		(void)printf("\nScript done, output file is %s\n", fname);
+-		if (fflg) {
+-			(void)printf("Filemon done, output file is %s\n",
+-			    fmfname);
+-		}
+ 	}
+ 	(void)fclose(fscript);
+ 	(void)close(master);
+@@ -468,10 +434,10 @@
+ 
+ #define swapstamp(stamp) do { \
+ 	if (stamp.scr_direction > 0xff) { \
+-		stamp.scr_len = bswap64(stamp.scr_len); \
+-		stamp.scr_sec = bswap64(stamp.scr_sec); \
+-		stamp.scr_usec = bswap32(stamp.scr_usec); \
+-		stamp.scr_direction = bswap32(stamp.scr_direction); \
++		stamp.scr_len = bswap_64(stamp.scr_len); \
++		stamp.scr_sec = bswap_64(stamp.scr_sec); \
++		stamp.scr_usec = bswap_32(stamp.scr_usec); \
++		stamp.scr_direction = bswap_32(stamp.scr_direction); \
+ 	} \
+ } while (0/*CONSTCOND*/)
+ 
 --- src.orig/miscutils/wall/ttymsg.c
 +++ src.freebsd/miscutils/wall/ttymsg.c
 @@ -37,6 +37,7 @@

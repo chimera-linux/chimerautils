@@ -176,6 +176,7 @@ usr.bin/mesg
 usr.bin/ncal
 usr.bin/renice
 usr.bin/rev
+usr.bin/script
 usr.bin/ul
 usr.bin/wall
 usr.bin/write
