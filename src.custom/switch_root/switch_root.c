@@ -33,6 +33,7 @@
 #include <fcntl.h>
 #include <errno.h>
 #include <dirent.h>
+#include <limits.h>
 #include <unistd.h>
 #include <sys/stat.h>
 #include <sys/mount.h>
