@@ -8,6 +8,7 @@ configure_file(output: 'config.h', configuration: conf_data)
 inc_main = include_directories('.')
 
 subdir('basenc')
+subdir('ctrlaltdel')
 subdir('dir')
 subdir('flock')
 subdir('hostid')
