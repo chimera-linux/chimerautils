@@ -13,6 +13,7 @@ subdir('flock')
 subdir('hostid')
 subdir('nproc')
 subdir('setarch')
+subdir('setsid')
 
 if libcrypto.found()
     subdir('mcookie')
