@@ -22,6 +22,7 @@ subdir('resizepart')
 subdir('setarch')
 subdir('setsid')
 subdir('switch_root')
+subdir('taskset')
 
 if libcrypto.found()
     subdir('mcookie')
