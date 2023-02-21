@@ -2,7 +2,6 @@ locate_prog = executable(
     'locate',
     ['locate.c', 'util.c'],
     include_directories: inc,
-    #link_with: [libcompat],
     c_args: ['-DMMAP'],
     install: true,
 )
