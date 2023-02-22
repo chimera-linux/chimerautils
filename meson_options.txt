@@ -47,3 +47,8 @@ option('bzip2',
     type: 'feature', value: 'enabled',
     description: 'Use bzip2 for gzip(1)'
 )
+
+option('tiny',
+    type: 'feature', value: 'disabled',
+    description: 'Also build tiny versions of some of the tools'
+)

@@ -81,6 +81,7 @@ sh_src = [
 ]
 
 sh_flags = []
+sht_flags = ['-DNO_HISTORY']
 
 if not libedit.found()
     sh_flags += [ '-DNO_HISTORY' ]
@@ -89,7 +90,8 @@ elif cc.has_function('fn_complete2', dependencies: libedit)
 endif
 
 if cc.has_argument('-Wclobbered')
-    sh_flags += [ '-Wno-clobbered' ]
+    sh_flags += ['-Wno-clobbered']
+    sht_flags += ['-Wno-clobbered']
 endif
 
 bltins_lib = static_library(
@@ -109,5 +111,15 @@ sh_prog = executable(
     link_with : [ bltins_lib, libcompat, ],
     install : true,
 )
+
+if tiny.enabled() and libedit.found()
+    shtiny_prog = executable(
+        'sh.tiny', sh_src,
+        c_args: sht_flags,
+        include_directories: [inc],
+        link_with: [bltins_lib, libcompat],
+        install: true,
+    )
+endif
 
 install_man('sh.1')
