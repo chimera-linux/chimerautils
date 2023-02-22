@@ -723,14 +723,13 @@ unravel(int p)
 static void
 check(FILE *f1, FILE *f2, int flags)
 {
-	int i, j, jackpot, c, d;
+	int i, j, c, d;
 	long ctold, ctnew;
 
 	rewind(f1);
 	rewind(f2);
 	j = 1;
 	ixold[0] = ixnew[0] = 0;
-	jackpot = 0;
 	ctold = ctnew = 0;
 	for (i = 1; i <= len[0]; i++) {
 		if (J[i] == 0) {
@@ -800,7 +799,6 @@ check(FILE *f1, FILE *f2, int flags)
 					}
 				}
 				if (chrtran(c) != chrtran(d)) {
-					jackpot++;
 					J[i] = 0;
 					if (c != '\n' && c != EOF)
 						ctold += skipline(f1);
@@ -816,7 +814,6 @@ check(FILE *f1, FILE *f2, int flags)
 				ctold++;
 				ctnew++;
 				if ((c = getc(f1)) != (d = getc(f2))) {
-					/* jackpot++; */
 					J[i] = 0;
 					if (c != '\n' && c != EOF)
 						ctold += skipline(f1);

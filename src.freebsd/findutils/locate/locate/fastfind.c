@@ -44,9 +44,7 @@
 #define _LOCATE_STATISTIC_
 
 void 
-statistic (fp, path_fcodes)
-	FILE *fp;               /* open database */
-	char *path_fcodes;  	/* for error message */
+statistic (FILE *fp, char *path_fcodes)
 {
 	register int lines, chars, size, big, zwerg;
 	register u_char *p, *s;
@@ -116,28 +114,14 @@ fastfind_mmap_icase
 #else
 fastfind_mmap
 #endif /* FF_ICASE */
-(pathpart, paddr, len, database)
-	char *pathpart; 	/* search string */
-	caddr_t paddr;  	/* mmap pointer */
-	int len;        	/* length of database */
-	char *database; 	/* for error message */
-
-
+(char *pathpart, caddr_t paddr, int len, char *database)
 #else /* MMAP */
-
-
 #ifdef FF_ICASE
 fastfind_icase
 #else
 fastfind
 #endif /* FF_ICASE */
-
-(fp, pathpart, database)
-	FILE *fp;               /* open database */
-	char *pathpart;		/* search string */
-	char *database;		/* for error message */
-
-
+(FILE *fp, char *pathpart, char *database)
 #endif /* MMAP */
 
 {

@@ -423,10 +423,9 @@ int main(int argc, char **argv) {
             }
             errx(1, "could not set architecture to %s", arch);
         }
-really_ok:
-        /* verified good */
     }
 
+really_ok:
     if (argc) {
         if (verbose) {
             printf("Execute command '%s'.\n", argv[0]);

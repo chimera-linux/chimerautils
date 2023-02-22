@@ -63,8 +63,7 @@ int	check_bigram_char(int);
  * or the database is obviously not a locate database.
  */
 int
-check_bigram_char(ch)
-	int ch;
+check_bigram_char(int ch)
 {
 	/* legal bigram: 0, ASCII_MIN ... ASCII_MAX */
 	if (ch == 0 ||
@@ -137,8 +136,7 @@ colon(char **dbv, char *path, char *dot)
 }
 
 void 
-print_matches(counter)
-	u_int counter;
+print_matches(u_int counter)
 {
 	(void)printf("%d\n", counter);
 }
@@ -151,8 +149,7 @@ print_matches(counter)
 static char globfree[100];
 
 char *
-patprep(name)
-	char *name;
+patprep(char *name)
 {
 	register char *endmark, *p, *subp;
 
@@ -205,8 +202,7 @@ patprep(name)
 
 /* tolower word */
 u_char *
-tolower_word(word)
-	u_char *word;
+tolower_word(u_char *word)
 {
 	register u_char *p;
 
@@ -228,8 +224,7 @@ tolower_word(word)
  */
 
 int
-getwm(p)
-	caddr_t p;
+getwm(caddr_t p)
 {
 	union {
 		char buf[INTSIZE];
@@ -261,8 +256,7 @@ getwm(p)
  */
 
 int
-getwf(fp)
-	FILE *fp;
+getwf(FILE *fp)
 {
 	register int word, hword;
 
