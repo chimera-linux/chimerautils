@@ -50,7 +50,7 @@
 #define PATH_PORTS "/usr/ports"
 
 /* How to query the current manpath. */
-#define MANPATHCMD "manpath -q"
+#define MANPATHCMD "command -v man > /dev/null && man -w || :"
 
 /* How to obtain the location of manpages, and how to match this result. */
 #define MANWHEREISCMD "man -S1:8:6 -w %s 2>/dev/null"

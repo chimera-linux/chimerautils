@@ -293,7 +293,7 @@ defaults(void)
 	if (!mandirs) {
 		if ((p = popen(MANPATHCMD, "r")) == NULL)
 			err(EX_OSERR, "cannot execute manpath command");
-		if (fgets(buf, BUFSIZ - 1, p) == NULL ||
+		if ((fgets(buf, BUFSIZ - 1, p) == NULL && !feof(p)) ||
 		    pclose(p))
 			err(EX_OSERR, "error processing manpath results");
 		if ((b = strchr(buf, '\n')) != NULL)
