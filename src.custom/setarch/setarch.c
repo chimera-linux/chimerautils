@@ -47,6 +47,13 @@ enum {
     LONGOPT_LIST,
 };
 
+#ifndef UNAME26
+#define UNAME26 0x0020000
+#endif
+#ifndef FDPIC_FUNCPTRS
+#define FDPIC_FUNCPTRS 0x0080000
+#endif
+
 static struct option gnuopts[] = {
     {"addr-no-normalize",  no_argument, NULL, 'R'},
     {"fdpic-funcptrs",     no_argument, NULL, 'F'},
