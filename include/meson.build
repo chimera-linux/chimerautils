@@ -8,6 +8,6 @@ confd.set('HAVE_REALLOCF', cc.has_function('reallocf'))
 confd.set('HAVE_ERRC', cc.has_function('errc'))
 confd.set('HAVE_WARNC', cc.has_function('warnc'))
 
-configure_file(output: 'config.h', configuration: confd)
+configure_file(output: 'config-compat.h', configuration: confd)
 
 inc = include_directories('.')

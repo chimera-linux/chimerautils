@@ -30,7 +30,7 @@
 
 #include_next <stdlib.h>
 
-#include "config.h"
+#include "config-compat.h"
 
 int mergesort(void *, size_t, size_t, int (*)(const void *, const void *));
 int heapsort(void *, size_t, size_t, int (*)(const void *, const void *));

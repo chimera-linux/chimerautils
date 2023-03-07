@@ -1,7 +1,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#include "config.h"
+#include "config-compat.h"
 
 #ifndef HAVE_STRTONUM
 long long strtonum(

@@ -30,7 +30,7 @@
 
 #include_next <string.h>
 
-#include "config.h"
+#include "config-compat.h"
 
 void strmode(int, char *);
 

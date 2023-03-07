@@ -3,7 +3,7 @@
 #include <string.h>
 #include <stddef.h>
 
-#include "config.h"
+#include "config-compat.h"
 
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *d, const char *s, size_t n) {

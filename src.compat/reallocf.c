@@ -1,6 +1,6 @@
 #include <stdlib.h>
 
-#include "config.h"
+#include "config-compat.h"
 
 #ifndef HAVE_REALLOCF
 void *reallocf(void *ptr, size_t size) {

@@ -30,7 +30,7 @@
 
 #include_next <err.h>
 
-#include "config.h"
+#include "config-compat.h"
 
 #ifndef HAVE_ERRC
 void errc(int eval, int code, const char *fmt, ...);
