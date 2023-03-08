@@ -133,7 +133,7 @@ int main(int argc, char **argv) {
 
     for (;;) {
         int opt_idx = 0;
-        int c = getopt_long(argc, argv, "cdil:no:pxzvV", gnuopts, &opt_idx);
+        int c = getopt_long(argc, argv, "cdhil:no:pxzvV", gnuopts, &opt_idx);
         if (c == -1) {
             break;
         }
