@@ -63,6 +63,7 @@ static struct option gnuopts[] = {
     {"posix",          no_argument, NULL, 'x'},
     {"zero-range",     no_argument, NULL, 'z'},
     {"verbose",        no_argument, NULL, 'v'},
+    {"help",           no_argument, NULL, 'h'},
     {"version",        no_argument, NULL, 'V'},
     {0, 0, 0, 0}
 };
