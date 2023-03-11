@@ -444,6 +444,13 @@ struct limits {
 	char	option;
 };
 
+/* linux */
+#ifndef RLIMIT_VMEM
+#ifdef RLIMIT_AS
+#define RLIMIT_VMEM RLIMIT_AS
+#endif
+#endif
+
 static const struct limits limits[] = {
 #ifdef RLIMIT_CPU
 	{ "cpu time",		"seconds",	RLIMIT_CPU,	   1, 't' },
@@ -475,7 +482,8 @@ static const struct limits limits[] = {
 #ifdef RLIMIT_VMEM
 	{ "virtual mem size",	"kbytes",	RLIMIT_VMEM,	1024, 'v' },
 #endif
-#ifdef RLIMIT_SWAP
+#if 0
+#ifdef
 	{ "swap limit",		"kbytes",	RLIMIT_SWAP,	1024, 'w' },
 #endif
 #ifdef RLIMIT_SBSIZE
@@ -489,6 +497,23 @@ static const struct limits limits[] = {
 #endif
 #ifdef RLIMIT_UMTXP
 	{ "umtx shared locks",	(char *)0,	RLIMIT_UMTXP,	   1, 'o' },
+#endif
+#else
+#ifdef RLIMIT_LOCKS
+	{ "locks",		(char *)0,	RLIMIT_LOCKS,	   1, 'w' },
+#endif
+#ifdef RLIMIT_SIGPENDING
+	{ "pending signals",		(char *)0,	RLIMIT_SIGPENDING,	   1, 'i' },
+#endif
+#ifdef RLIMIT_MSGQUEUE
+	{ "POSIX msg queue",	"bytes",	RLIMIT_MSGQUEUE,	   1, 'q' },
+#endif
+#ifdef RLIMIT_NICE
+	{ "max nice",		(char *)0,	RLIMIT_NICE,	   1, 'e' },
+#endif
+#ifdef RLIMIT_RTPRIO
+	{ "rt priority",		(char *)0,	RLIMIT_RTPRIO,	   1, 'r' },
+#endif
 #endif
 	{ (char *) 0,		(char *)0,	0,		   0, '\0' }
 };
@@ -525,7 +550,7 @@ ulimitcmd(int argc __unused, char **argv __unused)
 	struct rlimit	limit;
 
 	what = 'f';
-	while ((optc = nextopt("HSatfdsmcnuvlbpwko")) != '\0')
+	while ((optc = nextopt("HSatfdsmcnuvlbpwkoreiq")) != '\0')
 		switch (optc) {
 		case 'H':
 			how = HARD;
