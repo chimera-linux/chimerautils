@@ -8767,13 +8767,19 @@
  .It Fl s Ar stacksize
  The maximal size of the stack segment, in kilobytes.
  .It Fl t Ar time
-@@ -2707,9 +2685,6 @@
+@@ -2707,9 +2685,12 @@
  The maximal number of simultaneous processes for this user ID.
  .It Fl v Ar virtualmem
  The maximal virtual size of a process, in kilobytes.
 -.It Fl w Ar swapuse
 -The maximum amount of swap space reserved or used for this user ID,
 -in kilobytes.
++.It Fl w Ar locks
++The limit on the combined number of
++.Xr flock 2
++and
++.Xr fcntl 2
++locks.
  .El
  .It Ic umask Oo Fl S Oc Op Ar mask
  Set the file creation mask (see
