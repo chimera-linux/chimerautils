@@ -52,9 +52,11 @@ int fn_complete2(EditLine *,
     char **(*)(const char *, int, int),
     const wchar_t *, const wchar_t *, const char *(*)(const char *), size_t,
     int *, int *, int *, int *, unsigned int);
+char *fn_tilde_expand(const char *);
 #endif
 
 void histedit(void);
 void sethistsize(const char *);
 void setterm(const char *);
-
+void histload(void);
+void histsave(void);

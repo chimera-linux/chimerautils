@@ -28,7 +28,7 @@
 .\"	@(#)uname.1	8.3 (Berkeley) 4/8/94
 .\" $FreeBSD$
 .\"
-.Dd November 13, 2020
+.Dd September 14, 2022
 .Dt UNAME 1
 .Os
 .Sh NAME
@@ -82,7 +82,7 @@ uses it to set the
 variable.
 .Pc
 .It Fl r
-Write the current release level of the operating system
+Write the current release level of the kernel
 to standard output.
 .It Fl s
 Write the name of the operating system implementation to standard output.
@@ -132,11 +132,11 @@ can be different from the machine's processor architecture
 e.g., on 64-bit PowerPC,
 .Fl m
 would return
-.Va powerpc
+.Va ppc64
 and
 .Fl p
 would return
-.Va powerpc64 .
+.Va unknown .
 .Sh SEE ALSO
 .Xr feature_present 3 ,
 .Xr getosreldate 3 ,

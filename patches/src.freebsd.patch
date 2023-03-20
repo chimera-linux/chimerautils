@@ -409,12 +409,12 @@
 @@ -38,7 +38,6 @@
  __FBSDID("$FreeBSD$");
  
- #include <sys/types.h>
--#include <sys/acl.h>
  #include <sys/param.h>
+-#include <sys/acl.h>
  #include <sys/stat.h>
- #ifdef VM_AND_BUFFER_CACHE_SYNCHRONIZED
-@@ -52,6 +51,7 @@
+ 
+ #include <err.h>
+@@ -48,6 +47,7 @@
  #include <limits.h>
  #include <stdio.h>
  #include <stdlib.h>
@@ -422,37 +422,24 @@
  #include <sysexits.h>
  #include <unistd.h>
  
-@@ -99,11 +99,9 @@
- 	static char *buf = NULL;
- 	static size_t bufsize;
- 	struct stat *fs;
--	ssize_t rcount, wcount;
--	size_t wresid;
-+	ssize_t rcount;
- 	off_t wtotal;
- 	int ch, checkch, from_fd, rval, to_fd;
--	char *bufp;
- #ifdef VM_AND_BUFFER_CACHE_SYNCHRONIZED
- 	char *p;
- #endif
-@@ -236,9 +234,14 @@
- 				if (use_copy_file_range) {
- 					rcount = copy_file_range(from_fd, NULL,
- 					    to_fd, NULL, SSIZE_MAX, 0);
--					if (rcount < 0 && errno == EINVAL) {
--						/* Prob a non-seekable FD */
-+					if (rcount < 0) switch (errno) {
-+					case EINVAL: /* Prob a non-seekable FD */
-+					case EXDEV: /* Cross-FS link */
-+					case ENOSYS: /* Syscall not supported */
- 						use_copy_file_range = 0;
-+						break;
-+					default:
-+						break;
- 					}
+@@ -180,9 +180,14 @@
+ 			if (use_copy_file_range) {
+ 				wcount = copy_file_range(from_fd, NULL,
+ 				    to_fd, NULL, SSIZE_MAX, 0);
+-				if (wcount < 0 && errno == EINVAL) {
+-					/* Prob a non-seekable FD */
++				if (wcount < 0) switch (errno) {
++				case EINVAL: /* Prob a non-seekable FD */
++				case EXDEV: /* Cross-FS link */
++				case ENOSYS: /* Syscall not supported */
+ 					use_copy_file_range = 0;
++					break;
++				default:
++					break;
  				}
- 				if (!use_copy_file_range) {
-@@ -409,12 +412,12 @@
+ 			}
+ 			if (!use_copy_file_range) {
+@@ -351,12 +356,13 @@
  
  	if (!gotstat || fs->st_mode != ts.st_mode)
  		if (fdval ? fchmod(fd, fs->st_mode) :
@@ -462,20 +449,20 @@
  			warn("chmod: %s", to.p_path);
  			rval = 1;
  		}
--
+ 
 +#if 0
  	if (!gotstat || fs->st_flags != ts.st_flags)
  		if (fdval ?
  		    fchflags(fd, fs->st_flags) :
-@@ -423,13 +426,14 @@
+@@ -365,6 +371,7 @@
  			warn("chflags: %s", to.p_path);
  			rval = 1;
  		}
--
 +#endif
+ 
  	return (rval);
  }
- 
+@@ -372,6 +379,7 @@
  int
  preserve_fd_acls(int source_fd, int dest_fd)
  {
@@ -483,7 +470,7 @@
  	acl_t acl;
  	acl_type_t acl_type;
  	int acl_supported = 0, ret, trivial;
-@@ -476,12 +480,17 @@
+@@ -418,12 +426,17 @@
  		return (1);
  	}
  	acl_free(acl);
@@ -501,7 +488,7 @@
  	acl_t (*aclgetf)(const char *, acl_type_t);
  	int (*aclsetf)(const char *, acl_type_t, acl_t);
  	struct acl *aclp;
-@@ -563,6 +572,11 @@
+@@ -505,6 +518,11 @@
  		return (1);
  	}
  	acl_free(acl);
@@ -777,7 +764,7 @@
  .Op Fl \&,
  .Op Fl t Ar type
  .Op Ar file | filesystem ...
-@@ -127,15 +127,6 @@
+@@ -130,15 +130,6 @@
  This overrides any
  .Ev BLOCKSIZE
  specification from the environment.
@@ -793,7 +780,7 @@
  .It Fl P
  Explicitly use 512 byte blocks, overriding any
  .Ev BLOCKSIZE
-@@ -219,7 +210,7 @@
+@@ -222,7 +213,7 @@
  .Fl t
  option can be specified only once:
  .Bd -literal -offset indent
@@ -802,7 +789,7 @@
  Filesystem   1K-blocks      Used      Avail Capacity iused     ifree %iused
  Mounted on
  /dev/ada1p2  223235736 159618992   45757888    78% 1657590  27234568    6%   /
-@@ -277,13 +268,6 @@
+@@ -280,13 +271,6 @@
  .At v1 .
  .Sh BUGS
  The
@@ -825,10 +812,10 @@
 +#include <sys/statvfs.h>
  #include <sys/mount.h>
 -#include <sys/sysctl.h>
- #include <err.h>
  #include <getopt.h>
  #include <libutil.h>
-@@ -63,10 +63,38 @@
+ #include <locale.h>
+@@ -62,10 +62,38 @@
  #include <sysexits.h>
  #include <unistd.h>
  #include <libxo/xo.h>
@@ -867,7 +854,7 @@
  /* Maximum widths of various fields. */
  struct maxwidths {
  	int	mntfrom;
-@@ -78,20 +106,20 @@
+@@ -77,20 +105,20 @@
  	int	ifree;
  };
  
@@ -895,7 +882,7 @@
  
  static __inline int
  imax(int a, int b)
-@@ -99,7 +127,7 @@
+@@ -98,7 +126,7 @@
  	return (a > b ? a : b);
  }
  
@@ -904,7 +891,7 @@
  static int	  thousands;
  static int	  skipvfs_l, skipvfs_t;
  static const char **vfslist_l, **vfslist_t;
-@@ -114,9 +142,9 @@
+@@ -113,9 +141,9 @@
  main(int argc, char *argv[])
  {
  	struct stat stbuf;
@@ -916,7 +903,7 @@
  	char *mntpt;
  	int i, mntsize;
  	int ch, rv;
-@@ -125,13 +153,12 @@
+@@ -124,13 +152,12 @@
  	memset(&maxwidths, 0, sizeof(maxwidths));
  	memset(&totalbuf, 0, sizeof(totalbuf));
  	totalbuf.f_bsize = DEV_BSIZE;
@@ -931,7 +918,7 @@
  	    NULL)) != -1)
  		switch (ch) {
  		case 'a':
-@@ -176,7 +203,7 @@
+@@ -175,7 +202,7 @@
  			/* Ignore duplicate -l */
  			if (lflag)
  				break;
@@ -940,7 +927,7 @@
  			lflag = 1;
  			break;
  		case 'm':
-@@ -184,7 +211,6 @@
+@@ -183,7 +210,6 @@
  			hflag = 0;
  			break;
  		case 'n':
@@ -948,10 +935,10 @@
  			break;
  		case 't':
  			if (vfslist_t != NULL)
-@@ -205,32 +231,28 @@
+@@ -204,32 +230,28 @@
  	argv += optind;
  
- 	rv = 0;
+ 	rv = EXIT_SUCCESS;
 -	if (!*argv) {
 -		/* everything (modulo -t) */
 -		mntsize = getmntinfo(&mntbuf, MNT_NOWAIT);
@@ -982,7 +969,7 @@
 -			if ((mntpt = getmntpt(*argv)) == NULL) {
 +			if ((mntpt = getmntpt(&mntbuf, mntsize, *argv)) == NULL) {
  				xo_warn("%s", *argv);
- 				rv = 1;
+ 				rv = EXIT_FAILURE;
  				continue;
  			}
  		} else if (S_ISCHR(stbuf.st_mode)) {
@@ -990,19 +977,18 @@
 +			mntpt = getmntpt(&mntbuf, mntsize, *argv);
  			if (mntpt == NULL) {
  				xo_warnx("%s: not mounted", *argv);
- 				rv = 1;
-@@ -239,46 +261,27 @@
- 		} else {
+ 				rv = EXIT_FAILURE;
+@@ -239,44 +261,25 @@
  			mntpt = *argv;
  		}
--
+ 
 -		/*
 -		 * Statfs does not take a `wait' flag, so we cannot
 -		 * implement nflag here.
 -		 */
 -		if (statfs(mntpt, &statfsbuf) < 0) {
 -			xo_warn("%s", mntpt);
--			rv = 1;
+-			rv = EXIT_FAILURE;
 -			continue;
 -		}
 -
@@ -1013,7 +999,7 @@
 -		 * we've been given (-l, -t, etc.).
 -		 */
 -		if (checkvfsselected(statfsbuf.f_fstypename) != 0) {
--			rv = 1;
+-			rv = EXIT_FAILURE;
 -			continue;
 +		for (i = 0; i < mntsize; i++) {
 +			/* selected specified filesystems if the mount point or device matches */
@@ -1039,19 +1025,16 @@
  				addstat(&totalbuf, &mntbuf[i]);
  		}
  	}
--	for (i = 0; i < mntsize; i++)
+ 	for (i = 0; i < mntsize; i++)
 -		if (aflag || (mntbuf[i].f_flags & MNT_IGNORE) == 0)
-+	for (i = 0; i < mntsize; i++) {
 +		if ((aflag || (mntbuf[i].f_blocks > 0)) && mntbuf[i].f_selected)
  			prtstat(&mntbuf[i], &maxwidths);
-+	}
  
  	xo_close_list("filesystem");
- 
 @@ -287,19 +290,21 @@
- 
  	xo_close_container("storage-system-information");
- 	xo_finish();
+ 	if (xo_finish() < 0)
+ 		rv = EXIT_FAILURE;
 +	freemntinfo(mntbuf, mntsize);
  	exit(rv);
  }
@@ -1076,54 +1059,27 @@
  	}
  	return (NULL);
  }
-@@ -376,45 +381,8 @@
+@@ -376,6 +381,7 @@
  	return (result);
  }
  
--/*
-- * Make a pass over the file system info in ``mntbuf'' filtering out
-- * file system types not in vfslist_{l,t} and possibly re-stating to get
-- * current (not cached) info.  Returns the new count of valid statfs bufs.
-- */
--static size_t
--regetmntinfo(struct statfs **mntbufp, long mntsize)
--{
--	int error, i, j;
--	struct statfs *mntbuf;
--
--	if (vfslist_l == NULL && vfslist_t == NULL)
--		return (nflag ? mntsize : getmntinfo(mntbufp, MNT_WAIT));
--
--	mntbuf = *mntbufp;
--	for (j = 0, i = 0; i < mntsize; i++) {
--		if (checkvfsselected(mntbuf[i].f_fstypename) != 0)
--			continue;
--		/*
--		 * XXX statfs(2) can fail for various reasons. It may be
--		 * possible that the user does not have access to the
--		 * pathname, if this happens, we will fall back on
--		 * "stale" filesystem statistics.
--		 */
--		error = statfs(mntbuf[i].f_mntonname, &mntbuf[j]);
--		if (nflag || error < 0)
--			if (i != j) {
--				if (error < 0)
--					xo_warnx("%s stats possibly stale",
--					    mntbuf[i].f_mntonname);
--				mntbuf[j] = mntbuf[i];
--			}
--		j++;
--	}
--	return (j);
--}
--
++#if 0
+ /*
+  * Make a pass over the file system info in ``mntbuf'' filtering out
+  * file system types not in vfslist_{l,t} and possibly re-stating to get
+@@ -412,9 +418,10 @@
+ 	}
+ 	return (j);
+ }
++#endif
+ 
  static void
 -prthuman(const struct statfs *sfsp, int64_t used)
 +prthuman(const struct mntinfo *sfsp, int64_t used)
  {
  
  	prthumanval("  {:blocks/%6s}", sfsp->f_blocks * sfsp->f_bsize);
-@@ -458,7 +426,7 @@
+@@ -458,7 +465,7 @@
  }
  
  /*
@@ -1132,7 +1088,7 @@
   */
  static intmax_t
  fsbtoblk(int64_t num, uint64_t fsbs, u_long bs)
-@@ -470,7 +438,7 @@
+@@ -470,7 +477,7 @@
   * Print out status about a file system.
   */
  static void
@@ -1141,7 +1097,7 @@
  {
  	static long blocksize;
  	static int headerlen, timesthrough = 0;
-@@ -544,7 +512,7 @@
+@@ -544,7 +551,7 @@
  		    mwp->avail, fsbtoblk(sfsp->f_bavail,
  		    sfsp->f_bsize, blocksize));
  	}
@@ -1150,8 +1106,8 @@
  	    availblks == 0 ? 100.0 : (double)used / (double)availblks * 100.0);
  	if (iflag) {
  		inodes = sfsp->f_files;
-@@ -566,23 +534,23 @@
- 			(double)used / (double)inodes * 100.0);
+@@ -569,23 +576,23 @@
+ 		}
  	} else
  		xo_emit("  ");
 -	if (strncmp(sfsp->f_mntfromname, "total", MNAMELEN) != 0)
@@ -1183,7 +1139,7 @@
  }
  
  /*
-@@ -590,7 +558,7 @@
+@@ -593,7 +600,7 @@
   * the file system specified by `sfsp'.
   */
  static void
@@ -1192,7 +1148,7 @@
  {
  	static long blocksize = 0;
  	int dummy;
-@@ -642,69 +610,95 @@
+@@ -645,69 +652,95 @@
  	exit(EX_USAGE);
  }
  
@@ -1226,7 +1182,7 @@
 +#endif
 +
 +	if (fp == NULL) {
-+	    err(1, "setmntent");
++	    xo_err(1, "setmntent");
 +	}
 +
 +	while ((ent = getmntent(fp)) != NULL) {
@@ -1244,7 +1200,7 @@
 +	    /* get stat(vfs) fields and copy those over */
 +	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1 || stat(ent->mnt_dir, &stmnt) == -1) {
 +	        if ((errno == EACCES) || (errno == EPERM)) continue;
-+	        err(1, "statvfs");
++	        xo_err(1, "statvfs");
 +	    }
 +
 +	    /* allocate the entry */
@@ -2000,7 +1956,7 @@
  		exit(linkit(argv[0], ".", 1));
 --- src.orig/coreutils/ls/cmp.c
 +++ src.freebsd/coreutils/ls/cmp.c
-@@ -125,7 +125,7 @@
+@@ -139,7 +139,7 @@
  int
  birthcmp(const FTSENT *a, const FTSENT *b)
  {
@@ -2009,7 +1965,7 @@
  	if (b->fts_statp->st_birthtim.tv_sec >
  	    a->fts_statp->st_birthtim.tv_sec)
  		return (1);
-@@ -138,6 +138,7 @@
+@@ -152,6 +152,7 @@
  	if (b->fts_statp->st_birthtim.tv_nsec <
  	    a->fts_statp->st_birthtim.tv_nsec)
  		return (-1);
@@ -2023,8 +1979,8 @@
  .Nd list directory contents
  .Sh SYNOPSIS
  .Nm
--.Op Fl ABCFGHILPRSTUWZabcdfghiklmnopqrstuwxy1\&,
-+.Op Fl ABCFGHILPRSTWabcdfghiklmnpqrstuwxy1\&,
+-.Op Fl ABCFGHILPRSTUWZabcdfghiklmnopqrstuvwxy1\&,
++.Op Fl ABCFGHILPRSTWabcdfghiklmnpqrstuvwxy1\&,
  .Op Fl -color Ns = Ns Ar when
  .Op Fl D Ar format
  .Op Ar
@@ -2074,7 +2030,7 @@
  .It Fl p
  Write a slash
  .Pq Ql /
-@@ -566,8 +541,6 @@
+@@ -575,8 +550,6 @@
  .Tn FIFO .
  .It Sy s
  Socket.
@@ -2083,7 +2039,7 @@
  .El
  .Pp
  The next three fields
-@@ -856,11 +829,10 @@
+@@ -868,11 +841,10 @@
  .Dl $ ls -l
  .Pp
  In addition to listing the contents of the current working directory in
@@ -2097,7 +2053,7 @@
  .Pp
  List the files in
  .Pa /var/log ,
-@@ -874,7 +846,6 @@
+@@ -886,7 +858,6 @@
  .St -p1003.2
  specification.
  .Sh SEE ALSO
@@ -2105,7 +2061,7 @@
  .Xr chmod 1 ,
  .Xr getfacl 1 ,
  .Xr sort 1 ,
-@@ -889,9 +860,9 @@
+@@ -903,9 +874,9 @@
  .Xr getfmac 8
  .Sh STANDARDS
  With the exception of options
@@ -2117,12 +2073,12 @@
  the
  .Nm
  utility conforms to
-@@ -899,7 +870,7 @@
+@@ -913,7 +884,7 @@
  and
  .St -p1003.1-2008 .
  The options
--.Fl B , D , G , I , T , U , W , Z , b , h , w , y
-+.Fl B , D , G , I , T , W , b , h , w , y
+-.Fl B , D , G , I , T , U , W , Z , b , h , v , w , y
++.Fl B , D , G , I , T , b , h , v , w , y
  and
  .Fl ,
  are non-standard extensions.
@@ -2146,16 +2102,16 @@
  static void	 traverse(int, char **, int);
  
  #define	COLOR_OPT	(CHAR_MAX + 1)
-@@ -274,7 +274,7 @@
+@@ -276,7 +276,7 @@
  		colorflag = COLORFLAG_AUTO;
  #endif
  	while ((ch = getopt_long(argc, argv,
--	    "+1ABCD:FGHILPRSTUWXZabcdfghiklmnopqrstuwxy,", long_opts,
-+	    "+1ABCD:FGHILPRSTXabcdfghiklmnpqrstuwxy,", long_opts,
+-	    "+1ABCD:FGHILPRSTUWXZabcdfghiklmnopqrstuvwxy,", long_opts,
++	    "+1ABCD:FGHILPRSTXabcdfghiklmnpqrstuvwxy,", long_opts,
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
-@@ -458,8 +458,6 @@
+@@ -463,8 +463,6 @@
  				errx(2, "unsupported --color value '%s' (must be always, auto, or never)",
  				    optarg);
  			break;
@@ -2164,7 +2120,7 @@
  #endif
  		default:
  		case '?':
-@@ -692,7 +690,7 @@
+@@ -702,7 +700,7 @@
   * points to the parent directory of the display list.
   */
  static void
@@ -2173,7 +2129,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -710,8 +708,9 @@
+@@ -720,8 +718,9 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -2184,7 +2140,7 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -720,6 +719,7 @@
+@@ -730,6 +729,7 @@
  	needstats = f_inode || f_longform || f_size;
  	flen = 0;
  	btotal = 0;
@@ -2192,7 +2148,7 @@
  
  #define LS_COLWIDTHS_FIELDS	9
  	initmax = getenv("LS_COLWIDTHS");
-@@ -768,7 +768,6 @@
+@@ -778,7 +778,6 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -2200,7 +2156,7 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -823,27 +822,33 @@
+@@ -833,27 +832,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -2247,7 +2203,7 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -911,7 +916,7 @@
+@@ -921,7 +926,7 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -2256,7 +2212,7 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -929,17 +934,6 @@
+@@ -939,17 +944,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -2274,7 +2230,7 @@
  				cur->fts_pointer = np;
  			}
  		}
-@@ -989,7 +983,7 @@
+@@ -999,7 +993,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -2293,7 +2249,7 @@
  
  #include <err.h>
  #include <errno.h>
-@@ -247,7 +246,7 @@
+@@ -248,7 +247,7 @@
  		if (f_accesstime)
  			printtime(sp->st_atime);
  		else if (f_birthtime)
@@ -2302,7 +2258,7 @@
  		else if (f_statustime)
  			printtime(sp->st_ctime);
  		else
-@@ -464,8 +463,11 @@
+@@ -466,8 +465,11 @@
  	const char *format;
  	static int d_first = -1;
  
@@ -2316,7 +2272,7 @@
  	if (now == 0)
  		now = time(NULL);
  
-@@ -511,9 +513,6 @@
+@@ -513,9 +515,6 @@
  	case S_IFSOCK:
  		(void)putchar('=');
  		return (1);
@@ -2326,7 +2282,7 @@
  	default:
  		break;
  	}
-@@ -762,6 +761,7 @@
+@@ -774,6 +773,7 @@
  static void
  aclmode(char *buf, const FTSENT *p)
  {
@@ -2334,7 +2290,7 @@
  	char name[MAXPATHLEN + 1];
  	int ret, trivial;
  	static dev_t previous_dev = NODEV;
-@@ -800,7 +800,7 @@
+@@ -812,7 +812,7 @@
  		}
  		if (supports_acls == 0) {
  			ret = lpathconf(name, _PC_ACL_EXTENDED);
@@ -2343,7 +2299,7 @@
  				type = ACL_TYPE_ACCESS;
  				supports_acls = 1;
  			} else if (ret < 0 && errno != EINVAL) {
-@@ -824,4 +824,8 @@
+@@ -836,4 +836,8 @@
  	if (!trivial)
  		buf[10] = '+';
  	acl_free(facl);
@@ -2358,11 +2314,11 @@
  {
  	(void)fprintf(stderr,
  #ifdef COLORLS
--	"usage: ls [-ABCFGHILPRSTUWZabcdfghiklmnopqrstuwxy1,] [--color=when] [-D format]"
-+	"usage: ls [-ABCFGHILPRSTWabcdfghiklmnpqrstuwxy1,] [--color=when] [-D format]"
+-	"usage: ls [-ABCFGHILPRSTUWZabcdfghiklmnopqrstuvwxy1,] [--color=when] [-D format]"
++	"usage: ls [-ABCFGHILPRSTabcdfghiklmnpqrstuvwxy1,] [--color=when] [-D format]"
  #else
--	"usage: ls [-ABCFHILPRSTUWZabcdfghiklmnopqrstuwxy1,] [-D format]"
-+	"usage: ls [-ABCFHILPRSTWabcdfghiklmnpqrstuwxy1,] [-D format]"
+-	"usage: ls [-ABCFHILPRSTUWZabcdfghiklmnopqrstuvwxy1,] [-D format]"
++	"usage: ls [-ABCFHILPRSTabcdfghiklmnpqrstuvwxy1,] [-D format]"
  #endif
  		      " [file ...]\n");
  	exit(1);
@@ -2749,146 +2705,6 @@
  signal is received, the estimate of the amount of seconds left to
  sleep is printed on the standard output.
  .Sh IMPLEMENTATION NOTES
---- src.orig/coreutils/sort/bwstring.c
-+++ src.freebsd/coreutils/sort/bwstring.c
-@@ -478,40 +478,100 @@
- bwsfgetln(FILE *f, size_t *len, bool zero_ended, struct reader_buffer *rb)
- {
- 	wint_t eols;
-+	wchar_t sbuf[256];
- 
- 	eols = zero_ended ? btowc('\0') : btowc('\n');
- 
- 	if (!zero_ended && (mb_cur_max > 1)) {
--		wchar_t *ret;
--
--		ret = fgetwln(f, len);
--
--		if (ret == NULL) {
-+		wchar_t *buf = NULL;
-+		wchar_t *wptr;
-+		size_t bufsz = 0;
-+		size_t wlen;
-+		struct bwstring *ret;
-+
-+		wptr = fgetws(sbuf, sizeof(sbuf) / sizeof(wchar_t), f);
-+		if (wptr) {
-+			wlen = wcslen(wptr);
-+			if (wptr[wlen - 1] == (wchar_t)eols)
-+				return bwssbdup(wptr, wlen - 1);
-+			if (feof(f))
-+				return bwssbdup(wptr, wlen);
-+		} else {
- 			if (!feof(f))
- 				err(2, NULL);
- 			return (NULL);
- 		}
--		if (*len > 0) {
--			if (ret[*len - 1] == (wchar_t)eols)
--				--(*len);
-+		bufsz = wlen + 256;
-+		buf = malloc(bufsz * sizeof(wchar_t));
-+		memcpy(buf, wptr, wlen * sizeof(wchar_t));
-+		for (;;) {
-+			wchar_t *nptr = fgetws(&buf[wlen], 256, f);
-+			if (!nptr) {
-+				if (feof(f))
-+					break;
-+				free(buf);
-+				err(2, NULL);
-+			}
-+			wlen += wcslen(nptr);
-+			if (buf[wlen - 1] == (wchar_t)eols) {
-+				--wlen;
-+				break;
-+			}
-+			if (feof(f))
-+				break;
-+			bufsz += 256;
-+			buf = realloc(buf, bufsz);
- 		}
--		return (bwssbdup(ret, *len));
--
--	} else if (!zero_ended && (mb_cur_max == 1)) {
--		char *ret;
- 
--		ret = fgetln(f, len);
--
--		if (ret == NULL) {
-+		ret = bwssbdup(buf, wlen);
-+		free(buf);
-+		return ret;
-+
-+	} else if (!zero_ended && (MB_CUR_MAX == 1)) {
-+		char *buf = NULL;
-+		char *bptr;
-+		size_t bufsz = 0;
-+		size_t blen;
-+		struct bwstring *ret;
-+
-+		bptr = fgets((char *)sbuf, sizeof(sbuf), f);
-+		if (bptr) {
-+			blen = strlen(bptr);
-+			if (bptr[blen - 1] == '\n')
-+				return bwscsbdup((unsigned char *)bptr, blen - 1);
-+			if (feof(f))
-+				return bwscsbdup((unsigned char *)bptr, blen);
-+		} else {
- 			if (!feof(f))
- 				err(2, NULL);
- 			return (NULL);
- 		}
--		if (*len > 0) {
--			if (ret[*len - 1] == '\n')
--				--(*len);
-+
-+		bufsz = blen + 256;
-+		buf = malloc(bufsz);
-+		memcpy(buf, bptr, blen);
-+		for (;;) {
-+			char *nptr = fgets(&buf[blen], 256, f);
-+			if (!f) {
-+				if (feof(f))
-+					break;
-+				free(buf);
-+				err(2, NULL);
-+			}
-+			blen += strlen(nptr);
-+			if (buf[blen - 1] == '\n') {
-+				--blen;
-+				break;
-+			}
-+			if (feof(f))
-+				break;
-+			bufsz += 256;
-+			buf = realloc(buf, bufsz);
- 		}
--		return (bwscsbdup((unsigned char *)ret, *len));
-+
-+		ret = bwscsbdup((unsigned char *)buf, blen);
-+		free(buf);
-+		return ret;
- 
- 	} else {
- 		*len = 0;
-@@ -537,7 +597,7 @@
- 						return (NULL);
- 					goto line_read_done;
- 				}
--				if (c == eols)
-+				if ((wint_t)c == eols)
- 					goto line_read_done;
- 
- 				if (*len + 1 >= rb->fgetwln_z_buffer_size) {
-@@ -560,7 +620,7 @@
- 						return (NULL);
- 					goto line_read_done;
- 				}
--				if (c == eols)
-+				if ((wint_t)c == eols)
- 					goto line_read_done;
- 
- 				if (*len + 1 >= rb->fgetwln_z_buffer_size) {
 --- src.orig/coreutils/sort/coll.c
 +++ src.freebsd/coreutils/sort/coll.c
 @@ -37,7 +37,9 @@
@@ -2911,7 +2727,7 @@
  static int versioncoll(struct key_value*, struct key_value *, size_t offset);
  
  /*
-@@ -473,8 +477,10 @@
+@@ -471,8 +475,10 @@
  		return (gnumcoll);
  	else if (sm->Mflag)
  		return (monthcoll);
@@ -2922,7 +2738,7 @@
  	else if (sm->Vflag)
  		return (versioncoll);
  	else
-@@ -607,18 +613,18 @@
+@@ -605,18 +611,18 @@
   * Compare two sort list items, according to the sort specs.
   */
  int
@@ -2945,7 +2761,7 @@
  }
  
  LSCDEF(1)
-@@ -662,9 +668,10 @@
+@@ -660,9 +666,10 @@
   * Compare two sort list items, only by their original string.
   */
  int
@@ -2958,7 +2774,7 @@
  	return (top_level_str_coll(((*ss1)->str), ((*ss2)->str)));
  }
  
-@@ -981,6 +988,7 @@
+@@ -979,6 +986,7 @@
  	return (numcoll_impl(kv1, kv2, offset, true));
  }
  
@@ -2966,7 +2782,7 @@
  /* Use hint space to memoize md5 computations, at least. */
  static void
  randomcoll_init_hint(struct key_value *kv, void *hash)
-@@ -1037,6 +1045,7 @@
+@@ -1035,6 +1043,7 @@
  
  	return (memcmp(hash1, hash2, sizeof(hash1)));
  }
@@ -3015,7 +2831,7 @@
  #endif
  #include <semaphore.h>
  #include <stdio.h>
-@@ -632,7 +633,7 @@
+@@ -611,7 +612,7 @@
  			size_t sz = 0;
  			int fd, flags;
  
@@ -3024,7 +2840,7 @@
  
  			fd = open(fsrc, O_RDONLY);
  			if (fd < 0)
-@@ -654,6 +655,7 @@
+@@ -633,6 +634,7 @@
  				close(fd);
  				break;
  			}
@@ -3032,7 +2848,16 @@
  
  			ret->fd = fd;
  			ret->mmapaddr = addr;
-@@ -1560,7 +1562,7 @@
+@@ -689,7 +691,7 @@
+ 		}
+ 		if (len > 0 && fr->buffer[len - 1] == fr->elsymb)
+ 			len--;
+-		ret = bwscsbdup(fr->buffer, len);
++		ret = bwscsbdup((unsigned char *)fr->buffer, len);
+ 	}
+ 
+ 	return (ret);
+@@ -1451,7 +1453,7 @@
  			pthread_attr_t attr;
  
  			pthread_attr_init(&attr);
@@ -3041,7 +2866,7 @@
  
  			for (;;) {
  				int res = pthread_create(&pth, &attr,
-@@ -1569,7 +1571,7 @@
+@@ -1460,7 +1462,7 @@
  				if (res >= 0)
  					break;
  				if (errno == EAGAIN) {
@@ -3060,7 +2885,7 @@
  #endif
  #include <stdlib.h>
  #include <string.h>
-@@ -647,7 +648,7 @@
+@@ -644,7 +645,7 @@
  			pthread_t pth;
  
  			pthread_attr_init(&attr);
@@ -3069,7 +2894,7 @@
  
  			for (;;) {
  				int res = pthread_create(&pth, &attr,
-@@ -655,7 +656,7 @@
+@@ -652,7 +653,7 @@
  				if (res >= 0)
  					break;
  				if (errno == EAGAIN) {
@@ -3078,7 +2903,7 @@
  					continue;
  				}
  				err(2, NULL);
-@@ -684,7 +685,9 @@
+@@ -681,7 +682,9 @@
  		pthread_mutexattr_t mattr;
  
  		pthread_mutexattr_init(&mattr);
@@ -3327,7 +3152,7 @@
  #define DEFLINE	1000			/* Default num lines per file. */
  
  static off_t	 bytecnt;		/* Byte count to split on. */
-@@ -89,6 +93,7 @@
+@@ -88,6 +92,7 @@
  	int ch;
  	int error;
  	char *ep, *p;
@@ -3335,7 +3160,7 @@
  
  	setlocale(LC_ALL, "");
  
-@@ -120,7 +125,8 @@
+@@ -119,7 +124,8 @@
  			break;
  		case 'b':		/* Byte count. */
  			errno = 0;
@@ -3537,7 +3362,7 @@
  	const struct timespec *tsp;
  	struct timespec ts;
  	struct tm *tm;
-@@ -717,10 +688,12 @@
+@@ -712,10 +683,12 @@
  	case SHOW_st_uid:
  		small = (sizeof(st->st_uid) == 4);
  		data = st->st_uid;
@@ -3552,7 +3377,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -730,10 +703,12 @@
+@@ -725,10 +698,12 @@
  	case SHOW_st_gid:
  		small = (sizeof(st->st_gid) == 4);
  		data = st->st_gid;
@@ -3567,7 +3392,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -741,15 +716,15 @@
+@@ -736,15 +711,15 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -3586,7 +3411,7 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
-@@ -1093,7 +1068,7 @@
+@@ -1088,7 +1063,7 @@
  #define hex2nibble(c) (c <= '9' ? c - '0' : toupper(c) - 'A' + 10)
  int
  hex2byte(const char c[2]) {
@@ -4318,17 +4143,6 @@
  static void r_buf(FILE *, const char *);
  static void r_reg(FILE *, const char *, enum STYLE, off_t, struct stat *);
  
---- src.orig/coreutils/tail/tail.c
-+++ src.freebsd/coreutils/tail/tail.c
-@@ -113,7 +113,7 @@
- 	case '+':							\
- 		if (off)						\
- 			off -= (units);					\
--			style = (forward);				\
-+		style = (forward);				\
- 		break;							\
- 	case '-':							\
- 		off = -off;						\
 --- src.orig/coreutils/timeout/timeout.c
 +++ src.freebsd/coreutils/timeout/timeout.c
 @@ -28,7 +28,7 @@
@@ -4755,6 +4569,33 @@
  	return (n);
  }
  
+--- src.orig/coreutils/uname/uname.1
++++ src.freebsd/coreutils/uname/uname.1
+@@ -84,8 +84,6 @@
+ .It Fl r
+ Write the current release level of the kernel
+ to standard output.
+-.Xr freebsd-version 1
+-can be used to print the release level of the userland.
+ .It Fl s
+ Write the name of the operating system implementation to standard output.
+ .It Fl U
+@@ -134,13 +132,12 @@
+ e.g., on 64-bit PowerPC,
+ .Fl m
+ would return
+-.Va powerpc
++.Va ppc64
+ and
+ .Fl p
+ would return
+-.Va powerpc64 .
++.Va unknown .
+ .Sh SEE ALSO
+-.Xr freebsd-version 1 ,
+ .Xr feature_present 3 ,
+ .Xr getosreldate 3 ,
+ .Xr sysctl 3 ,
 --- src.orig/coreutils/uname/uname.c
 +++ src.freebsd/coreutils/uname/uname.c
 @@ -49,15 +49,14 @@
@@ -5085,16 +4926,16 @@
  utility with
 --- src.orig/coreutils/xinstall/xinstall.c
 +++ src.freebsd/coreutils/xinstall/xinstall.c
-@@ -73,8 +73,6 @@
+@@ -77,8 +77,6 @@
  #include <unistd.h>
  #include <vis.h>
  
 -#include "mtree.h"
 -
  /*
-  * We need to build xinstall during the bootstrap stage when building on a
-  * non-FreeBSD system. Linux does not have the st_flags and st_birthtime
-@@ -165,7 +163,7 @@
+  * Memory strategy threshold, in pages: if physmem is larger then this, use a
+  * large buffer.
+@@ -192,7 +190,7 @@
  	fset = 0;
  	iflags = 0;
  	group = owner = NULL;
@@ -5103,7 +4944,7 @@
  	     -1)
  		switch((char)ch) {
  		case 'B':
-@@ -186,10 +184,12 @@
+@@ -213,10 +211,12 @@
  		case 'd':
  			dodir = 1;
  			break;
@@ -5116,7 +4957,7 @@
  		case 'g':
  			haveopt_g = 1;
  			group = optarg;
-@@ -236,11 +236,13 @@
+@@ -263,11 +263,13 @@
  			mode = getmode(set, 0);
  			free(set);
  			break;
@@ -5130,7 +4971,7 @@
  		case 'o':
  			haveopt_o = 1;
  			owner = optarg;
-@@ -310,30 +312,38 @@
+@@ -341,30 +343,38 @@
  
  	/* get group and owner id's */
  	if (group != NULL && !dounpriv) {
@@ -5171,7 +5012,7 @@
  
  	if (metafile != NULL) {
  		if ((metafp = fopen(metafile, "a")) == NULL)
-@@ -384,8 +394,7 @@
+@@ -415,8 +425,7 @@
  		if (stat(*argv, &from_sb))
  			err(EX_OSERR, "%s", *argv);
  		if (!S_ISREG(to_sb.st_mode)) {
@@ -5181,7 +5022,7 @@
  		}
  		if (to_sb.st_dev == from_sb.st_dev &&
  		    to_sb.st_ino == from_sb.st_ino)
-@@ -529,7 +538,7 @@
+@@ -576,7 +585,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
  {
@@ -5190,7 +5031,7 @@
  	int ret;
  
  	if (safecopy && target_sb != NULL) {
-@@ -714,7 +723,6 @@
+@@ -761,7 +770,6 @@
  				errx(1, "resolved pathname too long");
  		}
  		strcpy(to_name_copy, to_name);
@@ -5198,7 +5039,7 @@
  		if (strlcat(dst, cp, sizeof(dst)) > sizeof(dst))
  			errx(1, "resolved pathname too long");
  		free(to_name_copy);
-@@ -763,7 +771,7 @@
+@@ -810,7 +818,7 @@
   *	build a path name and install the file
   */
  static void
@@ -5207,7 +5048,7 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -783,8 +791,7 @@
+@@ -830,8 +838,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
  			if (!S_ISREG(from_sb.st_mode)) {
@@ -5217,7 +5058,7 @@
  			}
  		}
  		/* Build the target path. */
-@@ -818,8 +825,7 @@
+@@ -865,8 +872,7 @@
  	}
  
  	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode)) {
@@ -5227,7 +5068,7 @@
  		return;
  	}
  
-@@ -1134,13 +1140,13 @@
+@@ -1197,13 +1203,13 @@
  			lseek(to_fd, 0, SEEK_SET);
  		}
  	} else
@@ -5243,7 +5084,7 @@
  	}
  
  	return rv;
-@@ -1171,7 +1177,7 @@
+@@ -1234,7 +1240,7 @@
   *	create a new file, overwriting an existing one if necessary
   */
  static int
@@ -5252,7 +5093,7 @@
  {
  	char backup[MAXPATHLEN];
  	int saved_errno = 0;
-@@ -1336,7 +1342,7 @@
+@@ -1415,7 +1421,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
@@ -5263,7 +5104,15 @@
  	if (waitpid(pid, &status, 0) == -1) {
 --- src.orig/diffutils/cmp/cmp.c
 +++ src.freebsd/diffutils/cmp/cmp.c
-@@ -78,7 +78,7 @@
+@@ -57,6 +57,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <signal.h>
+ 
+ #include <libutil.h>
+ 
+@@ -89,7 +90,7 @@
  static void usage(void);
  
  static bool
@@ -5272,7 +5121,7 @@
  {
  	char *colon;
  
-@@ -100,7 +100,7 @@
+@@ -111,7 +112,7 @@
  main(int argc, char *argv[])
  {
  	struct stat sb1, sb2;
@@ -5281,7 +5130,7 @@
  	int ch, fd1, fd2, oflag;
  	bool special;
  	const char *file1, *file2;
-@@ -127,7 +127,7 @@
+@@ -138,7 +139,7 @@
  			lflag = true;
  			break;
  		case 'n':		/* Limit */
@@ -5542,72 +5391,7 @@
  					J[i] = 0;
  					if (c != '\n' && c != EOF)
  						ctold += skipline(f1);
-@@ -1035,7 +1028,6 @@
- 	int ret;
- 
- 	ret = regexec(&ignore_re, line, 0, NULL, 0);
--	free(line);
- 	return (ret == 0);	/* if it matched, it should be ignored. */
- }
- 
-@@ -1043,13 +1035,10 @@
- ignoreline(char *line, bool skip_blanks)
- {
- 
--	if (ignore_pats != NULL && skip_blanks)
--		return (ignoreline_pattern(line) || *line == '\0');
--	if (ignore_pats != NULL)
--		return (ignoreline_pattern(line));
--	if (skip_blanks)
--		return (*line == '\0');
--	/* No ignore criteria specified */
-+	if (skip_blanks && *line == '\0')
-+		return (true);
-+	if (ignore_pats != NULL && ignoreline_pattern(line))
-+		return (true);
- 	return (false);
- }
- 
-@@ -1068,7 +1057,7 @@
- 	long curpos;
- 	int i, nc;
- 	const char *walk;
--	bool skip_blanks;
-+	bool skip_blanks, ignore;
- 
- 	skip_blanks = (*pflags & D_SKIPBLANKLINES);
- restart:
-@@ -1086,7 +1075,9 @@
- 			for (i = a; i <= b; i++) {
- 				line = preadline(fileno(f1),
- 				    ixold[i] - ixold[i - 1], ixold[i - 1]);
--				if (!ignoreline(line, skip_blanks))
-+				ignore = ignoreline(line, skip_blanks);
-+				free(line);
-+				if (!ignore)
- 					goto proceed;
- 			}
- 		}
-@@ -1094,7 +1085,9 @@
- 			for (i = c; i <= d; i++) {
- 				line = preadline(fileno(f2),
- 				    ixnew[i] - ixnew[i - 1], ixnew[i - 1]);
--				if (!ignoreline(line, skip_blanks))
-+				ignore = ignoreline(line, skip_blanks);
-+				free(line);
-+				if (!ignore)
- 					goto proceed;
- 			}
- 		}
-@@ -1376,6 +1369,7 @@
- 		case '\0':
- 			if ((flags & D_FORCEASCII) == 0)
- 				return (RH_BINARY);
-+			/* FALLTHROUGH */
- 		case '\r':
- 			if (flags & D_STRIPCR) {
- 				t = getc(f);
-@@ -1433,7 +1427,7 @@
+@@ -1435,7 +1428,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -5616,52 +5400,6 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1652,41 +1646,18 @@
- static void
- print_header(const char *file1, const char *file2)
- {
--	const char *time_format;
--	char buf1[256];
--	char buf2[256];
--	char end1[10];
--	char end2[10];
--	struct tm tm1, tm2, *tm_ptr1, *tm_ptr2;
--	int nsec1 = stb1.st_mtim.tv_nsec;
--	int nsec2 = stb2.st_mtim.tv_nsec;
--
--	time_format = "%Y-%m-%d %H:%M:%S";
--
--	if (cflag)
--		time_format = "%c";
--	tm_ptr1 = localtime_r(&stb1.st_mtime, &tm1);
--	tm_ptr2 = localtime_r(&stb2.st_mtime, &tm2);
--	strftime(buf1, 256, time_format, tm_ptr1);
--	strftime(buf2, 256, time_format, tm_ptr2);
--	if (!cflag) {
--		strftime(end1, 10, "%z", tm_ptr1);
--		strftime(end2, 10, "%z", tm_ptr2);
--		sprintf(buf1, "%s.%.9d %s", buf1, nsec1, end1);
--		sprintf(buf2, "%s.%.9d %s", buf2, nsec2, end2);
--	}
- 	if (label[0] != NULL)
- 		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
- 		    label[0]);
- 	else
--		printf("%s %s\t%s\n", diff_format == D_CONTEXT ? "***" : "---",
--		    file1, buf1);
-+		printf("%s %s\t%s", diff_format == D_CONTEXT ? "***" : "---",
-+		    file1, ctime(&stb1.st_mtime));
- 	if (label[1] != NULL)
- 		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
- 		    label[1]);
- 	else
--		printf("%s %s\t%s\n", diff_format == D_CONTEXT ? "---" : "+++",
--		    file2, buf2);
-+		printf("%s %s\t%s", diff_format == D_CONTEXT ? "---" : "+++",
-+		    file2, ctime(&stb2.st_mtime));
- }
- 
- /*
 --- src.orig/diffutils/sdiff/sdiff.c
 +++ src.freebsd/diffutils/sdiff/sdiff.c
 @@ -260,16 +260,19 @@
@@ -5726,7 +5464,7 @@
  creat_f	c_Xtime;
 --- src.orig/findutils/find/find.1
 +++ src.freebsd/findutils/find/find.1
-@@ -181,35 +181,6 @@
+@@ -202,35 +202,6 @@
  and neither means
  .Dq exactly n .
  .Bl -tag -width indent
@@ -5762,7 +5500,7 @@
  .It Ic -acl
  May be used in conjunction with other primaries to locate
  files with extended ACLs.
-@@ -431,50 +402,6 @@
+@@ -452,50 +423,6 @@
  returns a non-zero exit status,
  .Nm
  will return a non-zero exit status.
@@ -5813,7 +5551,7 @@
  .It Ic -fstype Ar type
  True if the file is contained in a file system of type
  .Ar type .
-@@ -482,15 +409,9 @@
+@@ -503,15 +430,9 @@
  .Xr lsvfs 1
  command can be used to find out the types of file systems
  that are available on the system.
@@ -5832,7 +5570,7 @@
  .It Ic -gid Ar gname
  The same thing as
  .Ic -group Ar gname
-@@ -998,7 +919,6 @@
+@@ -1019,7 +940,6 @@
  .Sx STANDARDS
  section below for details.
  .Sh SEE ALSO
@@ -5840,7 +5578,7 @@
  .Xr chmod 1 ,
  .Xr locate 1 ,
  .Xr lsvfs 1 ,
-@@ -1028,9 +948,7 @@
+@@ -1050,9 +970,7 @@
  .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
  .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
  .Ic -not , -path , -print0 , -regex , -sparse
@@ -6146,7 +5884,7 @@
   *	Replace occurrences of {} in s1 with s2 and return the result string.
 --- src.orig/findutils/locate/bigram/locate.bigram.c
 +++ src.freebsd/findutils/locate/bigram/locate.bigram.c
-@@ -64,6 +64,7 @@
+@@ -60,6 +60,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <sys/param.h>			/* for MAXPATHLEN */
@@ -6154,7 +5892,7 @@
  #include "locate.h"
  
  u_char buf1[MAXPATHLEN] = " ";
-@@ -80,7 +81,7 @@
+@@ -76,7 +77,7 @@
  	if (caph_limit_stdio() < 0 || caph_enter() < 0)
  		err(1, "capsicum");
  
@@ -6165,7 +5903,7 @@
  		 * We don't need remove newline character '\n'.
 --- src.orig/findutils/locate/code/locate.code.c
 +++ src.freebsd/findutils/locate/code/locate.code.c
-@@ -96,6 +96,7 @@
+@@ -92,6 +92,7 @@
   */
  
  #include <sys/param.h>
@@ -6173,7 +5911,7 @@
  #include <err.h>
  #include <errno.h>
  #include <stdlib.h>
-@@ -148,7 +149,7 @@
+@@ -144,7 +145,7 @@
  		err(1, "%s", argv[0]);
  
  	/* First copy bigram array to stdout. */
@@ -6182,7 +5920,7 @@
  
  	if (fwrite(bigrams, 1, BGBUFSIZE, stdout) != BGBUFSIZE)
  		err(1, "stdout");
-@@ -169,7 +170,7 @@
+@@ -165,7 +166,7 @@
  	path = buf2;
  	oldcount = 0;
  
@@ -6193,7 +5931,7 @@
  		if (*path == '\n')
 --- src.orig/findutils/locate/locate/fastfind.c
 +++ src.freebsd/findutils/locate/locate/fastfind.c
-@@ -44,9 +44,7 @@
+@@ -40,9 +40,7 @@
  #define _LOCATE_STATISTIC_
  
  void 
@@ -6204,7 +5942,7 @@
  {
  	register int lines, chars, size, big, zwerg;
  	register u_char *p, *s;
-@@ -116,28 +114,14 @@
+@@ -112,28 +110,14 @@
  #else
  fastfind_mmap
  #endif /* FF_ICASE */
@@ -6235,7 +5973,7 @@
  #endif /* MMAP */
  
  {
-@@ -151,7 +135,7 @@
+@@ -147,7 +131,7 @@
  	/* use a lookup table for case insensitive search */
  	u_char table[UCHAR_MAX + 1];
  
@@ -6244,7 +5982,7 @@
  #endif /* FF_ICASE*/
  
  	/* init bigram table */
-@@ -168,8 +152,8 @@
+@@ -164,8 +148,8 @@
  #endif /* FF_MMAP */
  
  	/* find optimal (last) char for searching */
@@ -6255,7 +5993,7 @@
  			break;
  
  	if (*p == '\0')
-@@ -177,8 +161,8 @@
+@@ -173,8 +157,8 @@
  	else
  		globflag = 1;
  
@@ -6266,7 +6004,7 @@
  	cc = *patend;
  
  #ifdef FF_ICASE
-@@ -306,9 +290,9 @@
+@@ -302,9 +286,9 @@
  					found = 1;
  					if (!globflag || 
  #ifndef FF_ICASE
@@ -6278,7 +6016,7 @@
  						     FNM_CASEFOLD))
  #endif /* !FF_ICASE */						
  					{
-@@ -316,7 +300,7 @@
+@@ -312,7 +296,7 @@
  							counter++;
  						else if (f_limit) {
  							counter++;
@@ -6306,7 +6044,7 @@
  .Xr find 1 ,
 --- src.orig/findutils/locate/locate/locate.c
 +++ src.freebsd/findutils/locate/locate/locate.c
-@@ -81,6 +81,7 @@
+@@ -77,6 +77,7 @@
   */
  
  #include <sys/param.h>
@@ -6391,7 +6129,7 @@
  if [ -z "$SEARCHPATHS" ]; then
 --- src.orig/findutils/locate/locate/util.c
 +++ src.freebsd/findutils/locate/locate/util.c
-@@ -44,6 +44,7 @@
+@@ -40,6 +40,7 @@
  #include <string.h>
  #include <err.h>
  #include <sys/param.h>
@@ -6399,7 +6137,7 @@
  #include <arpa/inet.h>
  #include <stdio.h>
  
-@@ -62,8 +63,7 @@
+@@ -58,8 +59,7 @@
   * or the database is obviously not a locate database.
   */
  int
@@ -6409,7 +6147,7 @@
  {
  	/* legal bigram: 0, ASCII_MIN ... ASCII_MAX */
  	if (ch == 0 ||
-@@ -136,8 +136,7 @@
+@@ -132,8 +132,7 @@
  }
  
  void 
@@ -6419,7 +6157,7 @@
  {
  	(void)printf("%d\n", counter);
  }
-@@ -150,8 +149,7 @@
+@@ -146,8 +145,7 @@
  static char globfree[100];
  
  char *
@@ -6429,7 +6167,7 @@
  {
  	register char *endmark, *p, *subp;
  
-@@ -204,8 +202,7 @@
+@@ -200,8 +198,7 @@
  
  /* tolower word */
  u_char *
@@ -6439,7 +6177,7 @@
  {
  	register u_char *p;
  
-@@ -227,8 +224,7 @@
+@@ -223,8 +220,7 @@
   */
  
  int
@@ -6449,7 +6187,7 @@
  {
  	union {
  		char buf[INTSIZE];
-@@ -260,8 +256,7 @@
+@@ -256,8 +252,7 @@
   */
  
  int
@@ -6490,7 +6228,7 @@
  static pid_t *childpids;
  
  static volatile int childerr;
-@@ -597,6 +597,7 @@
+@@ -601,6 +601,7 @@
  	case -1:
  		warn("vfork");
  		xexit(*argv, 1);
@@ -6498,7 +6236,7 @@
  	case 0:
  		if (oflag) {
  			if ((fd = open(_PATH_TTY, O_RDONLY)) == -1)
-@@ -691,7 +692,7 @@
+@@ -695,7 +696,7 @@
  static void
  pids_init(void)
  {
@@ -6507,7 +6245,7 @@
  
  	if ((childpids = malloc(maxprocs * sizeof(*childpids))) == NULL)
  		errx(1, "malloc failed");
-@@ -750,7 +751,7 @@
+@@ -754,7 +755,7 @@
  static int
  findslot(pid_t pid)
  {
@@ -6516,7 +6254,7 @@
  
  	for (slot = 0; slot < maxprocs; slot++)
  		if (childpids[slot] == pid)
-@@ -772,22 +773,22 @@
+@@ -776,22 +777,22 @@
  prompt(void)
  {
  	regex_t cre;
@@ -7373,7 +7111,7 @@
  		}
  
  		m += mpl;
-@@ -1054,9 +1057,12 @@
+@@ -1055,9 +1058,12 @@
  center(char *s, char *t, int w)
  {
  	char blanks[MAX_WIDTH];
@@ -7480,7 +7218,7 @@
  .It Fl k
  Log keys sent to the program as well as output.
  .It Fl p
-@@ -241,8 +234,7 @@
+@@ -256,8 +249,7 @@
  for the
  .Em history
  mechanism
@@ -7537,8 +7275,8 @@
  static int usesleep, rawout, showexit;
  static TAILQ_HEAD(, buf_elm) obuf_list = TAILQ_HEAD_INITIALIZER(obuf_list);
  
-@@ -111,17 +114,14 @@
- 	struct buf_elm *be;
+@@ -118,17 +121,14 @@
+ 	ssize_t cc;
  	int aflg, Fflg, kflg, pflg, ch, k, n, fcm;
  	int flushtime, readstdin;
 -	int fm_fd, fm_log;
@@ -7551,12 +7289,12 @@
 -			   warning. (not needed w/clang) */
  	showexit = 0;
  
--	while ((ch = getopt(argc, argv, "adeFfkpqrt:")) != -1)
-+	while ((ch = getopt(argc, argv, "adeFkpqrt:")) != -1)
+-	while ((ch = getopt(argc, argv, "adeFfkpqrT:t:")) != -1)
++	while ((ch = getopt(argc, argv, "adeFkpqrT:t:")) != -1)
  		switch(ch) {
  		case 'a':
  			aflg = 1;
-@@ -134,9 +134,6 @@
+@@ -141,9 +141,6 @@
  		case 'F':
  			Fflg = 1;
  			break;
@@ -7566,7 +7304,7 @@
  		case 'k':
  			kflg = 1;
  			break;
-@@ -171,20 +168,6 @@
+@@ -183,20 +180,6 @@
  	if ((fscript = fopen(fname, pflg ? "r" : aflg ? "a" : "w")) == NULL)
  		err(1, "%s", fname);
  
@@ -7587,7 +7325,7 @@
  	if (pflg)
  		playback(fscript);
  
-@@ -225,10 +208,6 @@
+@@ -237,10 +220,6 @@
  			}
  		}
  		fflush(fscript);
@@ -7598,7 +7336,7 @@
  	}
  	if (ttyflg) {
  		rtt = tt;
-@@ -243,14 +222,6 @@
+@@ -255,14 +234,6 @@
  		done(1);
  	}
  	if (child == 0) {
@@ -7613,7 +7351,16 @@
  		doshell(argv);
  	}
  	close(slave);
-@@ -417,10 +388,6 @@
+@@ -366,7 +337,7 @@
+ usage(void)
+ {
+ 	(void)fprintf(stderr,
+-	    "usage: script [-aeFfkpqr] [-t time] [file [command ...]]\n");
++	    "usage: script [-aeFkpqr] [-t time] [file [command ...]]\n");
+ 	(void)fprintf(stderr,
+ 	    "       script -p [-deq] [-T fmt] [file]\n");
+ 	exit(1);
+@@ -431,10 +402,6 @@
  			    ctime(&tvec));
  		}
  		(void)printf("\nScript done, output file is %s\n", fname);
@@ -7624,7 +7371,7 @@
  	}
  	(void)fclose(fscript);
  	(void)close(master);
-@@ -468,10 +435,10 @@
+@@ -482,10 +449,10 @@
  
  #define swapstamp(stamp) do { \
  	if (stamp.scr_direction > 0xff) { \
@@ -8134,7 +7881,7 @@
  			memcpy(enddir, dp->d_name, namlen + 1);
 --- src.orig/sh/histedit.c
 +++ src.freebsd/sh/histedit.c
-@@ -74,9 +74,13 @@
+@@ -79,10 +79,14 @@
  static char *fc_replace(const char *, char *, char *);
  static int not_fcnumber(const char *);
  static int str_to_event(const char *, int);
@@ -8142,14 +7889,15 @@
 +#ifdef HAVE_FN_COMPLETE2
 +static int comparator(const void *, const void *);
  static char **sh_matches(const char *, int, int);
+ static const char *append_char_function(const char *);
  static unsigned char sh_complete(EditLine *, int);
 +#else
 +#define sh_complete _el_fn_complete
 +#endif
  
- /*
-  * Set history and editing status.  Called whenever the status may
-@@ -513,16 +517,17 @@
+ static const char *
+ get_histfile(void)
+@@ -582,16 +586,17 @@
  	return ret;
  }
  
@@ -8171,7 +7919,7 @@
  }
  
  /*
-@@ -592,8 +597,8 @@
+@@ -663,8 +668,8 @@
  	}
  	uniq = 1;
  	if (i > 1) {
@@ -8182,9 +7930,9 @@
  		for (size_t k = 2; k <= i; k++) {
  			const char *l = matches[uniq] + curpos;
  			const char *r = matches[k] + curpos;
-@@ -645,6 +650,7 @@
- 		L" \t\n\"\\'`@$><=;|&{(", NULL, NULL, (size_t)100,
- 		NULL, &((int) {0}), NULL, NULL, FN_QUOTE_MATCH);
+@@ -742,6 +747,7 @@
+ 		L" \t\n\"\\'`@$><=;|&{(", NULL, append_char_function,
+ 		(size_t)100, NULL, &((int) {0}), NULL, NULL, FN_QUOTE_MATCH);
  }
 +#endif
  
@@ -8202,20 +7950,9 @@
  #include "trap.h"
  
  #define EOF_NLEFT -99		/* value of parsenleft when EOF pushed back */
---- src.orig/sh/jobs.h
-+++ src.freebsd/sh/jobs.h
-@@ -55,7 +55,7 @@
- void showjobs(int, int);
- struct job *makejob(union node *, int);
- pid_t forkshell(struct job *, union node *, int);
--pid_t vforkexecshell(struct job *, char **, char **, const char *, int, int []);
-+pid_t vforkexecshell(struct job *, char **, char **, const char *, int, int [2]);
- int waitforjob(struct job *, int *);
- int stoppedjobs(void);
- int backgndpidset(void);
 --- src.orig/sh/main.c
 +++ src.freebsd/sh/main.c
-@@ -139,19 +139,16 @@
+@@ -142,19 +142,16 @@
  	INTON;
  	if (iflag)
  		chkmail(1);
@@ -8238,7 +7975,7 @@
  		if ((shinit = lookupvar("ENV")) != NULL && *shinit != '\0') {
  			state = 3;
  			read_profile(shinit);
-@@ -341,4 +338,5 @@
+@@ -348,4 +345,5 @@
  		exitshell(number(argv[1]));
  	else
  		exitshell_savedstatus();
@@ -8455,7 +8192,7 @@
  /* Array indicating which tokens mark the end of a list */
 --- src.orig/sh/myhistedit.h
 +++ src.freebsd/sh/myhistedit.h
-@@ -38,7 +38,21 @@
+@@ -38,7 +38,22 @@
  extern EditLine *el;
  extern int displayhist;
  
@@ -8474,6 +8211,7 @@
 +    char **(*)(const char *, int, int),
 +    const wchar_t *, const wchar_t *, const char *(*)(const char *), size_t,
 +    int *, int *, int *, int *, unsigned int);
++char *fn_tilde_expand(const char *);
 +#endif
  
  void histedit(void);
@@ -8713,7 +8451,7 @@
  .It Fl s Li stdin
  Read commands from standard input (set automatically
  if no file arguments are present).
-@@ -2630,7 +2614,7 @@
+@@ -2639,7 +2623,7 @@
  For aliases the alias expansion is printed;
  for commands and tracked aliases
  the complete pathname of the command is printed.
@@ -8722,7 +8460,7 @@
  Set or display resource limits (see
  .Xr getrlimit 2 ) .
  If
-@@ -2669,8 +2653,6 @@
+@@ -2678,8 +2662,6 @@
  displayed or modified.
  They are mutually exclusive.
  .Bl -tag -width indent
@@ -8731,7 +8469,7 @@
  .It Fl c Ar coredumpsize
  The maximal size of core dump files, in 512-byte blocks.
  Setting
-@@ -2678,13 +2660,12 @@
+@@ -2687,13 +2669,12 @@
  to 0 prevents core dump files from being created.
  .It Fl d Ar datasize
  The maximal size of the data segment of a process, in kilobytes.
@@ -8749,7 +8487,7 @@
  .It Fl l Ar lockedmem
  The maximal size of memory that can be locked by a process, in
  kilobytes.
-@@ -2692,13 +2673,10 @@
+@@ -2701,13 +2682,10 @@
  The maximal resident set size of a process, in kilobytes.
  .It Fl n Ar nofiles
  The maximal number of descriptors that could be opened by a process.
@@ -8767,7 +8505,7 @@
  .It Fl s Ar stacksize
  The maximal size of the stack segment, in kilobytes.
  .It Fl t Ar time
-@@ -2707,9 +2685,12 @@
+@@ -2716,9 +2694,12 @@
  The maximal number of simultaneous processes for this user ID.
  .It Fl v Ar virtualmem
  The maximal virtual size of a process, in kilobytes.

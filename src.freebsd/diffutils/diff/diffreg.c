@@ -1369,7 +1369,7 @@ readhash(FILE *f, int flags, unsigned *hash)
 		case '\0':
 			if ((flags & D_FORCEASCII) == 0)
 				return (RH_BINARY);
-			/* FALLTHROUGH */
+			goto hashchar;
 		case '\r':
 			if (flags & D_STRIPCR) {
 				t = getc(f);
@@ -1388,6 +1388,7 @@ readhash(FILE *f, int flags, unsigned *hash)
 			}
 			/* FALLTHROUGH */
 		default:
+		hashchar:
 			if (space && (flags & D_IGNOREBLANKS) == 0) {
 				i++;
 				space = 0;
@@ -1646,18 +1647,44 @@ dump_unified_vec(FILE *f1, FILE *f2, int flags)
 static void
 print_header(const char *file1, const char *file2)
 {
+	const char *time_format;
+	char buf[256];
+	struct tm tm1, tm2, *tm_ptr1, *tm_ptr2;
+	int nsec1 = stb1.st_mtim.tv_nsec;
+	int nsec2 = stb2.st_mtim.tv_nsec;
+
+	time_format = "%Y-%m-%d %H:%M:%S";
+
+	if (cflag)
+		time_format = "%c";
+	tm_ptr1 = localtime_r(&stb1.st_mtime, &tm1);
+	tm_ptr2 = localtime_r(&stb2.st_mtime, &tm2);
 	if (label[0] != NULL)
 		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
 		    label[0]);
-	else
+	else {
+		strftime(buf, sizeof(buf), time_format, tm_ptr1);
 		printf("%s %s\t%s", diff_format == D_CONTEXT ? "***" : "---",
-		    file1, ctime(&stb1.st_mtime));
+		    file1, buf);
+		if (!cflag) {
+			strftime(buf, sizeof(buf), "%z", tm_ptr1);
+			printf(".%.9d %s", nsec1, buf);
+		}
+		printf("\n");
+	}
 	if (label[1] != NULL)
 		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
 		    label[1]);
-	else
+	else {
+		strftime(buf, sizeof(buf), time_format, tm_ptr2);
 		printf("%s %s\t%s", diff_format == D_CONTEXT ? "---" : "+++",
-		    file2, ctime(&stb2.st_mtime));
+		    file2, buf);
+		if (!cflag) {
+			strftime(buf, sizeof(buf), "%z", tm_ptr2);
+			printf(".%.9d %s", nsec2, buf);
+		}
+		printf("\n");
+	}
 }
 
 /*

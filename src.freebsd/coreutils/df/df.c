@@ -52,7 +52,6 @@ __FBSDID("$FreeBSD$");
 #include <sys/stat.h>
 #include <sys/statvfs.h>
 #include <sys/mount.h>
-#include <err.h>
 #include <getopt.h>
 #include <libutil.h>
 #include <locale.h>
@@ -230,7 +229,7 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	rv = 0;
+	rv = EXIT_SUCCESS;
 	mntsize = getmntinfo(&mntbuf);
 
 	xo_open_container("storage-system-information");
@@ -248,19 +247,20 @@ main(int argc, char *argv[])
 		if (stat(*argv, &stbuf) < 0) {
 			if ((mntpt = getmntpt(&mntbuf, mntsize, *argv)) == NULL) {
 				xo_warn("%s", *argv);
-				rv = 1;
+				rv = EXIT_FAILURE;
 				continue;
 			}
 		} else if (S_ISCHR(stbuf.st_mode)) {
 			mntpt = getmntpt(&mntbuf, mntsize, *argv);
 			if (mntpt == NULL) {
 				xo_warnx("%s: not mounted", *argv);
-				rv = 1;
+				rv = EXIT_FAILURE;
 				continue;
 			}
 		} else {
 			mntpt = *argv;
 		}
+
 		for (i = 0; i < mntsize; i++) {
 			/* selected specified filesystems if the mount point or device matches */
 			if (((stbuf.st_dev == mntbuf[i].f_dev) || !strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
@@ -278,10 +278,9 @@ main(int argc, char *argv[])
 				addstat(&totalbuf, &mntbuf[i]);
 		}
 	}
-	for (i = 0; i < mntsize; i++) {
+	for (i = 0; i < mntsize; i++)
 		if ((aflag || (mntbuf[i].f_blocks > 0)) && mntbuf[i].f_selected)
 			prtstat(&mntbuf[i], &maxwidths);
-	}
 
 	xo_close_list("filesystem");
 
@@ -289,7 +288,8 @@ main(int argc, char *argv[])
 		prtstat(&totalbuf, &maxwidths);
 
 	xo_close_container("storage-system-information");
-	xo_finish();
+	if (xo_finish() < 0)
+		rv = EXIT_FAILURE;
 	freemntinfo(mntbuf, mntsize);
 	exit(rv);
 }
@@ -327,7 +327,7 @@ makevfslist(char *fslist, int *skip)
 		if (*nextcp == ',')
 			i++;
 	if ((av = malloc((size_t)(i + 2) * sizeof(char *))) == NULL) {
-		warnx("malloc failed");
+		xo_warnx("malloc failed");
 		return (NULL);
 	}
 	nextcp = fslist;
@@ -380,6 +380,45 @@ checkvfsselected(char *fstypename)
 	}
 	return (result);
 }
+
+#if 0
+/*
+ * Make a pass over the file system info in ``mntbuf'' filtering out
+ * file system types not in vfslist_{l,t} and possibly re-stating to get
+ * current (not cached) info.  Returns the new count of valid statfs bufs.
+ */
+static size_t
+regetmntinfo(struct statfs **mntbufp, long mntsize)
+{
+	int error, i, j;
+	struct statfs *mntbuf;
+
+	if (vfslist_l == NULL && vfslist_t == NULL)
+		return (nflag ? mntsize : getmntinfo(mntbufp, MNT_WAIT));
+
+	mntbuf = *mntbufp;
+	for (j = 0, i = 0; i < mntsize; i++) {
+		if (checkvfsselected(mntbuf[i].f_fstypename) != 0)
+			continue;
+		/*
+		 * XXX statfs(2) can fail for various reasons. It may be
+		 * possible that the user does not have access to the
+		 * pathname, if this happens, we will fall back on
+		 * "stale" filesystem statistics.
+		 */
+		error = statfs(mntbuf[i].f_mntonname, &mntbuf[j]);
+		if (nflag || error < 0)
+			if (i != j) {
+				if (error < 0)
+					xo_warnx("%s stats possibly stale",
+					    mntbuf[i].f_mntonname);
+				mntbuf[j] = mntbuf[i];
+			}
+		j++;
+	}
+	return (j);
+}
+#endif
 
 static void
 prthuman(const struct mntinfo *sfsp, int64_t used)
@@ -529,9 +568,12 @@ prtstat(struct mntinfo *sfsp, struct maxwidths *mwp)
 			xo_emit(format, mwp->iused, (intmax_t)used,
 			    mwp->ifree, (intmax_t)sfsp->f_ffree);
 		}
-		xo_emit(" {:inodes-used-percent/%4.0f}{U:%%} ",
-			inodes == 0 ? 100.0 :
-			(double)used / (double)inodes * 100.0);
+		if (inodes == 0)
+			xo_emit(" {:inodes-used-percent/    -}{U:} ");
+		else {
+			xo_emit(" {:inodes-used-percent/%4.0f}{U:%%} ",
+				(double)used / (double)inodes * 100.0);
+		}
 	} else
 		xo_emit("  ");
 	if (strcmp(sfsp->f_mntfromname, "total") != 0)
@@ -634,7 +676,7 @@ getmntinfo(struct mntinfo **mntbuf)
 #endif
 
 	if (fp == NULL) {
-	    err(1, "setmntent");
+	    xo_err(1, "setmntent");
 	}
 
 	while ((ent = getmntent(fp)) != NULL) {
@@ -652,7 +694,7 @@ getmntinfo(struct mntinfo **mntbuf)
 	    /* get stat(vfs) fields and copy those over */
 	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1 || stat(ent->mnt_dir, &stmnt) == -1) {
 	        if ((errno == EACCES) || (errno == EPERM)) continue;
-	        err(1, "statvfs");
+	        xo_err(1, "statvfs");
 	    }
 
 	    /* allocate the entry */

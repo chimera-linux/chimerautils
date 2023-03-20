@@ -585,6 +585,9 @@ nextopt(const char *optstring)
 		shoptarg = p;
 		p = NULL;
 	}
-	nextopt_optptr = p;
+	if (p != NULL && *p != '\0')
+		nextopt_optptr = p;
+	else
+		nextopt_optptr = NULL;
 	return c;
 }

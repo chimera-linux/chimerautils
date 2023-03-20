@@ -28,7 +28,7 @@
 .\"	@(#)script.1	8.1 (Berkeley) 6/6/93
 .\" $FreeBSD$
 .\"
-.Dd January 5, 2021
+.Dd October 26, 2022
 .Dt SCRIPT 1
 .Os
 .Sh NAME
@@ -36,13 +36,13 @@
 .Nd make typescript of terminal session
 .Sh SYNOPSIS
 .Nm
-.Op Fl aefkqr
-.Op Fl F Ar pipe
+.Op Fl aeFfkqr
 .Op Fl t Ar time
 .Op Ar file Op Ar command ...
 .Nm
 .Fl p
 .Op Fl deq
+.Op Fl T Ar fmt
 .Op Ar file
 .Sh DESCRIPTION
 The
@@ -87,7 +87,7 @@ Accepted for compatibility with
 .Nm .
 The child command exit status is always the exit status of
 .Nm .
-.It Fl F Ar pipe
+.It Fl F
 Immediately flush output after each write.
 This will allow a user to create a named pipe using
 .Xr mkfifo 1
@@ -112,6 +112,21 @@ causes
 to flush after every character I/O event.
 The default interval is
 30 seconds.
+.It Fl T Ar fmt
+Implies
+.Fl p ,
+but just reports the time-stamp of each output.
+This is very useful for assessing the timing of events.
+.Pp
+If
+.Ar fmt
+does not contain any
+.Ql %
+characters, it indicates the default format:
+.Ql %n@ %s [%Y-%m-%d %T]%n ,
+which is useful for both tools and humans to read, should be used.
+Note that time-stamps will only be output when different from the
+previous one.
 .El
 .Pp
 The script ends when the forked shell (or command) exits (a

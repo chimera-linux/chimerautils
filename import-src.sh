@@ -88,6 +88,7 @@ bin/sleep
 bin/stty
 bin/sync
 bin/test
+bin/timeout
 sbin/mknod
 usr.bin/basename
 usr.bin/cksum
@@ -123,7 +124,6 @@ usr.bin/stat
 usr.bin/stdbuf
 usr.bin/tail
 usr.bin/tee
-usr.bin/timeout
 usr.bin/touch
 usr.bin/tr
 usr.bin/true
