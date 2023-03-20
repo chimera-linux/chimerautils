@@ -7897,6 +7897,15 @@
  
  static const char *
  get_histfile(void)
+@@ -90,7 +94,7 @@
+ 	const char *histfile;
+ 
+ 	/* don't try to save if the history size is 0 */
+-	if (hist == NULL || histsizeval() == 0)
++	if (hist == NULL || !strcmp(histsizeval(), "0"))
+ 		return (NULL);
+ 	histfile = expandstr("${HISTFILE-${HOME-}/.sh_history}");
+ 
 @@ -582,16 +586,17 @@
  	return ret;
  }
