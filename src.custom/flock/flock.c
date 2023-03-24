@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <limits.h>
 #include <unistd.h>
 #include <signal.h>
 #include <errno.h>
@@ -163,7 +164,7 @@ int main(int argc, char **argv) {
             !strcmp(argv[optind + 1], "--command")
         ) {
             if (argc != (optind + 3)) {
-                errx(EX_USAGE, "%s: one command is required", argv[0]);
+                errx(EX_USAGE, "one command is required");
             }
             cargv = sargv;
             sargv[0] = getenv("SHELL");
@@ -179,6 +180,15 @@ int main(int argc, char **argv) {
         fname = argv[optind];
         errno = 0;
         fd = open_f(fname, &oflags);
+    } else if (argc == (optind + 1)) {
+        char *endp = NULL;
+        unsigned long n = strtoul(argv[optind], &endp, 10);
+        if (!endp || *endp || (n > INT_MAX) || fcntl((int)n, F_GETFD) < 0) {
+            errx(EXIT_FAILURE, "invalid file descriptor: %s", argv[optind]);
+        }
+        fd = (int)n;
+    } else {
+        errx(EX_USAGE, "path or file descriptor is required");
     }
 
     while (flock(fd, type | block)) {
