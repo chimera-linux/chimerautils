@@ -146,6 +146,8 @@ int main(int argc, char **argv) {
     if (rbmode) {
         cmd = LINUX_REBOOT_CMD_RESTART2;
         arg = argv[1];
+        /* this actually reboots instantly, so make sure to sync first */
+        sync();
     } else if (!strcmp(argv[1], "hard")) {
         cmd = LINUX_REBOOT_CMD_CAD_ON;
     } else if (!strcmp(argv[1], "soft")) {
