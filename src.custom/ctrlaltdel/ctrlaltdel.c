@@ -34,6 +34,7 @@
 #include <unistd.h>
 #include <err.h>
 #include <sys/reboot.h>
+#include <sys/syscall.h>
 #include <linux/reboot.h>
 
 extern char const *__progname;
@@ -47,6 +48,7 @@ static struct option gnuopts[] = {
 int main(int argc, char **argv) {
     int help = 0;
     int version = 0;
+    int rbmode = !strcmp(__progname, "reboot-mode");
 
     for (;;) {
         int opt_idx = 0;
@@ -74,14 +76,23 @@ int main(int argc, char **argv) {
     }
 
     if (help) {
+        if (rbmode) {
+            printf(
+"Usage: %s MODE\n\n"
+"Reboot the device to the MODE specified (e.g. recovery, bootloader).\n",
+                __progname
+            );
+        } else {
+            printf(
+"Usage: %s hard|soft\n\n"
+"Set the function of the Ctrl-Alt-Del combination.\n",
+                __progname
+            );
+        }
         printf(
-"Usage: %s hard|soft\n"
-"\n"
-"Set the function of the Ctrl-Alt-Del combination.\n"
 "\n"
 "      -h, --help                display this help and exit\n"
-"      -V, --version             output version information and exit\n",
-            __progname
+"      -V, --version             output version information and exit\n"
         );
         return 0;
     } else if (version) {
@@ -95,6 +106,9 @@ int main(int argc, char **argv) {
     }
 
     if (argc < 2) {
+        if (rbmode) {
+            errx(1, "argument is needed");
+        }
         char const *ppath = "/proc/sys/kernel/ctrl-alt-del";
         FILE *f = fopen(ppath, "r");
         if (f) {
@@ -123,12 +137,16 @@ int main(int argc, char **argv) {
     }
 
     if (geteuid() != 0) {
-        errx(1, "you must be root to set the CAD behavior");
+        errx(1, "you must be root");
     }
 
     unsigned int cmd;
+    void *arg = NULL;
 
-    if (!strcmp(argv[1], "hard")) {
+    if (rbmode) {
+        cmd = LINUX_REBOOT_CMD_RESTART2;
+        arg = argv[1];
+    } else if (!strcmp(argv[1], "hard")) {
         cmd = LINUX_REBOOT_CMD_CAD_ON;
     } else if (!strcmp(argv[1], "soft")) {
         cmd = LINUX_REBOOT_CMD_CAD_OFF;
@@ -136,9 +154,11 @@ int main(int argc, char **argv) {
         errx(1, "unknown argument: %s", argv[1]);
     }
 
-    if (reboot(cmd) < 0) {
+    int ret = syscall(
+        SYS_reboot, LINUX_REBOOT_MAGIC1, LINUX_REBOOT_MAGIC2, cmd, arg
+    );
+    if (ret < 0) {
         err(1, "reboot");
     }
-
     return 0;
 }
