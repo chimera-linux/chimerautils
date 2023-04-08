@@ -75,6 +75,14 @@ if not libtinfo.found() and get_option('color_ls')
     error('a terminfo library is needed')
 endif
 
+# nvi may need ncurses
+foreach opt: ['ncursesw', 'ncurses']
+    ncurses = dependency(opt, required: false)
+    if ncurses.found()
+        break
+    endif
+endforeach
+
 # bc(1) needs libedit
 libedit = dependency('libedit', required: get_option('libedit'))
 

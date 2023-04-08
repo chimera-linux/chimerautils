@@ -1,0 +1,26 @@
+/* Define when using wide characters */
+#mesondefine USE_WIDECHAR
+
+/* Define when iconv can be used */
+#mesondefine USE_ICONV
+
+/* Define when the 2nd argument of iconv(3) is not const */
+#mesondefine ICONV_TRADITIONAL
+
+/* Define if you have <libutil.h> */
+#mesondefine HAVE_LIBUTIL_H
+
+/* Define if you have <ncurses.h> */
+#mesondefine HAVE_NCURSES_H
+
+/* Define if you have <ncursesw/ncurses.h> */
+#mesondefine HAVE_NCURSESW_NCURSES_H
+
+/* Define if you have <pty.h> */
+#mesondefine HAVE_PTY_H
+
+/* Define if you have <term.h> */
+#mesondefine HAVE_TERM_H
+
+/* Define if struct dirent has field d_namlen */
+#mesondefine HAVE_DIRENT_D_NAMLEN

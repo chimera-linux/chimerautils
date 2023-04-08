@@ -4126,23 +4126,6 @@
  		case USE_SLEEP:
  			(void) usleep(250000);
  			break;
---- src.orig/coreutils/tail/reverse.c
-+++ src.freebsd/coreutils/tail/reverse.c
-@@ -60,6 +60,14 @@
- 
- #include "extern.h"
- 
-+/* some versions of queue.h don't come with this */
-+#ifndef TAILQ_FOREACH_FROM_SAFE
-+#define TAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)                 \
-+	for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));             \
-+	    (var) && ((tvar) = TAILQ_NEXT((var), field), 1);            \
-+	    (var) = (tvar))
-+#endif
-+
- static void r_buf(FILE *, const char *);
- static void r_reg(FILE *, const char *, enum STYLE, off_t, struct stat *);
- 
 --- src.orig/coreutils/timeout/timeout.c
 +++ src.freebsd/coreutils/timeout/timeout.c
 @@ -28,7 +28,7 @@
@@ -5102,6 +5085,446 @@
  		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
  	}
  	if (waitpid(pid, &status, 0) == -1) {
+--- src.orig/dbcompat/btree/bt_close.c
++++ src.freebsd/dbcompat/btree/bt_close.c
+@@ -38,7 +38,6 @@
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <sys/param.h>
+ 
+ #include <errno.h>
+@@ -46,7 +45,6 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
+ 
+ #include <db.h>
+ #include "btree.h"
+@@ -104,7 +102,7 @@
+ 	fd = t->bt_fd;
+ 	free(t);
+ 	free(dbp);
+-	return (_close(fd) ? RET_ERROR : RET_SUCCESS);
++	return (close(fd) ? RET_ERROR : RET_SUCCESS);
+ }
+ 
+ /*
+--- src.orig/dbcompat/btree/bt_delete.c
++++ src.freebsd/dbcompat/btree/bt_delete.c
+@@ -144,7 +144,7 @@
+ 	EPG *e;
+ 	EPGNO *parent;
+ 	PAGE *h;
+-	indx_t idx;
++	indx_t idx = 0;
+ 	pgno_t pgno;
+ 	recno_t nextpg, prevpg;
+ 	int exact, level;
+--- src.orig/dbcompat/btree/bt_open.c
++++ src.freebsd/dbcompat/btree/bt_open.c
+@@ -46,7 +46,6 @@
+  * is wholly independent of the Postgres code.
+  */
+ 
+-#include "namespace.h"
+ #include <sys/param.h>
+ #include <sys/stat.h>
+ 
+@@ -58,8 +57,6 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
+-#include "libc_private.h"
+ 
+ #include <db.h>
+ #include "btree.h"
+@@ -199,7 +196,7 @@
+ 			goto einval;
+ 		}
+ 
+-		if ((t->bt_fd = _open(fname, flags | O_CLOEXEC, mode)) < 0)
++		if ((t->bt_fd = open(fname, flags | O_CLOEXEC, mode)) < 0)
+ 			goto err;
+ 
+ 	} else {
+@@ -210,10 +207,10 @@
+ 		F_SET(t, B_INMEM);
+ 	}
+ 
+-	if (_fstat(t->bt_fd, &sb))
++	if (fstat(t->bt_fd, &sb))
+ 		goto err;
+ 	if (sb.st_size) {
+-		if ((nr = _read(t->bt_fd, &m, sizeof(BTMETA))) < 0)
++		if ((nr = read(t->bt_fd, &m, sizeof(BTMETA))) < 0)
+ 			goto err;
+ 		if (nr != sizeof(BTMETA))
+ 			goto eftype;
+@@ -322,7 +319,7 @@
+ einval:	errno = EINVAL;
+ 	goto err;
+ 
+-eftype:	errno = EFTYPE;
++eftype:	errno = EINVAL;
+ 	goto err;
+ 
+ err:	saved_errno = errno;
+@@ -330,7 +327,7 @@
+ 		if (t->bt_dbp)
+ 			free(t->bt_dbp);
+ 		if (t->bt_fd != -1)
+-			(void)_close(t->bt_fd);
++			(void)close(t->bt_fd);
+ 		free(t);
+ 	}
+ 	errno = saved_errno;
+@@ -394,8 +391,7 @@
+ 	char *envtmp = NULL;
+ 	char path[MAXPATHLEN];
+ 
+-	if (issetugid() == 0)
+-		envtmp = getenv("TMPDIR");
++	envtmp = getenv("TMPDIR");
+ 	len = snprintf(path,
+ 	    sizeof(path), "%s/bt.XXXXXXXXXX", envtmp ? envtmp : "/tmp");
+ 	if (len < 0 || len >= (int)sizeof(path)) {
+@@ -404,10 +400,10 @@
+ 	}
+ 
+ 	(void)sigfillset(&set);
+-	(void)__libc_sigprocmask(SIG_BLOCK, &set, &oset);
++	(void)sigprocmask(SIG_BLOCK, &set, &oset);
+ 	if ((fd = mkostemp(path, O_CLOEXEC)) != -1)
+ 		(void)unlink(path);
+-	(void)__libc_sigprocmask(SIG_SETMASK, &oset, NULL);
++	(void)sigprocmask(SIG_SETMASK, &oset, NULL);
+ 	return(fd);
+ }
+ 
+--- src.orig/dbcompat/btree/bt_put.c
++++ src.freebsd/dbcompat/btree/bt_put.c
+@@ -68,7 +68,7 @@
+ {
+ 	BTREE *t;
+ 	DBT tkey, tdata;
+-	EPG *e;
++	EPG *e = NULL;
+ 	PAGE *h;
+ 	indx_t idx, nxtindex;
+ 	pgno_t pg;
+--- src.orig/dbcompat/btree/bt_seq.c
++++ src.freebsd/dbcompat/btree/bt_seq.c
+@@ -234,7 +234,7 @@
+ {
+ 	CURSOR *c;
+ 	PAGE *h;
+-	indx_t idx;
++	indx_t idx = 0;
+ 	pgno_t pg;
+ 	int exact;
+ 
+--- src.orig/dbcompat/btree/bt_split.c
++++ src.freebsd/dbcompat/btree/bt_split.c
+@@ -48,6 +48,10 @@
+ #include <db.h>
+ #include "btree.h"
+ 
++#ifndef __PAST_END
++#define __PAST_END(array, offset) (((__typeof__(*(array)) *)(array))[offset])
++#endif
++
+ static int	 bt_broot(BTREE *, PAGE *, PAGE *, PAGE *);
+ static PAGE	*bt_page(BTREE *, PAGE *, PAGE **, PAGE **, indx_t *, size_t);
+ static int	 bt_preserve(BTREE *, pgno_t);
+@@ -79,14 +83,14 @@
+ __bt_split(BTREE *t, PAGE *sp, const DBT *key, const DBT *data, int flags,
+     size_t ilen, u_int32_t argskip)
+ {
+-	BINTERNAL *bi;
+-	BLEAF *bl, *tbl;
++	BINTERNAL *bi = NULL;
++	BLEAF *bl = NULL, *tbl;
+ 	DBT a, b;
+ 	EPGNO *parent;
+ 	PAGE *h, *l, *r, *lchild, *rchild;
+ 	indx_t nxtindex;
+ 	u_int16_t skip;
+-	u_int32_t n, nbytes, nksize;
++	u_int32_t n, nbytes, nksize = 0;
+ 	int parentsplit;
+ 	char *dest;
+ 
+--- src.orig/dbcompat/db.c
++++ src.freebsd/dbcompat/db.c
+@@ -44,8 +44,6 @@
+ 
+ #include <db.h>
+ 
+-static int __dberr(void);
+-
+ #ifndef O_CLOEXEC
+ #define O_CLOEXEC 0
+ #endif
+@@ -71,8 +69,13 @@
+ 			return (__bt_open(fname, flags & USE_OPEN_FLAGS,
+ 			    mode, openinfo, flags & DB_FLAGS));
+ 		case DB_HASH:
++#if 0
++/* libdbcompat: not supported */
+ 			return (__hash_open(fname, flags & USE_OPEN_FLAGS,
+ 			    mode, openinfo, flags & DB_FLAGS));
++#else
++			break;
++#endif
+ 		case DB_RECNO:
+ 			return (__rec_open(fname, flags & USE_OPEN_FLAGS,
+ 			    mode, openinfo, flags & DB_FLAGS));
+@@ -82,8 +85,56 @@
+ }
+ 
+ static int
+-__dberr(void)
++__dberr_del(const struct __db *db, const DBT *dbt, u_int flags)
++{
++	(void)db;
++	(void)dbt;
++	(void)flags;
++	return (RET_ERROR);
++}
++
++static int
++__dberr_fd(const struct __db *db)
++{
++	(void)db;
++	return (RET_ERROR);
++}
++
++static int
++__dberr_get(const struct __db *db, const DBT *key, DBT *data, u_int flags)
++{
++	(void)db;
++	(void)key;
++	(void)data;
++	(void)flags;
++	return (RET_ERROR);
++}
++
++static int
++__dberr_put(const struct __db *db, DBT *key, const DBT *data, u_int flags)
++{
++	(void)db;
++	(void)key;
++	(void)data;
++	(void)flags;
++	return (RET_ERROR);
++}
++
++static int
++__dberr_seq(const struct __db *db, DBT *key, DBT *data, u_int flags)
++{
++	(void)db;
++	(void)key;
++	(void)data;
++	(void)flags;
++	return (RET_ERROR);
++}
++
++static int
++__dberr_sync(const struct __db *db, u_int flags)
+ {
++	(void)db;
++	(void)flags;
+ 	return (RET_ERROR);
+ }
+ 
+@@ -97,10 +148,10 @@
+ __dbpanic(DB *dbp)
+ {
+ 	/* The only thing that can succeed is a close. */
+-	dbp->del = (int (*)(const struct __db *, const DBT*, u_int))__dberr;
+-	dbp->fd = (int (*)(const struct __db *))__dberr;
+-	dbp->get = (int (*)(const struct __db *, const DBT*, DBT *, u_int))__dberr;
+-	dbp->put = (int (*)(const struct __db *, DBT *, const DBT *, u_int))__dberr;
+-	dbp->seq = (int (*)(const struct __db *, DBT *, DBT *, u_int))__dberr;
+-	dbp->sync = (int (*)(const struct __db *, u_int))__dberr;
++	dbp->del = __dberr_del;
++	dbp->fd = __dberr_fd;
++	dbp->get = __dberr_get;
++	dbp->put = __dberr_put;
++	dbp->seq = __dberr_seq;
++	dbp->sync = __dberr_sync;
+ }
+--- src.orig/dbcompat/mpool.c
++++ src.freebsd/dbcompat/mpool.c
+@@ -35,7 +35,6 @@
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <sys/param.h>
+ #include <sys/queue.h>
+ #include <sys/stat.h>
+@@ -45,7 +44,6 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
+ 
+ #include <db.h>
+ 
+@@ -68,13 +66,15 @@
+ 	MPOOL *mp;
+ 	int entry;
+ 
++	(void)key;
++
+ 	/*
+ 	 * Get information about the file.
+ 	 *
+ 	 * XXX
+ 	 * We don't currently handle pipes, although we should.
+ 	 */
+-	if (_fstat(fd, &sb))
++	if (fstat(fd, &sb))
+ 		return (NULL);
+ 	if (!S_ISREG(sb.st_mode)) {
+ 		errno = ESPIPE;
+@@ -278,6 +278,8 @@
+ 
+ #ifdef STATISTICS
+ 	++mp->pageput;
++#else
++	(void)mp;
+ #endif
+ 	bp = (BKT *)((char *)page - sizeof(BKT));
+ #ifdef DEBUG
+@@ -330,7 +332,7 @@
+ 			return (RET_ERROR);
+ 
+ 	/* Sync the file descriptor. */
+-	return (_fsync(mp->fd) ? RET_ERROR : RET_SUCCESS);
++	return (fsync(mp->fd) ? RET_ERROR : RET_SUCCESS);
+ }
+ 
+ /*
+--- src.orig/dbcompat/recno/rec_close.c
++++ src.freebsd/dbcompat/recno/rec_close.c
+@@ -35,7 +35,6 @@
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <sys/types.h>
+ #include <sys/uio.h>
+ #include <sys/mman.h>
+@@ -44,7 +43,6 @@
+ #include <limits.h>
+ #include <stdio.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
+ 
+ #include <db.h>
+ #include "recno.h"
+@@ -85,7 +83,7 @@
+ 			if (fclose(t->bt_rfp))
+ 				status = RET_ERROR;
+ 		} else {
+-			if (_close(t->bt_rfd))
++			if (close(t->bt_rfd))
+ 				status = RET_ERROR;
+ 		}
+ 	}
+@@ -151,7 +149,7 @@
+ 		 */
+ 		status = (dbp->seq)(dbp, &key, &data, R_FIRST);
+ 		while (status == RET_SUCCESS) {
+-			if (_write(t->bt_rfd, data.data, data.size) !=
++			if (write(t->bt_rfd, data.data, data.size) !=
+ 			    (ssize_t)data.size)
+ 				return (RET_ERROR);
+ 			status = (dbp->seq)(dbp, &key, &data, R_NEXT);
+@@ -164,7 +162,7 @@
+ 		while (status == RET_SUCCESS) {
+ 			iov[0].iov_base = data.data;
+ 			iov[0].iov_len = data.size;
+-			if (_writev(t->bt_rfd, iov, 2) != (ssize_t)(data.size + 1))
++			if (writev(t->bt_rfd, iov, 2) != (ssize_t)(data.size + 1))
+ 				return (RET_ERROR);
+ 			status = (dbp->seq)(dbp, &key, &data, R_NEXT);
+ 		}
+--- src.orig/dbcompat/recno/rec_open.c
++++ src.freebsd/dbcompat/recno/rec_open.c
+@@ -38,7 +38,6 @@
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <sys/types.h>
+ #include <sys/mman.h>
+ #include <sys/stat.h>
+@@ -49,7 +48,6 @@
+ #include <stddef.h>
+ #include <stdio.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
+ 
+ #include <db.h>
+ #include "recno.h"
+@@ -63,10 +61,10 @@
+ 	DB *dbp;
+ 	PAGE *h;
+ 	struct stat sb;
+-	int rfd, sverrno;
++	int rfd = -1, sverrno;
+ 
+ 	/* Open the user's file -- if this fails, we're done. */
+-	if (fname != NULL && (rfd = _open(fname, flags | O_CLOEXEC, mode)) < 0)
++	if (fname != NULL && (rfd = open(fname, flags | O_CLOEXEC, mode)) < 0)
+ 		return (NULL);
+ 
+ 	/* Create a btree in memory (backed by disk). */
+@@ -144,7 +142,7 @@
+ 				goto einval;
+ 			}
+ 
+-			if (_fstat(rfd, &sb))
++			if (fstat(rfd, &sb))
+ 				goto err;
+ 			/*
+ 			 * Kluge -- we'd like to test to see if the file is too
+@@ -213,7 +211,7 @@
+ 	if (dbp != NULL)
+ 		(void)__bt_close(dbp);
+ 	if (fname != NULL)
+-		(void)_close(rfd);
++		(void)close(rfd);
+ 	errno = sverrno;
+ 	return (NULL);
+ }
+--- src.orig/dbinclude/db.h
++++ src.freebsd/dbinclude/db.h
+@@ -39,6 +39,7 @@
+ #include <sys/cdefs.h>
+ 
+ #include <limits.h>
++#include <stdint.h>
+ 
+ #define	RET_ERROR	-1		/* Return values. */
+ #define	RET_SUCCESS	 0
+@@ -205,9 +206,7 @@
+ #endif
+ 
+ __BEGIN_DECLS
+-#if __BSD_VISIBLE
+ DB *dbopen(const char *, int, int, DBTYPE, const void *);
+-#endif
+ 
+ #ifdef __DBINTERFACE_PRIVATE
+ DB	*__bt_open(const char *, int, int, const BTREEINFO *, int);
 --- src.orig/diffutils/cmp/cmp.c
 +++ src.freebsd/diffutils/cmp/cmp.c
 @@ -57,6 +57,7 @@
@@ -7656,6 +8079,499 @@
  
  	(void)signal(SIGINT, done);
  	(void)signal(SIGHUP, done);
+--- src.orig/nvi/cl/cl_funcs.c
++++ src.freebsd/nvi/cl/cl_funcs.c
+@@ -146,7 +146,7 @@
+ 			if (clp->smcup != NULL)
+ 				(void)tputs(clp->smcup, 1, cl_putchar);
+ 		}
+-	} else
++	} else {
+ 		if (clp->ti_te != TE_SENT) {
+ 			clp->ti_te = TE_SENT;
+ 			if (clp->rmcup == NULL)
+@@ -155,6 +155,7 @@
+ 				(void)tputs(clp->rmcup, 1, cl_putchar);
+ 			(void)fflush(stdout);
+ 		}
++		}
+ 		(void)fflush(stdout);
+ 		break;
+ 	case SA_INVERSE:
+--- src.orig/nvi/common/log.c
++++ src.freebsd/nvi/common/log.c
+@@ -22,6 +22,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stddef.h>
+ 
+ #include "common.h"
+ 
+@@ -81,7 +82,7 @@
+ 	char    data[sizeof(u_char) /* type */ + sizeof(recno_t)];
+ 	CHAR_T  str[1];
+ } log_t;
+-#define CHAR_T_OFFSET ((char *)(((log_t*)0)->str) - (char *)0)
++#define CHAR_T_OFFSET offsetof(log_t, str)
+ 
+ /*
+  * log_init --
+@@ -520,6 +521,7 @@
+ 				sp->rptlchange = lno;
+ 				++sp->rptlines[L_CHANGED];
+ 			}
++			/* FALLTHROUGH */
+ 		case LOG_MARK:
+ 			memmove(&lm, p + sizeof(u_char), sizeof(LMARK));
+ 			m.lno = lm.lno;
+--- src.orig/nvi/common/main.c
++++ src.freebsd/nvi/common/main.c
+@@ -27,7 +27,6 @@
+ #include "../vi/vi.h"
+ #include "pathnames.h"
+ 
+-static void	 attach(GS *);
+ static int	 v_obsolete(char *[]);
+ 
+ /*
+--- src.orig/nvi/common/options.c
++++ src.freebsd/nvi/common/options.c
+@@ -313,15 +313,24 @@
+ 	argv[1] = &b;
+ 
+ 	/* Set numeric and string default values. */
+-#define	OI(indx, str) do {						\
+-	a.len = STRLEN(str);						\
+-	if ((CHAR_T*)str != b2)	  /* GCC puts strings in text-space. */	\
+-		(void)MEMCPY(b2, str, a.len+1);				\
++#define	OI_BASE(indx) do {						\
+ 	if (opts_set(sp, argv, NULL)) {					\
+ 		 optindx = indx;					\
+ 		goto err;						\
+ 	}								\
+ } while (0)
++
++#define OI(indx, str) do { \
++	a.len = STRLEN(str); \
++	MEMCPY(b2, str, a.len + 1); \
++	OI_BASE(indx); \
++} while(0)
++
++#define OIB(indx) do { \
++	a.len = STRLEN(b2); \
++	OI_BASE(indx); \
++} while(0)
++
+ 	/*
+ 	 * Indirect global options to global space.  Specifically, set up
+ 	 * terminal, lines, columns first, they're used by other options.
+@@ -343,7 +352,7 @@
+ 	/* Initialize string values. */
+ 	(void)SPRINTF(b2, SIZE(b2),
+ 	    L("cdpath=%s"), (s = getenv("CDPATH")) == NULL ? ":" : s);
+-	OI(O_CDPATH, b2);
++	OIB(O_CDPATH);
+ 	OI(O_CEDIT, L("cedit=\033"));
+ 
+ 	/*
+@@ -355,30 +364,30 @@
+ 	 */
+ 	(void)SPRINTF(b2, SIZE(b2),
+ 	    L("directory=%s"), (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
+-	OI(O_TMPDIR, b2);
++	OIB(O_TMPDIR);
+ 	OI(O_ESCAPETIME, L("escapetime=6"));
+ 	OI(O_FILEC, L("filec=\t"));
+ 	OI(O_KEYTIME, L("keytime=6"));
+ 	OI(O_MATCHCHARS, L("matchchars=()[]{}"));
+ 	OI(O_MATCHTIME, L("matchtime=7"));
+ 	(void)SPRINTF(b2, SIZE(b2), L("msgcat=%s"), _PATH_MSGCAT);
+-	OI(O_MSGCAT, b2);
++	OIB(O_MSGCAT);
+ 	OI(O_REPORT, L("report=5"));
+ 	OI(O_PARAGRAPHS, L("paragraphs=IPLPPPQPP LIpplpipbp"));
+ 	(void)SPRINTF(b2, SIZE(b2), L("path=%s"), "");
+-	OI(O_PATH, b2);
++	OIB(O_PATH);
+ 	(void)SPRINTF(b2, SIZE(b2), L("recdir=%s"), NVI_PATH_PRESERVE);
+-	OI(O_RECDIR, b2);
++	OIB(O_RECDIR);
+ 	OI(O_SECTIONS, L("sections=NHSHH HUnhsh"));
+ 	(void)SPRINTF(b2, SIZE(b2),
+ 	    L("shell=%s"), (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
+-	OI(O_SHELL, b2);
++	OIB(O_SHELL);
+ 	OI(O_SHELLMETA, L("shellmeta=~{[*?$`'\"\\"));
+ 	OI(O_SHIFTWIDTH, L("shiftwidth=8"));
+ 	OI(O_SIDESCROLL, L("sidescroll=16"));
+ 	OI(O_TABSTOP, L("tabstop=8"));
+ 	(void)SPRINTF(b2, SIZE(b2), L("tags=%s"), _PATH_TAGS);
+-	OI(O_TAGS, b2);
++	OIB(O_TAGS);
+ 
+ 	/*
+ 	 * XXX
+@@ -388,7 +397,7 @@
+ 	if ((v = (O_VAL(sp, O_LINES) - 1) / 2) == 0)
+ 		v = 1;
+ 	(void)SPRINTF(b2, SIZE(b2), L("scroll=%ld"), v);
+-	OI(O_SCROLL, b2);
++	OIB(O_SCROLL);
+ 
+ 	/*
+ 	 * The default window option values are:
+@@ -409,7 +418,7 @@
+ 		v = 1;
+ 
+ 	(void)SPRINTF(b2, SIZE(b2), L("window=%lu"), v);
+-	OI(O_WINDOW, b2);
++	OIB(O_WINDOW);
+ 
+ 	/*
+ 	 * Set boolean default values, and copy all settings into the default
+--- src.orig/nvi/common/recover.c
++++ src.freebsd/nvi/common/recover.c
+@@ -31,6 +31,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <ctype.h>
+ #include <time.h>
+ #include <unistd.h>
+ 
+@@ -38,6 +39,184 @@
+ #include "common.h"
+ #include "pathnames.h"
+ 
++/* for compat */
++
++static const char Base64[] =
++	"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
++static const char Pad64 = '=';
++
++static int
++compat_b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsize)
++{
++	size_t datalength = 0;
++	u_char input[3];
++	u_char output[4];
++	u_int i;
++
++	while (2 < srclength) {
++		input[0] = *src++;
++		input[1] = *src++;
++		input[2] = *src++;
++		srclength -= 3;
++
++		output[0] = input[0] >> 2;
++		output[1] = ((input[0] & 0x03) << 4) + (input[1] >> 4);
++		output[2] = ((input[1] & 0x0f) << 2) + (input[2] >> 6);
++		output[3] = input[2] & 0x3f;
++
++		if (datalength + 4 > targsize)
++			return (-1);
++		target[datalength++] = Base64[output[0]];
++		target[datalength++] = Base64[output[1]];
++		target[datalength++] = Base64[output[2]];
++		target[datalength++] = Base64[output[3]];
++	}
++    
++	/* Now we worry about padding. */
++	if (0 != srclength) {
++		/* Get what's left. */
++		input[0] = input[1] = input[2] = '\0';
++		for (i = 0; i < srclength; i++)
++			input[i] = *src++;
++	
++		output[0] = input[0] >> 2;
++		output[1] = ((input[0] & 0x03) << 4) + (input[1] >> 4);
++		output[2] = ((input[1] & 0x0f) << 2) + (input[2] >> 6);
++
++		if (datalength + 4 > targsize)
++			return (-1);
++		target[datalength++] = Base64[output[0]];
++		target[datalength++] = Base64[output[1]];
++		if (srclength == 1)
++			target[datalength++] = Pad64;
++		else
++			target[datalength++] = Base64[output[2]];
++		target[datalength++] = Pad64;
++	}
++	if (datalength >= targsize)
++		return (-1);
++	target[datalength] = '\0';	/* Returned value doesn't count \0. */
++	return (datalength);
++}
++
++static int
++compat_b64_pton(char const *src, u_char *target, size_t targsize)
++{
++	u_int tarindex, state;
++	int ch;
++	char *pos;
++
++	state = 0;
++	tarindex = 0;
++
++	while ((ch = *src++) != '\0') {
++		if (isspace(ch))	/* Skip whitespace anywhere. */
++			continue;
++
++		if (ch == Pad64)
++			break;
++
++		pos = strchr(Base64, ch);
++		if (pos == 0)		/* A non-base64 character. */
++			return (-1);
++
++		switch (state) {
++		case 0:
++			if (target) {
++				if (tarindex >= targsize)
++					return (-1);
++				target[tarindex] = (pos - Base64) << 2;
++			}
++			state = 1;
++			break;
++		case 1:
++			if (target) {
++				if (tarindex + 1 >= targsize)
++					return (-1);
++				target[tarindex]   |=  (pos - Base64) >> 4;
++				target[tarindex+1]  = ((pos - Base64) & 0x0f)
++							<< 4 ;
++			}
++			tarindex++;
++			state = 2;
++			break;
++		case 2:
++			if (target) {
++				if (tarindex + 1 >= targsize)
++					return (-1);
++				target[tarindex]   |=  (pos - Base64) >> 2;
++				target[tarindex+1]  = ((pos - Base64) & 0x03)
++							<< 6;
++			}
++			tarindex++;
++			state = 3;
++			break;
++		case 3:
++			if (target) {
++				if (tarindex >= targsize)
++					return (-1);
++				target[tarindex] |= (pos - Base64);
++			}
++			tarindex++;
++			state = 0;
++			break;
++		}
++	}
++
++	/*
++	 * We are done decoding Base-64 chars.  Let's see if we ended
++	 * on a byte boundary, and/or with erroneous trailing characters.
++	 */
++
++	if (ch == Pad64) {		/* We got a pad char. */
++		ch = *src++;		/* Skip it, get next. */
++		switch (state) {
++		case 0:		/* Invalid = in first position */
++		case 1:		/* Invalid = in second position */
++			return (-1);
++
++		case 2:		/* Valid, means one byte of info */
++			/* Skip any number of spaces. */
++			for (; ch != '\0'; ch = *src++)
++				if (!isspace(ch))
++					break;
++			/* Make sure there is another trailing = sign. */
++			if (ch != Pad64)
++				return (-1);
++			ch = *src++;		/* Skip the = */
++			/* Fall through to "single trailing =" case. */
++			/* FALLTHROUGH */
++
++		case 3:		/* Valid, means two bytes of info */
++			/*
++			 * We know this char is an =.  Is there anything but
++			 * whitespace after it?
++			 */
++			for (; ch != '\0'; ch = *src++)
++				if (!isspace(ch))
++					return (-1);
++
++			/*
++			 * Now make sure for cases 2 and 3 that the "extra"
++			 * bits that slopped past the last full byte were
++			 * zeros.  If we don't check them, they become a
++			 * subliminal channel.
++			 */
++			if (target && target[tarindex] != 0)
++				return (-1);
++		}
++	} else {
++		/*
++		 * We ended by seeing the end of the string.  Make sure we
++		 * have no partial bytes lying around.
++		 */
++		if (state != 0)
++			return (-1);
++	}
++
++	return (tarindex);
++}
++
+ /*
+  * Recovery code.
+  *
+@@ -851,7 +1030,7 @@
+ 	GET_SPACE_GOTOC(sp, bp, blen, (len + 2) / 3 * 4 + dlen + 2);
+ 	(void)memcpy(bp, dtype, dlen);
+ 	bp[dlen] = ';';
+-	if ((xlen = b64_ntop((u_char *)src,
++	if ((xlen = compat_b64_ntop((u_char *)src,
+ 	    len, bp + dlen + 1, blen)) == -1)
+ 		goto err;
+ 	xlen += dlen + 1;
+@@ -930,7 +1109,7 @@
+ 	MALLOC(sp, data, dlen + len / 4 * 3 + 2);
+ 	if (data == NULL)
+ 		goto err;
+-	if ((xlen = (b64_pton(p + dlen + 1,
++	if ((xlen = (compat_b64_pton(p + dlen + 1,
+ 	    (u_char *)data, len / 4 * 3 + 1))) == -1) {
+ 		free(data);
+ 		goto err;
+--- src.orig/nvi/ex/ex_cscope.c
++++ src.freebsd/nvi/ex/ex_cscope.c
+@@ -326,7 +326,7 @@
+ 		len = sb.st_size;
+ 		MALLOC_RET(sp, csc->pbuf, len + 1);
+ 		if ((fd = open(buf, O_RDONLY, 0)) < 0 ||
+-		    read(fd, csc->pbuf, len) != len) {
++		    read(fd, csc->pbuf, len) != (ssize_t)len) {
+ 			 msgq_str(sp, M_SYSERR, buf, "%s");
+ 			 if (fd >= 0)
+ 				(void)close(fd);
+--- src.orig/nvi/ex/ex_map.c
++++ src.freebsd/nvi/ex/ex_map.c
+@@ -90,6 +90,8 @@
+ 			    "134|The %s character may not be remapped",
+ 			    KEY_NAME(sp, input[0]));
+ 			return (1);
++		default:
++			break;
+ 		}
+ 	return (seq_set(sp, NULL, 0, input, cmdp->argv[0]->len,
+ 	    cmdp->argv[1]->bp, cmdp->argv[1]->len, stype, SEQ_USERDEF));
+--- src.orig/nvi/files/config.h.in
++++ src.freebsd/nvi/files/config.h.in
+@@ -1,26 +1,26 @@
+ /* Define when using wide characters */
+-#cmakedefine USE_WIDECHAR
++#mesondefine USE_WIDECHAR
+ 
+ /* Define when iconv can be used */
+-#cmakedefine USE_ICONV
++#mesondefine USE_ICONV
+ 
+ /* Define when the 2nd argument of iconv(3) is not const */
+-#cmakedefine ICONV_TRADITIONAL
++#mesondefine ICONV_TRADITIONAL
+ 
+ /* Define if you have <libutil.h> */
+-#cmakedefine HAVE_LIBUTIL_H
++#mesondefine HAVE_LIBUTIL_H
+ 
+ /* Define if you have <ncurses.h> */
+-#cmakedefine HAVE_NCURSES_H
++#mesondefine HAVE_NCURSES_H
+ 
+ /* Define if you have <ncursesw/ncurses.h> */
+-#cmakedefine HAVE_NCURSESW_NCURSES_H
++#mesondefine HAVE_NCURSESW_NCURSES_H
+ 
+ /* Define if you have <pty.h> */
+-#cmakedefine HAVE_PTY_H
++#mesondefine HAVE_PTY_H
+ 
+ /* Define if you have <term.h> */
+-#cmakedefine HAVE_TERM_H
++#mesondefine HAVE_TERM_H
+ 
+ /* Define if struct dirent has field d_namlen */
+-#cmakedefine HAVE_DIRENT_D_NAMLEN
++#mesondefine HAVE_DIRENT_D_NAMLEN
+--- src.orig/nvi/gen_extern_h.sh
++++ src.freebsd/nvi/gen_extern_h.sh
+@@ -0,0 +1,39 @@
++#!/bin/sh
++
++do_sed() {
++    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' "$@"
++}
++
++try_sed() {
++    case "$1" in
++        */$2/*)
++            do_sed "$1"
++            return 0
++            ;;
++    esac
++    return 1
++}
++
++echo "#ifdef CL_IN_EX"
++
++while try_sed "$1" cl; do
++    shift
++done
++
++echo "#endif"
++echo "#ifdef EXP"
++
++while try_sed "$1" ex; do
++    shift
++done
++
++echo "#endif"
++echo "#ifdef V_ABS"
++
++while try_sed "$1" vi; do
++    shift
++done
++
++echo "#endif"
++
++do_sed "$@"
+--- src.orig/nvi/gen_ex_version_h.sh
++++ src.freebsd/nvi/gen_ex_version_h.sh
+@@ -0,0 +1,2 @@
++#!/bin/sh
++exec sed -n 's/^.*version \([^)]*)\).*/\#define VI_VERSION "\1"/p' "$@"
+--- src.orig/nvi/vi/v_paragraph.c
++++ src.freebsd/nvi/vi/v_paragraph.c
+@@ -45,7 +45,7 @@
+ 		continue;						\
+ 	for (lp = VIP(sp)->ps; *lp != '\0'; lp += 2)			\
+ 		if (lp[0] == p[1] &&					\
+-		    (lp[1] == ' ' && len == 2 || lp[1] == p[2]) &&	\
++		    ((lp[1] == ' ' && len == 2) || lp[1] == p[2]) &&	\
+ 		    !--cnt)						\
+ 			goto found;					\
+ } while (0)
+--- src.orig/nvi/vi/vs_refresh.c
++++ src.freebsd/nvi/vi/vs_refresh.c
+@@ -575,7 +575,7 @@
+ 	 *
+ 	 * Walk through the map and find the current line.
+ 	 */
+-slow:	for (smp = HMAP; smp->lno != LNO; ++smp);
++slow:	for (smp = HMAP; smp->lno != LNO; ++smp) {}
+ 
+ 	/*
+ 	 * 7e: Leftright scrolling adjustment.
 --- src.orig/patch/backupfile.c
 +++ src.freebsd/patch/backupfile.c
 @@ -105,7 +105,7 @@

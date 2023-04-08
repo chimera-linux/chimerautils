@@ -3,6 +3,11 @@
 cinc = include_directories('include')
 subdir('compat')
 
+# dbcompat library
+
+dbinc = include_directories('dbinclude')
+subdir('dbcompat')
+
 # standalone toplevel projects
 
 subdir('ed')
@@ -15,6 +20,10 @@ subdir('which')
 
 if not get_option('zlib').disabled() and zlib.found()
     subdir('gzip')
+endif
+
+if ncurses.found()
+    subdir('nvi')
 endif
 
 # tool collections

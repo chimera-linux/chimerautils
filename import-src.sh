@@ -221,6 +221,7 @@ copy_cmd usr.bin/m4
 copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
 copy_cmd usr.bin/which
+copy_cmd contrib/nvi
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
@@ -238,8 +239,22 @@ cp -p usr/src/include/stringlist.h ${CWD}/src.orig/include
 cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.orig/include
 cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.orig/include
 
-cp ${CWD}/src.orig/compat/* ${CWD}/src.freebsd/compat
-cp ${CWD}/src.orig/include/* ${CWD}/src.freebsd/include
+mkdir -p ${CWD}/src.freebsd/compat ${CWD}/src.freebsd/include
+cp -p ${CWD}/src.orig/compat/* ${CWD}/src.freebsd/compat
+cp -p ${CWD}/src.orig/include/* ${CWD}/src.freebsd/include
+
+# 'dbcompat' is our subset of berkeley db 1.85
+mkdir -p ${CWD}/src.orig/dbcompat/btree ${CWD}/src.orig/dbcompat/recno ${CWD}/src.orig/dbinclude
+cp -p usr/src/lib/libc/db/db/db.c ${CWD}/src.orig/dbcompat
+cp -p usr/src/lib/libc/db/mpool/mpool.c ${CWD}/src.orig/dbcompat
+cp -p usr/src/lib/libc/db/btree/*.[ch] ${CWD}/src.orig/dbcompat/btree
+cp -p usr/src/lib/libc/db/recno/*.[ch] ${CWD}/src.orig/dbcompat/recno
+cp -p usr/src/include/db.h ${CWD}/src.orig/dbinclude
+cp -p usr/src/include/mpool.h ${CWD}/src.orig/dbinclude
+
+mkdir -p ${CWD}/src.freebsd/dbcompat ${CWD}/src.freebsd/dbinclude
+cp -pr ${CWD}/src.orig/dbcompat/* ${CWD}/src.freebsd/dbcompat
+cp -pr ${CWD}/src.orig/dbinclude/* ${CWD}/src.freebsd/dbinclude
 
 # These files are needed for the factor command
 cp -p usr/src/usr.bin/primes/primes.h ${CWD}/src.orig/coreutils/factor

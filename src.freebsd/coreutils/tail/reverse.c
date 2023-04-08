@@ -60,14 +60,6 @@ __FBSDID("$FreeBSD$");
 
 #include "extern.h"
 
-/* some versions of queue.h don't come with this */
-#ifndef TAILQ_FOREACH_FROM_SAFE
-#define TAILQ_FOREACH_FROM_SAFE(var, head, field, tvar)                 \
-	for ((var) = ((var) ? (var) : TAILQ_FIRST((head)));             \
-	    (var) && ((tvar) = TAILQ_NEXT((var), field), 1);            \
-	    (var) = (tvar))
-#endif
-
 static void r_buf(FILE *, const char *);
 static void r_reg(FILE *, const char *, enum STYLE, off_t, struct stat *);
 
