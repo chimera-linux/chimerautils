@@ -292,6 +292,9 @@ rm -rf ${CWD}/src.freebsd/sh/dot.*
 rm -rf ${CWD}/src.freebsd/sh/funcs
 rm -f ${CWD}/src.freebsd/sh/profile
 
+# remove our own nvi scripts before patching
+rm -f ${CWD}/src.freebsd/nvi/*.sh
+
 #####################
 # APPLY ANY PATCHES #
 #####################
@@ -302,6 +305,9 @@ for p in *.patch; do
     [ -f "$p" ] || continue
     patch -d ${CWD}/src.freebsd -p1 < $p
 done
+
+# fix up permissions
+chmod 755 ${CWD}/src.freebsd/nvi/*.sh
 
 # Clean up
 rm -rf ${TMPDIR}
