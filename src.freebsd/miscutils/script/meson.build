@@ -1,7 +1,8 @@
 script_prog = executable(
     'script',
     [ 'script.c' ],
-    include_directories: inc,
+    include_directories: [inc],
+    link_with: [libcompat],
     install: true,
 )
 

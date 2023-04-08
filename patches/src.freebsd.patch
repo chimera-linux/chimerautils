@@ -145,6 +145,419 @@
  	return (mask);
  }
  
+--- src.orig/compat/strftime.c
++++ src.freebsd/compat/strftime.c
+@@ -30,27 +30,34 @@
+ #endif /* !defined NOID */
+ #endif /* !defined lint */
+ 
+-#include "namespace.h"
+-#include "private.h"
+-
+ #if defined(LIBC_SCCS) && !defined(lint)
+ static const char	sccsid[] = "@(#)strftime.c	5.4 (Berkeley) 3/14/89";
+ #endif /* LIBC_SCCS and not lint */
+ #include <sys/cdefs.h>
+ __FBSDID("$FreeBSD$");
+ 
+-#include "tzfile.h"
+ #include <fcntl.h>
+ #include <sys/stat.h>
+ #include <stdio.h>
+-#include "un-namespace.h"
+-#include "timelocal.h"
++#include <time.h>
++#include <langinfo.h>
++
++#define DAYSPERWEEK 7
++#define MONSPERYEAR 12
++#define HOURSPERDAY 24
++#define SECSPERMIN 60
++#define MINSPERHOUR 60
++#define DAYSPERNYEAR 365
++#define DAYSPERLYEAR 366
++#define TM_YEAR_BASE 1900
++
++#define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
++#define isleap_sum(a, b) isleap((a) % 400 + (b) % 400)
+ 
+ static char *	_add(const char *, char *, const char *);
+-static char *	_conv(int, const char *, char *, const char *, locale_t);
+-static char *	_fmt(const char *, const struct tm *, char *, const char *,
+-			int *, locale_t);
+-static char *	_yconv(int, int, int, int, char *, const char *, locale_t);
++static char *	_conv(int, const char *, char *, const char *);
++static char *	_fmt(const char *, const struct tm *, char *, const char *);
++static char *	_yconv(int, int, int, int, char *, const char *);
+ 
+ extern char *	tzname[];
+ 
+@@ -88,51 +95,23 @@
+ };
+ 
+ size_t
+-strftime_l(char * __restrict s, size_t maxsize, const char * __restrict format,
+-    const struct tm * __restrict t, locale_t loc)
++strftime_bsd(char * __restrict s, size_t maxsize, const char * __restrict format,
++    const struct tm * __restrict t)
+ {
+ 	char *	p;
+-	int	warn;
+-	FIX_LOCALE(loc);
+-
+ 	tzset();
+-	warn = IN_NONE;
+-	p = _fmt(((format == NULL) ? "%c" : format), t, s, s + maxsize, &warn, loc);
+-#ifndef NO_RUN_TIME_WARNINGS_ABOUT_YEAR_2000_PROBLEMS_THANK_YOU
+-	if (warn != IN_NONE && getenv(YEAR_2000_NAME) != NULL) {
+-		(void) fprintf_l(stderr, loc, "\n");
+-		if (format == NULL)
+-			(void) fputs("NULL strftime format ", stderr);
+-		else	(void) fprintf_l(stderr, loc, "strftime format \"%s\" ",
+-				format);
+-		(void) fputs("yields only two digits of years in ", stderr);
+-		if (warn == IN_SOME)
+-			(void) fputs("some locales", stderr);
+-		else if (warn == IN_THIS)
+-			(void) fputs("the current locale", stderr);
+-		else	(void) fputs("all locales", stderr);
+-		(void) fputs("\n", stderr);
+-	}
+-#endif /* !defined NO_RUN_TIME_WARNINGS_ABOUT_YEAR_2000_PROBLEMS_THANK_YOU */
++	p = _fmt(((format == NULL) ? "%c" : format), t, s, s + maxsize);
+ 	if (p == s + maxsize)
+ 		return (0);
+ 	*p = '\0';
+ 	return p - s;
+ }
+ 
+-size_t
+-strftime(char * __restrict s, size_t maxsize, const char * __restrict format,
+-    const struct tm * __restrict t)
+-{
+-	return strftime_l(s, maxsize, format, t, __get_locale());
+-}
+-
+ static char *
+ _fmt(const char *format, const struct tm * const t, char *pt,
+-    const char * const ptlim, int *warnp, locale_t loc)
++    const char * const ptlim)
+ {
+ 	int Ealternative, Oalternative, PadIndex;
+-	struct lc_time_T *tptr = __get_current_time_locale(loc);
+ 
+ 	for ( ; *format; ++format) {
+ 		if (*format == '%') {
+@@ -147,27 +126,26 @@
+ 			case 'A':
+ 				pt = _add((t->tm_wday < 0 ||
+ 					t->tm_wday >= DAYSPERWEEK) ?
+-					"?" : tptr->weekday[t->tm_wday],
++					"?" : nl_langinfo(DAY_1 + t->tm_wday),
+ 					pt, ptlim);
+ 				continue;
+ 			case 'a':
+ 				pt = _add((t->tm_wday < 0 ||
+ 					t->tm_wday >= DAYSPERWEEK) ?
+-					"?" : tptr->wday[t->tm_wday],
++					"?" : nl_langinfo(ABDAY_1 + t->tm_wday),
+ 					pt, ptlim);
+ 				continue;
+ 			case 'B':
+ 				pt = _add((t->tm_mon < 0 ||
+ 					t->tm_mon >= MONSPERYEAR) ?
+-					"?" : (Oalternative ? tptr->alt_month :
+-					tptr->month)[t->tm_mon],
++					"?" : nl_langinfo(MON_1 + t->tm_mon),
+ 					pt, ptlim);
+ 				continue;
+ 			case 'b':
+ 			case 'h':
+ 				pt = _add((t->tm_mon < 0 ||
+ 					t->tm_mon >= MONSPERYEAR) ?
+-					"?" : tptr->mon[t->tm_mon],
++					"?" : nl_langinfo(ABMON_1 + t->tm_mon),
+ 					pt, ptlim);
+ 				continue;
+ 			case 'C':
+@@ -179,26 +157,18 @@
+ 				 * (ado, 1993-05-24)
+ 				 */
+ 				pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 0,
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'c':
+-				{
+-				int warn2 = IN_SOME;
+-
+-				pt = _fmt(tptr->c_fmt, t, pt, ptlim, &warn2, loc);
+-				if (warn2 == IN_ALL)
+-					warn2 = IN_THIS;
+-				if (warn2 > *warnp)
+-					*warnp = warn2;
+-				}
++				pt = _fmt(nl_langinfo(D_T_FMT), t, pt, ptlim);
+ 				continue;
+ 			case 'D':
+-				pt = _fmt("%m/%d/%y", t, pt, ptlim, warnp, loc);
++				pt = _fmt("%m/%d/%y", t, pt, ptlim);
+ 				continue;
+ 			case 'd':
+ 				pt = _conv(t->tm_mday,
+ 					fmt_padding[PAD_FMT_DAYOFMONTH][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'E':
+ 				if (Ealternative || Oalternative)
+@@ -225,25 +195,25 @@
+ 			case 'e':
+ 				pt = _conv(t->tm_mday,
+ 					fmt_padding[PAD_FMT_SDAYOFMONTH][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'F':
+-				pt = _fmt("%Y-%m-%d", t, pt, ptlim, warnp, loc);
++				pt = _fmt("%Y-%m-%d", t, pt, ptlim);
+ 				continue;
+ 			case 'H':
+ 				pt = _conv(t->tm_hour, fmt_padding[PAD_FMT_HMS][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'I':
+ 				pt = _conv((t->tm_hour % 12) ?
+ 					(t->tm_hour % 12) : 12,
+ 					fmt_padding[PAD_FMT_HMS][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'j':
+ 				pt = _conv(t->tm_yday + 1,
+ 					fmt_padding[PAD_FMT_DAYOFYEAR][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'k':
+ 				/*
+@@ -257,7 +227,7 @@
+ 				 * (ado, 1993-05-24)
+ 				 */
+ 				pt = _conv(t->tm_hour, fmt_padding[PAD_FMT_SHMS][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ #ifdef KITCHEN_SINK
+ 			case 'K':
+@@ -280,55 +250,49 @@
+ 				pt = _conv((t->tm_hour % 12) ?
+ 					(t->tm_hour % 12) : 12,
+ 					fmt_padding[PAD_FMT_SHMS][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'M':
+ 				pt = _conv(t->tm_min, fmt_padding[PAD_FMT_HMS][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'm':
+ 				pt = _conv(t->tm_mon + 1,
+ 					fmt_padding[PAD_FMT_MONTH][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'n':
+ 				pt = _add("\n", pt, ptlim);
+ 				continue;
+ 			case 'p':
+-				pt = _add((t->tm_hour >= (HOURSPERDAY / 2)) ?
+-					tptr->pm : tptr->am,
++				pt = _add(nl_langinfo((t->tm_hour >= (HOURSPERDAY / 2)) ?
++					PM_STR : AM_STR),
+ 					pt, ptlim);
+ 				continue;
+ 			case 'R':
+-				pt = _fmt("%H:%M", t, pt, ptlim, warnp, loc);
++				pt = _fmt("%H:%M", t, pt, ptlim);
+ 				continue;
+ 			case 'r':
+-				pt = _fmt(tptr->ampm_fmt, t, pt, ptlim,
+-					warnp, loc);
++				pt = _fmt(nl_langinfo(T_FMT_AMPM), t, pt, ptlim);
+ 				continue;
+ 			case 'S':
+ 				pt = _conv(t->tm_sec, fmt_padding[PAD_FMT_HMS][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 's':
+ 				{
+ 					struct tm	tm;
+-					char		buf[INT_STRLEN_MAXIMUM(
+-								time_t) + 1];
++					char		buf[32];
+ 					time_t		mkt;
+ 
+ 					tm = *t;
+ 					mkt = mktime(&tm);
+-					if (TYPE_SIGNED(time_t))
+-						(void) sprintf_l(buf, loc, "%ld",
+-							(long) mkt);
+-					else	(void) sprintf_l(buf, loc, "%lu",
+-							(unsigned long) mkt);
++					(void) sprintf(buf, "%lld", (long long) mkt);
+ 					pt = _add(buf, pt, ptlim);
+ 				}
+ 				continue;
+ 			case 'T':
+-				pt = _fmt("%H:%M:%S", t, pt, ptlim, warnp, loc);
++				pt = _fmt("%H:%M:%S", t, pt, ptlim);
+ 				continue;
+ 			case 't':
+ 				pt = _add("\t", pt, ptlim);
+@@ -337,7 +301,7 @@
+ 				pt = _conv((t->tm_yday + DAYSPERWEEK -
+ 					t->tm_wday) / DAYSPERWEEK,
+ 					fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'u':
+ 				/*
+@@ -348,7 +312,7 @@
+ 				 */
+ 				pt = _conv((t->tm_wday == 0) ?
+ 					DAYSPERWEEK : t->tm_wday,
+-					"%d", pt, ptlim, loc);
++					"%d", pt, ptlim);
+ 				continue;
+ 			case 'V':	/* ISO 8601 week number */
+ 			case 'G':	/* ISO 8601 year (four digits) */
+@@ -429,13 +393,12 @@
+ #endif /* defined XPG4_1994_04_09 */
+ 					if (*format == 'V')
+ 						pt = _conv(w, fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
+-							pt, ptlim, loc);
++							pt, ptlim);
+ 					else if (*format == 'g') {
+-						*warnp = IN_ALL;
+ 						pt = _yconv(year, base, 0, 1,
+-							pt, ptlim, loc);
++							pt, ptlim);
+ 					} else	pt = _yconv(year, base, 1, 1,
+-							pt, ptlim, loc);
++							pt, ptlim);
+ 				}
+ 				continue;
+ 			case 'v':
+@@ -444,7 +407,7 @@
+ 				 * "date as dd-bbb-YYYY"
+ 				 * (ado, 1993-05-24)
+ 				 */
+-				pt = _fmt("%e-%b-%Y", t, pt, ptlim, warnp, loc);
++				pt = _fmt("%e-%b-%Y", t, pt, ptlim);
+ 				continue;
+ 			case 'W':
+ 				pt = _conv((t->tm_yday + DAYSPERWEEK -
+@@ -452,33 +415,24 @@
+ 					(t->tm_wday - 1) :
+ 					(DAYSPERWEEK - 1))) / DAYSPERWEEK,
+ 					fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'w':
+-				pt = _conv(t->tm_wday, "%d", pt, ptlim, loc);
++				pt = _conv(t->tm_wday, "%d", pt, ptlim);
+ 				continue;
+ 			case 'X':
+-				pt = _fmt(tptr->X_fmt, t, pt, ptlim, warnp, loc);
++				pt = _fmt(nl_langinfo(T_FMT), t, pt, ptlim);
+ 				continue;
+ 			case 'x':
+-				{
+-				int	warn2 = IN_SOME;
+-
+-				pt = _fmt(tptr->x_fmt, t, pt, ptlim, &warn2, loc);
+-				if (warn2 == IN_ALL)
+-					warn2 = IN_THIS;
+-				if (warn2 > *warnp)
+-					*warnp = warn2;
+-				}
++				pt = _fmt(nl_langinfo(D_FMT), t, pt, ptlim);
+ 				continue;
+ 			case 'y':
+-				*warnp = IN_ALL;
+ 				pt = _yconv(t->tm_year, TM_YEAR_BASE, 0, 1,
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'Y':
+ 				pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 1,
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				continue;
+ 			case 'Z':
+ #ifdef TM_ZONE
+@@ -548,12 +502,15 @@
+ 					(diff % MINSPERHOUR);
+ 				pt = _conv(diff,
+ 					fmt_padding[PAD_FMT_YEAR][PadIndex],
+-					pt, ptlim, loc);
++					pt, ptlim);
+ 				}
+ 				continue;
+ 			case '+':
+-				pt = _fmt(tptr->date_fmt, t, pt, ptlim,
+-					warnp, loc);
++#ifdef _DATE_FMT
++				pt = _fmt(nl_langinfo(_DATE_FMT), t, pt, ptlim);
++#else
++				pt = _fmt("%a %b %e %H:%M:%S %Z %Y", t, pt, ptlim);
++#endif
+ 				continue;
+ 			case '-':
+ 				if (PadIndex != PAD_DEFAULT)
+@@ -589,11 +546,11 @@
+ 
+ static char *
+ _conv(const int n, const char * const format, char * const pt,
+-    const char * const ptlim, locale_t  loc)
++    const char * const ptlim)
+ {
+-	char	buf[INT_STRLEN_MAXIMUM(int) + 1];
++	char	buf[16];
+ 
+-	(void) sprintf_l(buf, loc, format, n);
++	(void) sprintf(buf, format, n);
+ 	return _add(buf, pt, ptlim);
+ }
+ 
+@@ -615,7 +572,7 @@
+ 
+ static char *
+ _yconv(const int a, const int b, const int convert_top, const int convert_yy,
+-    char *pt, const char * const ptlim, locale_t  loc)
++    char *pt, const char * const ptlim)
+ {
+ 	register int	lead;
+ 	register int	trail;
+@@ -634,10 +591,10 @@
+ 	if (convert_top) {
+ 		if (lead == 0 && trail < 0)
+ 			pt = _add("-0", pt, ptlim);
+-		else	pt = _conv(lead, "%02d", pt, ptlim, loc);
++		else	pt = _conv(lead, "%02d", pt, ptlim);
+ 	}
+ 	if (convert_yy)
+ 		pt = _conv(((trail < 0) ? -trail : trail), "%02d", pt,
+-		     ptlim, loc);
++		     ptlim);
+ 	return (pt);
+ }
 --- src.orig/compat/stringlist.c
 +++ src.freebsd/compat/stringlist.c
 @@ -30,13 +30,11 @@
@@ -177,6 +590,461 @@
  	return sl;
  }
  
+--- src.orig/compat/strptime.c
++++ src.freebsd/compat/strptime.c
+@@ -47,20 +47,23 @@
+ #endif /* not lint */
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <time.h>
+ #include <ctype.h>
+ #include <errno.h>
+ #include <stdlib.h>
+ #include <string.h>
+ #include <pthread.h>
+-#include "private.h"
+-#include "un-namespace.h"
+-#include "libc_private.h"
+-#include "timelocal.h"
+-#include "tzfile.h"
++#include <langinfo.h>
+ 
+-static char * _strptime(const char *, const char *, struct tm *, int *, locale_t);
++#define DAYSPERWEEK 7
++#define MONSPERYEAR 12
++#define	TM_SUNDAY 0
++#define TM_MONDAY 1
++#define TM_YEAR_BASE 1900
++
++#define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
++
++static char * _strptime(const char *, const char *, struct tm *, int *);
+ 
+ #define	asizeof(a)	(sizeof(a) / sizeof((a)[0]))
+ 
+@@ -86,18 +89,16 @@
+ }
+ 
+ static char *
+-_strptime(const char *buf, const char *fmt, struct tm *tm, int *GMTp,
+-		locale_t locale)
++_strptime(const char *buf, const char *fmt, struct tm *tm, int *GMTp)
+ {
+ 	char	c;
+-	const char *ptr;
++	const char *ptr, *ex;
+ 	int	day_offset = -1, wday_offset;
+ 	int week_offset;
+ 	int	i, len;
+ 	int flags;
+ 	int Ealternative, Oalternative;
+ 	int century, year;
+-	const struct lc_time_T *tptr = __get_current_time_locale(locale);
+ 	static int start_of_month[2][13] = {
+ 		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
+ 		{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}
+@@ -112,9 +113,9 @@
+ 		c = *ptr++;
+ 
+ 		if (c != '%') {
+-			if (isspace_l((unsigned char)c, locale))
++			if (isspace((unsigned char)c))
+ 				while (*buf != 0 && 
+-				       isspace_l((unsigned char)*buf, locale))
++				       isspace((unsigned char)*buf))
+ 					buf++;
+ 			else if (c != *buf++)
+ 				return (NULL);
+@@ -132,20 +133,24 @@
+ 			break;
+ 
+ 		case '+':
+-			buf = _strptime(buf, tptr->date_fmt, tm, GMTp, locale);
++#ifdef _DATE_FMT
++			buf = _strptime(buf, nl_langinfo(_DATE_FMT), tm, GMTp);
++#else
++			buf = _strptime(buf, "%a %b %e %H:%M:%S %Z %Y", tm, GMTp);
++#endif
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			flags |= FLAG_WDAY | FLAG_MONTH | FLAG_MDAY | FLAG_YEAR;
+ 			break;
+ 
+ 		case 'C':
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			/* XXX This will break for 3-digit centuries. */
+ 			len = 2;
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++) {
++			     isdigit((unsigned char)*buf); buf++) {
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -157,14 +162,14 @@
+ 			break;
+ 
+ 		case 'c':
+-			buf = _strptime(buf, tptr->c_fmt, tm, GMTp, locale);
++			buf = _strptime(buf, nl_langinfo(D_T_FMT), tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			flags |= FLAG_WDAY | FLAG_MONTH | FLAG_MDAY | FLAG_YEAR;
+ 			break;
+ 
+ 		case 'D':
+-			buf = _strptime(buf, "%m/%d/%y", tm, GMTp, locale);
++			buf = _strptime(buf, "%m/%d/%y", tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			flags |= FLAG_MONTH | FLAG_MDAY | FLAG_YEAR;
+@@ -183,50 +188,50 @@
+ 			goto label;
+ 
+ 		case 'F':
+-			buf = _strptime(buf, "%Y-%m-%d", tm, GMTp, locale);
++			buf = _strptime(buf, "%Y-%m-%d", tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			flags |= FLAG_MONTH | FLAG_MDAY | FLAG_YEAR;
+ 			break;
+ 
+ 		case 'R':
+-			buf = _strptime(buf, "%H:%M", tm, GMTp, locale);
++			buf = _strptime(buf, "%H:%M", tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			break;
+ 
+ 		case 'r':
+-			buf = _strptime(buf, tptr->ampm_fmt, tm, GMTp, locale);
++			buf = _strptime(buf, nl_langinfo(T_FMT_AMPM), tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			break;
+ 
+ 		case 'T':
+-			buf = _strptime(buf, "%H:%M:%S", tm, GMTp, locale);
++			buf = _strptime(buf, "%H:%M:%S", tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			break;
+ 
+ 		case 'X':
+-			buf = _strptime(buf, tptr->X_fmt, tm, GMTp, locale);
++			buf = _strptime(buf, nl_langinfo(T_FMT), tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			break;
+ 
+ 		case 'x':
+-			buf = _strptime(buf, tptr->x_fmt, tm, GMTp, locale);
++			buf = _strptime(buf, nl_langinfo(D_FMT), tm, GMTp);
+ 			if (buf == NULL)
+ 				return (NULL);
+ 			flags |= FLAG_MONTH | FLAG_MDAY | FLAG_YEAR;
+ 			break;
+ 
+ 		case 'j':
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			len = 3;
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++){
++			     isdigit((unsigned char)*buf); buf++){
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -242,15 +247,15 @@
+ 		case 'M':
+ 		case 'S':
+ 			if (*buf == 0 ||
+-				isspace_l((unsigned char)*buf, locale))
++				isspace((unsigned char)*buf))
+ 				break;
+ 
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			len = 2;
+ 			for (i = 0; len && *buf != 0 &&
+-				isdigit_l((unsigned char)*buf, locale); buf++){
++				isdigit((unsigned char)*buf); buf++){
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -283,16 +288,16 @@
+ 
+ 			len = 2;
+ 			if ((c == 'k' || c == 'l') &&
+-			    isblank_l((unsigned char)*buf, locale)) {
++			    isblank((unsigned char)*buf)) {
+ 				buf++;
+ 				len = 1;
+ 			}
+ 
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++) {
++			     isdigit((unsigned char)*buf); buf++) {
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -315,16 +320,18 @@
+ 			if (tm->tm_hour > 12)
+ 				return (NULL);
+ 
+-			len = strlen(tptr->am);
+-			if (strncasecmp_l(buf, tptr->am, len, locale) == 0) {
++			ex = nl_langinfo(AM_STR);
++			len = strlen(ex);
++			if (strncasecmp(buf, ex, len) == 0) {
+ 				if (tm->tm_hour == 12)
+ 					tm->tm_hour = 0;
+ 				buf += len;
+ 				break;
+ 			}
+ 
+-			len = strlen(tptr->pm);
+-			if (strncasecmp_l(buf, tptr->pm, len, locale) == 0) {
++			ex = nl_langinfo(PM_STR);
++			len = strlen(ex);
++			if (strncasecmp(buf, ex, len) == 0) {
+ 				if (tm->tm_hour != 12)
+ 					tm->tm_hour += 12;
+ 				buf += len;
+@@ -335,17 +342,17 @@
+ 
+ 		case 'A':
+ 		case 'a':
+-			for (i = 0; i < asizeof(tptr->weekday); i++) {
+-				len = strlen(tptr->weekday[i]);
+-				if (strncasecmp_l(buf, tptr->weekday[i],
+-						len, locale) == 0)
++			for (i = 0; i < DAYSPERWEEK; i++) {
++				ex = nl_langinfo(DAY_1 + i);
++				len = strlen(ex);
++				if (strncasecmp(buf, ex, len) == 0)
+ 					break;
+-				len = strlen(tptr->wday[i]);
+-				if (strncasecmp_l(buf, tptr->wday[i],
+-						len, locale) == 0)
++				ex = nl_langinfo(ABDAY_1 + i);
++				len = strlen(ex);
++				if (strncasecmp(buf, ex, len) == 0)
+ 					break;
+ 			}
+-			if (i == asizeof(tptr->weekday))
++			if (i == DAYSPERWEEK)
+ 				return (NULL);
+ 
+ 			buf += len;
+@@ -361,12 +368,12 @@
+ 			 * point to calculate a real value, so just check the
+ 			 * range for now.
+ 			 */
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			len = 2;
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++) {
++			     isdigit((unsigned char)*buf); buf++) {
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -386,7 +393,7 @@
+ 
+ 		case 'u':
+ 		case 'w':
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			i = *buf++ - '0';
+@@ -405,7 +412,7 @@
+ 			 * before single digits.
+ 			 */
+ 			if (*buf != 0 &&
+-			    isspace_l((unsigned char)*buf, locale))
++			    isspace((unsigned char)*buf))
+ 			       buf++;
+ 			/* FALLTHROUGH */
+ 		case 'd':
+@@ -418,12 +425,12 @@
+ 			 * XXX The %e specifier may gobble one too many
+ 			 * digits if used incorrectly.
+ 			 */
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			len = 2;
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++) {
++			     isdigit((unsigned char)*buf); buf++) {
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -439,19 +446,18 @@
+ 		case 'B':
+ 		case 'b':
+ 		case 'h':
+-			for (i = 0; i < asizeof(tptr->month); i++) {
++			for (i = 0; i < MONSPERYEAR; i++) {
+ 				if (Oalternative) {
+ 					if (c == 'B') {
+-						len = strlen(tptr->alt_month[i]);
+-						if (strncasecmp_l(buf,
+-								tptr->alt_month[i],
+-								len, locale) == 0)
++						ex = nl_langinfo(MON_1 + i);
++						len = strlen(ex);
++						if (strncasecmp(buf, ex, len) == 0)
+ 							break;
+ 					}
+ 				} else {
+-					len = strlen(tptr->month[i]);
+-					if (strncasecmp_l(buf, tptr->month[i],
+-							len, locale) == 0)
++					ex = nl_langinfo(MON_1 + i);
++					len = strlen(ex);
++					if (strncasecmp(buf, ex, len) == 0)
+ 						break;
+ 				}
+ 			}
+@@ -459,15 +465,15 @@
+ 			 * Try the abbreviated month name if the full name
+ 			 * wasn't found and Oalternative was not requested.
+ 			 */
+-			if (i == asizeof(tptr->month) && !Oalternative) {
+-				for (i = 0; i < asizeof(tptr->month); i++) {
+-					len = strlen(tptr->mon[i]);
+-					if (strncasecmp_l(buf, tptr->mon[i],
+-							len, locale) == 0)
++			if (i == MONSPERYEAR && !Oalternative) {
++				for (i = 0; i < MONSPERYEAR; i++) {
++					ex = nl_langinfo(ABMON_1 + i);
++					len = strlen(ex);
++					if (strncasecmp(buf, ex, len) == 0)
+ 						break;
+ 				}
+ 			}
+-			if (i == asizeof(tptr->month))
++			if (i == MONSPERYEAR)
+ 				return (NULL);
+ 
+ 			tm->tm_mon = i;
+@@ -477,12 +483,12 @@
+ 			break;
+ 
+ 		case 'm':
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			len = 2;
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++) {
++			     isdigit((unsigned char)*buf); buf++) {
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -504,7 +510,7 @@
+ 
+ 			sverrno = errno;
+ 			errno = 0;
+-			n = strtol_l(buf, &cp, 10, locale);
++			n = strtol(buf, &cp, 10);
+ 			if (errno == ERANGE || (long)(t = n) != n) {
+ 				errno = sverrno;
+ 				return (NULL);
+@@ -522,15 +528,15 @@
+ 		case 'Y':
+ 		case 'y':
+ 			if (*buf == 0 ||
+-			    isspace_l((unsigned char)*buf, locale))
++			    isspace((unsigned char)*buf))
+ 				break;
+ 
+-			if (!isdigit_l((unsigned char)*buf, locale))
++			if (!isdigit((unsigned char)*buf))
+ 				return (NULL);
+ 
+ 			len = (c == 'Y') ? 4 : 2;
+ 			for (i = 0; len && *buf != 0 &&
+-			     isdigit_l((unsigned char)*buf, locale); buf++) {
++			     isdigit((unsigned char)*buf); buf++) {
+ 				i *= 10;
+ 				i += *buf - '0';
+ 				len--;
+@@ -549,7 +555,7 @@
+ 			char *zonestr;
+ 
+ 			for (cp = buf; *cp &&
+-			     isupper_l((unsigned char)*cp, locale); ++cp) {
++			     isupper((unsigned char)*cp); ++cp) {
+ 				/*empty*/}
+ 			if (cp - buf) {
+ 				zonestr = alloca(cp - buf + 1);
+@@ -585,7 +591,7 @@
+ 			buf++;
+ 			i = 0;
+ 			for (len = 4; len > 0; len--) {
+-				if (isdigit_l((unsigned char)*buf, locale)) {
++				if (isdigit((unsigned char)*buf)) {
+ 					i *= 10;
+ 					i += *buf - '0';
+ 					buf++;
+@@ -607,7 +613,7 @@
+ 
+ 		case 'n':
+ 		case 't':
+-			while (isspace_l((unsigned char)*buf, locale))
++			while (isspace((unsigned char)*buf))
+ 				buf++;
+ 			break;
+ 
+@@ -699,15 +705,14 @@
+ }
+ 
+ char *
+-strptime_l(const char * __restrict buf, const char * __restrict fmt,
+-    struct tm * __restrict tm, locale_t loc)
++strptime_bsd(const char * __restrict buf, const char * __restrict fmt,
++    struct tm * __restrict tm)
+ {
+ 	char *ret;
+ 	int gmt;
+-	FIX_LOCALE(loc);
+ 
+ 	gmt = 0;
+-	ret = _strptime(buf, fmt, tm, &gmt, loc);
++	ret = _strptime(buf, fmt, tm, &gmt);
+ 	if (ret && gmt) {
+ 		time_t t = timegm(tm);
+ 
+@@ -716,10 +721,3 @@
+ 
+ 	return (ret);
+ }
+-
+-char *
+-strptime(const char * __restrict buf, const char * __restrict fmt,
+-    struct tm * __restrict tm)
+-{
+-	return strptime_l(buf, fmt, tm, __get_locale());
+-}
 --- src.orig/compat/vis.c
 +++ src.freebsd/compat/vis.c
 @@ -64,7 +64,6 @@
@@ -590,34 +1458,69 @@
  	return (0);
  }
  
+--- src.orig/coreutils/date/date.1
++++ src.freebsd/coreutils/date/date.1
+@@ -126,7 +126,7 @@
+ .Oc Ar MM Op Cm \&. Ar SS
+ .Sm on
+ format.
+-Parsing is done using
++Parsing is done using FreeBSD
+ .Xr strptime 3 .
+ .It Fl I Ns Op Ar FMT
+ Use
+@@ -310,7 +310,7 @@
+ The format string may contain any of the conversion specifications
+ described in the
+ .Xr strftime 3
+-manual page, as well as any arbitrary text.
++FreeBSD manual page, as well as any arbitrary text.
+ A newline
+ .Pq Ql \en
+ character is always output after the characters specified by
 --- src.orig/coreutils/date/date.c
 +++ src.freebsd/coreutils/date/date.c
 @@ -58,6 +58,8 @@
  #include <syslog.h>
  #include <unistd.h>
  #include <utmpx.h>
-+#include <time.h>
++#include <time_bsd.h>
 +#include <langinfo.h>
  
  #include "vary.h"
  
-@@ -164,7 +166,14 @@
- 	if (!rflag && time(&tval) == -1)
- 		err(1, "time");
+@@ -211,7 +213,7 @@
+ 		 */
+ 		setlocale(LC_TIME, "C");
  
--	format = "%+";
-+	/* Linux libc's do not support %+ */
-+#ifdef _DATE_FMT
-+	/* glibc extension */
-+	format = nl_langinfo(_DATE_FMT);
-+#else
-+	/* fallback, e.g. musl */
-+	format = "%a %b %e %H:%M:%S %Z %Y";
-+#endif
+-	(void)strftime(buf, sizeof(buf), format, lt);
++	(void)strftime_bsd(buf, sizeof(buf), format, lt);
+ 	printdate(buf);
+ }
  
- 	if (Rflag)
- 		format = rfc2822_format;
-@@ -344,14 +353,18 @@
+@@ -234,10 +236,10 @@
+ 	for (it = iso8601_fmts; it <= iso8601_selected; it++)
+ 		strlcat(fmtbuf, it->format_string, sizeof(fmtbuf));
+ 
+-	(void)strftime(buf, sizeof(buf), fmtbuf, lt);
++	(void)strftime_bsd(buf, sizeof(buf), fmtbuf, lt);
+ 
+ 	if (iso8601_selected > iso8601_fmts) {
+-		(void)strftime(tzbuf, sizeof(tzbuf), "%z", lt);
++		(void)strftime_bsd(tzbuf, sizeof(tzbuf), "%z", lt);
+ 		memmove(&tzbuf[4], &tzbuf[3], 3);
+ 		tzbuf[3] = ':';
+ 		strlcat(buf, tzbuf, sizeof(buf));
+@@ -263,7 +265,7 @@
+ 	lt->tm_isdst = -1;		/* divine correct DST */
+ 
+ 	if (fmt != NULL) {
+-		t = strptime(p, fmt, lt);
++		t = strptime_bsd(p, fmt, lt);
+ 		if (t == NULL) {
+ 			fprintf(stderr, "Failed conversion of ``%s''"
+ 				" using format ``%s''\n", p, fmt);
+@@ -344,14 +346,18 @@
  	if (!jflag) {
  		utx.ut_type = OLD_TIME;
  		memset(utx.ut_id, 0, sizeof(utx.ut_id));
@@ -1984,6 +2887,15 @@
  .Op Fl -color Ns = Ns Ar when
  .Op Fl D Ar format
  .Op Ar
+@@ -100,7 +100,7 @@
+ to format the date and time output.
+ The argument
+ .Ar format
+-is a string used by
++is a string used by FreeBSD
+ .Xr strftime 3 .
+ Depending on the choice of format string, this may result in a
+ different number of columns in the output.
 @@ -122,9 +122,6 @@
  an equals sign
  .Pq Ql =
@@ -2249,6 +3161,15 @@
  
  #include <err.h>
  #include <errno.h>
+@@ -54,7 +53,7 @@
+ #include <stdint.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <time.h>
++#include <time_bsd.h>
+ #include <unistd.h>
+ #include <wchar.h>
+ #ifdef COLORLS
 @@ -248,7 +247,7 @@
  		if (f_accesstime)
  			printtime(sp->st_atime);
@@ -2258,6 +3179,15 @@
  		else if (f_statustime)
  			printtime(sp->st_ctime);
  		else
+@@ -453,7 +452,7 @@
+ 		}
+ 	}
+ 	if (tm != NULL)
+-		strftime(str, len, format, tm);
++		strftime_bsd(str, len, format, tm);
+ 	else
+ 		strlcpy(str, "bad date val", len);
+ }
 @@ -466,8 +465,11 @@
  	const char *format;
  	static int d_first = -1;
@@ -2447,10 +3377,19 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
-+#include <time.h>
++#include <time_bsd.h>
  
  #include "pr.h"
  #include "extern.h"
+@@ -1401,7 +1402,7 @@
+ 	/*
+ 	 * set up time field used in header
+ 	 */
+-	if (strftime(buf, HDBUF, timefrmt, timeptr) <= 0) {
++	if (strftime_bsd(buf, HDBUF, timefrmt, timeptr) <= 0) {
+ 		++errcnt;
+ 		if (inf != stdin)
+ 			(void)fclose(inf);
 @@ -1857,7 +1858,9 @@
  
  	(void) setlocale(LC_TIME, (Lflag != NULL) ? Lflag : "");
@@ -3208,7 +4147,22 @@
  .It Fl L
  Use
  .Xr stat 2
-@@ -273,11 +264,6 @@
+@@ -182,7 +173,7 @@
+ .It Fl t Ar timefmt
+ Display timestamps using the specified format.
+ This format is
+-passed directly to
++passed directly to FreeBSD
+ .Xr strftime 3 .
+ .It Fl x
+ Display information in a more verbose way as known from some
+@@ -268,16 +259,11 @@
+ May be used in combination with:
+ .Bl -tag -width indent
+ .It Cm amc
+-Display date in
++Display date in FreeBSD
+ .Xr strftime 3
  format.
  .It Cm dr
  Display actual device name.
@@ -3271,6 +4225,15 @@
  
  #include <ctype.h>
  #include <err.h>
+@@ -65,7 +66,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <time.h>
++#include <time_bsd.h>
+ #include <unistd.h>
+ 
+ #if HAVE_STRUCT_STAT_ST_FLAGS
 @@ -209,17 +210,14 @@
  {
  	struct stat st;
@@ -3411,6 +4374,15 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
+@@ -760,7 +735,7 @@
+ 			tm = localtime(&ts.tv_sec);
+ 		}
+ 		(void)setlocale(LC_TIME, "");
+-		(void)strftime(path, sizeof(path), timefmt, tm);
++		(void)strftime_bsd(path, sizeof(path), timefmt, tm);
+ 		sdata = path;
+ 		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
+ 		    FMTF_FLOAT | FMTF_STRING;
 @@ -1088,7 +1063,7 @@
  #define hex2nibble(c) (c <= '9' ? c - '0' : toupper(c) - 'A' + 10)
  int
@@ -4228,6 +5200,26 @@
  
  	if (WEXITSTATUS(pstat))
  		pstat = WEXITSTATUS(pstat);
+--- src.orig/coreutils/touch/touch.c
++++ src.freebsd/coreutils/touch/touch.c
+@@ -55,7 +55,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <time.h>
++#include <time_bsd.h>
+ #include <unistd.h>
+ 
+ static void	stime_arg1(const char *, struct timespec *);
+@@ -333,7 +333,7 @@
+ 		goto bad;
+ 	fmt = strchr(arg, 'T') != NULL ? "%Y-%m-%dT%H:%M:%S" :
+ 	    "%Y-%m-%d %H:%M:%S";
+-	p = strptime(arg, fmt, &t);
++	p = strptime_bsd(arg, fmt, &t);
+ 	if (p == NULL)
+ 		goto bad;
+ 	/* POSIX: must have at least one digit after dot */
 --- src.orig/coreutils/tr/cmap.h
 +++ src.freebsd/coreutils/tr/cmap.h
 @@ -47,7 +47,7 @@
@@ -4775,11 +5767,13 @@
  					errno = EILSEQ;
 --- src.orig/coreutils/who/who.c
 +++ src.freebsd/coreutils/who/who.c
-@@ -45,7 +45,6 @@
+@@ -44,8 +44,7 @@
+ #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
- #include <time.h>
+-#include <time.h>
 -#include <timeconv.h>
++#include <time_bsd.h>
  #include <unistd.h>
  #include <utmpx.h>
  
@@ -4805,6 +5799,15 @@
  
  	state = '?';
  	idle = 0;
+@@ -194,7 +195,7 @@
+ 		printf("%-12s ", ut->ut_line);
+ 	t = ut->ut_tv.tv_sec;
+ 	tm = localtime(&t);
+-	strftime(buf, sizeof(buf), d_first ? "%e %b %R" : "%b %e %R", tm);
++	strftime_bsd(buf, sizeof(buf), d_first ? "%e %b %R" : "%b %e %R", tm);
+ 	printf("%-*s ", 12, buf);
+ 	if (uflag) {
+ 		if (idle < 60)
 @@ -288,7 +289,7 @@
  	else
  		name = "?";
@@ -5740,7 +6743,7 @@
  #include <string.h>
 +#include <unistd.h>
 +#include <limits.h>
-+#include <time.h>
++#include <time_bsd.h>
  
 -#include "pr.h"
  #include "diff.h"
@@ -5823,6 +6826,34 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
+@@ -1670,11 +1663,11 @@
+ 		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
+ 		    label[0]);
+ 	else {
+-		strftime(buf, sizeof(buf), time_format, tm_ptr1);
++		strftime_bsd(buf, sizeof(buf), time_format, tm_ptr1);
+ 		printf("%s %s\t%s", diff_format == D_CONTEXT ? "***" : "---",
+ 		    file1, buf);
+ 		if (!cflag) {
+-			strftime(buf, sizeof(buf), "%z", tm_ptr1);
++			strftime_bsd(buf, sizeof(buf), "%z", tm_ptr1);
+ 			printf(".%.9d %s", nsec1, buf);
+ 		}
+ 		printf("\n");
+@@ -1683,11 +1676,11 @@
+ 		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
+ 		    label[1]);
+ 	else {
+-		strftime(buf, sizeof(buf), time_format, tm_ptr2);
++		strftime_bsd(buf, sizeof(buf), time_format, tm_ptr2);
+ 		printf("%s %s\t%s", diff_format == D_CONTEXT ? "---" : "+++",
+ 		    file2, buf);
+ 		if (!cflag) {
+-			strftime(buf, sizeof(buf), "%z", tm_ptr2);
++			strftime_bsd(buf, sizeof(buf), "%z", tm_ptr2);
+ 			printf(".%.9d %s", nsec2, buf);
+ 		}
+ 		printf("\n");
 --- src.orig/diffutils/sdiff/sdiff.c
 +++ src.freebsd/diffutils/sdiff/sdiff.c
 @@ -260,16 +260,19 @@
@@ -6246,6 +7277,15 @@
  
  #include <err.h>
  #include <errno.h>
+@@ -48,7 +49,7 @@
+ #include <pwd.h>
+ #include <stdio.h>
+ #include <string.h>
+-#include <time.h>
++#include <time_bsd.h>
+ #include <unistd.h>
+ 
+ #include "find.h"
 @@ -62,13 +63,29 @@
  printlong(char *name, char *accpath, struct stat *sb)
  {
@@ -6278,6 +7318,15 @@
  
  	if (S_ISCHR(sb->st_mode) || S_ISBLK(sb->st_mode))
  		(void)printf("%#8jx ", (uintmax_t)sb->st_rdev);
+@@ -105,7 +122,7 @@
+ 		/* mmm dd  yyyy || dd mmm  yyyy */
+ 		format = d_first ? "%e %b  %Y " : "%b %e  %Y ";
+ 	if ((tm = localtime(&ftime)) != NULL)
+-		strftime(longstring, sizeof(longstring), format, tm);
++		strftime_bsd(longstring, sizeof(longstring), format, tm);
+ 	else
+ 		strlcpy(longstring, "bad date val ", sizeof(longstring));
+ 	fputs(longstring, stdout);
 --- src.orig/findutils/find/main.c
 +++ src.freebsd/findutils/find/main.c
 @@ -32,9 +32,11 @@
@@ -6992,13 +8041,33 @@
  				setenv("HOME", pw->pw_dir, 1);
  				cal();
  				exit(0);
+--- src.orig/miscutils/calendar/day.c
++++ src.freebsd/miscutils/calendar/day.c
+@@ -37,7 +37,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <time.h>
++#include <time_bsd.h>
+ 
+ #include "calendar.h"
+ 
+@@ -65,7 +65,7 @@
+ 	localtime_r(&time2, tp2);
+ 	year2 = 1900 + tp2->tm_year;
+ 
+-	strftime(dayname, sizeof(dayname) - 1, "%A, %d %B %Y", tp1);
++	strftime_bsd(dayname, sizeof(dayname) - 1, "%A, %d %B %Y", tp1);
+ 
+ 	setnnames();
+ }
 --- src.orig/miscutils/calendar/events.c
 +++ src.freebsd/miscutils/calendar/events.c
 @@ -36,6 +36,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
-+#include <time.h>
++#include <time_bsd.h>
  #ifdef WITH_ICONV
  #include <iconv.h>
  #include <errno.h>
@@ -7014,6 +8083,15 @@
  
  	while (walkthrough_dates(&e) != 0) {
  		if (e) {
+@@ -216,7 +220,7 @@
+ 			tm.tm_mday = e->day;
+ 			tm.tm_mon = e->month - 1;
+ 			tm.tm_year = e->year - 1900;
+-			(void)strftime(dbuf, sizeof(dbuf), d_first ? "%e %b" : "%b %e", &tm);
++			(void)strftime_bsd(dbuf, sizeof(dbuf), d_first ? "%e %b" : "%b %e", &tm);
+ 		}
+ 
+ 		/*
 --- src.orig/miscutils/calendar/io.c
 +++ src.freebsd/miscutils/calendar/io.c
 @@ -120,9 +120,6 @@
@@ -7056,6 +8134,53 @@
  	return (NULL);
  }
  
+--- src.orig/miscutils/calendar/locale.c
++++ src.freebsd/miscutils/calendar/locale.c
+@@ -37,7 +37,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+-#include <time.h>
++#include <time_bsd.h>
+ 
+ #include "calendar.h"
+ 
+@@ -81,7 +81,7 @@
+ 	memset(&tm, 0, sizeof(struct tm));
+ 	for (i = 0; i < 7; i++) {
+ 		tm.tm_wday = i;
+-		strftime(buf, sizeof(buf), "%a", &tm);
++		strftime_bsd(buf, sizeof(buf), "%a", &tm);
+ 		for (l = strlen(buf);
+ 		     l > 0 && isspace((unsigned char)buf[l - 1]);
+ 		     l--)
+@@ -93,7 +93,7 @@
+ 			errx(1, "cannot allocate memory");
+ 		ndays[i].len = strlen(buf);
+ 
+-		strftime(buf, sizeof(buf), "%A", &tm);
++		strftime_bsd(buf, sizeof(buf), "%A", &tm);
+ 		for (l = strlen(buf);
+ 		     l > 0 && isspace((unsigned char)buf[l - 1]);
+ 		     l--)
+@@ -109,7 +109,7 @@
+ 	memset(&tm, 0, sizeof(struct tm));
+ 	for (i = 0; i < 12; i++) {
+ 		tm.tm_mon = i;
+-		strftime(buf, sizeof(buf), "%b", &tm);
++		strftime_bsd(buf, sizeof(buf), "%b", &tm);
+ 		for (l = strlen(buf);
+ 		     l > 0 && isspace((unsigned char)buf[l - 1]);
+ 		     l--)
+@@ -121,7 +121,7 @@
+ 			errx(1, "cannot allocate memory");
+ 		nmonths[i].len = strlen(buf);
+ 
+-		strftime(buf, sizeof(buf), "%B", &tm);
++		strftime_bsd(buf, sizeof(buf), "%B", &tm);
+ 		for (l = strlen(buf);
+ 		     l > 0 && isspace((unsigned char)buf[l - 1]);
+ 		     l--)
 --- src.orig/miscutils/calendar/pathnames.h
 +++ src.freebsd/miscutils/calendar/pathnames.h
 @@ -35,4 +35,4 @@
@@ -7429,6 +8554,15 @@
  	size_t len2;
 --- src.orig/miscutils/ncal/ncal.c
 +++ src.freebsd/miscutils/ncal/ncal.c
+@@ -39,7 +39,7 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <sysexits.h>
+-#include <time.h>
++#include <time_bsd.h>
+ #include <unistd.h>
+ #include <wchar.h>
+ #include <wctype.h>
 @@ -545,8 +545,11 @@
  	char    buf[MAX_WIDTH];
  	static int d_first = -1;
@@ -7443,6 +8577,15 @@
  	/* force orthodox easter for years before 1583 */
  	if (y < 1583)
  		orthodox = 1;
+@@ -563,7 +566,7 @@
+ 	tm.tm_year = dt.y - 1900;
+ 	tm.tm_mon  = dt.m - 1;
+ 	tm.tm_mday = dt.d;
+-	strftime(buf, sizeof(buf), d_first ? "%e %B %Y" : "%B %e %Y",  &tm);
++	strftime_bsd(buf, sizeof(buf), d_first ? "%e %B %Y" : "%B %e %Y",  &tm);
+ 	printf("%s\n", buf);
+ }
+ 
 @@ -628,12 +631,12 @@
  
  		/* Empty line between two rows of months */
@@ -7548,6 +8691,15 @@
  	return (s);
  }
  
+@@ -1098,7 +1104,7 @@
+ 		*y = ny;
+ 		return (0);
+ 	}
+-	if (strptime(s, "%B", &tm) != NULL || strptime(s, "%b", &tm) != NULL) {
++	if (strptime_bsd(s, "%B", &tm) != NULL || strptime_bsd(s, "%b", &tm) != NULL) {
+ 		*m = tm.tm_mon + 1;
+ 		return (0);
+ 	}
 --- src.orig/miscutils/rev/rev.c
 +++ src.freebsd/miscutils/rev/rev.c
 @@ -57,6 +57,46 @@
@@ -7682,7 +8834,7 @@
  #include <string.h>
  #include <termios.h>
  #include <unistd.h>
-+#include <time.h>
++#include <time_bsd.h>
 +#include <pty.h>
 +#include <utmp.h>
 +#include <byteswap.h>
@@ -7809,6 +8961,15 @@
  	} \
  } while (0/*CONSTCOND*/)
  
+@@ -581,7 +548,7 @@
+ 				if (stamp.scr_len == 0)
+ 					continue;
+ 				if (tclock - lclock > 0) {
+-				    l = strftime(buf, sizeof buf, tstamp_fmt,
++				    l = strftime_bsd(buf, sizeof buf, tstamp_fmt,
+ 					localtime(&tclock));
+ 				    (void)write(STDOUT_FILENO, buf, l);
+ 				}
 --- src.orig/miscutils/wall/ttymsg.c
 +++ src.freebsd/miscutils/wall/ttymsg.c
 @@ -37,6 +37,7 @@

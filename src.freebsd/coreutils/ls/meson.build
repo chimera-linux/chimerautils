@@ -9,7 +9,7 @@ endif
 ls_prog = executable(
     'ls', ['cmp.c', 'ls.c', 'print.c', 'util.c'],
     c_args: ls_cargs,
-    include_directories: inc,
+    include_directories: [inc],
     link_with: [libcompat],
     dependencies: ls_deps,
     install: true,
@@ -18,7 +18,7 @@ ls_prog = executable(
 if tiny.enabled() and get_option('color_ls')
     lstiny_prog = executable(
         'ls.tiny', ['cmp.c', 'ls.c', 'print.c', 'util.c'],
-        include_directories: inc,
+        include_directories: [inc],
         link_with: [libcompat],
         dependencies: [libfts],
         install: true

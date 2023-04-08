@@ -53,7 +53,7 @@ __FBSDID("$FreeBSD$");
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <unistd.h>
 #include <wchar.h>
 #ifdef COLORLS
@@ -452,7 +452,7 @@ ls_strftime(char *str, size_t len, const char *fmt, const struct tm *tm)
 		}
 	}
 	if (tm != NULL)
-		strftime(str, len, format, tm);
+		strftime_bsd(str, len, format, tm);
 	else
 		strlcpy(str, "bad date val", len);
 }

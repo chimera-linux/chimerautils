@@ -2,6 +2,7 @@ ncal_prog = executable(
     'ncal',
     ['ncal.c', 'calendar.c', 'easter.c'],
     include_directories: [inc],
+    link_with: [libcompat],
     dependencies: [libtinfo],
     install: true,
 )

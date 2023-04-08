@@ -66,7 +66,7 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <unistd.h>
 
 #if HAVE_STRUCT_STAT_ST_FLAGS
@@ -735,7 +735,7 @@ format1(const struct stat *st,
 			tm = localtime(&ts.tv_sec);
 		}
 		(void)setlocale(LC_TIME, "");
-		(void)strftime(path, sizeof(path), timefmt, tm);
+		(void)strftime_bsd(path, sizeof(path), timefmt, tm);
 		sdata = path;
 		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
 		    FMTF_FLOAT | FMTF_STRING;

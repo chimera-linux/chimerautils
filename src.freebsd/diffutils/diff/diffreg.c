@@ -87,7 +87,7 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <unistd.h>
 #include <limits.h>
-#include <time.h>
+#include <time_bsd.h>
 
 #include "diff.h"
 #include "xmalloc.h"
@@ -1663,11 +1663,11 @@ print_header(const char *file1, const char *file2)
 		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
 		    label[0]);
 	else {
-		strftime(buf, sizeof(buf), time_format, tm_ptr1);
+		strftime_bsd(buf, sizeof(buf), time_format, tm_ptr1);
 		printf("%s %s\t%s", diff_format == D_CONTEXT ? "***" : "---",
 		    file1, buf);
 		if (!cflag) {
-			strftime(buf, sizeof(buf), "%z", tm_ptr1);
+			strftime_bsd(buf, sizeof(buf), "%z", tm_ptr1);
 			printf(".%.9d %s", nsec1, buf);
 		}
 		printf("\n");
@@ -1676,11 +1676,11 @@ print_header(const char *file1, const char *file2)
 		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
 		    label[1]);
 	else {
-		strftime(buf, sizeof(buf), time_format, tm_ptr2);
+		strftime_bsd(buf, sizeof(buf), time_format, tm_ptr2);
 		printf("%s %s\t%s", diff_format == D_CONTEXT ? "---" : "+++",
 		    file2, buf);
 		if (!cflag) {
-			strftime(buf, sizeof(buf), "%z", tm_ptr2);
+			strftime_bsd(buf, sizeof(buf), "%z", tm_ptr2);
 			printf(".%.9d %s", nsec2, buf);
 		}
 		printf("\n");

@@ -6,6 +6,8 @@ libcompat_sources = [
     'ohash.c',
     'setmode.c',
     'strmode.c',
+    'strftime.c',
+    'strptime.c',
     'stringlist.c',
     'expand_number.c',
     'vis.c',

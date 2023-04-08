@@ -39,7 +39,7 @@ __FBSDID("$FreeBSD$");
 #include <stdlib.h>
 #include <string.h>
 #include <sysexits.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <unistd.h>
 #include <wchar.h>
 #include <wctype.h>
@@ -566,7 +566,7 @@ printeaster(int y, int julian, int orthodox)
 	tm.tm_year = dt.y - 1900;
 	tm.tm_mon  = dt.m - 1;
 	tm.tm_mday = dt.d;
-	strftime(buf, sizeof(buf), d_first ? "%e %B %Y" : "%B %e %Y",  &tm);
+	strftime_bsd(buf, sizeof(buf), d_first ? "%e %B %Y" : "%B %e %Y",  &tm);
 	printf("%s\n", buf);
 }
 
@@ -1104,7 +1104,7 @@ parsemonth(const char *s, int *m, int *y)
 		*y = ny;
 		return (0);
 	}
-	if (strptime(s, "%B", &tm) != NULL || strptime(s, "%b", &tm) != NULL) {
+	if (strptime_bsd(s, "%B", &tm) != NULL || strptime_bsd(s, "%b", &tm) != NULL) {
 		*m = tm.tm_mon + 1;
 		return (0);
 	}

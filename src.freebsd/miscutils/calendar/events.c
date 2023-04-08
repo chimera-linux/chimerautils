@@ -36,7 +36,7 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 #ifdef WITH_ICONV
 #include <iconv.h>
 #include <errno.h>
@@ -220,7 +220,7 @@ event_print_all(FILE *fp)
 			tm.tm_mday = e->day;
 			tm.tm_mon = e->month - 1;
 			tm.tm_year = e->year - 1900;
-			(void)strftime(dbuf, sizeof(dbuf), d_first ? "%e %b" : "%b %e", &tm);
+			(void)strftime_bsd(dbuf, sizeof(dbuf), d_first ? "%e %b" : "%b %e", &tm);
 		}
 
 		/*

@@ -60,7 +60,7 @@ static const char sccsid[] = "@(#)script.c	8.1 (Berkeley) 6/6/93";
 #include <string.h>
 #include <termios.h>
 #include <unistd.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <pty.h>
 #include <utmp.h>
 #include <byteswap.h>
@@ -548,7 +548,7 @@ playback(FILE *fp)
 				if (stamp.scr_len == 0)
 					continue;
 				if (tclock - lclock > 0) {
-				    l = strftime(buf, sizeof buf, tstamp_fmt,
+				    l = strftime_bsd(buf, sizeof buf, tstamp_fmt,
 					localtime(&tclock));
 				    (void)write(STDOUT_FILENO, buf, l);
 				}

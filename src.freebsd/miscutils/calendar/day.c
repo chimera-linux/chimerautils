@@ -37,7 +37,7 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 
 #include "calendar.h"
 
@@ -65,7 +65,7 @@ settimes(time_t now, int before, int after, int friday, struct tm *tp1, struct t
 	localtime_r(&time2, tp2);
 	year2 = 1900 + tp2->tm_year;
 
-	strftime(dayname, sizeof(dayname) - 1, "%A, %d %B %Y", tp1);
+	strftime_bsd(dayname, sizeof(dayname) - 1, "%A, %d %B %Y", tp1);
 
 	setnnames();
 }

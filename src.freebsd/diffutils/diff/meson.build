@@ -1,9 +1,9 @@
 diff_prog = executable(
     'diff',
-    [ 'diff.c', 'diffdir.c', 'diffreg.c', 'xmalloc.c', ],
-    include_directories : inc,
-    link_with : [ libcompat ],
-    install : true,
+    ['diff.c', 'diffdir.c', 'diffreg.c', 'xmalloc.c'],
+    include_directories: [inc],
+    link_with: [libcompat],
+    install: true,
 )
 
 install_man('diff.1')

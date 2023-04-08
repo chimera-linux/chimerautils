@@ -44,7 +44,7 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <unistd.h>
 #include <utmpx.h>
 
@@ -195,7 +195,7 @@ row(const struct utmpx *ut)
 		printf("%-12s ", ut->ut_line);
 	t = ut->ut_tv.tv_sec;
 	tm = localtime(&t);
-	strftime(buf, sizeof(buf), d_first ? "%e %b %R" : "%b %e %R", tm);
+	strftime_bsd(buf, sizeof(buf), d_first ? "%e %b %R" : "%b %e %R", tm);
 	printf("%-*s ", 12, buf);
 	if (uflag) {
 		if (idle < 60)

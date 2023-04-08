@@ -37,7 +37,7 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 
 #include "calendar.h"
 
@@ -81,7 +81,7 @@ setnnames(void)
 	memset(&tm, 0, sizeof(struct tm));
 	for (i = 0; i < 7; i++) {
 		tm.tm_wday = i;
-		strftime(buf, sizeof(buf), "%a", &tm);
+		strftime_bsd(buf, sizeof(buf), "%a", &tm);
 		for (l = strlen(buf);
 		     l > 0 && isspace((unsigned char)buf[l - 1]);
 		     l--)
@@ -93,7 +93,7 @@ setnnames(void)
 			errx(1, "cannot allocate memory");
 		ndays[i].len = strlen(buf);
 
-		strftime(buf, sizeof(buf), "%A", &tm);
+		strftime_bsd(buf, sizeof(buf), "%A", &tm);
 		for (l = strlen(buf);
 		     l > 0 && isspace((unsigned char)buf[l - 1]);
 		     l--)
@@ -109,7 +109,7 @@ setnnames(void)
 	memset(&tm, 0, sizeof(struct tm));
 	for (i = 0; i < 12; i++) {
 		tm.tm_mon = i;
-		strftime(buf, sizeof(buf), "%b", &tm);
+		strftime_bsd(buf, sizeof(buf), "%b", &tm);
 		for (l = strlen(buf);
 		     l > 0 && isspace((unsigned char)buf[l - 1]);
 		     l--)
@@ -121,7 +121,7 @@ setnnames(void)
 			errx(1, "cannot allocate memory");
 		nmonths[i].len = strlen(buf);
 
-		strftime(buf, sizeof(buf), "%B", &tm);
+		strftime_bsd(buf, sizeof(buf), "%B", &tm);
 		for (l = strlen(buf);
 		     l > 0 && isspace((unsigned char)buf[l - 1]);
 		     l--)

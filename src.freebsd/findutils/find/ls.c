@@ -49,7 +49,7 @@ __FBSDID("$FreeBSD$");
 #include <pwd.h>
 #include <stdio.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <unistd.h>
 
 #include "find.h"
@@ -122,7 +122,7 @@ printtime(time_t ftime)
 		/* mmm dd  yyyy || dd mmm  yyyy */
 		format = d_first ? "%e %b  %Y " : "%b %e  %Y ";
 	if ((tm = localtime(&ftime)) != NULL)
-		strftime(longstring, sizeof(longstring), format, tm);
+		strftime_bsd(longstring, sizeof(longstring), format, tm);
 	else
 		strlcpy(longstring, "bad date val ", sizeof(longstring));
 	fputs(longstring, stdout);

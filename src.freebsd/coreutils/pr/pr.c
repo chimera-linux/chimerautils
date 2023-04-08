@@ -65,7 +65,7 @@ __FBSDID("$FreeBSD$");
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <time.h>
+#include <time_bsd.h>
 
 #include "pr.h"
 #include "extern.h"
@@ -1402,7 +1402,7 @@ nxtfile(int argc, char **argv, const char **fname, char *buf, int dt)
 	/*
 	 * set up time field used in header
 	 */
-	if (strftime(buf, HDBUF, timefrmt, timeptr) <= 0) {
+	if (strftime_bsd(buf, HDBUF, timefrmt, timeptr) <= 0) {
 		++errcnt;
 		if (inf != stdin)
 			(void)fclose(inf);

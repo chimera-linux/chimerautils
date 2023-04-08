@@ -55,7 +55,7 @@ static const char sccsid[] = "@(#)touch.c	8.1 (Berkeley) 6/6/93";
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <unistd.h>
 
 static void	stime_arg1(const char *, struct timespec *);
@@ -333,7 +333,7 @@ stime_darg(const char *arg, struct timespec *tvp)
 		goto bad;
 	fmt = strchr(arg, 'T') != NULL ? "%Y-%m-%dT%H:%M:%S" :
 	    "%Y-%m-%d %H:%M:%S";
-	p = strptime(arg, fmt, &t);
+	p = strptime_bsd(arg, fmt, &t);
 	if (p == NULL)
 		goto bad;
 	/* POSIX: must have at least one digit after dot */

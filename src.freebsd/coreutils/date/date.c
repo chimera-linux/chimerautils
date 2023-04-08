@@ -58,7 +58,7 @@ __FBSDID("$FreeBSD$");
 #include <syslog.h>
 #include <unistd.h>
 #include <utmpx.h>
-#include <time.h>
+#include <time_bsd.h>
 #include <langinfo.h>
 
 #include "vary.h"
@@ -166,14 +166,7 @@ main(int argc, char *argv[])
 	if (!rflag && time(&tval) == -1)
 		err(1, "time");
 
-	/* Linux libc's do not support %+ */
-#ifdef _DATE_FMT
-	/* glibc extension */
-	format = nl_langinfo(_DATE_FMT);
-#else
-	/* fallback, e.g. musl */
-	format = "%a %b %e %H:%M:%S %Z %Y";
-#endif
+	format = "%+";
 
 	if (Rflag)
 		format = rfc2822_format;
@@ -220,7 +213,7 @@ main(int argc, char *argv[])
 		 */
 		setlocale(LC_TIME, "C");
 
-	(void)strftime(buf, sizeof(buf), format, lt);
+	(void)strftime_bsd(buf, sizeof(buf), format, lt);
 	printdate(buf);
 }
 
@@ -243,10 +236,10 @@ printisodate(struct tm *lt)
 	for (it = iso8601_fmts; it <= iso8601_selected; it++)
 		strlcat(fmtbuf, it->format_string, sizeof(fmtbuf));
 
-	(void)strftime(buf, sizeof(buf), fmtbuf, lt);
+	(void)strftime_bsd(buf, sizeof(buf), fmtbuf, lt);
 
 	if (iso8601_selected > iso8601_fmts) {
-		(void)strftime(tzbuf, sizeof(tzbuf), "%z", lt);
+		(void)strftime_bsd(tzbuf, sizeof(tzbuf), "%z", lt);
 		memmove(&tzbuf[4], &tzbuf[3], 3);
 		tzbuf[3] = ':';
 		strlcat(buf, tzbuf, sizeof(buf));
@@ -272,7 +265,7 @@ setthetime(const char *fmt, const char *p, int jflag)
 	lt->tm_isdst = -1;		/* divine correct DST */
 
 	if (fmt != NULL) {
-		t = strptime(p, fmt, lt);
+		t = strptime_bsd(p, fmt, lt);
 		if (t == NULL) {
 			fprintf(stderr, "Failed conversion of ``%s''"
 				" using format ``%s''\n", p, fmt);
