@@ -20,9 +20,14 @@ It replaces the following GNU projects:
 * patch
 * gzip
 
-In addition to the above, it replaces portions of `util-linux` and
-provides a shell that can act as `/bin/sh`. In a way, `chimerautils`
-is also an alternative to projects like Busybox.
+It also provides the following functionality:
+
+* vi
+* sh
+* portions of util-linux
+* and additional custom tools
+
+In a way, `chimerautils` is also an alternative to projects like Busybox.
 
 ## bsdutils
 
