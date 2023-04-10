@@ -19,6 +19,7 @@ It replaces the following GNU projects:
 * bc
 * patch
 * gzip
+* gawk
 
 It also provides the following functionality:
 

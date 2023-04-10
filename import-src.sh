@@ -37,12 +37,14 @@ xz -dc "$SRCTAR" | tar -xf -
 copy_cmd() {
     p="$1"
     sd="$2"
+    dn="$3"
     rp="usr/src/${p}"
     sp="$(basename ${p})"
+    [ -z "$dn" ] && dn="$sp"
     if [ -n "$sd" ]; then
-        dp="${sd}/${sp}"
+        dp="${sd}/${dn}"
     else
-        dp="$sp"
+        dp="$dn"
     fi
 
     # Drop the tests/ subdirectories
@@ -222,6 +224,7 @@ copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
 copy_cmd usr.bin/which
 copy_cmd contrib/nvi
+copy_cmd contrib/one-true-awk "" awk
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include

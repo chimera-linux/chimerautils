@@ -1,3 +1,578 @@
+--- src.orig/awk/awkgram.y
++++ src.freebsd/awk/awkgram.y
+@@ -206,9 +206,10 @@
+ 		{ $$ = op2(AND, notnull($1), notnull($3)); }
+ 	| ppattern MATCHOP reg_expr	{ $$ = op3($2, NIL, $1, (Node*)makedfa($3, 0)); }
+ 	| ppattern MATCHOP ppattern
+-		{ if (constnode($3))
++		{ if (constnode($3)) {
+ 			$$ = op3($2, NIL, $1, (Node*)makedfa(strnode($3), 0));
+-		  else
++			free($3);
++		  } else
+ 			$$ = op3($2, (Node *)1, $1, $3); }
+ 	| ppattern IN varname		{ $$ = op2(INTEST, $1, makearr($3)); }
+ 	| '(' plist ')' IN varname	{ $$ = op2(INTEST, $2, makearr($5)); }
+@@ -233,9 +234,10 @@
+ 	| pattern NE pattern		{ $$ = op2($2, $1, $3); }
+ 	| pattern MATCHOP reg_expr	{ $$ = op3($2, NIL, $1, (Node*)makedfa($3, 0)); }
+ 	| pattern MATCHOP pattern
+-		{ if (constnode($3))
++		{ if (constnode($3)) {
+ 			$$ = op3($2, NIL, $1, (Node*)makedfa(strnode($3), 0));
+-		  else
++			free($3);
++		  } else
+ 			$$ = op3($2, (Node *)1, $1, $3); }
+ 	| pattern IN varname		{ $$ = op2(INTEST, $1, makearr($3)); }
+ 	| '(' plist ')' IN varname	{ $$ = op2(INTEST, $2, makearr($5)); }
+@@ -378,17 +380,19 @@
+ 	| GENSUB '(' reg_expr comma pattern comma pattern ')'
+ 		{ $$ = op5(GENSUB, NIL, (Node*)makedfa($3, 1), $5, $7, rectonode()); }
+ 	| GENSUB '(' pattern comma pattern comma pattern ')'
+-		{ if (constnode($3))
++		{ if (constnode($3)) {
+ 			$$ = op5(GENSUB, NIL, (Node *)makedfa(strnode($3), 1), $5, $7, rectonode());
+-		  else
++			free($3);
++		  } else
+ 			$$ = op5(GENSUB, (Node *)1, $3, $5, $7, rectonode());
+ 		}
+ 	| GENSUB '(' reg_expr comma pattern comma pattern comma pattern ')'
+ 		{ $$ = op5(GENSUB, NIL, (Node*)makedfa($3, 1), $5, $7, $9); }
+ 	| GENSUB '(' pattern comma pattern comma pattern comma pattern ')'
+-		{ if (constnode($3))
++		{ if (constnode($3)) {
+ 			$$ = op5(GENSUB, NIL, (Node *)makedfa(strnode($3),1), $5,$7,$9);
+-		  else
++			free($3);
++		  } else
+ 			$$ = op5(GENSUB, (Node *)1, $3, $5, $7, $9);
+ 		}
+ 	| GETLINE var LT term		{ $$ = op3(GETLINE, $2, itonp($3), $4); }
+@@ -404,9 +408,10 @@
+ 	| MATCHFCN '(' pattern comma reg_expr ')'
+ 		{ $$ = op3(MATCHFCN, NIL, $3, (Node*)makedfa($5, 1)); }
+ 	| MATCHFCN '(' pattern comma pattern ')'
+-		{ if (constnode($5))
++		{ if (constnode($5)) {
+ 			$$ = op3(MATCHFCN, NIL, $3, (Node*)makedfa(strnode($5), 1));
+-		  else
++			free($5);
++		  } else
+ 			$$ = op3(MATCHFCN, (Node *)1, $3, $5); }
+ 	| NUMBER			{ $$ = celltonode($1, CCON); }
+ 	| SPLIT '(' pattern comma varname comma pattern ')'     /* string */
+@@ -420,16 +425,18 @@
+ 	| subop '(' reg_expr comma pattern ')'
+ 		{ $$ = op4($1, NIL, (Node*)makedfa($3, 1), $5, rectonode()); }
+ 	| subop '(' pattern comma pattern ')'
+-		{ if (constnode($3))
++		{ if (constnode($3)) {
+ 			$$ = op4($1, NIL, (Node*)makedfa(strnode($3), 1), $5, rectonode());
+-		  else
++			free($3);
++		  } else
+ 			$$ = op4($1, (Node *)1, $3, $5, rectonode()); }
+ 	| subop '(' reg_expr comma pattern comma var ')'
+ 		{ $$ = op4($1, NIL, (Node*)makedfa($3, 1), $5, $7); }
+ 	| subop '(' pattern comma pattern comma var ')'
+-		{ if (constnode($3))
++		{ if (constnode($3)) {
+ 			$$ = op4($1, NIL, (Node*)makedfa(strnode($3), 1), $5, $7);
+-		  else
++			free($3);
++		  } else
+ 			$$ = op4($1, (Node *)1, $3, $5, $7); }
+ 	| SUBSTR '(' pattern comma pattern comma pattern ')'
+ 		{ $$ = op3(SUBSTR, $3, $5, $7); }
+--- src.orig/awk/awk.h
++++ src.freebsd/awk/awk.h
+@@ -37,7 +37,7 @@
+ 
+ typedef	unsigned char uschar;
+ 
+-#define	xfree(a)	{ if ((a) != NULL) { free((void *)(intptr_t)(a)); (a) = NULL; } }
++#define	xfree(a)	{ free((void *)(intptr_t)(a)); (a) = NULL; }
+ /*
+  * We sometimes cheat writing read-only pointers to NUL-terminate them
+  * and then put back the original value
+--- src.orig/awk/b.c
++++ src.freebsd/awk/b.c
+@@ -807,6 +807,7 @@
+ 		}
+ 		else
+ 			FATAL("syntax error in regular expression %s at %s", lastre, prestr);
++		/* FALLTHROUGH */
+ 	default:
+ 		FATAL("illegal primary in regular expression %s at %s", lastre, prestr);
+ 	}
+@@ -935,7 +936,7 @@
+ 	if (special_case == REPEAT_PLUS_APPENDED) {
+ 		size++;		/* for the final + */
+ 	} else if (special_case == REPEAT_WITH_Q) {
+-		size += init_q + (atomlen+1)* n_q_reps;
++		size += init_q + (atomlen+1)* (n_q_reps-init_q);
+ 	} else if (special_case == REPEAT_ZERO) {
+ 		size += 2;	/* just a null ERE: () */
+ 	}
+@@ -964,11 +965,8 @@
+ 		}
+ 	}
+ 	memcpy(&buf[j], reptok+reptoklen, suffix_length);
+-	if (special_case == REPEAT_ZERO) {
+-		buf[j+suffix_length] = '\0';
+-	} else {
+-		buf[size] = '\0';
+-	}
++	j += suffix_length;
++	buf[j] = '\0';
+ 	/* free old basestr */
+ 	if (firstbasestr != basestr) {
+ 		if (basestr)
+@@ -1104,7 +1102,7 @@
+ 					 * program to track each string's length.
+ 					 */
+ 					for (i = 1; i <= UCHAR_MAX; i++) {
+-						if (!adjbuf((char **) &buf, &bufsz, bp-buf+1, 100, (char **) &bp, "relex2"))
++						if (!adjbuf((char **) &buf, &bufsz, bp-buf+2, 100, (char **) &bp, "relex2"))
+ 						    FATAL("out of space for reg expr %.10s...", lastre);
+ 						if (cc->cc_func(i)) {
+ 							/* escape backslash */
+--- src.orig/awk/FIXES
++++ src.freebsd/awk/FIXES
+@@ -23,7 +23,70 @@
+ ****************************************************************/
+ 
+ This file lists all bug fixes, changes, etc., made since the AWK book
+-was sent to the printers in August, 1987.
++was sent to the printers in August 1987.
++
++Dec 15, 2022:
++	Force hex escapes in strings to be no more than two characters,
++	as they already are in regular expressions. This brings internal
++	consistency, as well as consistency with gawk. Thanks to
++	Arnold Robbins.
++
++Sep 12, 2022:
++	adjbuf minlen error (cannot be 0) in cat, resulting in NULL pbuf.
++	discovered by todd miller. also use-after-free issue with
++	tempfree in cat, thanks to Miguel Pineiro Jr and valgrind.
++
++Aug 30, 2022:
++	Various leaks and use-after-free issues plugged/fixed.
++	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++May 23, 2022:
++	Memory leak when assigning a string to some of the built-in
++	variables. allocated string erroneously marked DONTFREE.
++	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++Mar 14, 2022:
++	Historic bug: command-line "name=value" assignment had been
++	truncating its entry in ARGV. (circa 1989) Thanks to 
++	Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++Mar 3, 2022:
++	Fixed file management memory leak that appears to have been
++	there since the files array was first initialized with stdin,
++	stdout, and stderr (circa 1992). Thanks to Miguel Pineiro Jr.
++	<mpj@pineiro.cc>.
++
++December 8, 2021:
++	The error handling in closefile and closeall was mangled. Long
++	standing warnings had been made fatal and some fatal errors went
++	undetected. Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++Nov 03, 2021:
++        getline accesses uninitialized data after getrec()
++	returns 0 on EOF and leaves the contents of buf unchanged.
++	Thanks to Volodymyr Gubarkov, and Todd C Miller.
++
++Oct 12, 2021:
++	The fix for #83 changed the code to insert 2 chars, but the
++	call to adjbuf just above it only allows for 1 char. This can
++	cause a heap buffer overflow.
++
++July 27, 2021:
++	As per IEEE Std 1003.1-2008, -F "str" is now consistent with
++	-v FS="str" when str is null. Thanks to Warner Losh.
++
++July 24, 2021:
++	Fix readrec's definition of a record. This fixes an issue
++	with NetBSD's RS regular expression support that can cause
++	an infinite read loop. Thanks to Miguel Pineiro Jr.
++
++	Fix regular expression RS ^-anchoring. RS ^-anchoring needs to
++	know if it is reading the first record of a file. This change
++	restores a missing line that was overlooked when porting NetBSD's
++	RS regex functionality. Thanks to Miguel Pineiro Jr.
++
++	Fix size computation in replace_repeat() for special case
++	REPEAT_WITH_Q. Thanks to Todd C. Miller.
+ 
+ February 15, 2021:
+ 	Small fix so that awk will compile again with g++. Thanks to
+@@ -277,7 +340,7 @@
+ 	#12: Avoid undefined behaviour when using ctype(3) functions in
+ 	     relex(). Thanks to GitHub user iamleot.
+ 	#31: Make getline handle numeric strings, and update FIXES. Thanks
+-	     to GitHub user arnoldrobbins.
++	     to GitHub user Arnold Robbins (arnoldrobbins)
+ 	#32: maketab: support build systems with read-only source. Thanks
+ 	     to GitHub user enh.
+ 
+--- src.orig/awk/lex.c
++++ src.freebsd/awk/lex.c
+@@ -425,19 +425,28 @@
+ 				break;
+ 
+ 			case 'x':	/* hex  \x0-9a-fA-F + */
+-			    {	char xbuf[100], *px;
+-				for (px = xbuf; (c = input()) != 0 && px-xbuf < 100-2; ) {
+-					if (isdigit(c)
+-					 || (c >= 'a' && c <= 'f')
+-					 || (c >= 'A' && c <= 'F'))
+-						*px++ = c;
+-					else
++			    {
++				int i;
++
++				n = 0;
++				for (i = 1; i <= 2; i++) {
++					c = input();
++					if (c == 0)
++						break;
++					if (isxdigit(c)) {
++						c = tolower(c);
++						n *= 16;
++						if (isdigit(c))
++							n += (c - '0');
++						else
++							n += 10 + (c - 'a');
++					} else
+ 						break;
+ 				}
+-				*px = 0;
+-				unput(c);
+-	  			sscanf(xbuf, "%x", (unsigned int *) &n);
+-				*bp++ = n;
++				if (n)
++					*bp++ = n;
++				else
++					unput(c);
+ 				break;
+ 			    }
+ 
+@@ -534,7 +543,7 @@
+ 	char *bp;
+ 
+ 	if (buf == NULL && (buf = (char *) malloc(bufsz)) == NULL)
+-		FATAL("out of space for rex expr");
++		FATAL("out of space for reg expr");
+ 	bp = buf;
+ 	for ( ; (c = input()) != '/' && c != 0; ) {
+ 		if (!adjbuf(&buf, &bufsz, bp-buf+3, 500, &bp, "regexpr"))
+@@ -554,7 +563,7 @@
+ 	*bp = 0;
+ 	if (c == 0)
+ 		SYNTAX("non-terminated regular expression %.10s...", buf);
+-	yylval.s = tostring(buf);
++	yylval.s = buf;
+ 	unput('/');
+ 	RET(REGEXPR);
+ }
+--- src.orig/awk/lib.c
++++ src.freebsd/awk/lib.c
+@@ -176,6 +176,7 @@
+ 				infile = stdin;
+ 			else if ((infile = fopen(file, "r")) == NULL)
+ 				FATAL("can't open file %s", file);
++			innew = true;
+ 			setfval(fnrloc, 0.0);
+ 		}
+ 		c = readrec(&buf, &bufsize, infile, innew);
+@@ -241,6 +242,7 @@
+ 		}
+ 		if (found)
+ 			setptr(patbeg, '\0');
++		isrec = (found == 0 && *buf == '\0') ? false : true;
+ 	} else {
+ 		if ((sep = *rs) == 0) {
+ 			sep = '\n';
+@@ -270,10 +272,10 @@
+ 		if (!adjbuf(&buf, &bufsize, 1+rr-buf, recsize, &rr, "readrec 3"))
+ 			FATAL("input record `%.30s...' too long", buf);
+ 		*rr = 0;
++		isrec = (c == EOF && rr == buf) ? false : true;
+ 	}
+ 	*pbuf = buf;
+ 	*pbufsize = bufsize;
+-	isrec = *buf || !feof(inf);
+ 	DPRINTF("readrec saw <%s>, returns %d\n", buf, isrec);
+ 	return isrec;
+ }
+@@ -295,12 +297,13 @@
+ 
+ void setclvar(char *s)	/* set var=value from s */
+ {
+-	char *p;
++	char *e, *p;
+ 	Cell *q;
+ 	double result;
+ 
+ 	for (p=s; *p != '='; p++)
+ 		;
++	e = p;
+ 	*p++ = 0;
+ 	p = qstring(p, '\0');
+ 	q = setsymtab(s, p, 0.0, STR, symtab);
+@@ -310,6 +313,8 @@
+ 		q->tval |= NUM;
+ 	}
+ 	DPRINTF("command line set %s to |%s|\n", s, p);
++	free(p);
++	*e = '=';
+ }
+ 
+ 
+--- src.orig/awk/main.c
++++ src.freebsd/awk/main.c
+@@ -22,7 +22,7 @@
+ THIS SOFTWARE.
+ ****************************************************************/
+ 
+-const char	*version = "version 20210215";
++const char	*version = "version 20221215";
+ 
+ #define DEBUG
+ #include <stdio.h>
+--- src.orig/awk/run.c
++++ src.freebsd/awk/run.c
+@@ -447,13 +447,15 @@
+ 			n = getrec(&record, &recsize, true);
+ 		else {			/* getline var */
+ 			n = getrec(&buf, &bufsize, false);
+-			x = execute(a[0]);
+-			setsval(x, buf);
+-			if (is_number(x->sval, & result)) {
+-				x->fval = result;
+-				x->tval |= NUM;
++			if (n > 0) {
++				x = execute(a[0]);
++				setsval(x, buf);
++				if (is_number(x->sval, & result)) {
++					x->fval = result;
++					x->tval |= NUM;
++				}
++				tempfree(x);
+ 			}
+-			tempfree(x);
+ 		}
+ 	}
+ 	setfval(r, (Awkfloat) n);
+@@ -969,8 +971,10 @@
+ 	}
+ 	*p = '\0';
+ 	free(fmt);
+-	for ( ; a; a = a->nnext)		/* evaluate any remaining args */
+-		execute(a);
++	for ( ; a; a = a->nnext) {		/* evaluate any remaining args */
++		x = execute(a);
++		tempfree(x);
++	}
+ 	*pbuf = buf;
+ 	*pbufsize = bufsize;
+ 	return p - buf;
+@@ -1193,16 +1197,17 @@
+ 
+ 	x = execute(a[0]);
+ 	n1 = strlen(getsval(x));
+-	adjbuf(&s, &ssz, n1, recsize, 0, "cat1");
++	adjbuf(&s, &ssz, n1 + 1, recsize, 0, "cat1");
+ 	memcpy(s, x->sval, n1);
+ 
++	tempfree(x);
++
+ 	y = execute(a[1]);
+ 	n2 = strlen(getsval(y));
+ 	adjbuf(&s, &ssz, n1 + n2 + 1, recsize, 0, "cat2");
+ 	memcpy(s + n1, y->sval, n2);
+ 	s[n1 + n2] = '\0';
+ 
+-	tempfree(x);
+ 	tempfree(y);
+ 
+ 	z = gettemp();
+@@ -1264,6 +1269,7 @@
+ 
+ 	y = execute(a[0]);	/* source string */
+ 	origs = s = strdup(getsval(y));
++	tempfree(y);
+ 	arg3type = ptoi(a[3]);
+ 	if (a[2] == NULL)		/* fs string */
+ 		fs = getsval(fsloc);
+@@ -1384,7 +1390,6 @@
+ 		}
+ 	}
+ 	tempfree(ap);
+-	tempfree(y);
+ 	xfree(origs);
+ 	xfree(origfs);
+ 	x = gettemp();
+@@ -1601,7 +1606,7 @@
+ Cell *bltin(Node **a, int n)	/* builtin functions. a[0] is type, a[1] is arg list */
+ {
+ 	Cell *x, *y;
+-	Awkfloat u;
++	Awkfloat u = 0;
+ 	int t, sz;
+ 	Awkfloat tmp;
+ 	char *buf, *fmt;
+@@ -1805,8 +1810,10 @@
+ 	setfval(x, u);
+ 	if (nextarg != NULL) {
+ 		WARNING("warning: function has too many arguments");
+-		for ( ; nextarg; nextarg = nextarg->nnext)
+-			execute(nextarg);
++		for ( ; nextarg; nextarg = nextarg->nnext) {
++			y = execute(nextarg);
++			tempfree(y);
++		}
+ 	}
+ 	return(x);
+ }
+@@ -1873,13 +1880,13 @@
+ 	if (files == NULL)
+ 		FATAL("can't allocate file memory for %zu files", nfiles);
+         files[0].fp = stdin;
+-	files[0].fname = "/dev/stdin";
++	files[0].fname = tostring("/dev/stdin");
+ 	files[0].mode = LT;
+         files[1].fp = stdout;
+-	files[1].fname = "/dev/stdout";
++	files[1].fname = tostring("/dev/stdout");
+ 	files[1].mode = GT;
+         files[2].fp = stderr;
+-	files[2].fname = "/dev/stderr";
++	files[2].fname = tostring("/dev/stderr");
+ 	files[2].mode = GT;
+ }
+ 
+@@ -1953,8 +1960,8 @@
+ 	return "???";
+ }
+ 
+- Cell *closefile(Node **a, int n)
+- {
++Cell *closefile(Node **a, int n)
++{
+  	Cell *x;
+ 	size_t i;
+ 	bool stat;
+@@ -1965,8 +1972,15 @@
+  	for (i = 0; i < nfiles; i++) {
+ 		if (!files[i].fname || strcmp(x->sval, files[i].fname) != 0)
+ 			continue;
+-		if (ferror(files[i].fp))
+-			FATAL("i/o error occurred on %s", files[i].fname);
++		if (files[i].mode == GT || files[i].mode == '|')
++			fflush(files[i].fp);
++		if (ferror(files[i].fp)) {
++			if ((files[i].mode == GT && files[i].fp != stderr)
++			  || files[i].mode == '|')
++				FATAL("write error on %s", files[i].fname);
++			else
++				WARNING("i/o error occurred on %s", files[i].fname);
++		}
+ 		if (files[i].fp == stdin || files[i].fp == stdout ||
+ 		    files[i].fp == stderr)
+ 			stat = freopen("/dev/null", "r+", files[i].fp) == NULL;
+@@ -1975,9 +1989,8 @@
+ 		else
+ 			stat = fclose(files[i].fp) == EOF;
+ 		if (stat)
+-			FATAL("i/o error occurred closing %s", files[i].fname);
+-		if (i > 2)	/* don't do /dev/std... */
+-			xfree(files[i].fname);
++			WARNING("i/o error occurred closing %s", files[i].fname);
++		xfree(files[i].fname);
+ 		files[i].fname = NULL;	/* watch out for ref thru this */
+ 		files[i].fp = NULL;
+ 		break;
+@@ -1986,7 +1999,7 @@
+  	x = gettemp();
+ 	setfval(x, (Awkfloat) (stat ? -1 : 0));
+  	return(x);
+- }
++}
+ 
+ void closeall(void)
+ {
+@@ -1996,18 +2009,24 @@
+ 	for (i = 0; i < nfiles; i++) {
+ 		if (! files[i].fp)
+ 			continue;
+-		if (ferror(files[i].fp))
+-			FATAL( "i/o error occurred on %s", files[i].fname );
+-		if (files[i].fp == stdin)
++		if (files[i].mode == GT || files[i].mode == '|')
++			fflush(files[i].fp);
++		if (ferror(files[i].fp)) {
++			if ((files[i].mode == GT && files[i].fp != stderr)
++			  || files[i].mode == '|')
++				FATAL("write error on %s", files[i].fname);
++			else
++				WARNING("i/o error occurred on %s", files[i].fname);
++		}
++		if (files[i].fp == stdin || files[i].fp == stdout ||
++		    files[i].fp == stderr)
+ 			continue;
+ 		if (files[i].mode == '|' || files[i].mode == LE)
+ 			stat = pclose(files[i].fp) == -1;
+-		else if (files[i].fp == stdout || files[i].fp == stderr)
+-			stat = fflush(files[i].fp) == EOF;
+ 		else
+ 			stat = fclose(files[i].fp) == EOF;
+ 		if (stat)
+-			FATAL( "i/o error occurred while closing %s", files[i].fname );
++			WARNING("i/o error occurred while closing %s", files[i].fname);
+ 	}
+ }
+ 
+--- src.orig/awk/tran.c
++++ src.freebsd/awk/tran.c
+@@ -70,18 +70,6 @@
+ 
+ extern Cell **fldtab;
+ 
+-static void
+-setfree(Cell *vp)
+-{
+-	if (&vp->sval == FS || &vp->sval == RS ||
+-	    &vp->sval == OFS || &vp->sval == ORS ||
+-	    &vp->sval == OFMT || &vp->sval == CONVFMT ||
+-	    &vp->sval == FILENAME || &vp->sval == SUBSEP)
+-		vp->tval |= DONTFREE;
+-	else
+-		vp->tval &= ~DONTFREE;
+-}
+-
+ void syminit(void)	/* initialize symbol table with builtin vars */
+ {
+ 	literal0 = setsymtab("0", "0", 0.0, NUM|STR|CON|DONTFREE, symtab);
+@@ -377,10 +365,9 @@
+ 	t = s ? tostring(s) : tostring("");	/* in case it's self-assign */
+ 	if (freeable(vp))
+ 		xfree(vp->sval);
+-	vp->tval &= ~(NUM|CONVC|CONVO);
++	vp->tval &= ~(NUM|DONTFREE|CONVC|CONVO);
+ 	vp->tval |= STR;
+ 	vp->fmt = NULL;
+-	setfree(vp);
+ 	DPRINTF("setsval %p: %s = \"%s (%p) \", t=%o r,f=%d,%d\n",
+ 		(void*)vp, NN(vp->nval), t, (void*)t, vp->tval, donerec, donefld);
+ 	vp->sval = t;
 --- src.orig/bc/dc/bcode.c
 +++ src.freebsd/bc/dc/bcode.c
 @@ -72,7 +72,7 @@

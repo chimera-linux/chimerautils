@@ -10,6 +10,7 @@ subdir('dbcompat')
 
 # standalone toplevel projects
 
+subdir('awk')
 subdir('ed')
 subdir('grep')
 subdir('m4')
