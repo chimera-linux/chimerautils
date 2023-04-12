@@ -11286,7 +11286,24 @@
  	write(fildes[1], "\n", 1);
 --- src.orig/tip/tip/cu.1
 +++ src.freebsd/tip/tip/cu.1
-@@ -69,9 +69,9 @@
+@@ -39,7 +39,6 @@
+ .Sh SYNOPSIS
+ .Nm
+ .Op Fl ehot
+-.Op Fl a Ar acu
+ .Op Fl l Ar line
+ .Op Fl s Ar speed | Fl Ar speed
+ .Op Ar phone-number
+@@ -54,8 +53,6 @@
+ .Pp
+ The options are as follows:
+ .Bl -tag -width indent
+-.It Fl a Ar acu
+-Set the acu.
+ .It Fl e
+ Use even parity.
+ If both
+@@ -69,9 +66,9 @@
  .It Fl l Ar line
  Specify the line to use.
  Either of the forms like
@@ -11298,7 +11315,7 @@
  are permitted.
  .It Fl o
  Use odd parity.
-@@ -497,10 +497,8 @@
+@@ -497,10 +494,8 @@
  .Sh EXAMPLES
  Connect to the first USB serial port at the speed of 115200 baud:
  .Bd -literal -offset indent
@@ -11310,6 +11327,21 @@
  .Sh HISTORY
  The
  .Nm
+--- src.orig/tip/tip/cu.c
++++ src.freebsd/tip/tip/cu.c
+@@ -81,11 +81,8 @@
+ 		}
+ 	}
+ 
+-	while ((ch = getopt(argc, argv, "a:l:s:htoe")) != -1) {
++	while ((ch = getopt(argc, argv, "l:s:htoe")) != -1) {
+ 		switch (ch) {
+-		case 'a':
+-			CU = optarg;
+-			break;
+ 		case 'l':
+ 			if (DV != NULL) {
+ 				fprintf(stderr,
 --- src.orig/tip/tip/pathnames.h
 +++ src.freebsd/tip/tip/pathnames.h
 @@ -38,6 +38,6 @@
