@@ -65,7 +65,7 @@ add_project_arguments('-D_FILE_OFFSET_BITS=64', language: ['c', 'cpp'])
 add_project_arguments('-Dlint', language: ['c'])
 
 # ls(1) needs the terminfo library
-foreach opt: ['tinfo', 'ncursesw', 'ncurses']
+foreach opt: ['tinfo', 'curses']
     libtinfo = cc.find_library(opt, required: false)
     if libtinfo.found()
         break
@@ -76,12 +76,7 @@ if not libtinfo.found() and get_option('color_ls')
 endif
 
 # nvi may need ncurses
-foreach opt: ['ncursesw', 'ncurses']
-    ncurses = dependency(opt, required: false)
-    if ncurses.found()
-        break
-    endif
-endforeach
+ncurses = dependency('curses', required: false)
 
 # bc(1) needs libedit
 libedit = dependency('libedit', required: get_option('libedit'))
