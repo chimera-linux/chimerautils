@@ -49,6 +49,7 @@ __FBSDID("$FreeBSD$");
 #include	<errno.h>
 #include	<stdio.h>
 #include	<string.h>
+#include <stdint.h>
 
 #ifdef	size_t
 #undef	size_t
@@ -179,7 +180,7 @@ ring_consumed(Ring *ring, int count)
 	ring->clearto = 0;
     else if (ring->consume + count > ring->top &&
 		ring->bottom <= ring->clearto &&
-		ring->bottom + ((ring->consume + count) - ring->top))
+		(uintptr_t)ring->bottom + (uintptr_t)((ring->consume + count) - ring->top))
 	ring->clearto = 0;
 #endif	/* ENCRYPTION */
     ring->consume = ring_increment(ring, ring->consume, count);

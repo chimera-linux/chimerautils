@@ -12382,6 +12382,25 @@
  #include <sys/socket.h>
  #include <stdlib.h>
  #include <string.h>
+--- src.orig/telnet/telnet/ring.c
++++ src.freebsd/telnet/telnet/ring.c
+@@ -49,6 +49,7 @@
+ #include	<errno.h>
+ #include	<stdio.h>
+ #include	<string.h>
++#include <stdint.h>
+ 
+ #ifdef	size_t
+ #undef	size_t
+@@ -179,7 +180,7 @@
+ 	ring->clearto = 0;
+     else if (ring->consume + count > ring->top &&
+ 		ring->bottom <= ring->clearto &&
+-		ring->bottom + ((ring->consume + count) - ring->top))
++		(uintptr_t)ring->bottom + (uintptr_t)((ring->consume + count) - ring->top))
+ 	ring->clearto = 0;
+ #endif	/* ENCRYPTION */
+     ring->consume = ring_increment(ring, ring->consume, count);
 --- src.orig/telnet/telnet/sys_bsd.c
 +++ src.freebsd/telnet/telnet/sys_bsd.c
 @@ -41,6 +41,7 @@
