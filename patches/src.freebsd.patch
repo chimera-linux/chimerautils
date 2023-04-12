@@ -4984,12 +4984,11 @@
  
  #include "stty.h"
  #include "extern.h"
-@@ -56,12 +59,11 @@
+@@ -56,12 +59,10 @@
   */
  struct cchar cchars1[] = {
  	{ "discard",	VDISCARD, 	CDISCARD },
 -	{ "dsusp", 	VDSUSP,		CDSUSP },
-+	{ "dsusp", 	CDSUSP,		CDSUSP },
  	{ "eof",	VEOF,		CEOF },
  	{ "eol",	VEOL,		CEOL },
  	{ "eol2",	VEOL2,		CEOL },
@@ -4998,15 +4997,19 @@
  	{ "intr",	VINTR,		CINTR },
  	{ "kill",	VKILL,		CKILL },
  	{ "lnext",	VLNEXT,		CLNEXT },
-@@ -69,7 +71,7 @@
+@@ -69,11 +70,11 @@
  	{ "quit",	VQUIT,		CQUIT },
  	{ "reprint",	VREPRINT, 	CREPRINT },
  	{ "start",	VSTART,		CSTART },
 -	{ "status",	VSTATUS, 	CSTATUS },
-+	{ "status",	CSTATUS, 	CSTATUS },
  	{ "stop",	VSTOP,		CSTOP },
  	{ "susp",	VSUSP,		CSUSP },
  	{ "time",	VTIME,		CTIME },
+ 	{ "werase",	VWERASE,	CWERASE },
++	{ "swtc",	VSWTC,		CEOL },
+ 	{ NULL,		0,		0},
+ };
+ 
 --- src.orig/coreutils/stty/extern.h
 +++ src.freebsd/coreutils/stty/extern.h
 @@ -42,4 +42,7 @@
@@ -11252,3 +11255,298 @@
  				} else {
  					out1fmt(" %d\n", signo);
  				}
+--- src.orig/tip/tip/acu.c
++++ src.freebsd/tip/tip/acu.c
+@@ -119,7 +119,7 @@
+ 			tried++;
+ 		}
+ 	} else {
+-		if ((fd = fopen(PH, "r")) == NOFILE) {
++		if ((fd = fopen(PH, "r")) == NULL) {
+ 			printf("%s: ", PH);
+ 			return ("can't open phone number file");
+ 		}
+--- src.orig/tip/tip/cmds.c
++++ src.freebsd/tip/tip/cmds.c
+@@ -622,7 +622,7 @@
+ 	/*
+ 	 * enable TIPOUT side for dialogue
+ 	 */
+-	kill(tipout_pid, SIGEMT);
++	kill(tipout_pid, SIGBUS);
+ 	if (boolean(value(SCRIPT)))
+ 		write(fildes[1], value(RECORD), size(value(RECORD)));
+ 	write(fildes[1], "\n", 1);
+--- src.orig/tip/tip/cu.1
++++ src.freebsd/tip/tip/cu.1
+@@ -69,9 +69,9 @@
+ .It Fl l Ar line
+ Specify the line to use.
+ Either of the forms like
+-.Pa cuau0
++.Pa ttyS0
+ or
+-.Pa /dev/cuau0
++.Pa /dev/ttyS0
+ are permitted.
+ .It Fl o
+ Use odd parity.
+@@ -497,10 +497,8 @@
+ .Sh EXAMPLES
+ Connect to the first USB serial port at the speed of 115200 baud:
+ .Bd -literal -offset indent
+-cu -s 115200 -l /dev/cuaU0
++cu -s 115200 -l /dev/ttyUSB0
+ .Ed
+-.Sh SEE ALSO
+-.Xr tip 1
+ .Sh HISTORY
+ The
+ .Nm
+--- src.orig/tip/tip/pathnames.h
++++ src.freebsd/tip/tip/pathnames.h
+@@ -38,6 +38,6 @@
+ #include <paths.h>
+ 
+ #define	_PATH_ACULOG		"/var/log/aculog"
+-#define	_PATH_LOCKDIRNAME	"/var/spool/lock/LCK..%s"
++#define	_PATH_LOCKDIRNAME	"/var/lock/LCK..%s"
+ #define	_PATH_PHONES		"/etc/phones"
+ #define	_PATH_REMOTE		"/etc/remote"
+--- src.orig/tip/tip/remote.c
++++ src.freebsd/tip/tip/remote.c
+@@ -75,6 +75,33 @@
+ 
+ static void	getremcap(char *);
+ 
++/* dummy cap parser, we don't support tip */
++static int cgetset(const char *ent) { (void)ent; return 0; }
++static int cgetent(char **buf, char **arr, const char *name) {
++    (void)buf;
++    (void)arr;
++    (void)name;
++    return -1;
++}
++static int cgetstr(char *buf, const char *cap, char **str) {
++    (void)buf;
++    (void)cap;
++    (void)str;
++    return -1;
++}
++static char *cgetcap(char *buf, const char *cap, int type) {
++    (void)buf;
++    (void)cap;
++    (void)type;
++    return NULL;
++}
++static int cgetnum(char *buf, const char *cap, long *num) {
++    (void)buf;
++    (void)cap;
++    (void)num;
++    return -1;
++}
++
+ static void
+ getremcap(char *host)
+ {
+@@ -128,7 +155,7 @@
+ 	if (!BR && (cgetnum(bp, "br", &BR) == -1))
+ 		BR = DEFBR;
+ 	if (!LD && (cgetnum(bp, "ld", &LD) == -1))
+-		LD = TTYDISC;
++		LD = N_TTY;
+ 	if (cgetnum(bp, "fs", &FS) == -1)
+ 		FS = DEFFS;
+ 	if (DU < 0)
+--- src.orig/tip/tip/tip.c
++++ src.freebsd/tip/tip/tip.c
+@@ -58,7 +58,7 @@
+ #include "tip.h"
+ #include "pathnames.h"
+ 
+-int	disc = TTYDISC;		/* tip normally runs this way */
++int	disc = N_TTY;		/* tip normally runs this way */
+ char	PNbuf[256];			/* This limits the size of a number */
+ 
+ static void	intprompt(int);
+@@ -68,7 +68,6 @@
+ int
+ main(int argc, char *argv[])
+ {
+-	char *sys = NOSTR, sbuf[12], *p;
+ 	int i;
+ 
+ 	/* XXX preserve previous braindamaged behavior */
+@@ -78,12 +77,11 @@
+ 	egid = getegid();
+ 	uid = getuid();
+ 	euid = geteuid();
+-	if (equal(__progname, "cu")) {
+-		cumode = 1;
+-		cumain(argc, argv);
+-		goto cucommon;
+-	}
+ 
++	cumode = 1;
++	cumain(argc, argv);
++
++#if 0
+ 	if (argc > 4) {
+ 		fprintf(stderr, "usage: tip [-v] [-speed] [system-name]\n");
+ 		exit(1);
+@@ -206,7 +204,7 @@
+ 	 * From here down the code is shared with
+ 	 * the "cu" version of tip.
+ 	 */
+-
++#endif
+ 	i = fcntl(FD, F_GETFL);
+ 	if (i == -1) {
+ 		perror("fcntl");
+@@ -228,14 +226,13 @@
+ 	term.c_cc[VTIME] = 0;
+ 	defchars = term;
+ 	term.c_cc[VINTR] = term.c_cc[VQUIT] = term.c_cc[VSUSP] =
+-	    term.c_cc[VDSUSP] = term.c_cc[VDISCARD] =
+-	    term.c_cc[VLNEXT] = _POSIX_VDISABLE;
++	    term.c_cc[VDISCARD] = term.c_cc[VLNEXT] = _POSIX_VDISABLE;
+ 	raw();
+ 
+ 	pipe(fildes); pipe(repdes);
+ 	(void)signal(SIGALRM, timeout);
+ 
+-	if (value(LINEDISC) != TTYDISC) {
++	if (value(LINEDISC) != N_TTY) {
+ 		int ld = (int)(intptr_t)value(LINEDISC);
+ 		ioctl(FD, TIOCSETD, &ld);
+ 	}		
+@@ -393,7 +390,7 @@
+ 	 * Kinda klugey here...
+ 	 *   check for scripting being turned on from the .tiprc file,
+ 	 *   but be careful about just using setscript(), as we may
+-	 *   send a SIGEMT before tipout has a chance to set up catching
++	 *   send a SIGBUS before tipout has a chance to set up catching
+ 	 *   it; so wait a second, then setscript()
+ 	 */
+ 	if (boolean(value(SCRIPT))) {
+@@ -550,6 +547,12 @@
+ 	}
+ }
+ 
++static const int baudlist[] = {
++	0, 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600,
++	19200, 38400, 57600, 115200, 230400, 460800, 500000, 576000, 921600,
++	1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000, 4000000,
++};
++
+ /*
+  * Set up the "remote" tty's state
+  */
+@@ -557,10 +560,16 @@
+ ttysetup(int speed)
+ {
+ 	struct termios	cntrl;
+-
+-	if (tcgetattr(FD, &cntrl))
++	speed_t aspeed = 0;
++	for (size_t i = 0; i < (sizeof(baudlist) / sizeof(int)); ++i) {
++		if (baudlist[i] == speed) {
++			aspeed = i;
++			break;
++		}
++	}
++	if ((aspeed == 0) || tcgetattr(FD, &cntrl))
+ 		return (-1);
+-	cfsetspeed(&cntrl, speed);
++	cfsetspeed(&cntrl, aspeed);
+ 	cntrl.c_cflag &= ~(CSIZE|PARENB);
+ 	cntrl.c_cflag |= CS8;
+ 	if (boolean(value(DC)))
+--- src.orig/tip/tip/tip.h
++++ src.freebsd/tip/tip/tip.h
+@@ -43,20 +43,24 @@
+ #include <sys/types.h>
+ #include <sys/file.h>
+ #include <sys/time.h>
++#include <sys/stat.h>
+ #include <sys/wait.h>
+ #include <sys/ioctl.h>
++#include <sys/ttydefaults.h>
+ 
+ #include <termios.h>
+ #include <signal.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <fcntl.h>
+ #include <pwd.h>
+ #include <ctype.h>
+ #include <setjmp.h>
+ #include <unistd.h>
+ #include <errno.h>
+ #include <limits.h>
++#include <time.h>
+ 
+ #ifndef EXTERN
+ #define	EXTERN	extern
+@@ -189,7 +193,7 @@
+ extern value_t	vtable[];	/* variable table */
+ 
+ #ifndef ACULOG
+-#define logent(a, b, c, d)
++#define logent(a, b, c, d) do {} while(0)
+ #define loginit()
+ #endif
+ 
+@@ -238,7 +242,6 @@
+ #define NOVAL	((value_t *)NULL)
+ #define NOACU	((acu_t *)NULL)
+ #define NOSTR	((char *)NULL)
+-#define NOFILE	((FILE *)NULL)
+ #define NOPWD	((struct passwd *)0)
+ 
+ EXTERN struct termios	term;		/* current mode of terminal */
+@@ -329,8 +332,10 @@
+ void	hay_disconnect(void);
+ void	help(int);
+ void	listvariables(int);
++#ifdef ACULOG
+ void	logent(char *, char *, char *, char *);
+ void	loginit(void);
++#endif
+ void	parwrite(int, char *, size_t);
+ void	pipefile(int);
+ void	pipeout(int);
+--- src.orig/tip/tip/tipout.c
++++ src.freebsd/tip/tip/tipout.c
+@@ -138,7 +138,7 @@
+ 
+ 	signal(SIGINT, SIG_IGN);
+ 	signal(SIGQUIT, SIG_IGN);
+-	signal(SIGEMT, intEMT);		/* attention from TIPIN */
++	signal(SIGBUS, intEMT);		/* attention from TIPIN */
+ 	signal(SIGTERM, intTERM);	/* time to go signal */
+ 	signal(SIGIOT, intIOT);		/* scripting going on signal */
+ 	signal(SIGHUP, intTERM);	/* for dial-ups */
+@@ -162,7 +162,7 @@
+ 		}
+ 		cnt = scnt;
+ 		sigemptyset(&mask);
+-		sigaddset(&mask, SIGEMT);
++		sigaddset(&mask, SIGBUS);
+ 		sigaddset(&mask, SIGTERM);
+ 		sigaddset(&mask, SIGIOT);
+ 		sigaddset(&mask, SIGSYS);
+--- src.orig/tip/tip/uucplock.c
++++ src.freebsd/tip/tip/uucplock.c
+@@ -43,8 +43,9 @@
+ #endif /* not lint */
+ 
+ #include <sys/types.h>
++#include <sys/param.h>
+ #include <sys/file.h>
+-#include <sys/dirent.h>
++#include <dirent.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <signal.h>

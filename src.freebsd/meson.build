@@ -17,6 +17,7 @@ subdir('m4')
 subdir('patch')
 subdir('sed')
 subdir('sh')
+subdir('tip')
 subdir('which')
 
 if not get_option('zlib').disabled() and zlib.found()

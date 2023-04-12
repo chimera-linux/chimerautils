@@ -59,7 +59,6 @@ static int c_cchar(const void *, const void *);
  */
 struct cchar cchars1[] = {
 	{ "discard",	VDISCARD, 	CDISCARD },
-	{ "dsusp", 	CDSUSP,		CDSUSP },
 	{ "eof",	VEOF,		CEOF },
 	{ "eol",	VEOL,		CEOL },
 	{ "eol2",	VEOL2,		CEOL },
@@ -71,11 +70,11 @@ struct cchar cchars1[] = {
 	{ "quit",	VQUIT,		CQUIT },
 	{ "reprint",	VREPRINT, 	CREPRINT },
 	{ "start",	VSTART,		CSTART },
-	{ "status",	CSTATUS, 	CSTATUS },
 	{ "stop",	VSTOP,		CSTOP },
 	{ "susp",	VSUSP,		CSUSP },
 	{ "time",	VTIME,		CTIME },
 	{ "werase",	VWERASE,	CWERASE },
+	{ "swtc",	VSWTC,		CEOL },
 	{ NULL,		0,		0},
 };
 

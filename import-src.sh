@@ -222,6 +222,7 @@ copy_cmd usr.bin/gzip
 copy_cmd usr.bin/m4
 copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
+copy_cmd usr.bin/tip
 copy_cmd usr.bin/which
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk
@@ -296,6 +297,14 @@ rm -f ${CWD}/src.orig/sh/profile
 rm -rf ${CWD}/src.freebsd/sh/dot.*
 rm -rf ${CWD}/src.freebsd/sh/funcs
 rm -f ${CWD}/src.freebsd/sh/profile
+
+# remove libacu and other junk from tip
+rm -rf ${CWD}/src.orig/tip/libacu
+rm -f ${CWD}/src.orig/tip/Makefile*
+rm -f ${CWD}/src.orig/tip/tip/Makefile*
+rm -rf ${CWD}/src.freebsd/tip/libacu
+rm -f ${CWD}/src.freebsd/tip/Makefile*
+rm -f ${CWD}/src.freebsd/tip/tip/Makefile*
 
 # remove our own nvi scripts before patching
 rm -f ${CWD}/src.freebsd/nvi/*.sh
