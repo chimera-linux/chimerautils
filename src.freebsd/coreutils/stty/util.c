@@ -68,9 +68,16 @@ static const int baudlist[] = {
 	1000000, 1152000, 1500000, 2000000, 2500000, 3000000, 3500000, 4000000,
 };
 
+static const speed_t baudvals[] = {
+	B0, B50, B75, B110, B134, B150, B200, B300, B600, B1200, B1800, B2400,
+	B4800, B9600, B19200, B38400, B57600, B115200, B230400, B460800, B500000,
+	B576000, B921600, B1000000, B1152000, B1500000, B2000000, B2500000,
+	B3000000, B3500000, B4000000,
+};
+
 int get_baud(speed_t s) {
 	if (s & CBAUDEX)
-		s = (s & ~CBAUDEX) + 16;
+		s = (s & ~CBAUDEX) + 15;
 	return baudlist[s];
 }
 
@@ -78,7 +85,7 @@ speed_t get_speed(unsigned long b) {
 	for (size_t i = 0; i < (sizeof(baudlist) / sizeof(int)); ++i) {
 		if ((unsigned long)baudlist[i] != b)
 			continue;
-		return i;
+		return baudvals[i];
 	}
 	errx(1, "unknown speed for baud %lu", b);
 }
