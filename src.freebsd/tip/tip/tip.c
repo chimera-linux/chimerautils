@@ -568,14 +568,14 @@ int
 ttysetup(int speed)
 {
 	struct termios	cntrl;
-	speed_t aspeed = 0;
+	speed_t aspeed = B0;
 	for (size_t i = 0; i < (sizeof(baudlist) / sizeof(int)); ++i) {
 		if (baudlist[i] == speed) {
 			aspeed = baudvals[i];
 			break;
 		}
 	}
-	if ((aspeed == 0) || tcgetattr(FD, &cntrl))
+	if ((aspeed == B0) || tcgetattr(FD, &cntrl))
 		return (-1);
 	cfsetspeed(&cntrl, aspeed);
 	cntrl.c_cflag &= ~(CSIZE|PARENB);
