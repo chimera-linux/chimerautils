@@ -8,6 +8,10 @@ subdir('compat')
 dbinc = include_directories('dbinclude')
 subdir('dbcompat')
 
+# libmp
+mpinc = include_directories('libmp')
+subdir('libmp')
+
 # standalone toplevel projects
 
 subdir('awk')
@@ -17,6 +21,7 @@ subdir('m4')
 subdir('patch')
 subdir('sed')
 subdir('sh')
+subdir('telnet')
 subdir('tip')
 subdir('which')
 

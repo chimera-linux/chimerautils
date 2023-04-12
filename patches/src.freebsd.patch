@@ -8559,6 +8559,49 @@
  {
  	u_int count, i;
  	struct s_zstate *zs;
+--- src.orig/libmp/mpasbn.c
++++ src.freebsd/libmp/mpasbn.c
+@@ -93,7 +93,7 @@
+ } while (0)
+ 
+ static void _bnerr(const char *);
+-static MINT *_dtom(const char *, const char *);
++/*static MINT *_dtom(const char *, const char *);*/
+ static MINT *_itom(const char *, short);
+ static void _madd(const char *, const MINT *, const MINT *, MINT *);
+ static int _mcmpa(const char *, const MINT *, const MINT *);
+@@ -120,6 +120,7 @@
+ 	MPERRX(("%s: %s", msg, ERR_reason_error_string(ERR_get_error())));
+ }
+ 
++#if 0
+ /*
+  * Convert a decimal string to an MINT.
+  */
+@@ -137,6 +138,7 @@
+ 	BN_ERRCHECK(msg, BN_dec2bn(&mp->bn, s));
+ 	return (mp);
+ }
++#endif
+ 
+ /*
+  * Compute the greatest common divisor of mp1 and mp2; result goes in rmp.
+@@ -279,6 +281,7 @@
+ 	_mfree("mfree", mp);
+ }
+ 
++#if 0
+ /*
+  * Read an integer from standard input and stick the result in mp.
+  * The input is treated to be in base 10.  This must be the silliest
+@@ -306,6 +309,7 @@
+ 	_mfree("min", rmp);
+ 	free(nline);
+ }
++#endif
+ 
+ /*
+  * Print the value of mp to standard output in base 10.  See blurb
 --- src.orig/m4/parser.y
 +++ src.freebsd/m4/parser.y
 @@ -20,6 +20,7 @@
@@ -11262,6 +11305,1333 @@
  				} else {
  					out1fmt(" %d\n", signo);
  				}
+--- src.orig/telnet/libtelnet/auth.c
++++ src.freebsd/telnet/libtelnet/auth.c
+@@ -397,7 +397,7 @@
+ 	if (data < _auth_send_data ||
+ 	    data > _auth_send_data + sizeof(_auth_send_data)) {
+ 		auth_send_cnt = (size_t)cnt > sizeof(_auth_send_data)
+-					? sizeof(_auth_send_data)
++					? (int)sizeof(_auth_send_data)
+ 					: cnt;
+ 		memmove((void *)_auth_send_data, (void *)data, auth_send_cnt);
+ 		auth_send_data = _auth_send_data;
+@@ -497,7 +497,7 @@
+ void
+ auth_name(unsigned char *data, int cnt)
+ {
+-	unsigned char savename[256];
++	char savename[256];
+ 
+ 	if (cnt < 1) {
+ 		if (auth_debug_mode)
+--- src.orig/telnet/libtelnet/encrypt.c
++++ src.freebsd/telnet/libtelnet/encrypt.c
+@@ -751,7 +751,7 @@
+ 		return;
+ 	}
+ 
+-	encrypt_send_keyid(dir, kp->keyid, kp->keylen, 0);
++	encrypt_send_keyid(dir, (const char *)kp->keyid, kp->keylen, 0);
+ }
+ 
+ void
+--- src.orig/telnet/libtelnet/pk.c
++++ src.freebsd/telnet/libtelnet/pk.c
+@@ -44,6 +44,7 @@
+  */
+ 
+ #include <sys/time.h>
++#include <sys/random.h>
+ #include <openssl/des.h>
+ #include <fcntl.h>
+ #include <stdio.h>
+@@ -142,7 +143,15 @@
+ static void
+ getseed(char *seed, int seedsize)
+ {
+-	arc4random_buf(seed, seedsize);
++	for (;;) {
++		ssize_t rn = getrandom(seed, seedsize, GRND_RANDOM);
++		if (rn >= seedsize)
++			break;
++		else if (rn < 0)
++			continue;
++		seed += rn;
++		seedsize -= rn;
++	}
+ }
+ 
+ /*
+@@ -223,7 +232,7 @@
+ 	memset(buf,0,sizeof(buf));
+ 	deslen = ((strlen(in) + 7)/8)*8;
+ 	DES_key_sched(key, &k);
+-	DES_cbc_encrypt(in, buf, deslen, &k, &i, DES_ENCRYPT);
++	DES_cbc_encrypt((unsigned char *)in, (unsigned char *)buf, deslen, &k, &i, DES_ENCRYPT);
+ 	for (l=0,op=0;l<deslen;l++) {
+ 		out[op++] = hextab[(buf[l] & 0xf0) >> 4];
+ 		out[op++] = hextab[(buf[l] & 0x0f)];
+@@ -255,6 +264,6 @@
+ 		buf[l] = n1*16 +n2;
+ 	}
+ 	DES_key_sched(key, &k);
+-	DES_cbc_encrypt(buf, out, strlen(in) / 2, &k, &i, DES_DECRYPT);
++	DES_cbc_encrypt((unsigned char *)buf, (unsigned char *)out, strlen(in) / 2, &k, &i, DES_DECRYPT);
+ 	out[strlen(in)/2] = '\0';
+ }
+--- src.orig/telnet/libtelnet/sra.c
++++ src.freebsd/telnet/libtelnet/sra.c
+@@ -41,7 +41,6 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <syslog.h>
+-#include <ttyent.h>
+ 
+ #ifndef NOPAM
+ #include <security/pam_appl.h>
+@@ -413,6 +412,7 @@
+ 	}
+ }
+ 
++#if 0
+ static int
+ isroot(const char *usr)
+ {
+@@ -430,11 +430,14 @@
+ 
+ 	return ((t = getttynam(ttyn)) && t->ty_status & TTY_SECURE);
+ }
++#endif
+ 
+ #ifdef NOPAM
+ static int
+ check_user(char *name, char *cred)
+ {
++	(void)name; (void)cred;
++#if 0
+ 	char *cp;
+ 	char *xpasswd, *salt;
+ 
+@@ -460,6 +463,7 @@
+ 		}
+ 		return(1);
+ 	}
++#endif
+ 	return(0);
+ }
+ #else
+--- src.orig/telnet/telnet/commands.c
++++ src.freebsd/telnet/telnet/commands.c
+@@ -36,9 +36,11 @@
+ __FBSDID("$FreeBSD$");
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <sys/un.h>
+ #include <sys/file.h>
+ #include <sys/socket.h>
++#include <sys/wait.h>
+ #include <netinet/in.h>
+ 
+ #include <assert.h>
+@@ -80,6 +82,13 @@
+ #define       MAXHOSTNAMELEN 256
+ #endif
+ 
++#ifndef ALIGNBYTES
++#define ALIGNBYTES (sizeof(void *) - 1)
++#endif
++#ifndef ALIGN
++#define ALIGN(v) (((uintptr_t)(v) + ALIGNBYTES) & ~ALIGNBYTES)
++#endif
++
+ typedef int (*intrtn_t)(int, char **);
+ 
+ #ifdef	AUTHENTICATION
+@@ -104,11 +113,11 @@
+ #ifdef INET6
+ static int switch_af(struct addrinfo **);
+ #endif
+-static int togglehelp(void);
++static int togglehelp(int);
+ static int send_tncmd(void (*)(int, int), const char *, char *);
+ static int setmod(int);
+ static int clearmode(int);
+-static int modehelp(void);
++static int modehelp(int);
+ static int sourceroute(struct addrinfo *, char *, unsigned char **, int *, int *, int *);
+ 
+ typedef struct {
+@@ -123,6 +132,10 @@
+ static int margc;
+ static char *margv[20];
+ 
++#if defined(__linux__) && !defined(__GLIBC__) && defined(INET6)
++#define INET6_NO_RTHDR
++#endif
++
+ #ifdef OPIE
+ #include <sys/wait.h>
+ #define PATH_OPIEKEY	"/usr/bin/opiekey"
+@@ -281,15 +294,15 @@
+     const char	*help;		/* Help information (0 ==> no help) */
+     int		needconnect;	/* Need to be connected */
+     int		narg;		/* Number of arguments */
+-    int		(*handler)(char *, ...); /* Routine to perform (for special ops) */
++    int		(*handler)(char *); /* Routine to perform (for special ops) */
+     int		nbyte;		/* Number of bytes to send this command */
+     int		what;		/* Character to be sent (<0 ==> special) */
+ };
+ 
+ 
+ static int
+-	send_esc(void),
+-	send_help(void),
++	send_esc(char *),
++	send_help(char *),
+ 	send_docmd(char *),
+ 	send_dontcmd(char *),
+ 	send_willcmd(char *),
+@@ -302,7 +315,7 @@
+     { "break",	NULL,				1, 0, NULL, 2, BREAK },
+     { "ec",	"Send Telnet Erase Character",	1, 0, NULL, 2, EC },
+     { "el",	"Send Telnet Erase Line",	1, 0, NULL, 2, EL },
+-    { "escape",	"Send current escape character",1, 0, (int (*)(char *, ...))send_esc, 1, 0 },
++    { "escape",	"Send current escape character",1, 0, send_esc, 1, 0 },
+     { "ga",	"Send Telnet 'Go Ahead' sequence", 1, 0, NULL, 2, GA },
+     { "ip",	"Send Telnet Interrupt Process",1, 0, NULL, 2, IP },
+     { "intp",	NULL,				1, 0, NULL, 2, IP },
+@@ -313,14 +326,14 @@
+     { "abort",	"Send Telnet 'Abort Process'",	1, 0, NULL, 2, ABORT },
+     { "susp",	"Send Telnet 'Suspend Process'",1, 0, NULL, 2, SUSP },
+     { "eof",	"Send Telnet End of File Character", 1, 0, NULL, 2, xEOF },
+-    { "synch",	"Perform Telnet 'Synch operation'", 1, 0, (int (*)(char *, ...))dosynch, 2, 0 },
+-    { "getstatus", "Send request for STATUS",	1, 0, (int (*)(char *, ...))get_status, 6, 0 },
+-    { "?",	"Display send options",		0, 0, (int (*)(char *, ...))send_help, 0, 0 },
+-    { "help",	NULL,				0, 0, (int (*)(char *, ...))send_help, 0, 0 },
+-    { "do",	NULL,				0, 1, (int (*)(char *, ...))send_docmd, 3, 0 },
+-    { "dont",	NULL,				0, 1, (int (*)(char *, ...))send_dontcmd, 3, 0 },
+-    { "will",	NULL,				0, 1, (int (*)(char *, ...))send_willcmd, 3, 0 },
+-    { "wont",	NULL,				0, 1, (int (*)(char *, ...))send_wontcmd, 3, 0 },
++    { "synch",	"Perform Telnet 'Synch operation'", 1, 0, dosynch, 2, 0 },
++    { "getstatus", "Send request for STATUS",	1, 0, get_status, 6, 0 },
++    { "?",	"Display send options",		0, 0, send_help, 0, 0 },
++    { "help",	NULL,				0, 0, send_help, 0, 0 },
++    { "do",	NULL,				0, 1, send_docmd, 3, 0 },
++    { "dont",	NULL,				0, 1, send_dontcmd, 3, 0 },
++    { "will",	NULL,				0, 1, send_willcmd, 3, 0 },
++    { "wont",	NULL,				0, 1, send_wontcmd, 3, 0 },
+     { NULL,	NULL,				0, 0, NULL, 0, 0 }
+ };
+ 
+@@ -367,7 +380,7 @@
+ 	}
+ 	count += s->nbyte;
+ 	if ((void *)s->handler == (void *)send_help) {
+-	    send_help();
++	    send_help(NULL);
+ 	    return 0;
+ 	}
+ 
+@@ -397,8 +410,7 @@
+ 	}
+ 	if (s->handler) {
+ 	    count++;
+-	    success += (*s->handler)((s->narg > 0) ? argv[i+1] : 0,
+-				  (s->narg > 1) ? argv[i+2] : 0);
++	    success += (*s->handler)((s->narg > 0) ? argv[i+1] : 0);
+ 	    i += s->narg;
+ 	} else {
+ 	    NET2ADD(IAC, s->what);
+@@ -409,8 +421,9 @@
+ }
+ 
+ static int
+-send_esc(void)
++send_esc(char *name)
+ {
++    (void)name;
+     NETADD(escape);
+     return 1;
+ }
+@@ -422,8 +435,7 @@
+ }
+ 
+ static int
+-send_dontcmd(name)
+-    char *name;
++send_dontcmd(char *name)
+ {
+     return(send_tncmd(send_dont, "dont", name));
+ }
+@@ -502,9 +514,10 @@
+ }
+ 
+ static int
+-send_help(void)
++send_help(char *name)
+ {
+     struct sendlist *s;	/* pointer to current command */
++    (void)name;
+     for (s = Sendlist; s->name; s++) {
+ 	if (s->help)
+ 	    printf("%-15s %s\n", s->name, s->help);
+@@ -518,15 +531,17 @@
+  */
+ 
+ static int
+-lclchars(void)
++lclchars(int val)
+ {
++    (void)val;
+     donelclchars = 1;
+     return 1;
+ }
+ 
+ static int
+-togdebug(void)
++togdebug(int val)
+ {
++    (void)val;
+ #ifndef	NOT43
+     if (net > 0 &&
+ 	(SetSockOpt(net, SOL_SOCKET, SO_DEBUG, telnet_debug)) < 0) {
+@@ -544,8 +559,9 @@
+ 
+ 
+ static int
+-togcrlf(void)
++togcrlf(int val)
+ {
++    (void)val;
+     if (crlf) {
+ 	printf("Will send carriage returns as telnet <CR><LF>.\n");
+     } else {
+@@ -721,7 +737,7 @@
+ 		    0 },
+     { "crlf",
+ 	"sending carriage returns as telnet <CR><LF>",
+-	    (int (*)(int))togcrlf,
++	    togcrlf,
+ 		&crlf,
+ 		    0 },
+     { "crmod",
+@@ -731,13 +747,13 @@
+ 		    "map carriage return on output" },
+     { "localchars",
+ 	"local recognition of certain control characters",
+-	    (int (*)(int))lclchars,
++	    lclchars,
+ 		&localchars,
+ 		    "recognize certain control characters" },
+     { " ", "", NULL, NULL, NULL },		/* empty line */
+     { "debug",
+ 	"debugging",
+-	    (int (*)(int))togdebug,
++	    togdebug,
+ 		&telnet_debug,
+ 		    "turn on socket level debugging" },
+     { "netdata",
+@@ -762,23 +778,24 @@
+ 		    "print hexadecimal representation of terminal traffic" },
+     { "?",
+ 	NULL,
+-	    (int (*)(int))togglehelp,
++	    togglehelp,
+ 		NULL,
+ 		    NULL },
+     { NULL, NULL, NULL, NULL, NULL },
+     { "help",
+ 	NULL,
+-	    (int (*)(int))togglehelp,
++	    togglehelp,
+ 		NULL,
+ 		    NULL },
+     { NULL, NULL, NULL, NULL, NULL }
+ };
+ 
+ static int
+-togglehelp(void)
++togglehelp(int val)
+ {
+     struct togglelist *c;
+ 
++    (void)val;
+     for (c = Togglelist; c->name; c++) {
+ 	if (c->help) {
+ 	    if (*c->help)
+@@ -857,7 +874,7 @@
+  */
+ 
+ #ifdef	USE_TERMIO
+-struct termio new_tc = { 0, 0, 0, 0, {}, 0, 0 };
++struct termio new_tc = {0};
+ #endif
+ 
+ struct setlist {
+@@ -1057,8 +1074,9 @@
+ extern int kludgelinemode;
+ 
+ static int
+-dokludgemode(void)
++dokludgemode(int val)
+ {
++    (void)val;
+     kludgelinemode = 1;
+     send_wont(TELOPT_LINEMODE, 1);
+     send_dont(TELOPT_SGA, 1);
+@@ -1068,8 +1086,9 @@
+ #endif
+ 
+ static int
+-dolinemode(void)
++dolinemode(int val)
+ {
++    (void)val;
+ #ifdef	KLUDGELINEMODE
+     if (kludgelinemode)
+ 	send_dont(TELOPT_SGA, 1);
+@@ -1080,8 +1099,9 @@
+ }
+ 
+ static int
+-docharmode(void)
++docharmode(int val)
+ {
++    (void)val;
+ #ifdef	KLUDGELINEMODE
+     if (kludgelinemode)
+ 	send_do(TELOPT_SGA, 1);
+@@ -1133,11 +1153,11 @@
+ };
+ 
+ static struct modelist ModeList[] = {
+-    { "character", "Disable LINEMODE option",	(int (*)(int))docharmode, 1, 0 },
++    { "character", "Disable LINEMODE option",	docharmode, 1, 0 },
+ #ifdef	KLUDGELINEMODE
+     { "",	"(or disable obsolete line-by-line mode)", NULL, 0, 0 },
+ #endif
+-    { "line",	"Enable LINEMODE option",	(int (*)(int))dolinemode, 1, 0 },
++    { "line",	"Enable LINEMODE option",	dolinemode, 1, 0 },
+ #ifdef	KLUDGELINEMODE
+     { "",	"(or enable obsolete line-by-line mode)", NULL, 0, 0 },
+ #endif
+@@ -1155,21 +1175,22 @@
+     { "litecho", "Enable literal character echo", setmod, 1, MODE_LIT_ECHO },
+     { "+litecho", 0,				setmod, 1, MODE_LIT_ECHO },
+     { "-litecho", "Disable literal character echo", clearmode, 1, MODE_LIT_ECHO },
+-    { "help",	0,				(int (*)(int))modehelp, 0, 0 },
++    { "help",	0,				modehelp, 0, 0 },
+ #ifdef	KLUDGELINEMODE
+-    { "kludgeline", 0,				(int (*)(int))dokludgemode, 1, 0 },
++    { "kludgeline", 0,				dokludgemode, 1, 0 },
+ #endif
+     { "", "", NULL, 0, 0 },
+-    { "?",	"Print help information",	(int (*)(int))modehelp, 0, 0 },
++    { "?",	"Print help information",	modehelp, 0, 0 },
+     { NULL, NULL, NULL, 0, 0 },
+ };
+ 
+ 
+ static int
+-modehelp(void)
++modehelp(int val)
+ {
+     struct modelist *mt;
+ 
++    (void)val;
+     printf("format is:  'mode Mode', where 'Mode' is one of:\n\n");
+     for (mt = ModeList; mt->name; mt++) {
+ 	if (mt->help) {
+@@ -1303,8 +1324,9 @@
+ }
+ 
+ static int
+-togcrmod(void)
++togcrmod(int v, char **p)
+ {
++    (void)v; (void)p;
+     crmod = !crmod;
+     printf("Deprecated usage - please use 'toggle crmod' in the future.\n");
+     printf("%s map carriage return on output.\n", crmod ? "Will" : "Won't");
+@@ -1313,8 +1335,9 @@
+ }
+ 
+ static int
+-suspend(void)
++suspend(int v, char **p)
+ {
++	(void)v; (void)p;
+ #ifdef	SIGTSTP
+     setcommandmode();
+     {
+@@ -1421,8 +1444,17 @@
+ }
+ 
+ static int
+-logout(void)
++quitf(int v, char **p)
++{
++	(void)v; (void)p;
++	quit();
++	return -1;
++}
++
++static int
++logout(int v, char **p)
+ {
++	(void)v; (void)p;
+ 	send_do(TELOPT_LOGOUT, 1);
+ 	(void) netflush();
+ 	return 1;
+@@ -1440,24 +1472,30 @@
+ 	int	arg;
+ };
+ 
+-static void slc_help(void);
++static void slc_help(int);
++
++static void slc_mode_exportf(int v) {
++    (void)v;
++    slc_mode_export();
++}
+ 
+ struct slclist SlcList[] = {
+     { "export",	"Use local special character definitions",
+-						(void (*)(int))slc_mode_export,	0 },
++						slc_mode_exportf,	0 },
+     { "import",	"Use remote special character definitions",
+ 						slc_mode_import,	1 },
+     { "check",	"Verify remote special character definitions",
+ 						slc_mode_import,	0 },
+-    { "help",	NULL,				(void (*)(int))slc_help,		0 },
+-    { "?",	"Print help information",	(void (*)(int))slc_help,		0 },
++    { "help",	NULL,				slc_help,		0 },
++    { "?",	"Print help information",	slc_help,		0 },
+     { NULL, NULL, NULL, 0 },
+ };
+ 
+ static void
+-slc_help(void)
++slc_help(int v)
+ {
+     struct slclist *c;
++    (void)v;
+ 
+     for (c = SlcList; c->name; c++) {
+ 	if (c->help) {
+@@ -1509,49 +1547,54 @@
+ struct envlist {
+ 	const char	*name;
+ 	const char	*help;
+-	void	(*handler)(unsigned char *, unsigned char *);
++	void	(*handler)(char *, char *);
+ 	int	narg;
+ };
+ 
+-extern struct env_lst *
+-	env_define(const unsigned char *, unsigned char *);
+-extern void
+-	env_undefine(unsigned char *),
+-	env_export(const unsigned char *),
+-	env_unexport(const unsigned char *),
+-	env_send(unsigned char *),
++static struct env_lst *
++	env_define(const char *, char *);
++static void
++	env_undefine(char *, char *),
++	env_export(char *, char *),
++	env_unexport(char *, char *),
++	env_send(char *, char *),
+ #if defined(OLD_ENVIRON) && defined(ENV_HACK)
+-	env_varval(unsigned char *),
++	env_varval(char *, char *),
+ #endif
+-	env_list(void);
++	env_list(char *, char *);
+ static void
+-	env_help(void);
++	env_help(char *, char *);
++
++static void envf_define(char *a, char *b) {
++    env_define(a, b);
++}
+ 
+ struct envlist EnvList[] = {
+     { "define",	"Define an environment variable",
+-						(void (*)(unsigned char *, unsigned char *))env_define,	2 },
++						envf_define,	2 },
+     { "undefine", "Undefine an environment variable",
+-						(void (*)(unsigned char *, unsigned char *))env_undefine,	1 },
++						env_undefine,	1 },
+     { "export",	"Mark an environment variable for automatic export",
+-						(void (*)(unsigned char *, unsigned char *))env_export,	1 },
++						env_export,	1 },
+     { "unexport", "Don't mark an environment variable for automatic export",
+-						(void (*)(unsigned char *, unsigned char *))env_unexport,	1 },
+-    { "send",	"Send an environment variable", (void (*)(unsigned char *, unsigned char *))env_send,	1 },
++						env_unexport,	1 },
++    { "send",	"Send an environment variable", env_send,	1 },
+     { "list",	"List the current environment variables",
+-						(void (*)(unsigned char *, unsigned char *))env_list,	0 },
++						env_list,	0 },
+ #if defined(OLD_ENVIRON) && defined(ENV_HACK)
+     { "varval", "Reverse VAR and VALUE (auto, right, wrong, status)",
+-						(void (*)(unsigned char *, unsigned char *))env_varval,    1 },
++						env_varval,    1 },
+ #endif
+-    { "help",	NULL,				(void (*)(unsigned char *, unsigned char *))env_help,		0 },
+-    { "?",	"Print help information",	(void (*)(unsigned char *, unsigned char *))env_help,		0 },
++    { "help",	NULL,				env_help,		0 },
++    { "?",	"Print help information",	env_help,		0 },
+     { NULL, NULL, NULL, 0 },
+ };
+ 
+ static void
+-env_help(void)
++env_help(char *var, char *val)
+ {
+     struct envlist *c;
++    (void)var; (void)val;
+ 
+     for (c = EnvList; c->name; c++) {
+ 	if (c->help) {
+@@ -1605,8 +1648,8 @@
+ struct env_lst {
+ 	struct env_lst *next;	/* pointer to next structure */
+ 	struct env_lst *prev;	/* pointer to previous structure */
+-	unsigned char *var;	/* pointer to variable name */
+-	unsigned char *value;	/* pointer to variable value */
++	char *var;	/* pointer to variable name */
++	char *value;	/* pointer to variable value */
+ 	int export;		/* 1 -> export with default list of variables */
+ 	int welldefined;	/* A well defined variable */
+ };
+@@ -1614,7 +1657,7 @@
+ struct env_lst envlisthead;
+ 
+ static struct env_lst *
+-env_find(const unsigned char *var)
++env_find(const char *var)
+ {
+ 	struct env_lst *ep;
+ 
+@@ -1635,8 +1678,7 @@
+ 	for (epp = environ; *epp; epp++) {
+ 		if ((cp = strchr(*epp, '='))) {
+ 			*cp = '\0';
+-			ep = env_define((unsigned char *)*epp,
+-					(unsigned char *)cp+1);
++			ep = env_define(*epp, cp+1);
+ 			ep->export = 0;
+ 			*cp = '=';
+ 		}
+@@ -1657,7 +1699,7 @@
+ 		asprintf(&cp, "%s%s", hbuf, cp2);
+ 		assert(cp != NULL);
+ 		free(ep->value);
+-		ep->value = (unsigned char *)cp;
++		ep->value = cp;
+ 	}
+ 	/*
+ 	 * If USER is not defined, but LOGNAME is, then add
+@@ -1666,14 +1708,14 @@
+ 	 */
+ 	if ((env_find("USER") == NULL) && (ep = env_find("LOGNAME"))) {
+ 		env_define("USER", ep->value);
+-		env_unexport("USER");
++		env_unexport("USER", NULL);
+ 	}
+-	env_export("DISPLAY");
+-	env_export("PRINTER");
++	env_export("DISPLAY", NULL);
++	env_export("PRINTER", NULL);
+ }
+ 
+-struct env_lst *
+-env_define(const unsigned char *var, unsigned char *value)
++static struct env_lst *
++env_define(const char *var, char *value)
+ {
+ 	struct env_lst *ep;
+ 
+@@ -1697,10 +1739,11 @@
+ 	return(ep);
+ }
+ 
+-void
+-env_undefine(unsigned char *var)
++static void
++env_undefine(char *var, char *val)
+ {
+ 	struct env_lst *ep;
++	(void)val;
+ 
+ 	if ((ep = env_find(var))) {
+ 		ep->prev->next = ep->next;
+@@ -1714,28 +1757,31 @@
+ 	}
+ }
+ 
+-void
+-env_export(const unsigned char *var)
++static void
++env_export(char *var, char *val)
+ {
+ 	struct env_lst *ep;
++	(void)val;
+ 
+ 	if ((ep = env_find(var)))
+ 		ep->export = 1;
+ }
+ 
+-void
+-env_unexport(const unsigned char *var)
++static void
++env_unexport(char *var, char *val)
+ {
+ 	struct env_lst *ep;
++	(void)val;
+ 
+ 	if ((ep = env_find(var)))
+ 		ep->export = 0;
+ }
+ 
+-void
+-env_send(unsigned char *var)
++static void
++env_send(char *var, char *val)
+ {
+ 	struct env_lst *ep;
++	(void)val;
+ 
+ 	if (my_state_is_wont(TELOPT_NEW_ENVIRON)
+ #ifdef	OLD_ENVIRON
+@@ -1754,14 +1800,15 @@
+ 		return;
+ 	}
+ 	env_opt_start_info();
+-	env_opt_add(ep->var);
++	env_opt_add((unsigned char *)ep->var);
+ 	env_opt_end(0);
+ }
+ 
+-void
+-env_list(void)
++static void
++env_list(char *var, char *val)
+ {
+ 	struct env_lst *ep;
++	(void)var; (void)val;
+ 
+ 	for (ep = envlisthead.next; ep; ep = ep->next) {
+ 		printf("%c %-20s %s\n", ep->export ? '*' : ' ',
+@@ -1781,7 +1828,7 @@
+ 	if (nep) {
+ 		while ((nep = nep->next)) {
+ 			if (nep->export && (nep->welldefined == welldefined))
+-				return(nep->var);
++				return (unsigned char *)(nep->var);
+ 		}
+ 	}
+ 	return(NULL);
+@@ -1792,22 +1839,23 @@
+ {
+ 	struct env_lst *ep;
+ 
+-	if ((ep = env_find(var)))
+-		return(ep->value);
++	if ((ep = env_find((char *)var)))
++		return (unsigned char *)(ep->value);
+ 	return(NULL);
+ }
+ 
+ #if defined(OLD_ENVIRON) && defined(ENV_HACK)
+-void
+-env_varval(unsigned char *what)
++static void
++env_varval(char *what, char *val)
+ {
+ 	extern int old_env_var, old_env_value, env_auto;
+-	int len = strlen((char *)what);
++	int len = strlen(what);
++	(void)val;
+ 
+ 	if (len == 0)
+ 		goto unknown;
+ 
+-	if (strncasecmp((char *)what, "status", len) == 0) {
++	if (strncasecmp(what, "status", len) == 0) {
+ 		if (env_auto)
+ 			printf("%s%s", "VAR and VALUE are/will be ",
+ 					"determined automatically\n");
+@@ -1815,15 +1863,15 @@
+ 			printf("VAR and VALUE set to correct definitions\n");
+ 		else
+ 			printf("VAR and VALUE definitions are reversed\n");
+-	} else if (strncasecmp((char *)what, "auto", len) == 0) {
++	} else if (strncasecmp(what, "auto", len) == 0) {
+ 		env_auto = 1;
+ 		old_env_var = OLD_ENV_VALUE;
+ 		old_env_value = OLD_ENV_VAR;
+-	} else if (strncasecmp((char *)what, "right", len) == 0) {
++	} else if (strncasecmp(what, "right", len) == 0) {
+ 		env_auto = 0;
+ 		old_env_var = OLD_ENV_VAR;
+ 		old_env_value = OLD_ENV_VALUE;
+-	} else if (strncasecmp((char *)what, "wrong", len) == 0) {
++	} else if (strncasecmp(what, "wrong", len) == 0) {
+ 		env_auto = 0;
+ 		old_env_var = OLD_ENV_VALUE;
+ 		old_env_value = OLD_ENV_VAR;
+@@ -1853,15 +1901,24 @@
+ static int
+ 	auth_help(void);
+ 
++static int auth_statusf(char *p) {
++    (void)p;
++    return auth_status();
++}
++static int auth_helpf(char *p) {
++    (void)p;
++    return auth_help();
++}
++
+ struct authlist AuthList[] = {
+     { "status",	"Display current status of authentication information",
+-						(int (*)(char *))auth_status,	0 },
++						auth_statusf,	0 },
+     { "disable", "Disable an authentication type ('auth disable ?' for more)",
+ 						auth_disable,	1 },
+     { "enable", "Enable an authentication type ('auth enable ?' for more)",
+ 						auth_enable,	1 },
+-    { "help",	NULL,				(int (*)(char *))auth_help,		0 },
+-    { "?",	"Print help information",	(int (*)(char *))auth_help,		0 },
++    { "help",	NULL,				auth_helpf,		0 },
++    { "?",	"Print help information",	auth_helpf,		0 },
+     { NULL, NULL, NULL, 0 },
+ };
+ 
+@@ -1943,6 +2000,39 @@
+ static int
+ 	EncryptHelp(void);
+ 
++static int EncryptStartf(char *a, char *b) {
++    (void)b;
++    return EncryptStart(a);
++}
++static int EncryptStartInputf(char *a, char *b) {
++    (void)a; (void)b;
++    return EncryptStartInput();
++}
++static int EncryptStartOutputf(char *a, char *b) {
++    (void)a; (void)b;
++    return EncryptStartOutput();
++}
++static int EncryptStopf(char *a, char *b) {
++    (void)b;
++    return EncryptStop(a);
++}
++static int EncryptStopInputf(char *a, char *b) {
++    (void)a; (void)b;
++    return EncryptStopInput();
++}
++static int EncryptStopOutputf(char *a, char *b) {
++    (void)a; (void)b;
++    return EncryptStopOutput();
++}
++static int EncryptStatusf(char *a, char *b) {
++    (void)a; (void)b;
++    return EncryptStatus();
++}
++static int EncryptHelpf(char *a, char *b) {
++    (void)a; (void)b;
++    return EncryptHelp();
++}
++
+ struct encryptlist EncryptList[] = {
+     { "enable", "Enable encryption. ('encrypt enable ?' for more)",
+ 						EncryptEnable, 1, 1, 2 },
+@@ -1951,22 +2041,22 @@
+     { "type", "Set encryption type. ('encrypt type ?' for more)",
+ 						EncryptType, 0, 1, 1 },
+     { "start", "Start encryption. ('encrypt start ?' for more)",
+-						(int (*)(char *, char *))EncryptStart, 1, 0, 1 },
++						EncryptStartf, 1, 0, 1 },
+     { "stop", "Stop encryption. ('encrypt stop ?' for more)",
+-						(int (*)(char *, char *))EncryptStop, 1, 0, 1 },
++						EncryptStopf, 1, 0, 1 },
+     { "input", "Start encrypting the input stream",
+-						(int (*)(char *, char *))EncryptStartInput, 1, 0, 0 },
++						EncryptStartInputf, 1, 0, 0 },
+     { "-input", "Stop encrypting the input stream",
+-						(int (*)(char *, char *))EncryptStopInput, 1, 0, 0 },
++						EncryptStopInputf, 1, 0, 0 },
+     { "output", "Start encrypting the output stream",
+-						(int (*)(char *, char *))EncryptStartOutput, 1, 0, 0 },
++						EncryptStartOutputf, 1, 0, 0 },
+     { "-output", "Stop encrypting the output stream",
+-						(int (*)(char *, char *))EncryptStopOutput, 1, 0, 0 },
++						EncryptStopOutputf, 1, 0, 0 },
+ 
+     { "status",	"Display current status of authentication information",
+-						(int (*)(char *, char *))EncryptStatus,	0, 0, 0 },
+-    { "help",	NULL,				(int (*)(char *, char *))EncryptHelp,	0, 0, 0 },
+-    { "?",	"Print help information",	(int (*)(char *, char *))EncryptHelp,	0, 0, 0 },
++						EncryptStatusf,	0, 0, 0 },
++    { "help",	NULL,				EncryptHelpf,	0, 0, 0 },
++    { "?",	"Print help information",	EncryptHelpf,	0, 0, 0 },
+     { NULL, NULL, NULL, 0, 0, 0 },
+ };
+ 
+@@ -2263,7 +2353,8 @@
+ 	hostname = hostp;
+ 	memset(&su, 0, sizeof su);
+ 	su.sun_family = AF_UNIX;
+-	strncpy(su.sun_path, hostp, sizeof su.sun_path);
++	strncpy(su.sun_path, hostp, sizeof su.sun_path - 1);
++	su.sun_path[sizeof su.sun_path - 1] = '\0';
+ 	printf("Trying %s...\n", hostp);
+ 	net = socket(PF_UNIX, SOCK_STREAM, 0);
+ 	if ( net < 0) {
+@@ -2324,7 +2415,7 @@
+         int gni_err = 1;
+ 
+ 	if (doaddrlookup)
+-	    gni_err = getnameinfo(res->ai_addr, res->ai_addr->sa_len,
++	    gni_err = getnameinfo(res->ai_addr, res->ai_addrlen,
+ 				  _hostname, sizeof(_hostname) - 1, NULL, 0,
+ 				  NI_NAMEREQD);
+ 	if (gni_err != 0)
+@@ -2443,13 +2534,16 @@
+ 
+ 	if (connect(net, res->ai_addr, res->ai_addrlen) < 0) {
+ 	    struct addrinfo *next;
++	    const char *addr;
+ 
+ 	    next = res->ai_next;
+ 	    /* If already an af failed, only try same af. */
+-	    if (af_error != 0)
+-		while (next != NULL && next->ai_family != res->ai_family)
+-		    next = next->ai_next;
+-	    warn("connect to address %s", sockaddr_ntop(res->ai_addr));
++	    if (af_error != 0) {
++			while (next != NULL && next->ai_family != res->ai_family)
++			    next = next->ai_next;
++		}
++		addr = sockaddr_ntop(res->ai_addr);
++	    warn("connect to address %s", addr ? addr : "(null)");
+ 	    if (next != NULL) {
+ 		res = next;
+ 		(void) NetClose(net);
+@@ -2486,7 +2580,7 @@
+     }
+     if (user) {
+ 	env_define("USER", user);
+-	env_export("USER");
++	env_export("USER", NULL);
+     }
+     (void) call(status, "status", "notmuch", 0);
+     telnet(user); 
+@@ -2532,12 +2626,12 @@
+ 
+ static Command cmdtab[] = {
+ 	{ "close",	closehelp,	bye,		1 },
+-	{ "logout",	logouthelp,	(int (*)(int, char **))logout,		1 },
++	{ "logout",	logouthelp,	logout,		1 },
+ 	{ "display",	displayhelp,	display,	0 },
+ 	{ "mode",	modestring,	modecmd,	0 },
+ 	{ "telnet",	openhelp,	tn,		0 },
+ 	{ "open",	openhelp,	tn,		0 },
+-	{ "quit",	quithelp,	(int (*)(int, char **))quit,		0 },
++	{ "quit",	quithelp,	quitf,		0 },
+ 	{ "send",	sendhelp,	sendcmd,	0 },
+ 	{ "set",	sethelp,	setcmd,		0 },
+ 	{ "unset",	unsethelp,	unsetcmd,	0 },
+@@ -2550,7 +2644,7 @@
+ #ifdef	ENCRYPTION
+ 	{ "encrypt",	encrypthelp,	encrypt_cmd,	0 },
+ #endif	/* ENCRYPTION */
+-	{ "z",		zhelp,		(int (*)(int, char **))suspend,	0 },
++	{ "z",		zhelp,		suspend,	0 },
+ 	{ "!",		shellhelp,	shell,		1 },
+ 	{ "environ",	envhelp,	env_cmd,	0 },
+ 	{ "?",		helphelp,	help,		0 },
+@@ -2566,7 +2660,7 @@
+ static Command cmdtab2[] = {
+ 	{ "help",	0,		help,		0 },
+ 	{ "escape",	escapehelp,	setescape,	0 },
+-	{ "crmod",	crmodhelp,	(int (*)(int, char **))togcrmod,	0 },
++	{ "crmod",	crmodhelp,	togcrmod,	0 },
+ 	{ NULL, NULL, NULL, 0 }
+ };
+ 
+@@ -2703,6 +2797,11 @@
+ static char *rcname = 0;
+ static char rcbuf[128];
+ 
++static void safe_strncpy(char *dest, const char *source, size_t num) {
++    memmove(dest, source, num);
++    dest[num] = '\0';
++}
++
+ void
+ cmdrc(char *m1, char *m2)
+ {
+@@ -2748,11 +2847,11 @@
+ 	    if (isspace(line[0]))
+ 		continue;
+ 	    if (strncasecmp(line, m1, l1) == 0)
+-		strncpy(line, &line[l1], sizeof(line) - l1);
++		safe_strncpy(line, &line[l1], sizeof(line) - l1);
+ 	    else if (strncasecmp(line, m2, l2) == 0)
+-		strncpy(line, &line[l2], sizeof(line) - l2);
++		safe_strncpy(line, &line[l2], sizeof(line) - l2);
+ 	    else if (strncasecmp(line, "DEFAULT", 7) == 0)
+-		strncpy(line, &line[7], sizeof(line) - 7);
++		safe_strncpy(line, &line[7], sizeof(line) - 7);
+ 	    else
+ 		continue;
+ 	    if (line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
+@@ -2847,8 +2946,10 @@
+ 	unsigned char *cp, *cp2, *lsrp, *ep;
+ 	struct sockaddr_in *_sin;
+ #ifdef INET6
++#ifndef INET6_NO_RTHDR
+ 	struct sockaddr_in6 *sin6;
+-	struct ip6_rthdr *rth;
++#endif
++	struct ip6_rthdr *rth = NULL;
+ #endif
+ 	struct addrinfo hints, *res;
+ 	int error;
+@@ -2883,14 +2984,17 @@
+ 		lsrp = *cpp;
+ 		ep = lsrp + *lenp;
+ 	} else {
+-		*cpp = lsrp = (char *)ALIGN(buf);
++		*cpp = lsrp = (unsigned char *)ALIGN(buf);
+ 		ep = lsrp + 1024;
+ 	}
+ 
+-	cp = arg;
++	cp = (unsigned char *)arg;
+ 
+ #ifdef INET6
+ 	if (ai->ai_family == AF_INET6) {
++#ifdef INET6_NO_RTHDR
++		return -1;
++#else
+ 		if ((rth = inet6_rth_init((void *)*cpp, sizeof(buf),
+ 					  IPV6_RTHDR_TYPE_0, 0)) == NULL)
+ 			return -1;
+@@ -2898,6 +3002,7 @@
+ 			return -1;
+ 		*protop = IPPROTO_IPV6;
+ 		*optp = IPV6_RTHDR;
++#endif
+ 	} else
+ #endif
+       {
+@@ -2953,10 +3058,10 @@
+ 			cp2 = 0;
+ 
+ 		hints.ai_flags = AI_NUMERICHOST;
+-		error = getaddrinfo(cp, NULL, &hints, &res);
++		error = getaddrinfo((char *)cp, NULL, &hints, &res);
+ 		if (error == EAI_NONAME) {
+ 			hints.ai_flags = 0;
+-			error = getaddrinfo(cp, NULL, &hints, &res);
++			error = getaddrinfo((char *)cp, NULL, &hints, &res);
+ 		}
+ 		if (error != 0) {
+ 			fprintf(stderr, "%s: %s\n", cp, gai_strerror(error));
+@@ -2968,9 +3073,13 @@
+ 		}
+ #ifdef INET6
+ 		if (res->ai_family == AF_INET6) {
++#ifdef INET6_NO_RTHDR
++			return 0;
++#else
+ 			sin6 = (struct sockaddr_in6 *)res->ai_addr;
+ 			if (inet6_rth_add((void *)rth, &sin6->sin6_addr) == -1)
+ 				return(0);
++#endif
+ 		} else
+ #endif
+ 	      {
+--- src.orig/telnet/telnet/externs.h
++++ src.freebsd/telnet/telnet/externs.h
+@@ -68,7 +68,7 @@
+ #include <string.h>
+ 
+ #if defined(IPSEC)
+-#include <netipsec/ipsec.h>
++#include <linux/ipsec.h>
+ #if defined(IPSEC_POLICY_IPSEC)
+ extern char *ipsec_policy_in;
+ extern char *ipsec_policy_out;
+--- src.orig/telnet/telnet/main.c
++++ src.freebsd/telnet/telnet/main.c
+@@ -36,6 +36,7 @@
+ __FBSDID("$FreeBSD$");
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <sys/socket.h>
+ #include <stdlib.h>
+ #include <string.h>
+--- src.orig/telnet/telnet/sys_bsd.c
++++ src.freebsd/telnet/telnet/sys_bsd.c
+@@ -41,6 +41,7 @@
+  */
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <sys/socket.h>
+ #include <sys/time.h>
+ #include <err.h>
+@@ -73,7 +74,7 @@
+ # define old_tc ottyb
+ 
+ #else	/* USE_TERMIO */
+-struct	termio old_tc = { 0, 0, 0, 0, {}, 0, 0 };
++struct	termio old_tc = {0};
+ 
+ # ifndef	TCSANOW
+ #  ifdef TCSETS
+@@ -650,7 +651,12 @@
+ #ifdef	SIGTSTP
+ 	(void) signal(SIGTSTP, SIG_DFL);
+ # ifndef SOLARIS
+-	(void) sigsetmask(sigblock(0) & ~(1<<(SIGTSTP-1)));
++	{
++		sigset_t sigs;
++		sigemptyset (&sigs);
++		sigaddset (&sigs, SIGTSTP);
++		sigprocmask (SIG_UNBLOCK, &sigs, 0);
++	}
+ # else	/* SOLARIS */
+ 	(void) sigrelse(SIGTSTP);
+ # endif	/* SOLARIS */
+@@ -1033,7 +1039,7 @@
+      */
+     if (FD_ISSET(tin, ibitsp)) {
+ 	FD_CLR(tin, ibitsp);
+-	c = TerminalRead(ttyiring.supply, ring_empty_consecutive(&ttyiring));
++	c = TerminalRead((char *)ttyiring.supply, ring_empty_consecutive(&ttyiring));
+ 	if (c < 0 && errno == EIO)
+ 	    c = 0;
+ 	if (c < 0 && errno == EWOULDBLOCK) {
+--- src.orig/telnet/telnet/telnet.c
++++ src.freebsd/telnet/telnet/telnet.c
+@@ -208,7 +208,7 @@
+ void
+ DoBaudRate(char *arg)
+ {
+-    char *temp, temp2[10];
++    char *temp, temp2[16];
+     int i;
+     uint32_t baudrate;
+ 
+@@ -218,14 +218,14 @@
+ 	ExitString("Invalid baud rate provided.\n", 1);
+ 
+     for (i = 1; termspeeds[i].speed != -1; i++)
+-	if (baudrate == termspeeds[i].speed)
++	if ((int)baudrate == termspeeds[i].speed)
+ 	    break;
+     if (termspeeds[i].speed == -1)
+ 	ExitString("Invalid baud rate provided.\n", 1);
+ 
+-    strlcpy(ComPortBaudRate, arg, sizeof(ComPortBaudRate));
++    strlcpy((char *)ComPortBaudRate, arg, sizeof(ComPortBaudRate));
+ 
+-    if (NETROOM() < sizeof(temp2)) {
++    if (NETROOM() < (int)sizeof(temp2)) {
+ 	ExitString("No room in buffer for baud rate.\n", 1);
+ 	/* NOTREACHED */
+     }
+@@ -235,8 +235,8 @@
+ 
+     baudrate = htonl(baudrate);
+     memcpy(&temp2[4], &baudrate, sizeof(baudrate));
+-    ring_supply_data(&netoring, temp2, sizeof(temp2));
+-    printsub('>', &temp[2], sizeof(temp2) - 2);
++    ring_supply_data(&netoring, (unsigned char *)temp2, sizeof(temp2));
++    printsub('>', (unsigned char *)&temp[2], sizeof(temp2) - 2);
+ }
+ 
+ void
+@@ -386,8 +386,9 @@
+ 	    case TELOPT_SGA:
+ 		if (!kludgelinemode)
+ 		    break;
+-		/* FALLTHROUGH */
++		goto telopt_echo;
+ #endif
++	    telopt_echo:
+ 	    case TELOPT_ECHO:
+ 		settimer(modenegotiated);
+ 		break;
+@@ -477,7 +478,7 @@
+ #endif
+ 
+ 	    case TELOPT_XDISPLOC:	/* X Display location */
+-		if (env_getvalue("DISPLAY"))
++		if (env_getvalue((unsigned char *)"DISPLAY"))
+ 		    new_state_ok = 1;
+ 		break;
+ 
+@@ -730,7 +731,7 @@
+ 		resettermname = 0;
+ 		if (tnamep && tnamep != unknown)
+ 			free(tnamep);
+-		if ((tname = env_getvalue("TERM")) &&
++		if ((tname = (char *)env_getvalue((unsigned char *)"TERM")) &&
+ 				(setupterm(tname, 1, &err) == 0)) {
+ 			tnamep = mklist(termbuf, tname);
+ 		} else {
+@@ -775,7 +776,7 @@
+ 	    return;
+ 	} else {
+ 	    const char *name;
+-	    unsigned char temp[50];
++	    char temp[50];
+ 	    int len;
+ 
+ 	    name = gettermname();
+@@ -783,8 +784,8 @@
+ 	    if (len < NETROOM()) {
+ 		snprintf(temp, sizeof(temp), "%c%c%c%c%s%c%c", IAC, SB, TELOPT_TTYPE,
+ 				TELQUAL_IS, name, IAC, SE);
+-		ring_supply_data(&netoring, temp, len);
+-		printsub('>', &temp[2], len-2);
++		ring_supply_data(&netoring, (unsigned char *)temp, len);
++		printsub('>', (unsigned char *)&temp[2], len-2);
+ 	    } else {
+ 		ExitString("No room in buffer for terminal type.\n", 1);
+ 		/*NOTREACHED*/
+@@ -798,18 +799,18 @@
+ 	    return;
+ 	if (SB_GET() == TELQUAL_SEND) {
+ 	    long ospeed, ispeed;
+-	    unsigned char temp[50];
++	    char temp[50];
+ 	    int len;
+ 
+ 	    TerminalSpeeds(&ispeed, &ospeed);
+ 
+-	    snprintf((char *)temp, sizeof(temp), "%c%c%c%c%ld,%ld%c%c", IAC, SB, TELOPT_TSPEED,
++	    snprintf(temp, sizeof(temp), "%c%c%c%c%ld,%ld%c%c", IAC, SB, TELOPT_TSPEED,
+ 		    TELQUAL_IS, ospeed, ispeed, IAC, SE);
+-	    len = strlen((char *)temp+4) + 4;	/* temp[3] is 0 ... */
++	    len = strlen(temp+4) + 4;	/* temp[3] is 0 ... */
+ 
+ 	    if (len < NETROOM()) {
+-		ring_supply_data(&netoring, temp, len);
+-		printsub('>', temp+2, len - 2);
++		ring_supply_data(&netoring, (unsigned char *)temp, len);
++		printsub('>', (unsigned char *)&temp[2], len - 2);
+ 	    }
+ /*@*/	    else printf("lm_will: not enough room in buffer\n");
+ 	}
+@@ -897,10 +898,10 @@
+ 	if (SB_EOF())
+ 	    return;
+ 	if (SB_GET() == TELQUAL_SEND) {
+-	    unsigned char temp[50], *dp;
++	    char temp[50], *dp;
+ 	    int len;
+ 
+-	    if ((dp = env_getvalue("DISPLAY")) == NULL ||
++	    if ((dp = (char *)env_getvalue((unsigned char *)"DISPLAY")) == NULL ||
+ 		strlen(dp) > sizeof(temp) - 7) {
+ 		/*
+ 		 * Something happened, we no longer have a DISPLAY
+@@ -911,11 +912,11 @@
+ 	    }
+ 	    snprintf(temp, sizeof(temp), "%c%c%c%c%s%c%c", IAC, SB,
+ 		    TELOPT_XDISPLOC, TELQUAL_IS, dp, IAC, SE);
+-	    len = strlen((char *)temp+4) + 4;	/* temp[3] is 0 ... */
++	    len = strlen(temp+4) + 4;	/* temp[3] is 0 ... */
+ 
+ 	    if (len < NETROOM()) {
+-		ring_supply_data(&netoring, temp, len);
+-		printsub('>', temp+2, len - 2);
++		ring_supply_data(&netoring, (unsigned char *)temp, len);
++		printsub('>', (unsigned char *)&temp[2], len - 2);
+ 	    }
+ /*@*/	    else printf("lm_will: not enough room in buffer\n");
+ 	}
+@@ -1584,7 +1585,7 @@
+ 		opt_replyp = opt_reply + len - (opt_replyend - opt_replyp);
+ 		opt_replyend = opt_reply + len;
+ 	}
+-	if (opt_welldefined(ep))
++	if (opt_welldefined((const char *)ep))
+ #ifdef	OLD_ENVIRON
+ 		if (telopt_environ == TELOPT_OLD_ENVIRON)
+ 			*opt_replyp++ = old_env_var;
+@@ -1953,7 +1954,7 @@
+ 				continue;
+ 			}
+ 			if (sc == escape) {
+-				command(0, tbp, tcc);
++				command(0, (const char *)tbp, tcc);
+ 				bol = 1;
+ 				count += tcc;
+ 				tcc = 0;
+@@ -2144,7 +2145,7 @@
+ 	send_will(TELOPT_LINEMODE, 1);
+ 	send_will(TELOPT_NEW_ENVIRON, 1);
+ 	send_do(TELOPT_STATUS, 1);
+-	if (env_getvalue("DISPLAY"))
++	if (env_getvalue((unsigned char *)"DISPLAY"))
+ 	    send_will(TELOPT_XDISPLOC, 1);
+ 	if (eight)
+ 	    tel_enter_binary(eight);
+--- src.orig/telnet/telnet/terminal.c
++++ src.freebsd/telnet/telnet/terminal.c
+@@ -128,7 +128,7 @@
+ 	    TerminalFlushOutput();
+ 	    /* we leave 'n' alone! */
+ 	} else {
+-	    n = TerminalWrite(ttyoring.consume, n);
++	    n = TerminalWrite((char *)ttyoring.consume, n);
+ 	}
+     }
+     if (n > 0) {
+@@ -143,7 +143,7 @@
+ 	if (n1 == n && n0 > n) {
+ 		n1 = n0 - n;
+ 		if (!drop)
+-			n1 = TerminalWrite(ttyoring.bottom, n1);
++			n1 = TerminalWrite((char *)ttyoring.bottom, n1);
+ 		if (n1 > 0)
+ 			n += n1;
+ 	}
+--- src.orig/telnet/telnet/utilities.c
++++ src.freebsd/telnet/telnet/utilities.c
+@@ -435,7 +435,7 @@
+ 			((pointer[3] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
+ 			"MUTUAL" : "ONE-WAY");
+ 
+-		auth_printsub(&pointer[1], length - 1, buf, sizeof(buf));
++		auth_printsub(&pointer[1], length - 1, (unsigned char *)buf, sizeof(buf));
+ 		fprintf(NetTrace, "%s", buf);
+ 		break;
+ 
+@@ -513,7 +513,7 @@
+ 		else
+ 		    fprintf(NetTrace, " %d (unknown)", pointer[2]);
+ 
+-		encrypt_printsub(&pointer[1], length - 1, buf, sizeof(buf));
++		encrypt_printsub(&pointer[1], length - 1, (unsigned char *)buf, sizeof(buf));
+ 		fprintf(NetTrace, "%s", buf);
+ 		break;
+ 
 --- src.orig/tip/tip/acu.c
 +++ src.freebsd/tip/tip/acu.c
 @@ -119,7 +119,7 @@

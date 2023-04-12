@@ -226,6 +226,8 @@ copy_cmd usr.bin/tip
 copy_cmd usr.bin/which
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk
+copy_cmd contrib/telnet
+copy_cmd lib/libmp
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
@@ -305,6 +307,10 @@ rm -f ${CWD}/src.orig/tip/tip/Makefile*
 rm -rf ${CWD}/src.freebsd/tip/libacu
 rm -f ${CWD}/src.freebsd/tip/Makefile*
 rm -f ${CWD}/src.freebsd/tip/tip/Makefile*
+
+# temove telnetd
+rm -rf ${CWD}/src.orig/telnet/telnetd
+rm -rf ${CWD}/src.freebsd/telnet/telnetd
 
 # remove our own nvi scripts before patching
 rm -f ${CWD}/src.freebsd/nvi/*.sh
