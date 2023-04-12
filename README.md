@@ -23,6 +23,8 @@ It replaces the following GNU projects:
 
 It also provides the following functionality:
 
+* cu
+* telnet
 * vi
 * sh
 * portions of util-linux
