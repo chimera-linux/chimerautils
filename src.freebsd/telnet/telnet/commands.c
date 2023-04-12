@@ -2260,7 +2260,7 @@ tn(int argc, char *argv[])
 {
     unsigned char *srp = 0;
     int proto, opt;
-    int srlen;
+    int srlen = 0;
     int srcroute = 0, result;
     char *cmd, *hostp = 0, *portp = 0, *user = 0;
     char *src_addr = NULL;
@@ -3074,7 +3074,7 @@ sourceroute(struct addrinfo *ai, char *arg, unsigned char **cpp, int *lenp, int 
 #ifdef INET6
 		if (res->ai_family == AF_INET6) {
 #ifdef INET6_NO_RTHDR
-			return 0;
+			return -1;
 #else
 			sin6 = (struct sockaddr_in6 *)res->ai_addr;
 			if (inet6_rth_add((void *)rth, &sin6->sin6_addr) == -1)

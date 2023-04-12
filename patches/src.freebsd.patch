@@ -12185,6 +12185,15 @@
      { NULL, NULL, NULL, 0, 0, 0 },
  };
  
+@@ -2170,7 +2260,7 @@
+ {
+     unsigned char *srp = 0;
+     int proto, opt;
+-    int srlen;
++    int srlen = 0;
+     int srcroute = 0, result;
+     char *cmd, *hostp = 0, *portp = 0, *user = 0;
+     char *src_addr = NULL;
 @@ -2263,7 +2353,8 @@
  	hostname = hostp;
  	memset(&su, 0, sizeof su);
@@ -12352,7 +12361,7 @@
  #ifdef INET6
  		if (res->ai_family == AF_INET6) {
 +#ifdef INET6_NO_RTHDR
-+			return 0;
++			return -1;
 +#else
  			sin6 = (struct sockaddr_in6 *)res->ai_addr;
  			if (inet6_rth_add((void *)rth, &sin6->sin6_addr) == -1)
