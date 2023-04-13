@@ -23,6 +23,8 @@ subdir('sed')
 subdir('sh')
 subdir('telnet')
 subdir('tip')
+subdir('unvis')
+subdir('vis')
 subdir('which')
 
 if not get_option('zlib').disabled() and zlib.found()

@@ -228,6 +228,8 @@ copy_cmd usr.bin/which
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk
 copy_cmd contrib/telnet
+copy_cmd contrib/vis
+copy_cmd contrib/unvis
 copy_cmd lib/libmp
 
 # 'compat' is our static library with a subset of BSD library functions
@@ -244,6 +246,7 @@ cp -p usr/src/lib/libc/gen/stringlist.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/stdtime/strptime.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/stdtime/strftime.c ${CWD}/src.orig/compat
 cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/src.orig/compat
+cp -p usr/src/contrib/libc-vis/unvis.c ${CWD}/src.orig/compat
 cp -p usr/src/include/stringlist.h ${CWD}/src.orig/include
 cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.orig/include
 cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.orig/include

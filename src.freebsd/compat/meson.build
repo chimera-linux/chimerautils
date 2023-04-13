@@ -10,6 +10,7 @@ libcompat_sources = [
     'strptime.c',
     'stringlist.c',
     'expand_number.c',
+    'unvis.c',
     'vis.c',
     '../../src.compat/err.c',
     '../../src.compat/strlfuncs.c',

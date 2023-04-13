@@ -27,6 +27,8 @@ It also provides the following functionality:
 * telnet
 * vi
 * sh
+* vis
+* unvis
 * portions of util-linux
 * and additional custom tools
 

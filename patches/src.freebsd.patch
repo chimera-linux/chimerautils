@@ -1620,6 +1620,16 @@
 -{
 -	return strptime_l(buf, fmt, tm, __get_locale());
 -}
+--- src.orig/compat/unvis.c
++++ src.freebsd/compat/unvis.c
+@@ -39,7 +39,6 @@
+ #endif /* LIBC_SCCS and not lint */
+ __FBSDID("$FreeBSD$");
+ 
+-#include "namespace.h"
+ #include <sys/types.h>
+ 
+ #include <assert.h>
 --- src.orig/compat/vis.c
 +++ src.freebsd/compat/vis.c
 @@ -64,7 +64,6 @@
@@ -13087,3 +13097,13 @@
  #include <stdio.h>
  #include <string.h>
  #include <signal.h>
+--- src.orig/unvis/unvis.c
++++ src.freebsd/unvis/unvis.c
+@@ -56,7 +56,6 @@
+ 	FILE *fp;
+ 	int ch, eflags = 0;
+ 
+-	setprogname(argv[0]);
+ 	while ((ch = getopt(argc, argv, "eHhm")) != -1)
+ 		switch((char)ch) {
+ 		case 'e':
