@@ -148,6 +148,7 @@ usr.sbin/chroot
 CMDS_DIFF="
 usr.bin/cmp
 usr.bin/diff
+usr.bin/diff3
 usr.bin/sdiff
 "
 

@@ -7439,6 +7439,180 @@
  			printf(".%.9d %s", nsec2, buf);
  		}
  		printf("\n");
+--- src.orig/diffutils/diff3/diff3.c
++++ src.freebsd/diffutils/diff3/diff3.c
+@@ -73,9 +73,8 @@
+ __FBSDID("$FreeBSD$");
+ 
+ #include <sys/capsicum.h>
+-#include <sys/procdesc.h>
+ #include <sys/types.h>
+-#include <sys/event.h>
++#include <sys/poll.h>
+ #include <sys/wait.h>
+ 
+ #include <capsicum_helpers.h>
+@@ -84,10 +83,12 @@
+ #include <getopt.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <stdbool.h>
+ #include <limits.h>
+ #include <inttypes.h>
+ #include <string.h>
+ #include <unistd.h>
++#include <errno.h>
+ 
+ 
+ /*
+@@ -120,6 +121,7 @@
+ static int  overlapcnt;
+ static FILE *fp[3];
+ static int cline[3];		/* # of the last-read line in each file (0-2) */
++static int sigpipe[2];
+ /*
+  * The latest known correspondence between line numbers of the 3 files
+  * is stored in last[1-3];
+@@ -219,12 +221,10 @@
+ 	return (i);
+ }
+ 
+-static int
++static void
+ diffexec(const char *diffprog, char **diffargv, int fd[])
+ {
+-	int pd;
+-
+-	switch (pdfork(&pd, PD_CLOEXEC)) {
++	switch (fork()) {
+ 	case 0:
+ 		close(fd[0]);
+ 		if (dup2(fd[1], STDOUT_FILENO) == -1)
+@@ -238,7 +238,6 @@
+ 		break;
+ 	}
+ 	close(fd[1]);
+-	return (pd);
+ }
+ 
+ static char *
+@@ -597,20 +596,25 @@
+ 	szchanges = newsz;
+ }
+ 
++static void
++handle_sig(int signo)
++{
++    write(sigpipe[1], &signo, sizeof(signo));
++}
+ 
+ int
+ main(int argc, char **argv)
+ {
+-	int ch, nblabels, status, m, n, kq, nke, nleft, i;
++	int ch, nblabels, status, m, n, npe, nleft;
+ 	char *labels[] = { NULL, NULL, NULL };
+ 	const char *diffprog = DIFF_PATH;
+ 	char *file1, *file2, *file3;
+ 	char *diffargv[7];
+ 	int diffargc = 0;
+-	int fd13[2], fd23[2];
+-	int pd13, pd23;
++	int fd13[2], fd23[2], signo;
++	pid_t wpid;
++	struct pollfd pfd;
+ 	cap_rights_t rights_ro;
+-	struct kevent *e;
+ 
+ 	nblabels = 0;
+ 	eflag = 0;
+@@ -683,14 +687,6 @@
+ 
+ 	cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
+ 
+-	kq = kqueue();
+-	if (kq == -1)
+-		err(2, "kqueue");
+-
+-	e = malloc(2 * sizeof(struct kevent));
+-	if (e == NULL)
+-		err(2, "malloc");
+-
+ 	/* TODO stdio */
+ 	file1 = argv[0];
+ 	file2 = argv[1];
+@@ -732,23 +728,30 @@
+ 		err(2, "pipe");
+ 	if (pipe(fd23))
+ 		err(2, "pipe");
++	if (pipe(sigpipe))
++		err(2, "pipe");
++	if (fcntl(sigpipe[0], F_SETFD, FD_CLOEXEC))
++		err(2, "fcntl");
++	if (fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC))
++		err(2, "fcntl");
++
++	pfd.fd = sigpipe[0];
++	pfd.events = POLLIN;
++	pfd.revents = 0;
++
++	if (signal(SIGCHLD, handle_sig) == SIG_ERR)
++		err(2, "signal");
+ 
+ 	diffargv[diffargc] = file1;
+ 	diffargv[diffargc + 1] = file3;
+ 	diffargv[diffargc + 2] = NULL;
+ 
+ 	nleft = 0;
+-	pd13 = diffexec(diffprog, diffargv, fd13);
+-	EV_SET(e + nleft , pd13, EVFILT_PROCDESC, EV_ADD, NOTE_EXIT, 0, NULL);
+-	if (kevent(kq, e + nleft, 1, NULL, 0, NULL) == -1)
+-		err(2, "kevent1");
++	diffexec(diffprog, diffargv, fd13);
+ 	nleft++;
+ 
+ 	diffargv[diffargc] = file2;
+-	pd23 = diffexec(diffprog, diffargv, fd23);
+-	EV_SET(e + nleft , pd23, EVFILT_PROCDESC, EV_ADD, NOTE_EXIT, 0, NULL);
+-	if (kevent(kq, e + nleft, 1, NULL, 0, NULL) == -1)
+-		err(2, "kevent2");
++	diffexec(diffprog, diffargv, fd23);
+ 	nleft++;
+ 
+ 	caph_cache_catpages();
+@@ -760,20 +763,25 @@
+ 	m = readin(fd13[0], &d13);
+ 	n = readin(fd23[0], &d23);
+ 
+-	/* waitpid cooked over pdforks */
++	/* waitpid */
+ 	while (nleft > 0) {
+-		nke = kevent(kq, NULL, 0, e, nleft, NULL);
+-		if (nke == -1)
+-			err(2, "kevent");
+-		for (i = 0; i < nke; i++) {
+-			status = e[i].data;
++		npe = poll(&pfd, 1, -1);
++		if (npe == -1) {
++			if (errno == EINTR) continue;
++			err(2, "poll");
++		}
++		if (pfd.revents != POLLIN)
++			continue;
++		if (read(pfd.fd, &signo, sizeof(signo)) < 0)
++			err(2, "read");
++		while ((wpid = waitpid(-1, &status, WNOHANG)) > 0) {
+ 			if (WIFEXITED(status) && WEXITSTATUS(status) >= 2)
+ 				errx(2, "diff exited abnormally");
+ 			else if (WIFSIGNALED(status))
+ 				errx(2, "diff killed by signal %d",
+ 				    WTERMSIG(status));
++			--nleft;
+ 		}
+-		nleft -= nke;
+ 	}
+ 	merge(m, n);
+ 
 --- src.orig/diffutils/sdiff/sdiff.c
 +++ src.freebsd/diffutils/sdiff/sdiff.c
 @@ -260,16 +260,19 @@

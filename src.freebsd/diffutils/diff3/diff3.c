@@ -1,4 +1,4 @@
-/*	$OpenBSD: diff3prog.c,v 1.21 2021/04/13 14:20:23 stsp Exp $	*/
+/*	$OpenBSD: diff3prog.c,v 1.11 2009/10/27 23:59:37 deraadt Exp $	*/
 
 /*
  * Copyright (C) Caldera International Inc.  2001-2002.
@@ -64,45 +64,51 @@
  *	@(#)diff3.c	8.1 (Berkeley) 6/6/93
  */
 
+#if 0
+#ifndef lint
+static char sccsid[] = "@(#)diff3.c	8.1 (Berkeley) 6/6/93";
+#endif
+#endif /* not lint */
+#include <sys/cdefs.h>
+__FBSDID("$FreeBSD$");
+
+#include <sys/capsicum.h>
+#include <sys/types.h>
+#include <sys/poll.h>
+#include <sys/wait.h>
+
+#include <capsicum_helpers.h>
 #include <ctype.h>
 #include <err.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <limits.h>
+#include <inttypes.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 
-/* bsddiff portability */
-#define __dead
-
-/* diff3 - 3-way differential file comparison */
-
-/* diff3 [-ex3EX] d13 d23 f1 f2 f3 [m1 m3]
- *
- * d13 = diff report on f1 vs f3
- * d23 = diff report on f2 vs f3
- * f1, f2, f3 the 3 files
- * if changes in f1 overlap with changes in f3, m1 and m3 are used
- * to mark the overlaps; otherwise, the file names f1 and f3 are used
- * (only for options E and X).
- */
 
 /*
  * "from" is first in range of changed lines; "to" is last+1
  * from=to=line after point of insertion for added lines.
  */
-struct  range {
+struct range {
 	int from;
 	int to;
 };
+
 struct diff {
 	struct range old;
 	struct range new;
 };
 
-size_t szchanges;
+static size_t szchanges;
 
-struct diff *d13;
-struct diff *d23;
+static struct diff *d13;
+static struct diff *d23;
 /*
  * "de" is used to gather editing scripts.  These are later spewed out in
  * reverse order.  Its first element must be all zero, the "new" component
@@ -110,123 +116,91 @@ struct diff *d23;
  * look (!?).  Array overlap indicates which sections in "de" correspond to
  * lines that are different in all three files.
  */
-struct diff *de;
-char *overlap;
-int  overlapcnt;
-FILE *fp[3];
-int cline[3];		/* # of the last-read line in each file (0-2) */
+static struct diff *de;
+static char *overlap;
+static int  overlapcnt;
+static FILE *fp[3];
+static int cline[3];		/* # of the last-read line in each file (0-2) */
+static int sigpipe[2];
 /*
- * the latest known correspondence between line numbers of the 3 files
+ * The latest known correspondence between line numbers of the 3 files
  * is stored in last[1-3];
  */
-int last[4];
-int eflag;
-int oflag;		/* indicates whether to mark overlaps (-E or -X)*/
-int debug  = 0;
-char f1mark[40], f3mark[40];	/* markers for -E and -X */
+static int last[4];
+static int Aflag, eflag, iflag, mflag, Tflag;
+static int oflag;		/* indicates whether to mark overlaps (-E or -X) */
+static int strip_cr;
+static char *f1mark, *f2mark, *f3mark;
 
-int duplicate(struct range *, struct range *);
-int edit(struct diff *, int, int);
-char *getchange(FILE *);
-char *get_line(FILE *, size_t *);
-int number(char **);
-int readin(char *, struct diff **);
-int skip(int, int, char *);
-void change(int, struct range *, int);
-void keep(int, struct range *);
-void merge(int, int);
-void prange(struct range *);
-void repos(int);
-void separate(const char *);
-__dead void edscript(int);
-__dead void trouble(void);
-void increase(void);
-__dead void usage(void);
+static bool duplicate(struct range *, struct range *);
+static int edit(struct diff *, bool, int);
+static char *getchange(FILE *);
+static char *get_line(FILE *, size_t *);
+static int readin(int fd, struct diff **);
+static int skip(int, int, const char *);
+static void change(int, struct range *, bool);
+static void keep(int, struct range *);
+static void merge(int, int);
+static void prange(struct range *);
+static void repos(int);
+static void edscript(int) __dead2;
+static void increase(void);
+static void usage(void) __dead2;
 
-int
-main(int argc, char **argv)
+enum {
+	DIFFPROG_OPT,
+	STRIPCR_OPT,
+};
+
+#define DIFF_PATH "/usr/bin/diff"
+
+#define OPTIONS "3aAeEiL:mTxX"
+static struct option longopts[] = {
+	{ "ed",			no_argument,		NULL,	'e' },
+	{ "show-overlap",	no_argument,		NULL,	'E' },
+	{ "overlap-only",	no_argument,		NULL,	'x' },
+	{ "initial-tab",	no_argument,		NULL,	'T' },
+	{ "text",		no_argument,		NULL,	'a' },
+	{ "strip-trailing-cr",	no_argument,		NULL,	STRIPCR_OPT },
+	{ "show-all",		no_argument,		NULL,	'A' },
+	{ "easy-only",		no_argument,		NULL,	'3' },
+	{ "merge",		no_argument,		NULL,	'm' },
+	{ "label",		required_argument,	NULL,	'L' },
+	{ "diff-program",	required_argument,	NULL,	DIFFPROG_OPT },
+};
+
+static void
+usage(void)
 {
-	int ch, i, m, n;
-
-#if 0
-	if (pledge("stdio rpath", NULL) == -1)
-		err(1, "pledge");
-#endif
-
-	eflag = 0;
-	oflag = 0;
-	while ((ch = getopt(argc, argv, "EeXx3")) != -1) {
-		switch (ch) {
-		case 'E':
-			eflag = 3;
-			oflag = 1;
-			break;
-		case 'e':
-			eflag = 3;
-			break;
-		case 'X':
-			oflag = eflag = 1;
-			break;
-		case 'x':
-			eflag = 1;
-			break;
-		case '3':
-			eflag = 2;
-			break;
-		}
-	}
-	argc -= optind;
-	argv += optind;
-	/* XXX - argc usage seems wrong here */
-	if (argc < 5)
-		usage();
-
-	if (oflag) {
-		(void)snprintf(f1mark, sizeof(f1mark), "<<<<<<< %s",
-		    argc >= 6 ? argv[5] : argv[2]);
-		(void)snprintf(f3mark, sizeof(f3mark), ">>>>>>> %s",
-		    argc >= 7 ? argv[6] : argv[4]);
-	}
-
-	increase();
-	m = readin(argv[0], &d13);
-	n = readin(argv[1], &d23);
-	for (i = 0; i <= 2; i++) {
-		if ((fp[i] = fopen(argv[i + 2], "r")) == NULL)
-			err(EXIT_FAILURE, "can't open %s", argv[i + 2]);
-	}
-	merge(m, n);
-	exit(EXIT_SUCCESS);
+	fprintf(stderr, "usage: diff3 [-3aAeEimTxX] [-L label1] [-L label2] "
+	    "[-L label3] file1 file2 file3\n");
+	exit(2);
 }
 
-/*
- * Pick up the line numbers of all changes from one change file.
- * (This puts the numbers in a vector, which is not strictly necessary,
- * since the vector is processed in one sequential pass.
- * The vector could be optimized out of existence)
- */
-int
-readin(char *name, struct diff **dd)
+static int
+readin(int fd, struct diff **dd)
 {
-	int a, b, c, d, i;
+	int a, b, c, d;
+	size_t i;
 	char kind, *p;
+	FILE *f;
 
-	fp[0] = fopen(name, "r");
-	if (fp[0] == NULL)
-		err(EXIT_FAILURE, "can't open %s", name);
-	for (i=0; (p = getchange(fp[0])); i++) {
-		if ((unsigned long)i >= szchanges - 1)
+	f = fdopen(fd, "r");
+	if (f == NULL)
+		err(2, "fdopen");
+	for (i = 0; (p = getchange(f)); i++) {
+		if (i >= szchanges - 1)
 			increase();
-		a = b = number(&p);
+		a = b = (int)strtoimax(p, &p, 10);
 		if (*p == ',') {
 			p++;
-			b = number(&p);
+			b = (int)strtoimax(p, &p, 10);
 		}
 		kind = *p++;
-		c = d = number(&p);
-		if (*p==',') {
+		c = d = (int)strtoimax(p, &p, 10);
+		if (*p == ',') {
 			p++;
-			d = number(&p);
+			d = (int)strtoimax(p, &p, 10);
 		}
 		if (kind == 'a')
 			a++;
@@ -240,24 +214,33 @@ readin(char *name, struct diff **dd)
 		(*dd)[i].new.to = d;
 	}
 	if (i) {
-		(*dd)[i].old.from = (*dd)[i-1].old.to;
-		(*dd)[i].new.from = (*dd)[i-1].new.to;
+		(*dd)[i].old.from = (*dd)[i - 1].old.to;
+		(*dd)[i].new.from = (*dd)[i - 1].new.to;
 	}
-	(void)fclose(fp[0]);
+	fclose(f);
 	return (i);
 }
 
-int
-number(char **lc)
+static void
+diffexec(const char *diffprog, char **diffargv, int fd[])
 {
-	int nn;
-	nn = 0;
-	while (isdigit((unsigned char)(**lc)))
-		nn = nn*10 + *(*lc)++ - '0';
-	return (nn);
+	switch (fork()) {
+	case 0:
+		close(fd[0]);
+		if (dup2(fd[1], STDOUT_FILENO) == -1)
+			err(2, "child could not duplicate descriptor");
+		close(fd[1]);
+		execvp(diffprog, diffargv);
+		err(2, "could not execute diff: %s", diffprog);
+		break;
+	case -1:
+		err(2, "could not fork");
+		break;
+	}
+	close(fd[1]);
 }
 
-char *
+static char *
 getchange(FILE *b)
 {
 	char *line;
@@ -269,75 +252,60 @@ getchange(FILE *b)
 	return (NULL);
 }
 
-char *
+
+static char *
 get_line(FILE *b, size_t *n)
 {
-	char *cp = NULL;
 	ssize_t len;
 	static char *buf = NULL;
 	static size_t bufsize = 0;
 
-	len = getline(&buf, &bufsize, b);
-	if (len < 0)
+	if ((len = getline(&buf, &bufsize, b)) < 0)
 		return (NULL);
 
-	if (cp[len - 1] != '\n')
-		len++;
-	if ((size_t)(len + 1) > bufsize) {
-		do {
-			bufsize += 1024;
-		} while ((size_t)(len + 1) > bufsize);
-		if ((buf = realloc(buf, bufsize)) == NULL)
-			err(EXIT_FAILURE, NULL);
+	if (strip_cr && len >= 2 && strcmp("\r\n", &(buf[len - 2])) == 0) {
+		buf[len - 2] = '\n';
+		buf[len - 1] = '\0';
+		len--;
 	}
-	buf[len - 1] = '\n';
-	buf[len] = '\0';
+
 	if (n != NULL)
 		*n = len;
+
 	return (buf);
 }
 
-void
+static void
 merge(int m1, int m2)
 {
 	struct diff *d1, *d2, *d3;
-	int dup, j, t1, t2;
+	int j, t1, t2;
+	bool dup = false;
 
 	d1 = d13;
 	d2 = d23;
 	j = 0;
-	for (;;) {
-		t1 = (d1 < d13 + m1);
-		t2 = (d2 < d23 + m2);
-		if (!t1 && !t2)
-			break;
 
-		if (debug) {
-			printf("%d,%d=%d,%d %d,%d=%d,%d\n",
-			d1->old.from,d1->old.to,
-			d1->new.from,d1->new.to,
-			d2->old.from,d2->old.to,
-			d2->new.from,d2->new.to);
-		}
-		/* first file is different from others */
+	while ((t1 = d1 < d13 + m1) | (t2 = d2 < d23 + m2)) {
+		/* first file is different from the others */
 		if (!t2 || (t1 && d1->new.to < d2->new.from)) {
 			/* stuff peculiar to 1st file */
-			if (eflag==0) {
-				separate("1");
-				change(1, &d1->old, 0);
+			if (eflag == 0) {
+				printf("====1\n");
+				change(1, &d1->old, false);
 				keep(2, &d1->new);
-				change(3, &d1->new, 0);
+				change(3, &d1->new, false);
 			}
 			d1++;
 			continue;
 		}
 		/* second file is different from others */
 		if (!t1 || (t2 && d2->new.to < d1->new.from)) {
-			if (eflag==0) {
-				separate("2");
+			if (eflag == 0) {
+				printf("====2\n");
 				keep(1, &d2->new);
-				change(2, &d2->old, 0);
-				change(3, &d2->new, 0);
+				change(3, &d2->new, false);
+				change(2, &d2->old, false);
 			}
 			d2++;
 			continue;
@@ -362,17 +330,17 @@ merge(int m1, int m2)
 		}
 		/* stuff peculiar to third file or different in all */
 		if (d1->new.from == d2->new.from && d1->new.to == d2->new.to) {
-			dup = duplicate(&d1->old,&d2->old);
+			dup = duplicate(&d1->old, &d2->old);
 			/*
 			 * dup = 0 means all files differ
 			 * dup = 1 means files 1 and 2 identical
 			 */
-			if (eflag==0) {
-				separate(dup ? "3" : "");
+			if (eflag == 0) {
+				printf("====%s\n", dup ? "3" : "");
 				change(1, &d1->old, dup);
-				change(2, &d2->old, 0);
+				change(2, &d2->old, false);
 				d3 = d1->old.to > d1->old.from ? d1 : d2;
-				change(3, &d3->new, 0);
+				change(3, &d3->new, false);
 			} else
 				j = edit(d1, dup, j);
 			d1++;
@@ -384,10 +352,10 @@ merge(int m1, int m2)
 		 * appropriately to make them coincide.
 		 */
 		if (d1->new.from < d2->new.from) {
-			d2->old.from -= d2->new.from-d1->new.from;
+			d2->old.from -= d2->new.from - d1->new.from;
 			d2->new.from = d1->new.from;
 		} else if (d2->new.from < d1->new.from) {
-			d1->old.from -= d1->new.from-d2->new.from;
+			d1->old.from -= d1->new.from - d2->new.from;
 			d1->new.from = d2->new.from;
 		}
 		if (d1->new.to > d2->new.to) {
@@ -402,41 +370,38 @@ merge(int m1, int m2)
 		edscript(j);
 }
 
-void
-separate(const char *s)
-{
-	printf("====%s\n", s);
-}
-
 /*
  * The range of lines rold.from thru rold.to in file i is to be changed.
  * It is to be printed only if it does not duplicate something to be
  * printed later.
  */
-void
-change(int i, struct range *rold, int dup)
+static void
+change(int i, struct range *rold, bool dup)
 {
+
 	printf("%d:", i);
 	last[i] = rold->to;
 	prange(rold);
-	if (dup || debug)
+	if (dup)
 		return;
 	i--;
-	(void)skip(i, rold->from, NULL);
-	(void)skip(i, rold->to, "  ");
+	skip(i, rold->from, NULL);
+	skip(i, rold->to, "  ");
 }
 
 /*
- * print the range of line numbers, rold.from thru rold.to, as n1,n2 or n1
+ * Print the range of line numbers, rold.from thru rold.to, as n1,n2 or 
+ * n1.
  */
-void
+static void
 prange(struct range *rold)
 {
+
 	if (rold->to <= rold->from)
 		printf("%da\n", rold->from - 1);
 	else {
 		printf("%d", rold->from);
-		if (rold->to > rold->from+1)
+		if (rold->to > rold->from + 1)
 			printf(",%d", rold->to - 1);
 		printf("c\n");
 	}
@@ -447,7 +412,7 @@ prange(struct range *rold)
  * and an artificial dummy difference (trange) must be ginned up to
  * correspond to the change reported in the other file.
  */
-void
+static void
 keep(int i, struct range *rnew)
 {
 	int delta;
@@ -456,24 +421,24 @@ keep(int i, struct range *rnew)
 	delta = last[3] - last[i];
 	trange.from = rnew->from - delta;
 	trange.to = rnew->to - delta;
-	change(i, &trange, 1);
+	change(i, &trange, true);
 }
 
 /*
  * skip to just before line number from in file "i".  If "pr" is non-NULL,
  * print all skipped stuff with string pr as a prefix.
  */
-int
-skip(int i, int from, char *pr)
+static int
+skip(int i, int from, const char *pr)
 {
 	size_t j, n;
 	char *line;
 
 	for (n = 0; cline[i] < from - 1; n += j) {
 		if ((line = get_line(fp[i], &j)) == NULL)
-			trouble();
+			errx(EXIT_FAILURE, "logic error");
 		if (pr != NULL)
-			printf("%s%s", pr, line);
+			printf("%s%s", Tflag == 1 ? "\t" : pr, line);
 		cline[i]++;
 	}
 	return ((int) n);
@@ -483,26 +448,26 @@ skip(int i, int from, char *pr)
  * Return 1 or 0 according as the old range (in file 1) contains exactly
  * the same data as the new range (in file 2).
  */
-int
+static bool
 duplicate(struct range *r1, struct range *r2)
 {
-	int c,d;
+	int c, d;
 	int nchar;
 	int nline;
 
 	if (r1->to-r1->from != r2->to-r2->from)
 		return (0);
-	(void)skip(0, r1->from, NULL);
-	(void)skip(1, r2->from, NULL);
+	skip(0, r1->from, NULL);
+	skip(1, r2->from, NULL);
 	nchar = 0;
-	for (nline=0; nline < r1->to - r1->from; nline++) {
+	for (nline = 0; nline < r1->to - r1->from; nline++) {
 		do {
 			c = getc(fp[0]);
 			d = getc(fp[1]);
 			if (c == -1 && d == -1)
 				break;
-			if (c == -1 || d== -1)
-				trouble();
+			if (c == -1 || d == -1)
+				errx(EXIT_FAILURE, "logic error");
 			nchar++;
 			if (c != d) {
 				repos(nchar);
@@ -514,7 +479,7 @@ duplicate(struct range *r1, struct range *r2)
 	return (1);
 }
 
-void
+static void
 repos(int nchar)
 {
 	int i;
@@ -523,18 +488,13 @@ repos(int nchar)
 		(void)fseek(fp[i], (long)-nchar, SEEK_CUR);
 }
 
-__dead void
-trouble(void)
-{
-	errx(EXIT_FAILURE, "logic error");
-}
-
 /*
  * collect an editing script for later regurgitation
  */
-int
-edit(struct diff *diff, int dup, int j)
+static int
+edit(struct diff *diff, bool dup, int j)
 {
+
 	if (((dup + 1) & eflag) == 0)
 		return (j);
 	j++;
@@ -549,28 +509,43 @@ edit(struct diff *diff, int dup, int j)
 }
 
 /* regurgitate */
-__dead void
+static void
 edscript(int n)
 {
-	int j,k;
+	int k;
+	size_t j;
 	char block[BUFSIZ];
 
 	for (; n > 0; n--) {
-		if (!oflag || !overlap[n])
+		if (!oflag || !overlap[n]) {
 			prange(&de[n].old);
-		else
-			printf("%da\n=======\n", de[n].old.to -1);
-		(void)fseek(fp[2], (long)de[n].new.from, SEEK_SET);
-		for (k = de[n].new.to-de[n].new.from; k > 0; k-= j) {
+		} else {
+			printf("%da\n", de[n].old.to - 1);
+			if (Aflag) {
+				printf("%s\n", f2mark);
+				fseek(fp[1], de[n].old.from, SEEK_SET);
+				for (k = de[n].old.to - de[n].old.from; k > 0; k -= j) {
+					j = k > BUFSIZ ? BUFSIZ : k;
+					if (fread(block, 1, j, fp[1]) != j)
+						errx(2, "logic error");
+					fwrite(block, 1, j, stdout);
+				}
+				printf("\n");
+			}
+			printf("=======\n");
+		}
+		fseek(fp[2], (long)de[n].new.from, SEEK_SET);
+		for (k = de[n].new.to - de[n].new.from; k > 0; k -= j) {
 			size_t r;
+
 			j = k > BUFSIZ ? BUFSIZ : k;
 			r = fread(block, 1, j, fp[2]);
 			if (r == 0) {
 				if (feof(fp[2]))
 					break;
-				trouble();
+				errx(2, "logic error");
 			}
-			if ((int)r != j)
+			if (r != j)
 				j = r;
 			(void)fwrite(block, 1, j, stdout);
 		}
@@ -581,10 +556,13 @@ edscript(int n)
 			printf("%da\n%s\n.\n", de[n].old.from - 1, f1mark);
 		}
 	}
-	exit(overlapcnt);
+	if (iflag)
+		printf("w\nq\n");
+
+	exit(eflag == 0 ? overlapcnt : 0);
 }
 
-void
+static void
 increase(void)
 {
 	struct diff *p;
@@ -618,13 +596,194 @@ increase(void)
 	szchanges = newsz;
 }
 
-
-__dead void
-usage(void)
+static void
+handle_sig(int signo)
 {
-	extern char *__progname;
+    write(sigpipe[1], &signo, sizeof(signo));
+}
 
-	fprintf(stderr, "usage: %s [-exEX3] /tmp/d3a.?????????? "
-	    "/tmp/d3b.?????????? file1 file2 file3\n", __progname);
-	exit(EXIT_FAILURE);
+int
+main(int argc, char **argv)
+{
+	int ch, nblabels, status, m, n, npe, nleft;
+	char *labels[] = { NULL, NULL, NULL };
+	const char *diffprog = DIFF_PATH;
+	char *file1, *file2, *file3;
+	char *diffargv[7];
+	int diffargc = 0;
+	int fd13[2], fd23[2], signo;
+	pid_t wpid;
+	struct pollfd pfd;
+	cap_rights_t rights_ro;
+
+	nblabels = 0;
+	eflag = 0;
+	oflag = 0;
+	diffargv[diffargc++] = __DECONST(char *, diffprog);
+	while ((ch = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != -1) {
+		switch (ch) {
+		case '3':
+			eflag = 2;
+			break;
+		case 'a':
+			diffargv[diffargc++] = __DECONST(char *, "-a");
+			break;
+		case 'A':
+			Aflag = 1;
+			break;
+		case 'e':
+			eflag = 3;
+			break;
+		case 'E':
+			eflag = 3;
+			oflag = 1;
+			break;
+		case 'i':
+			iflag = 1;
+			break;
+		case 'L':
+			oflag = 1;
+			if (nblabels >= 3)
+				errx(2, "too many file label options");
+			labels[nblabels++] = optarg;
+			break;
+		case 'm':
+			Aflag = 1;
+			oflag = 1;
+			mflag = 1;
+			break;
+		case 'T':
+			Tflag = 1;
+			break;
+		case 'x':
+			eflag = 1;
+			break;
+		case 'X':
+			oflag = 1;
+			eflag = 1;
+			break;
+		case DIFFPROG_OPT:
+			diffprog = optarg;
+			break;
+		case STRIPCR_OPT:
+			strip_cr = 1;
+			diffargv[diffargc++] = __DECONST(char *, "--strip-trailing-cr");
+			break;
+		}
+	}
+	argc -= optind;
+	argv += optind;
+
+	if (Aflag) {
+		eflag = 3;
+		oflag = 1;
+	}
+
+	if (argc != 3)
+		usage();
+
+	if (caph_limit_stdio() == -1)
+		err(2, "unable to limit stdio");
+
+	cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
+
+	/* TODO stdio */
+	file1 = argv[0];
+	file2 = argv[1];
+	file3 = argv[2];
+
+	if (oflag) {
+		asprintf(&f1mark, "<<<<<<< %s",
+		    labels[0] != NULL ? labels[0] : file1);
+		if (f1mark == NULL)
+			err(2, "asprintf");
+		asprintf(&f2mark, "||||||| %s",
+		    labels[1] != NULL ? labels[1] : file2);
+		if (f2mark == NULL)
+			err(2, "asprintf");
+		asprintf(&f3mark, ">>>>>>> %s",
+		    labels[2] != NULL ? labels[2] : file3);
+		if (f3mark == NULL)
+			err(2, "asprintf");
+	}
+	fp[0] = fopen(file1, "r");
+	if (fp[0] == NULL)
+		err(2, "Can't open %s", file1);
+	if (caph_rights_limit(fileno(fp[0]), &rights_ro) < 0)
+		err(2, "unable to limit rights on: %s", file1);
+
+	fp[1] = fopen(file2, "r");
+	if (fp[1] == NULL)
+		err(2, "Can't open %s", file2);
+	if (caph_rights_limit(fileno(fp[1]), &rights_ro) < 0)
+		err(2, "unable to limit rights on: %s", file2);
+
+	fp[2] = fopen(file3, "r");
+	if (fp[2] == NULL)
+		err(2, "Can't open %s", file3);
+	if (caph_rights_limit(fileno(fp[2]), &rights_ro) < 0)
+		err(2, "unable to limit rights on: %s", file3);
+
+	if (pipe(fd13))
+		err(2, "pipe");
+	if (pipe(fd23))
+		err(2, "pipe");
+	if (pipe(sigpipe))
+		err(2, "pipe");
+	if (fcntl(sigpipe[0], F_SETFD, FD_CLOEXEC))
+		err(2, "fcntl");
+	if (fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC))
+		err(2, "fcntl");
+
+	pfd.fd = sigpipe[0];
+	pfd.events = POLLIN;
+	pfd.revents = 0;
+
+	if (signal(SIGCHLD, handle_sig) == SIG_ERR)
+		err(2, "signal");
+
+	diffargv[diffargc] = file1;
+	diffargv[diffargc + 1] = file3;
+	diffargv[diffargc + 2] = NULL;
+
+	nleft = 0;
+	diffexec(diffprog, diffargv, fd13);
+	nleft++;
+
+	diffargv[diffargc] = file2;
+	diffexec(diffprog, diffargv, fd23);
+	nleft++;
+
+	caph_cache_catpages();
+	if (caph_enter() < 0)
+		err(2, "unable to enter capability mode");
+
+	/* parse diffs */
+	increase();
+	m = readin(fd13[0], &d13);
+	n = readin(fd23[0], &d23);
+
+	/* waitpid */
+	while (nleft > 0) {
+		npe = poll(&pfd, 1, -1);
+		if (npe == -1) {
+			if (errno == EINTR) continue;
+			err(2, "poll");
+		}
+		if (pfd.revents != POLLIN)
+			continue;
+		if (read(pfd.fd, &signo, sizeof(signo)) < 0)
+			err(2, "read");
+		while ((wpid = waitpid(-1, &status, WNOHANG)) > 0) {
+			if (WIFEXITED(status) && WEXITSTATUS(status) >= 2)
+				errx(2, "diff exited abnormally");
+			else if (WIFSIGNALED(status))
+				errx(2, "diff killed by signal %d",
+				    WTERMSIG(status));
+			--nleft;
+		}
+	}
+	merge(m, n);
+
+	return (EXIT_SUCCESS);
 }

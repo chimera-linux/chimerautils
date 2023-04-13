@@ -137,5 +137,4 @@ install_as = files('install-as.sh')
 # Include all of the relevant subdirectories
 subdir('include')
 subdir('src.freebsd')
-subdir('src.openbsd')
 subdir('src.custom')
