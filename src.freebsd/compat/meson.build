@@ -12,6 +12,7 @@ libcompat_sources = [
     'expand_number.c',
     'unvis.c',
     'vis.c',
+    '../../src.compat/b64.c',
     '../../src.compat/err.c',
     '../../src.compat/strlfuncs.c',
     '../../src.compat/signames.c',

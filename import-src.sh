@@ -218,12 +218,16 @@ done
 # equivalents of standalone projects
 copy_cmd bin/ed
 copy_cmd bin/sh
+copy_cmd usr.bin/compress
 copy_cmd usr.bin/grep
 copy_cmd usr.bin/gzip
 copy_cmd usr.bin/m4
 copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
+copy_cmd usr.bin/shar
 copy_cmd usr.bin/tip
+copy_cmd usr.bin/uudecode
+copy_cmd usr.bin/uuencode
 copy_cmd usr.bin/which
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk

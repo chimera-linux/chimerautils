@@ -1,7 +1,8 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause
+ * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
  *
- * Copyright (c) 2023 Daniel Kolesa
+ * Copyright (C) 1996
+ *	FreeBSD Inc. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -12,10 +13,10 @@
  *    notice, this list of conditions and the following disclaimer in the
  *    documentation and/or other materials provided with the distribution.
  *
- * THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS ``AS IS'' AND
+ * THIS SOFTWARE IS PROVIDED BY FreeBSD Inc. AND CONTRIBUTORS ``AS IS'' AND
  * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
  * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
- * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
+ * ARE DISCLAIMED.  IN NO EVENT SHALL [your name] OR CONTRIBUTORS BE LIABLE
  * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
  * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
  * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
@@ -23,29 +24,13 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
+ *
+ * $FreeBSD$
  */
 
-#ifndef LIBUTIL_H
-#define LIBUTIL_H
+#ifndef _ZOPEN_H_
+#define _ZOPEN_H_
 
-#include <stdint.h>
+FILE  *zopen(const char *, const char *, int);
 
-/* Values for humanize_number(3)'s flags parameter. */
-#define HN_DECIMAL              0x01
-#define HN_NOSPACE              0x02
-#define HN_B                    0x04
-#define HN_DIVISOR_1000         0x08
-#define HN_IEC_PREFIXES         0x10
-
-/* Values for humanize_number(3)'s scale parameter. */
-#define HN_GETSCALE             0x10
-#define HN_AUTOSCALE            0x20
-
-/* functions from libutil in FreeBSD */
-int humanize_number(char *, size_t, int64_t, const char *, int, int);
-int expand_number(const char *, uint64_t *);
-
-int compat_b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsize);
-int compat_b64_pton(char const *src, u_char *target, size_t targsize);
-
-#endif
+#endif /* _ZOPEN_H_ */

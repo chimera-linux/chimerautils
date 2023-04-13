@@ -11,6 +11,7 @@ project(
 bindir = get_option('bindir')
 sbindir = get_option('sbindir')
 man1dir = join_paths(get_option('mandir'), 'man1')
+man5dir = join_paths(get_option('mandir'), 'man5')
 man8dir = join_paths(get_option('mandir'), 'man8')
 tiny = get_option('tiny')
 

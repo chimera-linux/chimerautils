@@ -12,6 +12,7 @@ It replaces the following GNU projects:
 * coreutils
 * findutils
 * diffutils
+* sharutils
 * grep
 * sed
 * ed
@@ -29,6 +30,8 @@ It also provides the following functionality:
 * sh
 * vis
 * unvis
+* compress
+* uncompress
 * portions of util-linux
 * and additional custom tools
 
