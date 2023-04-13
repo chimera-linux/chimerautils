@@ -6,12 +6,6 @@ nviconf_data.set('USE_ICONV', true)
 nviconf_data.set('ICONV_TRADITIONAL', true)
 nviconf_data.set('HAVE_PTY_H', true)
 
-if cc.has_header('ncursesw/ncurses.h', dependencies: ncurses)
-    nviconf_data.set('HAVE_NCURSESW_NCURSES_H', true)
-elif cc.has_header('ncurses.h', dependencies: ncurses)
-    nviconf_data.set('HAVE_NCURSES_H', true)
-endif
-
 if cc.has_header('term.h', dependencies: ncurses)
     nviconf_data.set('HAVE_TERM_H', true)
 endif
@@ -124,6 +118,9 @@ configure_file(
 
 # need _XOPEN_SOURCE=600 for some ncurses functions
 extra_cargs = ['-D__REGEX_PRIVATE', '-D_XOPEN_SOURCE=600']
+
+# curses
+extra_cargs += curses_incdefs
 
 if cc.has_argument('-Wunused-but-set-variable')
     extra_cargs += ['-Wno-unused-but-set-variable']

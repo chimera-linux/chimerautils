@@ -12474,7 +12474,24 @@
  	if (c < 0 && errno == EWOULDBLOCK) {
 --- src.orig/telnet/telnet/telnet.c
 +++ src.freebsd/telnet/telnet/telnet.c
-@@ -208,7 +208,7 @@
+@@ -42,8 +42,15 @@
+  * declared in curses.h.
+  */
+ 
+-#include <ctype.h>
++#ifdef HAVE_NCURSESW_NCURSES_H
++#include <ncursesw/ncurses.h>
++#elif defined HAVE_NCURSES_H
++#include <ncurses.h>
++#else
+ #include <curses.h>
++#endif
++
++#include <ctype.h>
+ #include <signal.h>
+ #include <stdlib.h>
+ #include <term.h>
+@@ -208,7 +215,7 @@
  void
  DoBaudRate(char *arg)
  {
@@ -12483,7 +12500,7 @@
      int i;
      uint32_t baudrate;
  
-@@ -218,14 +218,14 @@
+@@ -218,14 +225,14 @@
  	ExitString("Invalid baud rate provided.\n", 1);
  
      for (i = 1; termspeeds[i].speed != -1; i++)
@@ -12501,7 +12518,7 @@
  	ExitString("No room in buffer for baud rate.\n", 1);
  	/* NOTREACHED */
      }
-@@ -235,8 +235,8 @@
+@@ -235,8 +242,8 @@
  
      baudrate = htonl(baudrate);
      memcpy(&temp2[4], &baudrate, sizeof(baudrate));
@@ -12512,7 +12529,7 @@
  }
  
  void
-@@ -386,8 +386,9 @@
+@@ -386,8 +393,9 @@
  	    case TELOPT_SGA:
  		if (!kludgelinemode)
  		    break;
@@ -12523,7 +12540,7 @@
  	    case TELOPT_ECHO:
  		settimer(modenegotiated);
  		break;
-@@ -477,7 +478,7 @@
+@@ -477,7 +485,7 @@
  #endif
  
  	    case TELOPT_XDISPLOC:	/* X Display location */
@@ -12532,7 +12549,7 @@
  		    new_state_ok = 1;
  		break;
  
-@@ -730,7 +731,7 @@
+@@ -730,7 +738,7 @@
  		resettermname = 0;
  		if (tnamep && tnamep != unknown)
  			free(tnamep);
@@ -12541,7 +12558,7 @@
  				(setupterm(tname, 1, &err) == 0)) {
  			tnamep = mklist(termbuf, tname);
  		} else {
-@@ -775,7 +776,7 @@
+@@ -775,7 +783,7 @@
  	    return;
  	} else {
  	    const char *name;
@@ -12550,7 +12567,7 @@
  	    int len;
  
  	    name = gettermname();
-@@ -783,8 +784,8 @@
+@@ -783,8 +791,8 @@
  	    if (len < NETROOM()) {
  		snprintf(temp, sizeof(temp), "%c%c%c%c%s%c%c", IAC, SB, TELOPT_TTYPE,
  				TELQUAL_IS, name, IAC, SE);
@@ -12561,7 +12578,7 @@
  	    } else {
  		ExitString("No room in buffer for terminal type.\n", 1);
  		/*NOTREACHED*/
-@@ -798,18 +799,18 @@
+@@ -798,18 +806,18 @@
  	    return;
  	if (SB_GET() == TELQUAL_SEND) {
  	    long ospeed, ispeed;
@@ -12585,7 +12602,7 @@
  	    }
  /*@*/	    else printf("lm_will: not enough room in buffer\n");
  	}
-@@ -897,10 +898,10 @@
+@@ -897,10 +905,10 @@
  	if (SB_EOF())
  	    return;
  	if (SB_GET() == TELQUAL_SEND) {
@@ -12598,7 +12615,7 @@
  		strlen(dp) > sizeof(temp) - 7) {
  		/*
  		 * Something happened, we no longer have a DISPLAY
-@@ -911,11 +912,11 @@
+@@ -911,11 +919,11 @@
  	    }
  	    snprintf(temp, sizeof(temp), "%c%c%c%c%s%c%c", IAC, SB,
  		    TELOPT_XDISPLOC, TELQUAL_IS, dp, IAC, SE);
@@ -12613,7 +12630,7 @@
  	    }
  /*@*/	    else printf("lm_will: not enough room in buffer\n");
  	}
-@@ -1584,7 +1585,7 @@
+@@ -1584,7 +1592,7 @@
  		opt_replyp = opt_reply + len - (opt_replyend - opt_replyp);
  		opt_replyend = opt_reply + len;
  	}
@@ -12622,7 +12639,7 @@
  #ifdef	OLD_ENVIRON
  		if (telopt_environ == TELOPT_OLD_ENVIRON)
  			*opt_replyp++ = old_env_var;
-@@ -1953,7 +1954,7 @@
+@@ -1953,7 +1961,7 @@
  				continue;
  			}
  			if (sc == escape) {
@@ -12631,7 +12648,7 @@
  				bol = 1;
  				count += tcc;
  				tcc = 0;
-@@ -2144,7 +2145,7 @@
+@@ -2144,7 +2152,7 @@
  	send_will(TELOPT_LINEMODE, 1);
  	send_will(TELOPT_NEW_ENVIRON, 1);
  	send_do(TELOPT_STATUS, 1);

@@ -42,8 +42,15 @@ __FBSDID("$FreeBSD$");
  * declared in curses.h.
  */
 
-#include <ctype.h>
+#ifdef HAVE_NCURSESW_NCURSES_H
+#include <ncursesw/ncurses.h>
+#elif defined HAVE_NCURSES_H
+#include <ncurses.h>
+#else
 #include <curses.h>
+#endif
+
+#include <ctype.h>
 #include <signal.h>
 #include <stdlib.h>
 #include <term.h>

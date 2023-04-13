@@ -3,6 +3,9 @@ extra_cargs = [
     '-DUSE_TERMIO', '-DKLUDGELINEMODE', '-DENV_HACK', '-DINET6', '-DNOPAM'
 ]
 
+# curses
+extra_cargs += curses_incdefs
+
 if libcrypto.found()
     extra_cargs += [
         '-DENCRYPTION', '-DAUTHENTICATION', '-DSRA', '-DIPSEC',

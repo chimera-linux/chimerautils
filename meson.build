@@ -86,6 +86,14 @@ if not tinfo.found()
     tinfo = ncurses
 endif
 
+curses_incdefs = []
+
+if cc.has_header('ncursesw/ncurses.h', dependencies: ncurses)
+    curses_incdefs += ['-DHAVE_NCURSESW_NCURSES_H']
+elif cc.has_header('ncurses.h', dependencies: ncurses)
+    curses_incdefs += ['-DHAVE_NCURSES_H']
+endif
+
 # bc(1) needs libedit
 libedit = dependency('libedit', required: get_option('libedit'))
 
