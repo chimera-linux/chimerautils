@@ -7441,18 +7441,17 @@
  		printf("\n");
 --- src.orig/diffutils/diff3/diff3.c
 +++ src.freebsd/diffutils/diff3/diff3.c
-@@ -73,9 +73,8 @@
+@@ -73,9 +73,7 @@
  __FBSDID("$FreeBSD$");
  
  #include <sys/capsicum.h>
 -#include <sys/procdesc.h>
  #include <sys/types.h>
 -#include <sys/event.h>
-+#include <sys/poll.h>
  #include <sys/wait.h>
  
  #include <capsicum_helpers.h>
-@@ -84,10 +83,12 @@
+@@ -84,10 +82,13 @@
  #include <getopt.h>
  #include <stdio.h>
  #include <stdlib.h>
@@ -7462,6 +7461,7 @@
  #include <string.h>
  #include <unistd.h>
 +#include <errno.h>
++#include <poll.h>
  
  
  /*

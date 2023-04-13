@@ -74,7 +74,6 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/capsicum.h>
 #include <sys/types.h>
-#include <sys/poll.h>
 #include <sys/wait.h>
 
 #include <capsicum_helpers.h>
@@ -89,6 +88,7 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <unistd.h>
 #include <errno.h>
+#include <poll.h>
 
 
 /*
