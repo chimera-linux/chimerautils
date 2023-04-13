@@ -23,7 +23,6 @@ subdir('patch')
 subdir('sed')
 subdir('sh')
 subdir('shar')
-subdir('telnet')
 subdir('tip')
 subdir('unvis')
 subdir('uudecode')
@@ -37,6 +36,7 @@ endif
 
 if ncurses.found()
     subdir('nvi')
+    subdir('telnet')
 endif
 
 # tool collections

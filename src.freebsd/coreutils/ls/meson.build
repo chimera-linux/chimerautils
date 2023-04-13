@@ -3,7 +3,10 @@ ls_deps = [libfts]
 
 if get_option('color_ls')
     ls_cargs += ['-DCOLORLS']
-    ls_deps += [libtinfo]
+    ls_deps += [tinfo]
+    if not tinfo.found()
+        error('terminfo library is needed for color ls')
+    endif
 endif
 
 ls_prog = executable(

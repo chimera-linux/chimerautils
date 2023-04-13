@@ -65,24 +65,26 @@ add_project_arguments('-D_FILE_OFFSET_BITS=64', language: ['c', 'cpp'])
 # Get rid of unused metadata variables
 add_project_arguments('-Dlint', language: ['c'])
 
-# ls(1) needs the terminfo library
-foreach opt: ['tinfo', 'ncursesw', 'ncurses']
-    libtinfo = cc.find_library(opt, required: false)
-    if libtinfo.found()
-        break
-    endif
-endforeach
-if not libtinfo.found() and get_option('color_ls')
-    error('a terminfo library is needed')
-endif
+# locate ncurses, and try accounting for separate tinfo if necessary
+# as e.g. color ls functionality needs just terminfo and not full curses
+tinfo = dependency('tinfo', required: false)
 
-# nvi may need ncurses
-foreach opt: ['ncursesw', 'ncurses']
+# in that order of preference; 'curses' will fall back to whatever
+# meson built-in behavior, which may or may not be correct, in an
+# attempt to be compatible with netbsd curses and so on
+#
+# some stuff needs full curses (nvi, telnet)
+foreach opt: ['ncursesw', 'ncurses', 'curses']
     ncurses = dependency(opt, required: false)
     if ncurses.found()
         break
     endif
 endforeach
+
+# if tinfo is not found, use ncurses; it may be integrated
+if not tinfo.found()
+    tinfo = ncurses
+endif
 
 # bc(1) needs libedit
 libedit = dependency('libedit', required: get_option('libedit'))

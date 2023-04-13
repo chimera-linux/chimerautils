@@ -15,7 +15,7 @@ subdir('wall')
 subdir('whereis')
 subdir('write')
 
-if libtinfo.found()
+if tinfo.found()
     subdir('ncal')
     subdir('ul')
 endif
