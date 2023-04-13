@@ -38,7 +38,7 @@ __FBSDID("$FreeBSD$");
 #include "diff.h"
 #include "xmalloc.h"
 
-int	 Nflag, Pflag, rflag, sflag, Tflag, cflag, Wflag;
+int	 lflag, Nflag, Pflag, rflag, sflag, Tflag, cflag, Wflag;
 int	 diff_format, diff_context, status, ignore_file_case, suppress_common;
 int	 tabsize = 8, width = 130;
 char	*start, *ifdefname, *diffargs, *label[2], *ignore_pats;
@@ -47,7 +47,7 @@ struct stat stb1, stb2;
 struct excludes *excludes_list;
 regex_t	 ignore_re;
 
-#define	OPTIONS	"0123456789aBbC:cdD:efHhI:iL:nNPpqrS:sTtU:uwW:X:x:y"
+#define	OPTIONS	"0123456789aBbC:cdD:efHhI:iL:lnNPpqrS:sTtU:uwW:X:x:y"
 enum {
 	OPT_TSIZE = CHAR_MAX + 1,
 	OPT_STRIPCR,
@@ -71,6 +71,7 @@ static struct option longopts[] = {
 	{ "ignore-blank-lines",		no_argument,		0,	'B' },
 	{ "ignore-matching-lines",	required_argument,	0,	'I' },
 	{ "ignore-case",		no_argument,		0,	'i' },
+	{ "paginate",			no_argument,		NULL,	'l' },
 	{ "label",			required_argument,	0,	'L' },
 	{ "new-file",			no_argument,		0,	'N' },
 	{ "rcs",			no_argument,		0,	'n' },
@@ -196,6 +197,9 @@ main(int argc, char **argv)
 				label[1] = optarg;
 			else
 				usage();
+			break;
+		case 'l':
+			lflag = 1;
 			break;
 		case 'N':
 			Nflag = 1;

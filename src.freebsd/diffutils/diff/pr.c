@@ -27,7 +27,6 @@
 #include <sys/cdefs.h>
 __FBSDID("$FreeBSD$");
 
-#include <sys/procdesc.h>
 #include <sys/wait.h>
 
 #include <err.h>
@@ -36,6 +35,9 @@ __FBSDID("$FreeBSD$");
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <fcntl.h>
+#include <errno.h>
+#include <poll.h>
 
 #include "pr.h"
 #include "diff.h"
@@ -43,11 +45,19 @@ __FBSDID("$FreeBSD$");
 
 #define _PATH_PR "/usr/bin/pr"
 
+static int sigpipe[2] = {-1, -1};
+static struct pollfd poll_fd;
+
+static void
+handle_sig(int signo)
+{
+	write(sigpipe[1], &signo, sizeof(signo));
+}
+
 struct pr *
 start_pr(char *file1, char *file2)
 {
 	int pfd[2];
-	int pr_pd;
 	pid_t pid;
 	char *header;
 	struct pr *pr;
@@ -60,7 +70,20 @@ start_pr(char *file1, char *file2)
 	rewind(stdout);
 	if (pipe(pfd) == -1)
 		err(2, "pipe");
-	switch ((pid = pdfork(&pr_pd, PD_CLOEXEC))) {
+	if (sigpipe[0] < 0) {
+		if (pipe(sigpipe) == -1)
+			err(2, "pipe");
+		if (fcntl(sigpipe[0], F_SETFD, FD_CLOEXEC) == -1)
+			err(2, "fcntl");
+		if (fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC) == -1)
+			err(2, "fcntl");
+		if (signal(SIGCHLD, handle_sig) == SIG_ERR)
+			err(2, "signal");
+		poll_fd.fd = sigpipe[0];
+		poll_fd.events = POLLIN;
+	}
+	poll_fd.revents = 0;
+	switch ((pid = fork())) {
 	case -1:
 		status |= 2;
 		free(header);
@@ -85,14 +108,7 @@ start_pr(char *file1, char *file2)
 		close(pfd[0]);
 		rewind(stdout);
 		free(header);
-		pr->kq = kqueue();
-		if (pr->kq == -1)
-			err(2, "kqueue");
-		pr->e = xmalloc(sizeof(struct kevent));
-		EV_SET(pr->e, pr_pd, EVFILT_PROCDESC, EV_ADD, NOTE_EXIT, 0,
-		    NULL);
-		if (kevent(pr->kq, pr->e, 1, NULL, 0, NULL) == -1)
-			err(2, "kevent");
+		pr->cpid = pid;
 	}
 	return (pr);
 }
@@ -102,6 +118,7 @@ void
 stop_pr(struct pr *pr)
 {
 	int wstatus;
+	int done = 0;
 
 	if (pr == NULL)
 		return;
@@ -112,14 +129,27 @@ stop_pr(struct pr *pr)
 		dup2(pr->ostdout, STDOUT_FILENO);
 		close(pr->ostdout);
 	}
-	if (kevent(pr->kq, NULL, 0, pr->e, 1, NULL) == -1)
-		err(2, "kevent");
-	wstatus = pr->e[0].data;
-	close(pr->kq);
+	while (!done) {
+		pid_t wpid;
+		int npe = poll(&poll_fd, 1, -1);
+		if (npe == -1) {
+			if (errno == EINTR) continue;
+			err(2, "poll");
+		}
+		if (poll_fd.revents != POLLIN)
+			continue;
+		if (read(poll_fd.fd, &npe, sizeof(npe)) < 0)
+			err(2, "read");
+		while ((wpid = waitpid(-1, &wstatus, WNOHANG)) > 0) {
+			if (wpid != pr->cpid) continue;
+			if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) != 0)
+				errx(2, "pr exited abnormally");
+			else if (WIFSIGNALED(wstatus))
+				errx(2, "pr killed by signal %d",
+				    WTERMSIG(wstatus));
+			done = 1;
+			break;
+		}
+	}
 	free(pr);
-	if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) != 0)
-		errx(2, "pr exited abnormally");
-	else if (WIFSIGNALED(wstatus))
-		errx(2, "pr killed by signal %d",
-		    WTERMSIG(wstatus));
 }

@@ -82,6 +82,7 @@
 .Op Fl -minimal
 .Op Fl -no-ignore-file-name-case
 .Op Fl -normal
+.Op Fl -paginate
 .Op Fl -rcs
 .Op Fl -show-c-function
 .Op Fl -speed-large-files
@@ -106,6 +107,7 @@
 .Op Fl -minimal
 .Op Fl -no-ignore-file-name-case
 .Op Fl -normal
+.Op Fl -paginate
 .Op Fl -rcs
 .Op Fl -show-c-function
 .Op Fl -speed-large-files
@@ -131,6 +133,7 @@
 .Op Fl -minimal
 .Op Fl -no-ignore-file-name-case
 .Op Fl -normal
+.Op Fl -paginate
 .Op Fl -rcs
 .Op Fl -show-c-function
 .Op Fl -speed-large-files
@@ -160,6 +163,7 @@
 .Op Fl -new-file
 .Op Fl -no-ignore-file-name-case
 .Op Fl -normal
+.Op Fl -paginate
 .Op Fl -rcs
 .Op Fl -recursive
 .Op Fl -report-identical-files
@@ -350,6 +354,10 @@ E.g.,
 .Dq A
 will compare equal to
 .Dq a .
+.It Fl l -paginate
+Pass the output through
+.Xr pr 1
+to paginate it.
 .It Fl L Ar label Fl -label Ar label
 Print
 .Ar label

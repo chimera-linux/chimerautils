@@ -89,6 +89,7 @@ __FBSDID("$FreeBSD$");
 #include <limits.h>
 #include <time_bsd.h>
 
+#include "pr.h"
 #include "diff.h"
 #include "xmalloc.h"
 
@@ -261,6 +262,7 @@ diffreg(char *file1, char *file2, int flags, int capsicum)
 {
 	FILE *f1, *f2;
 	int i, rval;
+	struct pr *pr = NULL;
 	cap_rights_t rights_ro;
 
 	f1 = f2 = NULL;
@@ -339,6 +341,9 @@ diffreg(char *file1, char *file2, int flags, int capsicum)
 		status |= 2;
 		goto closem;
 	}
+
+	if (lflag)
+		pr = start_pr(file1, file2);
 
 	if (capsicum) {
 		cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
@@ -422,6 +427,8 @@ diffreg(char *file1, char *file2, int flags, int capsicum)
 	output(file1, f1, file2, f2, flags);
 
 closem:
+	if (pr != NULL)
+		stop_pr(pr);
 	if (anychange) {
 		status |= 1;
 		if (rval == D_SAME)

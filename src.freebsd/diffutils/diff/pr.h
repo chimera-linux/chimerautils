@@ -26,12 +26,9 @@
  * $FreeBSD$
  */
 
-#include <sys/event.h>
-
 struct pr {
 	int ostdout;
-	int kq;
-	struct kevent *e;
+	pid_t cpid;
 };
 
 struct pr *start_pr(char *file1, char *file2);
