@@ -45,7 +45,7 @@
 int humanize_number(char *, size_t, int64_t, const char *, int, int);
 int expand_number(const char *, uint64_t *);
 
-int compat_b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsize);
-int compat_b64_pton(char const *src, u_char *target, size_t targsize);
+int compat_b64_ntop(unsigned char const *src, size_t srclength, char *target, size_t targsize);
+int compat_b64_pton(char const *src, unsigned char *target, size_t targsize);
 
 #endif

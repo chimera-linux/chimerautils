@@ -8,7 +8,7 @@ static const char Base64[] =
 static const char Pad64 = '=';
 
 int
-compat_b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsize)
+compat_b64_ntop(unsigned char const *src, size_t srclength, char *target, size_t targsize)
 {
 	size_t datalength = 0;
 	u_char input[3];
@@ -62,7 +62,7 @@ compat_b64_ntop(u_char const *src, size_t srclength, char *target, size_t targsi
 }
 
 int
-compat_b64_pton(char const *src, u_char *target, size_t targsize)
+compat_b64_pton(char const *src, unsigned char *target, size_t targsize)
 {
 	u_int tarindex, state;
 	int ch;
