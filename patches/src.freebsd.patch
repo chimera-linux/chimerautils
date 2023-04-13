@@ -1661,7 +1661,15 @@
  
 --- src.orig/compress/compress.c
 +++ src.freebsd/compress/compress.c
-@@ -387,9 +387,6 @@
+@@ -45,6 +45,7 @@
+ __FBSDID("$FreeBSD$");
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <sys/stat.h>
+ #include <sys/time.h>
+ 
+@@ -387,9 +388,6 @@
  	}
  	if (chmod(name, fs->st_mode) && errno != EOPNOTSUPP)
  		cwarn("chmod: %s", name);
@@ -1673,7 +1681,15 @@
  static int
 --- src.orig/compress/zopen.c
 +++ src.freebsd/compress/zopen.c
-@@ -74,6 +74,10 @@
+@@ -63,6 +63,7 @@
+  */
+ 
+ #include <sys/param.h>
++#include <sys/types.h>
+ #include <sys/stat.h>
+ 
+ #include <ctype.h>
+@@ -74,6 +75,10 @@
  #include <unistd.h>
  #include "zopen.h"
  
@@ -1684,7 +1700,7 @@
  #define	BITS		16		/* Default bits. */
  #define	HSIZE		69001		/* 95% occupancy */
  
-@@ -204,8 +208,8 @@
+@@ -204,8 +209,8 @@
  static code_int	getcode(struct s_zstate *);
  static int	output(struct s_zstate *, code_int);
  static int	zclose(void *);
@@ -1695,7 +1711,7 @@
  
  /*-
   * Algorithm from "A Technique for High Performance Data Compression",
-@@ -233,8 +237,8 @@
+@@ -233,8 +238,8 @@
   * file size for noticeable speed improvement on small files.  Please direct
   * questions about this implementation to ames!jaw.
   */
@@ -1706,7 +1722,7 @@
  {
  	code_int i;
  	int c, disp;
-@@ -454,8 +458,8 @@
+@@ -454,8 +459,8 @@
   * compressed file.  The tables used herein are shared with those of the
   * compress() routine.  See the definitions above.
   */
@@ -1717,7 +1733,7 @@
  {
  	u_int count;
  	struct s_zstate *zs;
-@@ -695,6 +699,7 @@
+@@ -695,6 +700,7 @@
  zopen(const char *fname, const char *mode, int bits)
  {
  	struct s_zstate *zs;
@@ -1725,7 +1741,7 @@
  
  	if ((mode[0] != 'r' && mode[0] != 'w') || mode[1] != '\0' ||
  	    bits < 0 || bits > BITS) {
-@@ -730,10 +735,18 @@
+@@ -730,10 +736,18 @@
  	switch (*mode) {
  	case 'r':
  		zmode = 'r';
