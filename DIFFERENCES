@@ -245,13 +245,18 @@ page.
 
 <sys/acl.h> and related functions
 ---------------------------------
-Code for FreeBSD's ACL subsystem is not available on Linux.  We have
-libacl, but that is independent of the base system and also provides
-its own command line tools for manipulating ACLs.  Where this is
-present in commands, it has been removed.  We are not opposed to
-patches that introduce libacl functionality via the FreeBSD command
-line options in things like ls(1) and other commands.
+Code for FreeBSD's ACL subsystem is not available on Linux. Linux
+only supports POSIX draft ACLs, not NFSv4 ACLs, and there is libacl
+to manipulate them. This library provides a subset of the ACL code
+that is required here, and is not enough to implement the functionality
+in a simple way.
 
+Therefore, ACL code is generally dropped across the codebase. However,
+we do handle extended attributes in several tools (unlike upstream
+FreeBSD) and as POSIX ACLs are implemented via extended attributes
+on Linux, support is often preserved indirectly. For cp(1), extended
+attributes get copied (but without error handling) in archive mode,
+just like GNU cp(1).
 
 strtonum()
 ----------

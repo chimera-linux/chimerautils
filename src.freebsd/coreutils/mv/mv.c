@@ -51,6 +51,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/time.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
+#include <sys/xattr.h>
 #include <sys/mount.h>
 #include <sys/statvfs.h>
 
@@ -77,6 +78,8 @@ static int	do_move(const char *, const char *);
 static int	fastcopy(const char *, const char *, struct stat *);
 static void	usage(void);
 static void	preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
+		    const char *dest_path);
+static void	preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
 		    const char *dest_path);
 
 int
@@ -326,6 +329,7 @@ err:		if (unlink(to))
 	}
 	if (fchmod(to_fd, sbp->st_mode))
 		warn("%s: set mode (was: 0%03o)", to, oldmode);
+	preserve_fd_xattrs(from_fd, to_fd, from, to);
 	/*
 	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
 	 * for dest_file, then its ACLs shall reflect the ACLs of the
@@ -509,6 +513,69 @@ preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
 	(void)source_path;
 	(void)dest_path;
 #endif
+}
+
+static void
+preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
+    const char *dest_path)
+{
+    ssize_t size;
+    char buf[256], vbuf[128];
+    char *names, *name, *nend;
+    char *value = vbuf;
+    size_t vbufs = sizeof(vbuf);
+
+    size = flistxattr(source_fd, NULL, 0);
+    if (size < 0) {
+        if (errno != ENOTSUP) warn("failed to get xattrs for %s", source_path);
+        return;
+    }
+
+    if (size < (ssize_t)sizeof(buf)) {
+        names = buf;
+    } else {
+        names = malloc(size + 1);
+        if (!names) err(1, "Not enough memory");
+    }
+
+    size = flistxattr(source_fd, names, size);
+    if (size < 0) {
+        if (errno != ENOTSUP) warn("failed to get xattrs for %s", source_path);
+        if (names != buf) free(names);
+        return;
+    }
+    names[size] = '\0';
+    nend = names + size;
+
+    for (name = names; name != nend; name = strchr(name, '\0') + 1) {
+        size = fgetxattr(source_fd, name, NULL, 0);
+        if (size < 0) {
+            if (errno != ENOTSUP)
+                warn("failed to get xattr %s for %s", name, source_path);
+            continue;
+        }
+        if (size > (ssize_t)vbufs) {
+            if (value == vbuf) value = NULL;
+            value = realloc(value, size);
+            if (!value) {
+                err(1, "Not enough memory");
+            }
+            vbufs = size;
+        }
+        size = fgetxattr(source_fd, name, value, size);
+        if (size < 0) {
+            if (errno != ENOTSUP)
+                warn("failed to get xattr %s for %s", name, source_path);
+            continue;
+        }
+        if (fsetxattr(dest_fd, name, value, size, 0)) {
+            if (errno != ENOTSUP)
+                warn("failed to set xattr %s for %s", name, dest_path);
+        }
+    }
+
+    if (names != buf) free(names);
+    if (value != vbuf) free(value);
 }
 
 static void

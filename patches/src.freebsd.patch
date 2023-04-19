@@ -1802,6 +1802,14 @@
  signal (see the
  .Cm status
  argument for
+@@ -333,7 +330,6 @@
+ .Sh SEE ALSO
+ .Xr chflags 1 ,
+ .Xr install 1 ,
+-.Xr setfacl 1 ,
+ .Xr chmod 2 ,
+ .Xr stat 2 ,
+ .Xr umask 2 ,
 --- src.orig/coreutils/chmod/chmod.c
 +++ src.freebsd/coreutils/chmod/chmod.c
 @@ -82,7 +82,7 @@
@@ -1843,18 +1851,19 @@
  static int
  may_have_nfs4acl(const FTSENT *ent, int hflag)
  {
-+#if 0
++#ifndef __linux__
  	int ret;
  	static dev_t previous_dev = NODEV;
  	static int supports_acls = -1;
-@@ -259,4 +268,9 @@
+@@ -259,4 +268,10 @@
  	}
  
  	return (supports_acls);
 +#else
++	/* Linux does not support NFSv4 ACLs */
 +	(void)ent;
 +	(void)hflag;
-+	return 1; /* TODO */
++	return 0;
 +#endif
  }
 --- src.orig/coreutils/chown/chgrp.1
@@ -1942,16 +1951,29 @@
  	if (chdir(argv[0]) == -1 || chroot(".") == -1)
 --- src.orig/coreutils/cp/cp.1
 +++ src.freebsd/coreutils/cp/cp.1
-@@ -172,7 +172,7 @@
+@@ -126,8 +126,9 @@
+ instead.
+ .It Fl a
+ Archive mode.
+-Same as
+-.Fl RpP .
++Similar to
++.Fl RpP
++but additionally tries to preserve xattrs (but ignores any failure to do so).
+ .It Fl f
+ For each existing destination pathname, remove it and
+ create a new file, without prompting for confirmation
+@@ -172,7 +173,8 @@
  .Nm
  to preserve the following attributes of each source
  file in the copy: modification time, access time,
 -file flags, file mode, ACL, user ID, and group ID, as allowed by permissions.
 +file flags, file mode, user ID, and group ID, as allowed by permissions.
++Extended attributes are not preserved, except in archive mode.
  .Pp
  If the user ID and group ID cannot be preserved, no error message
  is displayed and the exit value is not altered.
-@@ -252,7 +252,7 @@
+@@ -252,7 +254,7 @@
  If
  .Nm
  receives a
@@ -1960,25 +1982,74 @@
  (see the
  .Cm status
  argument for
+--- src.orig/coreutils/cp/cp.c
++++ src.freebsd/coreutils/cp/cp.c
+@@ -86,7 +86,7 @@
+ 
+ PATH_T to = { to.p_path, emptystring, "" };
+ 
+-int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
++int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
+ static int Hflag, Lflag, Rflag, rflag;
+ volatile sig_atomic_t info;
+ 
+@@ -123,6 +123,7 @@
+ 			Rflag = 1;
+ 			break;
+ 		case 'a':
++			aflag = 1;
+ 			pflag = 1;
+ 			Rflag = 1;
+ 			Pflag = 1;
+@@ -452,6 +453,7 @@
+ 				if (preserve_dir_acls(curr->fts_statp,
+ 				    curr->fts_accpath, to.p_path) != 0)
+ 					rval = 1;
++				if (aflag) preserve_dir_xattrs(curr->fts_accpath, to.p_path);
+ 			} else {
+ 				mode = curr->fts_statp->st_mode;
+ 				if ((mode & (S_ISUID | S_ISGID | S_ISTXT)) ||
+--- src.orig/coreutils/cp/extern.h
++++ src.freebsd/coreutils/cp/extern.h
+@@ -39,7 +39,7 @@
+ } PATH_T;
+ 
+ extern PATH_T to;
+-extern int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
++extern int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
+ extern volatile sig_atomic_t info;
+ 
+ __BEGIN_DECLS
+@@ -50,5 +50,7 @@
+ int	setfile(struct stat *, int);
+ int	preserve_dir_acls(struct stat *, char *, char *);
+ int	preserve_fd_acls(int, int);
++int	preserve_fd_xattrs(int, int);
++int	preserve_dir_xattrs(const char *, const char *);
+ void	usage(void);
+ __END_DECLS
 --- src.orig/coreutils/cp/utils.c
 +++ src.freebsd/coreutils/cp/utils.c
-@@ -38,7 +38,6 @@
+@@ -38,8 +38,8 @@
  __FBSDID("$FreeBSD$");
  
  #include <sys/param.h>
 -#include <sys/acl.h>
  #include <sys/stat.h>
++#include <sys/xattr.h>
  
  #include <err.h>
-@@ -48,6 +47,7 @@
+ #include <errno.h>
+@@ -48,6 +48,8 @@
  #include <limits.h>
  #include <stdio.h>
  #include <stdlib.h>
++#include <string.h>
 +#include <signal.h>
  #include <sysexits.h>
  #include <unistd.h>
  
-@@ -180,9 +180,14 @@
+@@ -180,9 +182,14 @@
  			if (use_copy_file_range) {
  				wcount = copy_file_range(from_fd, NULL,
  				    to_fd, NULL, SSIZE_MAX, 0);
@@ -1995,7 +2066,15 @@
  				}
  			}
  			if (!use_copy_file_range) {
-@@ -351,12 +356,13 @@
+@@ -225,6 +232,7 @@
+ 			rval = 1;
+ 		if (pflag && preserve_fd_acls(from_fd, to_fd) != 0)
+ 			rval = 1;
++		if (aflag) preserve_fd_xattrs(from_fd, to_fd);
+ 		if (close(to_fd)) {
+ 			warn("%s", to.p_path);
+ 			rval = 1;
+@@ -351,12 +359,13 @@
  
  	if (!gotstat || fs->st_mode != ts.st_mode)
  		if (fdval ? fchmod(fd, fs->st_mode) :
@@ -2010,7 +2089,7 @@
  	if (!gotstat || fs->st_flags != ts.st_flags)
  		if (fdval ?
  		    fchflags(fd, fs->st_flags) :
-@@ -365,6 +371,7 @@
+@@ -365,6 +374,7 @@
  			warn("chflags: %s", to.p_path);
  			rval = 1;
  		}
@@ -2018,7 +2097,7 @@
  
  	return (rval);
  }
-@@ -372,6 +379,7 @@
+@@ -372,6 +382,7 @@
  int
  preserve_fd_acls(int source_fd, int dest_fd)
  {
@@ -2026,7 +2105,7 @@
  	acl_t acl;
  	acl_type_t acl_type;
  	int acl_supported = 0, ret, trivial;
-@@ -418,12 +426,17 @@
+@@ -418,12 +429,17 @@
  		return (1);
  	}
  	acl_free(acl);
@@ -2044,7 +2123,7 @@
  	acl_t (*aclgetf)(const char *, acl_type_t);
  	int (*aclsetf)(const char *, acl_type_t, acl_t);
  	struct acl *aclp;
-@@ -505,6 +518,11 @@
+@@ -505,9 +521,147 @@
  		return (1);
  	}
  	acl_free(acl);
@@ -2056,6 +2135,142 @@
  	return (0);
  }
  
++/* for now we don't really care about warnings or result,
++ * we only support the quiet case for archive mode
++ */
++int
++preserve_fd_xattrs(int source_fd, int dest_fd)
++{
++    ssize_t size;
++    char buf[256], vbuf[128];
++    char *names, *name, *nend;
++    char *value = vbuf;
++    int retval = 0, rerrno = 0;
++    size_t vbufs = sizeof(vbuf);
++
++    size = flistxattr(source_fd, NULL, 0);
++    if (size < 0) {
++        return 1;
++    }
++
++    if (size < (ssize_t)sizeof(buf)) {
++        names = buf;
++    } else {
++        names = malloc(size + 1);
++        if (!names) err(1, "Not enough memory");
++    }
++
++    size = flistxattr(source_fd, names, size);
++    if (size < 0) {
++        if (names != buf) free(names);
++        return 1;
++    }
++    names[size] = '\0';
++    nend = names + size;
++
++    for (name = names; name != nend; name = strchr(name, '\0') + 1) {
++        size = fgetxattr(source_fd, name, NULL, 0);
++        if (size < 0) {
++            retval = 1;
++            rerrno = errno;
++            continue;
++        }
++        if (size > (ssize_t)vbufs) {
++            if (value == vbuf) value = NULL;
++            value = realloc(value, size);
++            if (!value) {
++                err(1, "Not enough memory");
++            }
++            vbufs = size;
++        }
++        size = fgetxattr(source_fd, name, value, size);
++        if (size < 0) {
++            retval = 1;
++            rerrno = errno;
++            continue;
++        }
++        if (fsetxattr(dest_fd, name, value, size, 0)) {
++            retval = 1;
++            rerrno = errno;
++        }
++    }
++
++    if (names != buf) free(names);
++    if (value != vbuf) free(value);
++    if (retval) {
++        errno = rerrno;
++    }
++    return retval;
++}
++
++int
++preserve_dir_xattrs(const char *source_dir, const char *dest_dir) {
++    ssize_t size;
++    char buf[256], vbuf[128];
++    char *names, *name, *nend;
++    char *value = vbuf;
++    int retval = 0, rerrno = 0;
++    size_t vbufs = sizeof(vbuf);
++    printf("preservedir\n");
++
++    size = llistxattr(source_dir, NULL, 0);
++    if (size < 0) {
++        return 1;
++    }
++
++    if (size < (ssize_t)sizeof(buf)) {
++        names = buf;
++    } else {
++        names = malloc(size + 1);
++        if (!names) err(1, "Not enough memory");
++    }
++
++    size = llistxattr(source_dir, names, size);
++    if (size < 0) {
++        if (names != buf) free(names);
++        return 1;
++    }
++    names[size] = '\0';
++    nend = names + size;
++
++    for (name = names; name != nend; name = strchr(name, '\0') + 1) {
++        size = lgetxattr(source_dir, name, NULL, 0);
++        if (size < 0) {
++            retval = 1;
++            rerrno = errno;
++            continue;
++        }
++        if (size > (ssize_t)vbufs) {
++            if (value == vbuf) value = NULL;
++            value = realloc(value, size);
++            if (!value) {
++                err(1, "Not enough memory");
++            }
++            vbufs = size;
++        }
++        size = lgetxattr(source_dir, name, value, size);
++        if (size < 0) {
++            retval = 1;
++            rerrno = errno;
++            continue;
++        }
++        if (lsetxattr(dest_dir, name, value, size, 0)) {
++            retval = 1;
++            rerrno = errno;
++        }
++    }
++
++    if (names != buf) free(names);
++    if (value != vbuf) free(value);
++    if (retval) {
++        errno = rerrno;
++    }
++    return retval;
++}
++
+ void
+ usage(void)
+ {
 --- src.orig/coreutils/cut/cut.c
 +++ src.freebsd/coreutils/cut/cut.c
 @@ -277,14 +277,15 @@
@@ -3630,7 +3845,15 @@
  .It Fl p
  Write a slash
  .Pq Ql /
-@@ -575,8 +550,6 @@
+@@ -508,7 +483,6 @@
+ is displayed for each file:
+ file mode,
+ number of links, owner name, group name,
+-MAC label,
+ number of bytes in the file, abbreviated
+ month, day-of-month file was last modified,
+ hour file last modified, minute file last
+@@ -575,8 +549,6 @@
  .Tn FIFO .
  .It Sy s
  Socket.
@@ -3639,7 +3862,28 @@
  .El
  .Pp
  The next three fields
-@@ -868,11 +841,10 @@
+@@ -642,20 +614,6 @@
+ .Xr sticky 7 . )
+ .El
+ .El
+-.Pp
+-The next field contains a
+-plus
+-.Pq Ql +
+-character if the file has an ACL, or a
+-space
+-.Pq Ql " "
+-if it does not.
+-The
+-.Nm
+-utility does not show the actual ACL;
+-use
+-.Xr getfacl 1
+-to do this.
+ .Sh ENVIRONMENT
+ The following environment variables affect the execution of
+ .Nm :
+@@ -868,11 +826,10 @@
  .Dl $ ls -l
  .Pp
  In addition to listing the contents of the current working directory in
@@ -3653,15 +3897,23 @@
  .Pp
  List the files in
  .Pa /var/log ,
-@@ -886,7 +858,6 @@
+@@ -886,9 +843,7 @@
  .St -p1003.2
  specification.
  .Sh SEE ALSO
 -.Xr chflags 1 ,
  .Xr chmod 1 ,
- .Xr getfacl 1 ,
+-.Xr getfacl 1 ,
  .Xr sort 1 ,
-@@ -903,9 +874,9 @@
+ .Xr xterm 1 ,
+ .Xr localeconv 3 ,
+@@ -897,15 +852,14 @@
+ .Xr strmode 3 ,
+ .Xr strverscmp 3 ,
+ .Xr termcap 5 ,
+-.Xr maclabel 7 ,
+ .Xr sticky 7 ,
+ .Xr symlink 7 ,
  .Xr getfmac 8
  .Sh STANDARDS
  With the exception of options
@@ -3673,7 +3925,7 @@
  the
  .Nm
  utility conforms to
-@@ -913,7 +884,7 @@
+@@ -913,17 +867,10 @@
  and
  .St -p1003.1-2008 .
  The options
@@ -3682,6 +3934,16 @@
  and
  .Fl ,
  are non-standard extensions.
+-.Pp
+-The ACL support is compatible with
+-.Tn IEEE
+-Std\~1003.2c
+-.Pq Dq Tn POSIX Ns .2c
+-Draft\~17
+-(withdrawn).
+ .Sh HISTORY
+ An
+ .Nm
 --- src.orig/coreutils/ls/ls.c
 +++ src.freebsd/coreutils/ls/ls.c
 @@ -49,7 +49,7 @@
@@ -3952,7 +4214,7 @@
  #include <errno.h>
 --- src.orig/coreutils/mv/mv.c
 +++ src.freebsd/coreutils/mv/mv.c
-@@ -47,12 +47,12 @@
+@@ -47,12 +47,13 @@
  __FBSDID("$FreeBSD$");
  
  #include <sys/types.h>
@@ -3961,12 +4223,22 @@
  #include <sys/time.h>
  #include <sys/wait.h>
  #include <sys/stat.h>
++#include <sys/xattr.h>
  #include <sys/mount.h>
 +#include <sys/statvfs.h>
  
  #include <err.h>
  #include <errno.h>
-@@ -178,6 +178,8 @@
+@@ -78,6 +79,8 @@
+ static void	usage(void);
+ static void	preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
+ 		    const char *dest_path);
++static void	preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
++		    const char *dest_path);
+ 
+ int
+ main(int argc, char *argv[])
+@@ -178,6 +181,8 @@
  	struct stat sb;
  	int ask, ch, first;
  	char modep[15];
@@ -3975,7 +4247,7 @@
  
  	/*
  	 * Check access.  If interactive and file exists, ask user if it
-@@ -203,10 +205,15 @@
+@@ -203,10 +208,15 @@
  			ask = 1;
  		} else if (access(to, W_OK) && !stat(to, &sb) && isatty(STDIN_FILENO)) {
  			strmode(sb.st_mode, modep);
@@ -3993,7 +4265,7 @@
  			ask = 1;
  		}
  		if (ask) {
-@@ -231,7 +238,6 @@
+@@ -231,7 +241,6 @@
  	}
  
  	if (errno == EXDEV) {
@@ -4001,7 +4273,7 @@
  		char path[PATH_MAX];
  
  		/*
-@@ -248,11 +254,6 @@
+@@ -248,11 +257,6 @@
  				warn("cannot resolve %s: %s", from, path);
  				return (1);
  			}
@@ -4013,7 +4285,7 @@
  		}
  	} else {
  		warn("rename %s to %s", from, to);
-@@ -280,7 +281,6 @@
+@@ -280,7 +284,6 @@
  	static char *bp = NULL;
  	mode_t oldmode;
  	int nread, from_fd, to_fd;
@@ -4021,7 +4293,15 @@
  
  	if ((from_fd = open(from, O_RDONLY, 0)) < 0) {
  		warn("fastcopy: open() failed (from): %s", from);
-@@ -340,6 +340,7 @@
+@@ -326,6 +329,7 @@
+ 	}
+ 	if (fchmod(to_fd, sbp->st_mode))
+ 		warn("%s: set mode (was: 0%03o)", to, oldmode);
++	preserve_fd_xattrs(from_fd, to_fd, from, to);
+ 	/*
+ 	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
+ 	 * for dest_file, then its ACLs shall reflect the ACLs of the
+@@ -340,6 +344,7 @@
  	 * if the server supports flags and we were trying to *remove* flags
  	 * on a file that we copied, i.e., that we didn't create.)
  	 */
@@ -4029,7 +4309,7 @@
  	if (fstat(to_fd, &tsb) == 0) {
  		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
  		    (tsb.st_flags & ~UF_ARCHIVE)) {
-@@ -352,7 +353,7 @@
+@@ -352,7 +357,7 @@
  		}
  	} else
  		warn("%s: cannot stat", to);
@@ -4038,7 +4318,7 @@
  	ts[0] = sbp->st_atim;
  	ts[1] = sbp->st_mtim;
  	if (futimens(to_fd, ts))
-@@ -454,6 +455,7 @@
+@@ -454,6 +459,7 @@
  preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
      const char *dest_path)
  {
@@ -4046,7 +4326,7 @@
  	acl_t acl;
  	acl_type_t acl_type;
  	int acl_supported = 0, ret, trivial;
-@@ -501,6 +503,12 @@
+@@ -501,6 +507,75 @@
  		return;
  	}
  	acl_free(acl);
@@ -4056,6 +4336,69 @@
 +	(void)source_path;
 +	(void)dest_path;
 +#endif
++}
++
++static void
++preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
++    const char *dest_path)
++{
++    ssize_t size;
++    char buf[256], vbuf[128];
++    char *names, *name, *nend;
++    char *value = vbuf;
++    size_t vbufs = sizeof(vbuf);
++
++    size = flistxattr(source_fd, NULL, 0);
++    if (size < 0) {
++        if (errno != ENOTSUP) warn("failed to get xattrs for %s", source_path);
++        return;
++    }
++
++    if (size < (ssize_t)sizeof(buf)) {
++        names = buf;
++    } else {
++        names = malloc(size + 1);
++        if (!names) err(1, "Not enough memory");
++    }
++
++    size = flistxattr(source_fd, names, size);
++    if (size < 0) {
++        if (errno != ENOTSUP) warn("failed to get xattrs for %s", source_path);
++        if (names != buf) free(names);
++        return;
++    }
++    names[size] = '\0';
++    nend = names + size;
++
++    for (name = names; name != nend; name = strchr(name, '\0') + 1) {
++        size = fgetxattr(source_fd, name, NULL, 0);
++        if (size < 0) {
++            if (errno != ENOTSUP)
++                warn("failed to get xattr %s for %s", name, source_path);
++            continue;
++        }
++        if (size > (ssize_t)vbufs) {
++            if (value == vbuf) value = NULL;
++            value = realloc(value, size);
++            if (!value) {
++                err(1, "Not enough memory");
++            }
++            vbufs = size;
++        }
++        size = fgetxattr(source_fd, name, value, size);
++        if (size < 0) {
++            if (errno != ENOTSUP)
++                warn("failed to get xattr %s for %s", name, source_path);
++            continue;
++        }
++        if (fsetxattr(dest_fd, name, value, size, 0)) {
++            if (errno != ENOTSUP)
++                warn("failed to set xattr %s for %s", name, dest_path);
++        }
++    }
++
++    if (names != buf) free(names);
++    if (value != vbuf) free(value);
  }
  
  static void
@@ -7754,7 +8097,7 @@
  creat_f	c_Xtime;
 --- src.orig/findutils/find/find.1
 +++ src.freebsd/findutils/find/find.1
-@@ -202,35 +202,6 @@
+@@ -202,41 +202,6 @@
  and neither means
  .Dq exactly n .
  .Bl -tag -width indent
@@ -7787,10 +8130,16 @@
 -Please refer to the
 -.Ic -atime
 -primary description for information on supported time units.
- .It Ic -acl
- May be used in conjunction with other primaries to locate
- files with extended ACLs.
-@@ -452,50 +423,6 @@
+-.It Ic -acl
+-May be used in conjunction with other primaries to locate
+-files with extended ACLs.
+-See
+-.Xr acl 3
+-for more information.
+ .It Ic -amin Oo Cm - Ns | Ns Cm + Oc Ns Ar n
+ True if the difference between the file last access time and the time
+ .Nm
+@@ -452,50 +417,6 @@
  returns a non-zero exit status,
  .Nm
  will return a non-zero exit status.
@@ -7841,7 +8190,7 @@
  .It Ic -fstype Ar type
  True if the file is contained in a file system of type
  .Ar type .
-@@ -503,15 +430,9 @@
+@@ -503,15 +424,9 @@
  .Xr lsvfs 1
  command can be used to find out the types of file systems
  that are available on the system.
@@ -7860,7 +8209,7 @@
  .It Ic -gid Ar gname
  The same thing as
  .Ic -group Ar gname
-@@ -1019,7 +940,6 @@
+@@ -1019,7 +934,6 @@
  .Sx STANDARDS
  section below for details.
  .Sh SEE ALSO
@@ -7868,7 +8217,15 @@
  .Xr chmod 1 ,
  .Xr locate 1 ,
  .Xr lsvfs 1 ,
-@@ -1050,9 +970,7 @@
+@@ -1027,7 +941,6 @@
+ .Xr which 1 ,
+ .Xr xargs 1 ,
+ .Xr stat 2 ,
+-.Xr acl 3 ,
+ .Xr fts 3 ,
+ .Xr getgrent 3 ,
+ .Xr getpwent 3 ,
+@@ -1050,9 +963,7 @@
  .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
  .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
  .Ic -not , -path , -print0 , -regex , -sparse

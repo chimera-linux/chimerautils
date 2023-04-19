@@ -126,8 +126,9 @@ or
 instead.
 .It Fl a
 Archive mode.
-Same as
-.Fl RpP .
+Similar to
+.Fl RpP
+but additionally tries to preserve xattrs (but ignores any failure to do so).
 .It Fl f
 For each existing destination pathname, remove it and
 create a new file, without prompting for confirmation
@@ -173,6 +174,7 @@ Cause
 to preserve the following attributes of each source
 file in the copy: modification time, access time,
 file flags, file mode, user ID, and group ID, as allowed by permissions.
+Extended attributes are not preserved, except in archive mode.
 .Pp
 If the user ID and group ID cannot be preserved, no error message
 is displayed and the exit value is not altered.

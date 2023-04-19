@@ -39,6 +39,7 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <sys/xattr.h>
 
 #include <err.h>
 #include <errno.h>
@@ -47,6 +48,7 @@ __FBSDID("$FreeBSD$");
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <signal.h>
 #include <sysexits.h>
 #include <unistd.h>
@@ -230,6 +232,7 @@ copy_file(const FTSENT *entp, int dne)
 			rval = 1;
 		if (pflag && preserve_fd_acls(from_fd, to_fd) != 0)
 			rval = 1;
+		if (aflag) preserve_fd_xattrs(from_fd, to_fd);
 		if (close(to_fd)) {
 			warn("%s", to.p_path);
 			rval = 1;
@@ -524,6 +527,139 @@ preserve_dir_acls(struct stat *fs, char *source_dir, char *dest_dir)
 	(void)dest_dir;
 #endif
 	return (0);
+}
+
+/* for now we don't really care about warnings or result,
+ * we only support the quiet case for archive mode
+ */
+int
+preserve_fd_xattrs(int source_fd, int dest_fd)
+{
+    ssize_t size;
+    char buf[256], vbuf[128];
+    char *names, *name, *nend;
+    char *value = vbuf;
+    int retval = 0, rerrno = 0;
+    size_t vbufs = sizeof(vbuf);
+
+    size = flistxattr(source_fd, NULL, 0);
+    if (size < 0) {
+        return 1;
+    }
+
+    if (size < (ssize_t)sizeof(buf)) {
+        names = buf;
+    } else {
+        names = malloc(size + 1);
+        if (!names) err(1, "Not enough memory");
+    }
+
+    size = flistxattr(source_fd, names, size);
+    if (size < 0) {
+        if (names != buf) free(names);
+        return 1;
+    }
+    names[size] = '\0';
+    nend = names + size;
+
+    for (name = names; name != nend; name = strchr(name, '\0') + 1) {
+        size = fgetxattr(source_fd, name, NULL, 0);
+        if (size < 0) {
+            retval = 1;
+            rerrno = errno;
+            continue;
+        }
+        if (size > (ssize_t)vbufs) {
+            if (value == vbuf) value = NULL;
+            value = realloc(value, size);
+            if (!value) {
+                err(1, "Not enough memory");
+            }
+            vbufs = size;
+        }
+        size = fgetxattr(source_fd, name, value, size);
+        if (size < 0) {
+            retval = 1;
+            rerrno = errno;
+            continue;
+        }
+        if (fsetxattr(dest_fd, name, value, size, 0)) {
+            retval = 1;
+            rerrno = errno;
+        }
+    }
+
+    if (names != buf) free(names);
+    if (value != vbuf) free(value);
+    if (retval) {
+        errno = rerrno;
+    }
+    return retval;
+}
+
+int
+preserve_dir_xattrs(const char *source_dir, const char *dest_dir) {
+    ssize_t size;
+    char buf[256], vbuf[128];
+    char *names, *name, *nend;
+    char *value = vbuf;
+    int retval = 0, rerrno = 0;
+    size_t vbufs = sizeof(vbuf);
+    printf("preservedir\n");
+
+    size = llistxattr(source_dir, NULL, 0);
+    if (size < 0) {
+        return 1;
+    }
+
+    if (size < (ssize_t)sizeof(buf)) {
+        names = buf;
+    } else {
+        names = malloc(size + 1);
+        if (!names) err(1, "Not enough memory");
+    }
+
+    size = llistxattr(source_dir, names, size);
+    if (size < 0) {
+        if (names != buf) free(names);
+        return 1;
+    }
+    names[size] = '\0';
+    nend = names + size;
+
+    for (name = names; name != nend; name = strchr(name, '\0') + 1) {
+        size = lgetxattr(source_dir, name, NULL, 0);
+        if (size < 0) {
+            retval = 1;
+            rerrno = errno;
+            continue;
+        }
+        if (size > (ssize_t)vbufs) {
+            if (value == vbuf) value = NULL;
+            value = realloc(value, size);
+            if (!value) {
+                err(1, "Not enough memory");
+            }
+            vbufs = size;
+        }
+        size = lgetxattr(source_dir, name, value, size);
+        if (size < 0) {
+            retval = 1;
+            rerrno = errno;
+            continue;
+        }
+        if (lsetxattr(dest_dir, name, value, size, 0)) {
+            retval = 1;
+            rerrno = errno;
+        }
+    }
+
+    if (names != buf) free(names);
+    if (value != vbuf) free(value);
+    if (retval) {
+        errno = rerrno;
+    }
+    return retval;
 }
 
 void

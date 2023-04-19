@@ -483,7 +483,6 @@ option is given, the following information
 is displayed for each file:
 file mode,
 number of links, owner name, group name,
-MAC label,
 number of bytes in the file, abbreviated
 month, day-of-month file was last modified,
 hour file last modified, minute file last
@@ -615,20 +614,6 @@ or
 .Xr sticky 7 . )
 .El
 .El
-.Pp
-The next field contains a
-plus
-.Pq Ql +
-character if the file has an ACL, or a
-space
-.Pq Ql " "
-if it does not.
-The
-.Nm
-utility does not show the actual ACL;
-use
-.Xr getfacl 1
-to do this.
 .Sh ENVIRONMENT
 The following environment variables affect the execution of
 .Nm :
@@ -859,7 +844,6 @@ files in order to be compatible with the
 specification.
 .Sh SEE ALSO
 .Xr chmod 1 ,
-.Xr getfacl 1 ,
 .Xr sort 1 ,
 .Xr xterm 1 ,
 .Xr localeconv 3 ,
@@ -868,7 +852,6 @@ specification.
 .Xr strmode 3 ,
 .Xr strverscmp 3 ,
 .Xr termcap 5 ,
-.Xr maclabel 7 ,
 .Xr sticky 7 ,
 .Xr symlink 7 ,
 .Xr getfmac 8
@@ -888,13 +871,6 @@ The options
 and
 .Fl ,
 are non-standard extensions.
-.Pp
-The ACL support is compatible with
-.Tn IEEE
-Std\~1003.2c
-.Pq Dq Tn POSIX Ns .2c
-Draft\~17
-(withdrawn).
 .Sh HISTORY
 An
 .Nm

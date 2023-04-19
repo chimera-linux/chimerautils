@@ -248,7 +248,7 @@ usage(void)
 static int
 may_have_nfs4acl(const FTSENT *ent, int hflag)
 {
-#if 0
+#ifndef __linux__
 	int ret;
 	static dev_t previous_dev = NODEV;
 	static int supports_acls = -1;
@@ -269,8 +269,9 @@ may_have_nfs4acl(const FTSENT *ent, int hflag)
 
 	return (supports_acls);
 #else
+	/* Linux does not support NFSv4 ACLs */
 	(void)ent;
 	(void)hflag;
-	return 1; /* TODO */
+	return 0;
 #endif
 }

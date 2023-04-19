@@ -39,7 +39,7 @@ typedef struct {
 } PATH_T;
 
 extern PATH_T to;
-extern int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
+extern int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
 extern volatile sig_atomic_t info;
 
 __BEGIN_DECLS
@@ -50,5 +50,7 @@ int	copy_special(struct stat *, int);
 int	setfile(struct stat *, int);
 int	preserve_dir_acls(struct stat *, char *, char *);
 int	preserve_fd_acls(int, int);
+int	preserve_fd_xattrs(int, int);
+int	preserve_dir_xattrs(const char *, const char *);
 void	usage(void);
 __END_DECLS

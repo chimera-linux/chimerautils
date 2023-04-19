@@ -86,7 +86,7 @@ static char emptystring[] = "";
 
 PATH_T to = { to.p_path, emptystring, "" };
 
-int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
+int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
 static int Hflag, Lflag, Rflag, rflag;
 volatile sig_atomic_t info;
 
@@ -123,6 +123,7 @@ main(int argc, char *argv[])
 			Rflag = 1;
 			break;
 		case 'a':
+			aflag = 1;
 			pflag = 1;
 			Rflag = 1;
 			Pflag = 1;
@@ -452,6 +453,7 @@ copy(char *argv[], enum op type, int fts_options, struct stat *root_stat)
 				if (preserve_dir_acls(curr->fts_statp,
 				    curr->fts_accpath, to.p_path) != 0)
 					rval = 1;
+				if (aflag) preserve_dir_xattrs(curr->fts_accpath, to.p_path);
 			} else {
 				mode = curr->fts_statp->st_mode;
 				if ((mode & (S_ISUID | S_ISGID | S_ISTXT)) ||
