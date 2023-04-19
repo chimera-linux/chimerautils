@@ -219,6 +219,7 @@ done
 copy_cmd bin/ed
 copy_cmd bin/sh
 copy_cmd usr.bin/compress
+copy_cmd usr.bin/fetch
 copy_cmd usr.bin/grep
 copy_cmd usr.bin/gzip
 copy_cmd usr.bin/m4
@@ -235,6 +236,7 @@ copy_cmd contrib/telnet
 copy_cmd contrib/vis
 copy_cmd contrib/unvis
 copy_cmd lib/libmp
+copy_cmd lib/libfetch
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
@@ -320,8 +322,9 @@ rm -f ${CWD}/src.freebsd/tip/tip/Makefile*
 rm -rf ${CWD}/src.orig/telnet/telnetd
 rm -rf ${CWD}/src.freebsd/telnet/telnetd
 
-# remove our own nvi scripts before patching
+# remove our own scripts before patching
 rm -f ${CWD}/src.freebsd/nvi/*.sh
+rm -f ${CWD}/src.freebsd/libfetch/*.sh
 
 #####################
 # APPLY ANY PATCHES #
@@ -336,6 +339,7 @@ done
 
 # fix up permissions
 chmod 755 ${CWD}/src.freebsd/nvi/*.sh
+chmod 755 ${CWD}/src.freebsd/libfetch/*.sh
 
 # Clean up
 rm -rf ${TMPDIR}

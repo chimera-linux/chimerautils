@@ -39,6 +39,11 @@ if ncurses.found()
     subdir('telnet')
 endif
 
+if libcrypto.found() and libssl.found()
+    subdir('libfetch')
+    subdir('fetch')
+endif
+
 # tool collections
 
 subdir('bc')

@@ -7688,6 +7688,52 @@
  		default:
  			fputs("?\n", stderr);
  			if (!isatty(0)) {
+--- src.orig/fetch/fetch.c
++++ src.freebsd/fetch/fetch.c
+@@ -34,6 +34,7 @@
+ 
+ #include <sys/param.h>
+ #include <sys/socket.h>
++#include <sys/ioctl.h>
+ #include <sys/stat.h>
+ #include <sys/time.h>
+ 
+@@ -54,6 +55,12 @@
+ #define MINBUFSIZE	16384
+ #define TIMEOUT		120
+ 
++#ifndef TCSASOFT
++#define TCSASOFT 0
++#endif
++
++#define setproctitle(...)
++
+ /* Option flags */
+ static int	 A_flag;	/*    -A: do not follow 302 redirects */
+ static int	 a_flag;	/*    -a: auto retry */
+@@ -283,7 +290,7 @@
+ static void
+ stat_display(struct xferstat *xs, int force)
+ {
+-	char bytes[16], bps[16], eta[16];
++	char bytes[16], bps[32], eta[32];
+ 	struct timeval now;
+ 	int ctty_pgrp;
+ 
+@@ -433,11 +440,11 @@
+ 	struct xferstat xs;
+ 	FILE *f, *of;
+ 	size_t size, readcnt, wr;
+-	off_t count, size_prev;
++	off_t count, size_prev = 0;
+ 	char flags[8];
+ 	const char *slash;
+ 	char *tmppath;
+-	int r, tries;
++	int r, tries = 0;
+ 	unsigned timeout;
+ 	char *ptr;
+ 
 --- src.orig/findutils/find/extern.h
 +++ src.freebsd/findutils/find/extern.h
 @@ -33,6 +33,7 @@
@@ -8764,6 +8810,600 @@
  {
  	u_int count, i;
  	struct s_zstate *zs;
+--- src.orig/libfetch/common.c
++++ src.freebsd/libfetch/common.c
+@@ -137,9 +137,6 @@
+ 	{ SOCKS5_ERR_BAD_PORT,		FETCH_ABORT,	"SOCKS5: Bad port" }
+ };
+ 
+-/* End-of-Line */
+-static const char ENDL[2] = "\r\n";
+-
+ 
+ /*** Error-reporting functions ***********************************************/
+ 
+@@ -178,8 +175,12 @@
+ 	case EPERM:
+ 	case EACCES:
+ 	case EROFS:
++#ifdef EAUTH
+ 	case EAUTH:
++#endif
++#ifdef ENEEDAUTH
+ 	case ENEEDAUTH:
++#endif
+ 		fetchLastErrCode = FETCH_AUTH;
+ 		break;
+ 	case ENOENT:
+@@ -280,13 +281,11 @@
+ fetch_reopen(int sd)
+ {
+ 	conn_t *conn;
+-	int opt = 1;
+ 
+ 	/* allocate and fill connection structure */
+ 	if ((conn = calloc(1, sizeof(*conn))) == NULL)
+ 		return (NULL);
+ 	fcntl(sd, F_SETFD, FD_CLOEXEC);
+-	setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof opt);
+ 	conn->sd = sd;
+ 	++conn->ref;
+ 	return (conn);
+@@ -410,15 +409,16 @@
+ 	 * Largest FQDN (256) + one byte size (1) +
+ 	 * Port (2)
+ 	 */
+-	unsigned char buf[BUFF_SIZE];
++	char buf[BUFF_SIZE];
+ 	unsigned char *ptr;
++	ptrdiff_t dif;
+ 	int ret = 1;
+ 
+ 	if (verbose)
+ 		fetch_info("Initializing SOCKS5 connection: %s:%d", host, port);
+ 
+ 	/* Connection initialization */
+-	ptr = buf;
++	ptr = (unsigned char *)buf;
+ 	*ptr++ = SOCKS_VERSION_5;
+ 	*ptr++ = SOCKS_CONNECTION;
+ 	*ptr++ = SOCKS_RSV;
+@@ -434,7 +434,7 @@
+ 		goto fail;
+ 	}
+ 
+-	ptr = buf;
++	ptr = (unsigned char *)buf;
+ 	if (ptr[0] != SOCKS_VERSION_5) {
+ 		ret = SOCKS5_ERR_VER5_ONLY;
+ 		goto fail;
+@@ -466,7 +466,8 @@
+ 	*ptr++ = port & 0x00ff;
+ 	*ptr++ = (port & 0xff00) >> 8;
+ 
+-	if (fetch_write(conn, buf, ptr - buf) != ptr - buf) {
++	dif = ptr - (unsigned char *)buf;
++	if (fetch_write(conn, buf, dif) != dif) {
+ 		ret = SOCKS5_ERR_REQUEST;
+ 		goto fail;
+ 	}
+@@ -477,7 +478,7 @@
+ 		goto fail;
+ 	}
+ 
+-	ptr = buf;
++	ptr = (unsigned char *)buf;
+ 	if (*ptr++ != SOCKS_VERSION_5) {
+ 		ret = SOCKS5_ERR_NON_VER5_RESP;
+ 		goto fail;
+@@ -704,6 +705,7 @@
+ }
+ 
+ #ifdef WITH_SSL
++#if 0
+ /*
+  * Convert characters A-Z to lowercase (intentionally avoid any locale
+  * specific conversions).
+@@ -1048,6 +1050,7 @@
+ 		GENERAL_NAMES_free(altnames);
+ 	return (ret);
+ }
++#endif
+ 
+ /*
+  * Configure transport security layer based on environment.
+@@ -1073,8 +1076,6 @@
+ /*
+  * Configure peer verification based on environment.
+  */
+-#define LOCAL_CERT_FILE	_PATH_LOCALBASE "/etc/ssl/cert.pem"
+-#define BASE_CERT_FILE	"/etc/ssl/cert.pem"
+ static int
+ fetch_ssl_setup_peer_verification(SSL_CTX *ctx, int verbose)
+ {
+@@ -1084,12 +1085,6 @@
+ 
+ 	if (getenv("SSL_NO_VERIFY_PEER") == NULL) {
+ 		ca_cert_file = getenv("SSL_CA_CERT_FILE");
+-		if (ca_cert_file == NULL &&
+-		    access(LOCAL_CERT_FILE, R_OK) == 0)
+-			ca_cert_file = LOCAL_CERT_FILE;
+-		if (ca_cert_file == NULL &&
+-		    access(BASE_CERT_FILE, R_OK) == 0)
+-			ca_cert_file = BASE_CERT_FILE;
+ 		ca_cert_path = getenv("SSL_CA_CERT_PATH");
+ 		if (verbose) {
+ 			fetch_info("Peer verification enabled");
+@@ -1256,7 +1251,9 @@
+ 	if (getenv("SSL_NO_VERIFY_HOSTNAME") == NULL) {
+ 		if (verbose)
+ 			fetch_info("Verify hostname");
+-		if (!fetch_ssl_verify_hname(conn->ssl_cert, URL->host)) {
++		if (X509_check_host(conn->ssl_cert, URL->host, strlen(URL->host),
++				X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS,
++				NULL) != 1) {
+ 			fprintf(stderr,
+ 			    "SSL certificate subject doesn't match host %s\n",
+ 			    URL->host);
+@@ -1344,7 +1341,7 @@
+ 		timeout.tv_sec += fetchTimeout;
+ 	}
+ 
+-	deltams = INFTIM;
++	deltams = -1;
+ 	memset(&pfd, 0, sizeof pfd);
+ 	pfd.fd = conn->sd;
+ 	pfd.events = POLLIN | POLLERR;
+@@ -1454,27 +1451,12 @@
+ 	return (0);
+ }
+ 
+-
+ /*
+  * Write to a connection w/ timeout
+  */
+ ssize_t
+ fetch_write(conn_t *conn, const char *buf, size_t len)
+ {
+-	struct iovec iov;
+-
+-	iov.iov_base = __DECONST(char *, buf);
+-	iov.iov_len = len;
+-	return fetch_writev(conn, &iov, 1);
+-}
+-
+-/*
+- * Write a vector to a connection w/ timeout
+- * Note: can modify the iovec.
+- */
+-ssize_t
+-fetch_writev(conn_t *conn, struct iovec *iov, int iovcnt)
+-{
+ 	struct timeval now, timeout, delta;
+ 	struct pollfd pfd;
+ 	ssize_t wlen, total;
+@@ -1489,7 +1471,7 @@
+ 	}
+ 
+ 	total = 0;
+-	while (iovcnt > 0) {
++	while (len) {
+ 		while (fetchTimeout && pfd.revents == 0) {
+ 			gettimeofday(&now, NULL);
+ 			if (!timercmp(&timeout, &now, >)) {
+@@ -1514,11 +1496,10 @@
+ 		errno = 0;
+ #ifdef WITH_SSL
+ 		if (conn->ssl != NULL)
+-			wlen = SSL_write(conn->ssl,
+-			    iov->iov_base, iov->iov_len);
++			wlen = SSL_write(conn->ssl, buf, len);
+ 		else
+ #endif
+-			wlen = writev(conn->sd, iov, iovcnt);
++			wlen = send(conn->sd, buf, len, MSG_NOSIGNAL);
+ 		if (wlen == 0) {
+ 			/* we consider a short write a failure */
+ 			/* XXX perhaps we shouldn't in the SSL case */
+@@ -1532,20 +1513,13 @@
+ 			return (-1);
+ 		}
+ 		total += wlen;
+-		while (iovcnt > 0 && wlen >= (ssize_t)iov->iov_len) {
+-			wlen -= iov->iov_len;
+-			iov++;
+-			iovcnt--;
+-		}
+-		if (iovcnt > 0) {
+-			iov->iov_len -= wlen;
+-			iov->iov_base = __DECONST(char *, iov->iov_base) + wlen;
+-		}
++		buf += wlen;
++		len -= wlen;
+ 	}
+ 	return (total);
+ }
+ 
+-
++#if 0
+ /*
+  * Write a line of text to a connection w/ timeout
+  */
+@@ -1568,6 +1542,7 @@
+ 		return (-1);
+ 	return (0);
+ }
++#endif
+ 
+ 
+ /*
+--- src.orig/libfetch/common.h
++++ src.freebsd/libfetch/common.h
+@@ -46,6 +46,10 @@
+ #include <openssl/err.h>
+ #endif
+ 
++#ifndef IPPORT_MAX
++# define IPPORT_MAX 65535
++#endif
++
+ /* Connection */
+ typedef struct fetchconn conn_t;
+ struct fetchconn {
+@@ -102,9 +106,6 @@
+ #define SOCKS_COMMAND_NOT_SUPPORTED	0x07
+ #define SOCKS_ADDRESS_NOT_SUPPORTED	0x08
+ 
+-/* for fetch_writev */
+-struct iovec;
+-
+ void		 fetch_seterr(struct fetcherr *, int);
+ void		 fetch_syserr(void);
+ void		 fetch_info(const char *, ...) __printflike(1, 2);
+@@ -125,8 +126,6 @@
+ ssize_t		 fetch_read(conn_t *, char *, size_t);
+ int		 fetch_getln(conn_t *);
+ ssize_t		 fetch_write(conn_t *, const char *, size_t);
+-ssize_t		 fetch_writev(conn_t *, struct iovec *, int);
+-int		 fetch_putln(conn_t *, const char *, size_t);
+ int		 fetch_close(conn_t *);
+ int		 fetch_add_entry(struct url_ent **, int *, int *,
+ 		     const char *, struct url_stat *);
+--- src.orig/libfetch/ftp.c
++++ src.freebsd/libfetch/ftp.c
+@@ -79,6 +79,10 @@
+ #include "common.h"
+ #include "ftperr.h"
+ 
++#ifndef MAXLOGNAME
++#define MAXLOGNAME LOGIN_NAME_MAX
++#endif
++
+ #define FTP_ANONYMOUS_USER	"anonymous"
+ 
+ #define FTP_CONNECTION_ALREADY_OPEN	125
+@@ -135,7 +139,9 @@
+ 	sin4->sin_addr.s_addr = addr;
+ 	sin4->sin_port = port;
+ 	sin4->sin_family = AF_INET;
++#ifdef HAVE_SA_LEN
+ 	sin4->sin_len = sizeof(struct sockaddr_in);
++#endif
+ }
+ 
+ /*
+@@ -178,7 +184,7 @@
+  * Send a command and check reply
+  */
+ static int
+-ftp_cmd(conn_t *conn, const char *fmt, ...)
++ftp_cmdf(conn_t *conn, const char *fmt, ...)
+ {
+ 	va_list ap;
+ 	size_t len;
+@@ -195,7 +201,7 @@
+ 		return (-1);
+ 	}
+ 
+-	r = fetch_putln(conn, msg, len);
++	r = fetch_write(conn, msg, len);
+ 	free(msg);
+ 
+ 	if (r == -1) {
+@@ -206,6 +212,8 @@
+ 	return (ftp_chkerr(conn));
+ }
+ 
++#define ftp_cmd(conn, fmt, ...) ftp_cmdf(conn, fmt "\r\n", ## __VA_ARGS__)
++
+ /*
+  * Return a pointer to the filename part of a path
+  */
+@@ -382,9 +390,10 @@
+ 	case 'A':
+ 		break;
+ 	case 'd':
+-		type = 'D';
+ 	case 'D':
++		type = 'D';
+ 		/* can't handle yet */
++		return (FTP_PROTOCOL_ERROR);
+ 	default:
+ 		return (FTP_PROTOCOL_ERROR);
+ 	}
+@@ -485,16 +494,16 @@
+ 	int	 err;		/* Error code */
+ };
+ 
+-static int	 ftp_readfn(void *, char *, int);
+-static int	 ftp_writefn(void *, const char *, int);
+-static fpos_t	 ftp_seekfn(void *, fpos_t, int);
++static ssize_t	 ftp_readfn(void *, char *, size_t);
++static ssize_t	 ftp_writefn(void *, const char *, size_t);
++static int	 ftp_seekfn(void *, off_t *, int);
+ static int	 ftp_closefn(void *);
+ 
+-static int
+-ftp_readfn(void *v, char *buf, int len)
++static ssize_t
++ftp_readfn(void *v, char *buf, size_t len)
+ {
+ 	struct ftpio *io;
+-	int r;
++	ssize_t r;
+ 
+ 	io = (struct ftpio *)v;
+ 	if (io == NULL) {
+@@ -523,11 +532,11 @@
+ 	return (-1);
+ }
+ 
+-static int
+-ftp_writefn(void *v, const char *buf, int len)
++static ssize_t
++ftp_writefn(void *v, const char *buf, size_t len)
+ {
+ 	struct ftpio *io;
+-	int w;
++	ssize_t w;
+ 
+ 	io = (struct ftpio *)v;
+ 	if (io == NULL) {
+@@ -550,8 +559,8 @@
+ 	return (-1);
+ }
+ 
+-static fpos_t
+-ftp_seekfn(void *v, fpos_t pos __unused, int whence __unused)
++static int
++ftp_seekfn(void *v, off_t *pos __unused, int whence __unused)
+ {
+ 	struct ftpio *io;
+ 
+@@ -598,6 +607,7 @@
+ {
+ 	struct ftpio *io;
+ 	FILE *f;
++	cookie_io_functions_t iof;
+ 
+ 	if (cconn == NULL || dconn == NULL)
+ 		return (NULL);
+@@ -607,7 +617,11 @@
+ 	io->dconn = dconn;
+ 	io->dir = mode;
+ 	io->eof = io->err = 0;
+-	f = funopen(io, ftp_readfn, ftp_writefn, ftp_seekfn, ftp_closefn);
++	iof.read = ftp_readfn;
++	iof.write = ftp_writefn;
++	iof.seek = ftp_seekfn;
++	iof.close = ftp_closefn;
++	f = fopencookie(io, "w+", iof);
+ 	if (f == NULL)
+ 		free(io);
+ 	return (f);
+@@ -626,14 +640,19 @@
+ 	const char *bindaddr;
+ 	const char *filename;
+ 	int filenamelen, type;
+-	int low, pasv, verbose;
++#if defined(IPV6_PORTRANGE) || defined(IP_PORTRANGE)
++	int low;
++#endif
++	int pasv, verbose;
+ 	int e, sd = -1;
+ 	socklen_t l;
+ 	char *s;
+ 	FILE *df;
+ 
+ 	/* check flags */
++#if defined(IPV6_PORTRANGE) || defined(IP_PORTRANGE)
+ 	low = CHECK_FLAG('l');
++#endif
+ 	pasv = CHECK_FLAG('p') || !CHECK_FLAG('P');
+ 	verbose = CHECK_FLAG('v');
+ 
+@@ -774,7 +793,7 @@
+ 		if (bindaddr != NULL && *bindaddr != '\0' &&
+ 		    (e = fetch_bind(sd, sa.ss_family, bindaddr)) != 0)
+ 			goto ouch;
+-		if (connect(sd, (struct sockaddr *)&sa, sa.ss_len) == -1)
++		if (connect(sd, (struct sockaddr *)&sa, l) == -1)
+ 			goto sysouch;
+ 
+ 		/* make the server initiate the transfer */
+@@ -787,7 +806,10 @@
+ 	} else {
+ 		u_int32_t a;
+ 		u_short p;
+-		int arg, d;
++#if defined(IPV6_PORTRANGE) || defined(IP_PORTRANGE)
++		int arg;
++#endif
++		int d;
+ 		char *ap;
+ 		char hname[INET6_ADDRSTRLEN];
+ 
+@@ -803,15 +825,17 @@
+ 			break;
+ 		case AF_INET:
+ 			((struct sockaddr_in *)&sa)->sin_port = 0;
++#ifdef IP_PORTRANGE
+ 			arg = low ? IP_PORTRANGE_DEFAULT : IP_PORTRANGE_HIGH;
+ 			if (setsockopt(sd, IPPROTO_IP, IP_PORTRANGE,
+ 				(char *)&arg, sizeof(arg)) == -1)
+ 				goto sysouch;
++#endif
+ 			break;
+ 		}
+ 		if (verbose)
+ 			fetch_info("binding data socket");
+-		if (bind(sd, (struct sockaddr *)&sa, sa.ss_len) == -1)
++		if (bind(sd, (struct sockaddr *)&sa, l) == -1)
+ 			goto sysouch;
+ 		if (listen(sd, 1) == -1)
+ 			goto sysouch;
+@@ -834,7 +858,7 @@
+ 			e = -1;
+ 			sin6 = (struct sockaddr_in6 *)&sa;
+ 			sin6->sin6_scope_id = 0;
+-			if (getnameinfo((struct sockaddr *)&sa, sa.ss_len,
++			if (getnameinfo((struct sockaddr *)&sa, l,
+ 				hname, sizeof(hname),
+ 				NULL, 0, NI_NUMERICHOST) == 0) {
+ 				e = ftp_cmd(conn, "EPRT |%d|%s|%d|", 2, hname,
+--- src.orig/libfetch/gen_errors.sh
++++ src.freebsd/libfetch/gen_errors.sh
+@@ -0,0 +1,12 @@
++#!/bin/sh
++
++ERRTYPE=$1
++ERRLIST=$2
++ERRTYPE_U=$(echo $ERRTYPE|tr '[:lower:]' '[:upper:]')
++
++echo "static struct fetcherr ${ERRTYPE}_errlist[] = {"
++cat "$ERRLIST" | grep -v "^#" | sort | while read NUM CAT STRING; do
++    echo "    {${NUM}, FETCH_${CAT}, \"${STRING}\"},"
++done
++echo "    {-1, FETCH_UNKNOWN, \"Unknown ${ERRTYPE_U} error\"}"
++echo "};"
+--- src.orig/libfetch/http.c
++++ src.freebsd/libfetch/http.c
+@@ -84,7 +84,7 @@
+ #include <openssl/md5.h>
+ #define MD5Init(c) MD5_Init(c)
+ #define MD5Update(c, data, len) MD5_Update(c, data, len)
+-#define MD5Final(md, c) MD5_Final(md, c)
++#define MD5Final(md, c) MD5_Final((unsigned char *)md, c)
+ #else
+ #include <md5.h>
+ #endif
+@@ -269,8 +269,8 @@
+ /*
+  * Read function
+  */
+-static int
+-http_readfn(void *v, char *buf, int len)
++static ssize_t
++http_readfn(void *v, char *buf, size_t len)
+ {
+ 	struct httpio *io = (struct httpio *)v;
+ 	int rlen;
+@@ -292,7 +292,7 @@
+ 	}
+ 
+ 	rlen = io->buflen - io->bufpos;
+-	if (len < rlen)
++	if (rlen > 0 && len < (size_t)rlen)
+ 		rlen = len;
+ 	memcpy(buf, io->buf + io->bufpos, rlen);
+ 	io->bufpos += rlen;
+@@ -302,8 +302,8 @@
+ /*
+  * Write function
+  */
+-static int
+-http_writefn(void *v, const char *buf, int len)
++static ssize_t
++http_writefn(void *v, const char *buf, size_t len)
+ {
+ 	struct httpio *io = (struct httpio *)v;
+ 
+@@ -334,6 +334,7 @@
+ {
+ 	struct httpio *io;
+ 	FILE *f;
++	cookie_io_functions_t iof;
+ 
+ 	if ((io = calloc(1, sizeof(*io))) == NULL) {
+ 		fetch_syserr();
+@@ -341,7 +342,11 @@
+ 	}
+ 	io->conn = conn;
+ 	io->chunked = chunked;
+-	f = funopen(io, http_readfn, http_writefn, NULL, http_closefn);
++	iof.read = http_readfn;
++	iof.write = http_writefn;
++	iof.seek = NULL;
++	iof.close = http_closefn;
++	f = fopencookie(io, "w+", iof);
+ 	if (f == NULL) {
+ 		fetch_syserr();
+ 		free(io);
+@@ -389,7 +394,7 @@
+  * Send a formatted line; optionally echo to terminal
+  */
+ static int
+-http_cmd(conn_t *conn, const char *fmt, ...)
++http_cmdf(conn_t *conn, const char *fmt, ...)
+ {
+ 	va_list ap;
+ 	size_t len;
+@@ -406,7 +411,7 @@
+ 		return (-1);
+ 	}
+ 
+-	r = fetch_putln(conn, msg, len);
++	r = fetch_write(conn, msg, len);
+ 	free(msg);
+ 
+ 	if (r == -1) {
+@@ -417,6 +422,8 @@
+ 	return (0);
+ }
+ 
++#define http_cmd(conn, fmt, ...) http_cmdf(conn, fmt "\r\n", ## __VA_ARGS__)
++
+ /*
+  * Get and parse status line
+  */
+@@ -1480,13 +1487,17 @@
+ 	if (strcmp(URL->scheme, SCHEME_HTTPS) == 0 &&
+ 	    fetch_ssl(conn, URL, verbose) == -1) {
+ 		/* grrr */
++#ifdef EAUTH
+ 		errno = EAUTH;
++#else
++		errno = EPERM;
++#endif
+ 		fetch_syserr();
+ 		goto ouch;
+ 	}
+ 
+ 	val = 1;
+-	setsockopt(conn->sd, IPPROTO_TCP, TCP_NOPUSH, &val, sizeof(val));
++	setsockopt(conn->sd, IPPROTO_TCP, TCP_CORK, &val, sizeof(val));
+ 
+ 	clean_http_headerbuf(&headerbuf);
+ 	return (conn);
+@@ -1790,7 +1801,7 @@
+ 		 * options to force the pending data to be written.
+ 		 */
+ 		val = 0;
+-		setsockopt(conn->sd, IPPROTO_TCP, TCP_NOPUSH, &val,
++		setsockopt(conn->sd, IPPROTO_TCP, TCP_CORK, &val,
+ 			   sizeof(val));
+ 		val = 1;
+ 		setsockopt(conn->sd, IPPROTO_TCP, TCP_NODELAY, &val,
 --- src.orig/libmp/mpasbn.c
 +++ src.freebsd/libmp/mpasbn.c
 @@ -93,7 +93,7 @@

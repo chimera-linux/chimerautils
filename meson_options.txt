@@ -23,9 +23,9 @@ option('color_ls',
     description: 'Enable color ls(1) (needs terminfo)'
 )
 
-option('libcrypto',
+option('openssl',
     type: 'feature', value: 'enabled',
-    description: 'Use libcrypto (for dc(1) and minor features elsewhere)'
+    description: 'Use OpenSSL (required by some tools, optional elsewhere)'
 )
 
 option('libedit',

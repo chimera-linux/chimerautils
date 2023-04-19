@@ -26,6 +26,7 @@ It also provides the following functionality:
 
 * cu
 * telnet
+* fetch
 * vi
 * sh
 * vis
