@@ -247,16 +247,14 @@ page.
 ---------------------------------
 Code for FreeBSD's ACL subsystem is not available on Linux. Linux
 only supports POSIX draft ACLs, not NFSv4 ACLs, and there is libacl
-to manipulate them. This library provides a subset of the ACL code
-that is required here, and is not enough to implement the functionality
-in a simple way.
+to manipulate them.
 
-Therefore, ACL code is generally dropped across the codebase. However,
-we do handle extended attributes in several tools (unlike upstream
-FreeBSD) and as POSIX ACLs are implemented via extended attributes
-on Linux, support is often preserved indirectly. For cp(1), extended
-attributes get copied (but without error handling) in archive mode,
-just like GNU cp(1).
+We implement support for libacl where possible (and therefore for
+POSIX draft ACLs), but not for NFSv4 ACLs (the code is ignored).
+
+Additionally, we implement support for extended attributes in specific
+places such as mv(1) as well as cp(1) in archive mode, using Linux
+API.
 
 strtonum()
 ----------

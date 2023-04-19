@@ -42,6 +42,8 @@ __FBSDID("$FreeBSD$");
 
 #include <sys/param.h>
 #include <sys/stat.h>
+#include <sys/acl.h>
+#include <acl/libacl.h>
 
 #include <err.h>
 #include <errno.h>
@@ -773,23 +775,15 @@ printsize(size_t width, off_t bytes)
 static void
 aclmode(char *buf, const FTSENT *p)
 {
-#if 0
 	char name[MAXPATHLEN + 1];
 	int ret, trivial;
 	static dev_t previous_dev = NODEV;
-	static int supports_acls = -1;
+	int supports_acls = -1;
 	static int type = ACL_TYPE_ACCESS;
 	acl_t facl;
 
-	/*
-	 * XXX: ACLs are not supported on whiteouts and device files
-	 * residing on UFS.
-	 */
 	if (S_ISCHR(p->fts_statp->st_mode) || S_ISBLK(p->fts_statp->st_mode) ||
-	    S_ISWHT(p->fts_statp->st_mode))
-		return;
-
-	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
+	    S_ISLNK(p->fts_statp->st_mode))
 		return;
 
 	if (p->fts_level == FTS_ROOTLEVEL)
@@ -801,7 +795,7 @@ aclmode(char *buf, const FTSENT *p)
 	if (previous_dev != p->fts_statp->st_dev) {
 		previous_dev = p->fts_statp->st_dev;
 		supports_acls = 0;
-
+#if 0
 		ret = lpathconf(name, _PC_ACL_NFS4);
 		if (ret > 0) {
 			type = ACL_TYPE_NFS4;
@@ -810,12 +804,13 @@ aclmode(char *buf, const FTSENT *p)
 			warn("%s", name);
 			return;
 		}
+#endif
 		if (supports_acls == 0) {
-			ret = lpathconf(name, _PC_ACL_EXTENDED);
+			ret = acl_extended_file(name);
 		if (ret > 0) {
 				type = ACL_TYPE_ACCESS;
 				supports_acls = 1;
-			} else if (ret < 0 && errno != EINVAL) {
+			} else if (ret < 0 && errno != ENOTSUP) {
 				warn("%s", name);
 				return;
 			}
@@ -823,21 +818,18 @@ aclmode(char *buf, const FTSENT *p)
 	}
 	if (supports_acls == 0)
 		return;
-	facl = acl_get_link_np(name, type);
+	facl = acl_get_file(name, type);
 	if (facl == NULL) {
 		warn("%s", name);
 		return;
 	}
-	if (acl_is_trivial_np(facl, &trivial)) {
+	trivial = acl_equiv_mode(facl, NULL);
+	if (trivial < 0) {
 		acl_free(facl);
 		warn("%s", name);
 		return;
 	}
-	if (!trivial)
+	if (trivial != 0)
 		buf[10] = '+';
 	acl_free(facl);
-#else
-	(void)buf;
-	(void)p;
-#endif
 }

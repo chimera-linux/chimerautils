@@ -94,6 +94,9 @@ elif cc.has_header('ncurses.h', dependencies: ncurses)
     curses_incdefs += ['-DHAVE_NCURSES_H']
 endif
 
+# libacl is needed in several tools
+libacl = dependency('libacl', required: true)
+
 # bc(1) needs libedit
 libedit = dependency('libedit', required: get_option('libedit'))
 

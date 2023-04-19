@@ -1,5 +1,5 @@
 ls_cargs = []
-ls_deps = [libfts]
+ls_deps = [libfts, libacl]
 
 if get_option('color_ls')
     ls_cargs += ['-DCOLORLS']

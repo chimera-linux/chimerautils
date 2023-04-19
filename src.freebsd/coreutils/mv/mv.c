@@ -47,6 +47,7 @@ static char sccsid[] = "@(#)mv.c	8.2 (Berkeley) 4/2/94";
 __FBSDID("$FreeBSD$");
 
 #include <sys/types.h>
+#include <sys/acl.h>
 #include <sys/param.h>
 #include <sys/time.h>
 #include <sys/wait.h>
@@ -54,6 +55,7 @@ __FBSDID("$FreeBSD$");
 #include <sys/xattr.h>
 #include <sys/mount.h>
 #include <sys/statvfs.h>
+#include <acl/libacl.h>
 
 #include <err.h>
 #include <errno.h>
@@ -459,11 +461,10 @@ static void
 preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
     const char *dest_path)
 {
-#if 0
 	acl_t acl;
-	acl_type_t acl_type;
-	int acl_supported = 0, ret, trivial;
+	int acl_supported = 0, ret;
 
+#if 0
 	ret = fpathconf(source_fd, _PC_ACL_NFS4);
 	if (ret > 0 ) {
 		acl_supported = 1;
@@ -473,13 +474,13 @@ preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
 		    source_path);
 		return;
 	}
+#endif
 	if (acl_supported == 0) {
-		ret = fpathconf(source_fd, _PC_ACL_EXTENDED);
+		ret = acl_extended_fd(source_fd);
 		if (ret > 0 ) {
 			acl_supported = 1;
-			acl_type = ACL_TYPE_ACCESS;
-		} else if (ret < 0 && errno != EINVAL) {
-			warn("fpathconf(..., _PC_ACL_EXTENDED) failed for %s",
+		} else if (ret < 0 && errno != ENOTSUP) {
+			warn("acl_extended_fd() failed for %s",
 			    source_path);
 			return;
 		}
@@ -487,32 +488,17 @@ preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
 	if (acl_supported == 0)
 		return;
 
-	acl = acl_get_fd_np(source_fd, acl_type);
+	acl = acl_get_fd(source_fd);
 	if (acl == NULL) {
 		warn("failed to get acl entries for %s", source_path);
 		return;
 	}
-	if (acl_is_trivial_np(acl, &trivial)) {
-		warn("acl_is_trivial() failed for %s", source_path);
-		acl_free(acl);
-		return;
-	}
-	if (trivial) {
-		acl_free(acl);
-		return;
-	}
-	if (acl_set_fd_np(dest_fd, acl, acl_type) < 0) {
+	if (acl_set_fd(dest_fd, acl) < 0) {
 		warn("failed to set acl entries for %s", dest_path);
 		acl_free(acl);
 		return;
 	}
 	acl_free(acl);
-#else
-	(void)source_fd;
-	(void)dest_fd;
-	(void)source_path;
-	(void)dest_path;
-#endif
 }
 
 static void
