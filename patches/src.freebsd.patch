@@ -4231,12 +4231,13 @@
  	default:
  		break;
  	}
-@@ -777,19 +778,12 @@
+@@ -776,20 +777,12 @@
+ {
  	char name[MAXPATHLEN + 1];
  	int ret, trivial;
- 	static dev_t previous_dev = NODEV;
+-	static dev_t previous_dev = NODEV;
 -	static int supports_acls = -1;
-+	int supports_acls = -1;
++	int supports_acls = 0;
  	static int type = ACL_TYPE_ACCESS;
  	acl_t facl;
  
@@ -4253,16 +4254,20 @@
  		return;
  
  	if (p->fts_level == FTS_ROOTLEVEL)
-@@ -801,7 +795,7 @@
- 	if (previous_dev != p->fts_statp->st_dev) {
- 		previous_dev = p->fts_statp->st_dev;
- 		supports_acls = 0;
+@@ -798,10 +791,8 @@
+ 		snprintf(name, sizeof(name), "%s/%s",
+ 		    p->fts_parent->fts_accpath, p->fts_name);
+ 
+-	if (previous_dev != p->fts_statp->st_dev) {
+-		previous_dev = p->fts_statp->st_dev;
+-		supports_acls = 0;
 -
++	{
 +#if 0
  		ret = lpathconf(name, _PC_ACL_NFS4);
  		if (ret > 0) {
  			type = ACL_TYPE_NFS4;
-@@ -810,12 +804,13 @@
+@@ -810,12 +801,13 @@
  			warn("%s", name);
  			return;
  		}
@@ -4279,7 +4284,7 @@
  				warn("%s", name);
  				return;
  			}
-@@ -823,17 +818,18 @@
+@@ -823,17 +815,18 @@
  	}
  	if (supports_acls == 0)
  		return;

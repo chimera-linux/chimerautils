@@ -777,8 +777,7 @@ aclmode(char *buf, const FTSENT *p)
 {
 	char name[MAXPATHLEN + 1];
 	int ret, trivial;
-	static dev_t previous_dev = NODEV;
-	int supports_acls = -1;
+	int supports_acls = 0;
 	static int type = ACL_TYPE_ACCESS;
 	acl_t facl;
 
@@ -792,9 +791,7 @@ aclmode(char *buf, const FTSENT *p)
 		snprintf(name, sizeof(name), "%s/%s",
 		    p->fts_parent->fts_accpath, p->fts_name);
 
-	if (previous_dev != p->fts_statp->st_dev) {
-		previous_dev = p->fts_statp->st_dev;
-		supports_acls = 0;
+	{
 #if 0
 		ret = lpathconf(name, _PC_ACL_NFS4);
 		if (ret > 0) {
