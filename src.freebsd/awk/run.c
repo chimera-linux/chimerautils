@@ -1543,14 +1543,8 @@ static char *nawk_convert(const char *s, int (*fun_c)(int),
 		buf = tostringN(s, strlen(s) * sz + 1);
 
 		(void) mbtowc(NULL, NULL, 0);	/* reset internal state */
-		/*
-		 * Reset internal state here too.
-		 * Assign result to avoid a compiler warning. (Casting to void
-		 * doesn't work.)
-		 * Increment said variable to avoid a different warning.
-		 */
-		int unused = wctomb(NULL, L'\0');
-		unused++;
+		/* Reset internal state here too. */
+		(void) wctomb(NULL, L'\0');
 
 		ps   = s;
 		pbuf = buf;

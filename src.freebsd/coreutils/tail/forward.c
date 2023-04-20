@@ -261,7 +261,7 @@ show(file_info_t *file)
 void
 follow(file_info_t *files, enum STYLE style, off_t off)
 {
-	int active, i, n = -1;
+	int active, i;
 	struct stat sb2;
 	file_info_t *file;
 	FILE *ftmp;
@@ -270,16 +270,12 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 
 	file = files;
 	active = 0;
-	n = 0;
 	for (i = 0; i < no_files; i++, file++) {
 		if (file->fp) {
 			active = 1;
-			n++;
 			if (no_files > 1 && !qflag)
 				printfn(file->file_name, 1);
 			forward(file->fp, file->file_name, style, off, &file->st);
-			if (Fflag && fileno(file->fp) != STDIN_FILENO)
-				n++;
 		}
 	}
 	if (!Fflag && !active)
