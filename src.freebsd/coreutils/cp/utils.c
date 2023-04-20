@@ -571,7 +571,6 @@ preserve_dir_xattrs(const char *source_dir, const char *dest_dir) {
     char *value = vbuf;
     int retval = 0, rerrno = 0;
     size_t vbufs = sizeof(vbuf);
-    printf("preservedir\n");
 
     size = llistxattr(source_dir, NULL, 0);
     if (size < 0) {

@@ -2250,7 +2250,7 @@
  	if (aclsetf(dest_dir, acl_type, acl) < 0) {
  		warn("failed to set acl entries on %s", dest_dir);
  		acl_free(acl);
-@@ -508,6 +495,139 @@
+@@ -508,6 +495,138 @@
  	return (0);
  }
  
@@ -2330,7 +2330,6 @@
 +    char *value = vbuf;
 +    int retval = 0, rerrno = 0;
 +    size_t vbufs = sizeof(vbuf);
-+    printf("preservedir\n");
 +
 +    size = llistxattr(source_dir, NULL, 0);
 +    if (size < 0) {

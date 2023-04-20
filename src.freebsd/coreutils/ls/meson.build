@@ -23,7 +23,7 @@ if tiny.enabled() and get_option('color_ls')
         'ls.tiny', ['cmp.c', 'ls.c', 'print.c', 'util.c'],
         include_directories: [inc],
         link_with: [libcompat],
-        dependencies: [libfts],
+        dependencies: [libfts, libacl],
         install: true
     )
 endif
