@@ -42,10 +42,12 @@ __FBSDID("$FreeBSD$");
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/types.h>
+#include <sys/acl.h>
 #include <sys/wait.h>
 #include <sys/mount.h>
 #include <sys/sysmacros.h>
 #include <sys/statvfs.h>
+#include <acl/libacl.h>
 
 #include <dirent.h>
 #include <err.h>
@@ -377,12 +379,11 @@ c_mXXdepth(OPTION *option, char ***argvp)
 int
 f_acl(PLAN *plan __unused, FTSENT *entry)
 {
-	acl_t facl;
-	acl_type_t acl_type;
-	int acl_supported = 0, ret, trivial;
+	int acl_supported = 0, ret;
 
 	if (S_ISLNK(entry->fts_statp->st_mode))
 		return 0;
+#if 0
 	ret = pathconf(entry->fts_accpath, _PC_ACL_NFS4);
 	if (ret > 0) {
 		acl_supported = 1;
@@ -391,16 +392,17 @@ f_acl(PLAN *plan __unused, FTSENT *entry)
 		warn("%s", entry->fts_accpath);
 		return (0);
 	}
+#endif
 	if (acl_supported == 0) {
-		ret = pathconf(entry->fts_accpath, _PC_ACL_EXTENDED);
+		ret = acl_extended_file(entry->fts_accpath);
 		if (ret > 0) {
 			acl_supported = 1;
-			acl_type = ACL_TYPE_ACCESS;
-		} else if (ret < 0 && errno != EINVAL) {
+		} else if (ret < 0 && errno != ENOTSUP) {
 			warn("%s", entry->fts_accpath);
 			return (0);
 		}
 	}
+#if 0
 	if (acl_supported == 0)
 		return (0);
 
@@ -418,6 +420,8 @@ f_acl(PLAN *plan __unused, FTSENT *entry)
 	if (trivial)
 		return (0);
 	return (1);
+#endif
+	return acl_supported;
 }
 #endif
 

@@ -4231,15 +4231,17 @@
  	default:
  		break;
  	}
-@@ -776,20 +777,12 @@
+@@ -775,18 +776,12 @@
+ aclmode(char *buf, const FTSENT *p)
  {
  	char name[MAXPATHLEN + 1];
- 	int ret, trivial;
+-	int ret, trivial;
 -	static dev_t previous_dev = NODEV;
--	static int supports_acls = -1;
-+	int supports_acls = 0;
- 	static int type = ACL_TYPE_ACCESS;
- 	acl_t facl;
++	int ret, trivial = -1;
++	static dev_t previous_dev = (dev_t)-1;
+ 	static int supports_acls = -1;
+-	static int type = ACL_TYPE_ACCESS;
+-	acl_t facl;
  
 -	/*
 -	 * XXX: ACLs are not supported on whiteouts and device files
@@ -4247,27 +4249,20 @@
 -	 */
  	if (S_ISCHR(p->fts_statp->st_mode) || S_ISBLK(p->fts_statp->st_mode) ||
 -	    S_ISWHT(p->fts_statp->st_mode))
--		return;
--
--	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
 +	    S_ISLNK(p->fts_statp->st_mode))
  		return;
  
- 	if (p->fts_level == FTS_ROOTLEVEL)
-@@ -798,10 +791,8 @@
- 		snprintf(name, sizeof(name), "%s/%s",
- 		    p->fts_parent->fts_accpath, p->fts_name);
- 
--	if (previous_dev != p->fts_statp->st_dev) {
--		previous_dev = p->fts_statp->st_dev;
--		supports_acls = 0;
+ 	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
+@@ -801,7 +796,7 @@
+ 	if (previous_dev != p->fts_statp->st_dev) {
+ 		previous_dev = p->fts_statp->st_dev;
+ 		supports_acls = 0;
 -
-+	{
 +#if 0
  		ret = lpathconf(name, _PC_ACL_NFS4);
  		if (ret > 0) {
  			type = ACL_TYPE_NFS4;
-@@ -810,12 +801,13 @@
+@@ -810,30 +805,24 @@
  			warn("%s", name);
  			return;
  		}
@@ -4275,36 +4270,37 @@
  		if (supports_acls == 0) {
 -			ret = lpathconf(name, _PC_ACL_EXTENDED);
 -			if (ret > 0) {
+-				type = ACL_TYPE_ACCESS;
 +			ret = acl_extended_file(name);
-+		if (ret > 0) {
- 				type = ACL_TYPE_ACCESS;
++			if (ret >= 0) {
  				supports_acls = 1;
 -			} else if (ret < 0 && errno != EINVAL) {
++				trivial = !ret;
 +			} else if (ret < 0 && errno != ENOTSUP) {
  				warn("%s", name);
  				return;
++			} else {
++				supports_acls = 0;
  			}
-@@ -823,17 +815,18 @@
+ 		}
  	}
  	if (supports_acls == 0)
  		return;
 -	facl = acl_get_link_np(name, type);
-+	facl = acl_get_file(name, type);
- 	if (facl == NULL) {
- 		warn("%s", name);
- 		return;
- 	}
+-	if (facl == NULL) {
+-		warn("%s", name);
+-		return;
+-	}
 -	if (acl_is_trivial_np(facl, &trivial)) {
-+	trivial = acl_equiv_mode(facl, NULL);
-+	if (trivial < 0) {
- 		acl_free(facl);
- 		warn("%s", name);
- 		return;
- 	}
--	if (!trivial)
-+	if (trivial != 0)
+-		acl_free(facl);
+-		warn("%s", name);
+-		return;
+-	}
++	if (trivial < 0)
++		trivial = !(acl_extended_file(name) > 0);
+ 	if (!trivial)
  		buf[10] = '+';
- 	acl_free(facl);
+-	acl_free(facl);
  }
 --- src.orig/coreutils/ls/util.c
 +++ src.freebsd/coreutils/ls/util.c
@@ -8251,7 +8247,7 @@
  creat_f	c_Xtime;
 --- src.orig/findutils/find/find.1
 +++ src.freebsd/findutils/find/find.1
-@@ -202,41 +202,6 @@
+@@ -202,35 +202,6 @@
  and neither means
  .Dq exactly n .
  .Bl -tag -width indent
@@ -8284,16 +8280,10 @@
 -Please refer to the
 -.Ic -atime
 -primary description for information on supported time units.
--.It Ic -acl
--May be used in conjunction with other primaries to locate
--files with extended ACLs.
--See
--.Xr acl 3
--for more information.
- .It Ic -amin Oo Cm - Ns | Ns Cm + Oc Ns Ar n
- True if the difference between the file last access time and the time
- .Nm
-@@ -452,50 +417,6 @@
+ .It Ic -acl
+ May be used in conjunction with other primaries to locate
+ files with extended ACLs.
+@@ -452,50 +423,6 @@
  returns a non-zero exit status,
  .Nm
  will return a non-zero exit status.
@@ -8344,7 +8334,7 @@
  .It Ic -fstype Ar type
  True if the file is contained in a file system of type
  .Ar type .
-@@ -503,15 +424,9 @@
+@@ -503,15 +430,9 @@
  .Xr lsvfs 1
  command can be used to find out the types of file systems
  that are available on the system.
@@ -8363,7 +8353,7 @@
  .It Ic -gid Ar gname
  The same thing as
  .Ic -group Ar gname
-@@ -1019,7 +934,6 @@
+@@ -1019,7 +940,6 @@
  .Sx STANDARDS
  section below for details.
  .Sh SEE ALSO
@@ -8371,15 +8361,7 @@
  .Xr chmod 1 ,
  .Xr locate 1 ,
  .Xr lsvfs 1 ,
-@@ -1027,7 +941,6 @@
- .Xr which 1 ,
- .Xr xargs 1 ,
- .Xr stat 2 ,
--.Xr acl 3 ,
- .Xr fts 3 ,
- .Xr getgrent 3 ,
- .Xr getpwent 3 ,
-@@ -1050,9 +963,7 @@
+@@ -1050,9 +970,7 @@
  .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
  .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
  .Ic -not , -path , -print0 , -regex , -sparse
@@ -8433,22 +8415,23 @@
  struct _plandata;
 --- src.orig/findutils/find/function.c
 +++ src.freebsd/findutils/find/function.c
-@@ -40,12 +40,12 @@
+@@ -40,12 +40,14 @@
  __FBSDID("$FreeBSD$");
  
  #include <sys/param.h>
 -#include <sys/ucred.h>
  #include <sys/stat.h>
  #include <sys/types.h>
--#include <sys/acl.h>
+ #include <sys/acl.h>
  #include <sys/wait.h>
  #include <sys/mount.h>
 +#include <sys/sysmacros.h>
 +#include <sys/statvfs.h>
++#include <acl/libacl.h>
  
  #include <dirent.h>
  #include <err.h>
-@@ -64,6 +64,10 @@
+@@ -64,6 +66,10 @@
  
  #include "find.h"
  
@@ -8459,7 +8442,52 @@
  static PLAN *palloc(OPTION *);
  static long long find_parsenum(PLAN *, const char *, char *, char *);
  static long long find_parsetime(PLAN *, const char *, char *);
-@@ -874,6 +878,64 @@
+@@ -373,12 +379,11 @@
+ int
+ f_acl(PLAN *plan __unused, FTSENT *entry)
+ {
+-	acl_t facl;
+-	acl_type_t acl_type;
+-	int acl_supported = 0, ret, trivial;
++	int acl_supported = 0, ret;
+ 
+ 	if (S_ISLNK(entry->fts_statp->st_mode))
+ 		return 0;
++#if 0
+ 	ret = pathconf(entry->fts_accpath, _PC_ACL_NFS4);
+ 	if (ret > 0) {
+ 		acl_supported = 1;
+@@ -387,16 +392,17 @@
+ 		warn("%s", entry->fts_accpath);
+ 		return (0);
+ 	}
++#endif
+ 	if (acl_supported == 0) {
+-		ret = pathconf(entry->fts_accpath, _PC_ACL_EXTENDED);
++		ret = acl_extended_file(entry->fts_accpath);
+ 		if (ret > 0) {
+ 			acl_supported = 1;
+-			acl_type = ACL_TYPE_ACCESS;
+-		} else if (ret < 0 && errno != EINVAL) {
++		} else if (ret < 0 && errno != ENOTSUP) {
+ 			warn("%s", entry->fts_accpath);
+ 			return (0);
+ 		}
+ 	}
++#if 0
+ 	if (acl_supported == 0)
+ 		return (0);
+ 
+@@ -414,6 +420,8 @@
+ 	if (trivial)
+ 		return (0);
+ 	return (1);
++#endif
++	return acl_supported;
+ }
+ #endif
+ 
+@@ -874,6 +882,64 @@
  }
  
  #if HAVE_STRUCT_STATFS_F_FSTYPENAME
@@ -8524,7 +8552,7 @@
  /*
   * -fstype functions --
   *
-@@ -884,9 +946,9 @@
+@@ -884,9 +950,9 @@
  {
  	static dev_t curdev;	/* need a guaranteed illegal dev value */
  	static int first = 1;
@@ -8537,7 +8565,7 @@
  	char *p, save[2] = {0,0};
  
  	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
-@@ -897,7 +959,7 @@
+@@ -897,7 +963,7 @@
  		curdev = entry->fts_statp->st_dev;
  
  		/*
@@ -8546,7 +8574,7 @@
  		 * not where it points.
  		 */
  		if (entry->fts_info == FTS_SL ||
-@@ -913,7 +975,7 @@
+@@ -913,7 +979,7 @@
  		} else
  			p = NULL;
  
@@ -8555,7 +8583,7 @@
  			if (!ignore_readdir_race || errno != ENOENT) {
  				warn("statfs: %s", entry->fts_accpath);
  				exitstatus = 1;
-@@ -932,14 +994,14 @@
+@@ -932,14 +998,14 @@
  		 * Further tests may need both of these values, so
  		 * always copy both of them.
  		 */
@@ -8573,7 +8601,7 @@
  	default:
  		abort();
  	}
-@@ -956,17 +1018,10 @@
+@@ -956,17 +1022,10 @@
  
  	new = palloc(option);
  	switch (*fsname) {
@@ -8592,7 +8620,7 @@
  			return new;
  		}
  		break;
-@@ -1261,7 +1316,9 @@
+@@ -1261,7 +1320,9 @@
  int
  f_nogroup(PLAN *plan __unused, FTSENT *entry)
  {
@@ -8603,7 +8631,7 @@
  }
  
  PLAN *
-@@ -1281,7 +1338,9 @@
+@@ -1281,7 +1342,9 @@
  int
  f_nouser(PLAN *plan __unused, FTSENT *entry)
  {

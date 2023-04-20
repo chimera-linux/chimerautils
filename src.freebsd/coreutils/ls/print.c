@@ -776,13 +776,15 @@ static void
 aclmode(char *buf, const FTSENT *p)
 {
 	char name[MAXPATHLEN + 1];
-	int ret, trivial;
-	int supports_acls = 0;
-	static int type = ACL_TYPE_ACCESS;
-	acl_t facl;
+	int ret, trivial = -1;
+	static dev_t previous_dev = (dev_t)-1;
+	static int supports_acls = -1;
 
 	if (S_ISCHR(p->fts_statp->st_mode) || S_ISBLK(p->fts_statp->st_mode) ||
 	    S_ISLNK(p->fts_statp->st_mode))
+		return;
+
+	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
 		return;
 
 	if (p->fts_level == FTS_ROOTLEVEL)
@@ -791,7 +793,9 @@ aclmode(char *buf, const FTSENT *p)
 		snprintf(name, sizeof(name), "%s/%s",
 		    p->fts_parent->fts_accpath, p->fts_name);
 
-	{
+	if (previous_dev != p->fts_statp->st_dev) {
+		previous_dev = p->fts_statp->st_dev;
+		supports_acls = 0;
 #if 0
 		ret = lpathconf(name, _PC_ACL_NFS4);
 		if (ret > 0) {
@@ -804,29 +808,21 @@ aclmode(char *buf, const FTSENT *p)
 #endif
 		if (supports_acls == 0) {
 			ret = acl_extended_file(name);
-		if (ret > 0) {
-				type = ACL_TYPE_ACCESS;
+			if (ret >= 0) {
 				supports_acls = 1;
+				trivial = !ret;
 			} else if (ret < 0 && errno != ENOTSUP) {
 				warn("%s", name);
 				return;
+			} else {
+				supports_acls = 0;
 			}
 		}
 	}
 	if (supports_acls == 0)
 		return;
-	facl = acl_get_file(name, type);
-	if (facl == NULL) {
-		warn("%s", name);
-		return;
-	}
-	trivial = acl_equiv_mode(facl, NULL);
-	if (trivial < 0) {
-		acl_free(facl);
-		warn("%s", name);
-		return;
-	}
-	if (trivial != 0)
+	if (trivial < 0)
+		trivial = !(acl_extended_file(name) > 0);
+	if (!trivial)
 		buf[10] = '+';
-	acl_free(facl);
 }

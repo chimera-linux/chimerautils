@@ -202,6 +202,12 @@ a preceding minus sign means
 and neither means
 .Dq exactly n .
 .Bl -tag -width indent
+.It Ic -acl
+May be used in conjunction with other primaries to locate
+files with extended ACLs.
+See
+.Xr acl 3
+for more information.
 .It Ic -amin Oo Cm - Ns | Ns Cm + Oc Ns Ar n
 True if the difference between the file last access time and the time
 .Nm
@@ -941,6 +947,7 @@ section below for details.
 .Xr which 1 ,
 .Xr xargs 1 ,
 .Xr stat 2 ,
+.Xr acl 3 ,
 .Xr fts 3 ,
 .Xr getgrent 3 ,
 .Xr getpwent 3 ,
