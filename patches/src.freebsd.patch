@@ -715,7 +715,21 @@
  
  #define	SET_LEN	6		/* initial # of bitcmd struct to malloc */
  #define	SET_LEN_INCR 4		/* # of bitcmd structs to add as needed */
-@@ -346,9 +342,7 @@
+@@ -154,11 +150,12 @@
+ #define	ADDCMD(a, b, c, d)						\
+ 	if (set >= endset) {						\
+ 		BITCMD *newset;						\
++		ptrdiff_t setdiff = set - saveset; \
+ 		setlen += SET_LEN_INCR;					\
+ 		newset = reallocarray(saveset, setlen, sizeof(BITCMD));	\
+ 		if (newset == NULL)					\
+ 			goto out;					\
+-		set = newset + (set - saveset);				\
++		set = newset + setdiff;				\
+ 		saveset = newset;					\
+ 		endset = newset + (setlen - 2);				\
+ 	}								\
+@@ -346,9 +343,7 @@
  get_current_umask(void)
  {
  	sigset_t sigset, sigoset;
@@ -725,7 +739,7 @@
  
  #ifdef KERN_PROC_UMASK
  	/*
-@@ -366,9 +360,9 @@
+@@ -366,9 +361,9 @@
  	 * handler, protect them as best we can.
  	 */
  	sigfillset(&sigset);
@@ -1686,7 +1700,23 @@
  #include <sys/stat.h>
  #include <sys/time.h>
  
-@@ -387,9 +388,6 @@
+@@ -238,6 +239,7 @@
+ 
+ 	if (fclose(ofp)) {
+ 		cwarn("%s", out);
++		ofp = NULL;
+ 		goto err;
+ 	}
+ 	ofp = NULL;
+@@ -341,6 +343,7 @@
+ 	ifp = NULL;
+ 
+ 	if (fclose(ofp)) {
++		ofp = NULL;
+ 		cwarn("%s", out);
+ 		goto err;
+ 	}
+@@ -387,9 +390,6 @@
  	}
  	if (chmod(name, fs->st_mode) && errno != EOPNOTSUPP)
  		cwarn("chmod: %s", name);
@@ -8267,6 +8297,14 @@
  	unsigned timeout;
  	char *ptr;
  
+@@ -639,6 +646,7 @@
+ 		if (!F_flag && us.mtime && sb.st_mtime != us.mtime && tries == 1) {
+ 			/* no match! have to refetch */
+ 			fclose(f);
++			f = NULL;
+ 			/* if precious, warn the user and give up */
+ 			if (R_flag) {
+ 				warnx("%s: local modification time "
 --- src.orig/findutils/find/extern.h
 +++ src.freebsd/findutils/find/extern.h
 @@ -33,6 +33,7 @@
@@ -11260,7 +11298,7 @@
  	cap_rights_t rights;
  	struct passwd *pwd;
  	time_t atime;
-@@ -203,7 +204,8 @@
+@@ -203,10 +204,11 @@
  {
  	struct utmpx lu, *u;
  
@@ -11269,8 +11307,19 @@
 +	lu.ut_line[sizeof lu.ut_line - 1] = '\0';
  	while ((u = getutxline(&lu)) != NULL)
  		if (u->ut_type == USER_PROCESS &&
- 		    strcmp(user, u->ut_user) == 0) {
-@@ -244,7 +246,7 @@
+-		    strcmp(user, u->ut_user) == 0) {
++		    strncmp(user, u->ut_user, sizeof(u->ut_user)) == 0) {
+ 			endutxent();
+ 			return(0);
+ 		}
+@@ -238,13 +240,13 @@
+ 
+ 	while ((u = getutxent()) != NULL)
+ 		if (u->ut_type == USER_PROCESS &&
+-		    strcmp(user, u->ut_user) == 0) {
++		    strncmp(user, u->ut_user, sizeof(u->ut_user)) == 0) {
+ 			++nloggedttys;
+ 			if (term_chk(devfd, u->ut_line, &msgsok, &atime, 0))
  				continue;	/* bad term? skip */
  			if (myuid && !msgsok)
  				continue;	/* skip ttys with msgs off */

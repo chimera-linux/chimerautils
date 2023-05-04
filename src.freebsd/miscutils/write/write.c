@@ -208,7 +208,7 @@ utmp_chk(char *user, char *tty)
 	lu.ut_line[sizeof lu.ut_line - 1] = '\0';
 	while ((u = getutxline(&lu)) != NULL)
 		if (u->ut_type == USER_PROCESS &&
-		    strcmp(user, u->ut_user) == 0) {
+		    strncmp(user, u->ut_user, sizeof(u->ut_user)) == 0) {
 			endutxent();
 			return(0);
 		}
@@ -240,7 +240,7 @@ search_utmp(int devfd, char *user, char *tty, char *mytty, uid_t myuid)
 
 	while ((u = getutxent()) != NULL)
 		if (u->ut_type == USER_PROCESS &&
-		    strcmp(user, u->ut_user) == 0) {
+		    strncmp(user, u->ut_user, sizeof(u->ut_user)) == 0) {
 			++nloggedttys;
 			if (term_chk(devfd, u->ut_line, &msgsok, &atime, 0))
 				continue;	/* bad term? skip */

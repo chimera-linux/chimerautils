@@ -646,6 +646,7 @@ again:
 		if (!F_flag && us.mtime && sb.st_mtime != us.mtime && tries == 1) {
 			/* no match! have to refetch */
 			fclose(f);
+			f = NULL;
 			/* if precious, warn the user and give up */
 			if (R_flag) {
 				warnx("%s: local modification time "

@@ -239,6 +239,7 @@ compress(const char *in, const char *out, int bits)
 
 	if (fclose(ofp)) {
 		cwarn("%s", out);
+		ofp = NULL;
 		goto err;
 	}
 	ofp = NULL;
@@ -342,6 +343,7 @@ decompress(const char *in, const char *out, int bits)
 	ifp = NULL;
 
 	if (fclose(ofp)) {
+		ofp = NULL;
 		cwarn("%s", out);
 		goto err;
 	}
