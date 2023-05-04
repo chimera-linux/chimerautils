@@ -47,8 +47,6 @@ __FBSDID("$FreeBSD$");
 #include <string.h>
 #include <unistd.h>
 
-#include <db.h>
-
 #include "getcap.h"
 
 #define	BFRAG		1024
