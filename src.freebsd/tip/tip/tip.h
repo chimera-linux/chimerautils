@@ -193,7 +193,7 @@ extern int	noesc;		/* no escape `~' char */
 extern value_t	vtable[];	/* variable table */
 
 #ifndef ACULOG
-#define logent(a, b, c, d) do {} while(0)
+#define logent(a, b, c, d)
 #define loginit()
 #endif
 
@@ -332,10 +332,8 @@ void	hay_abort(void);
 void	hay_disconnect(void);
 void	help(int);
 void	listvariables(int);
-#ifdef ACULOG
 void	logent(char *, char *, char *, char *);
 void	loginit(void);
-#endif
 void	parwrite(int, char *, size_t);
 void	pipefile(int);
 void	pipeout(int);

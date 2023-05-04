@@ -39,6 +39,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl ehot
+.Op Fl a Ar acu
 .Op Fl l Ar line
 .Op Fl s Ar speed | Fl Ar speed
 .Op Ar phone-number
@@ -53,6 +54,8 @@ equivalent) to which you wish to connect.
 .Pp
 The options are as follows:
 .Bl -tag -width indent
+.It Fl a Ar acu
+Set the acu.
 .It Fl e
 Use even parity.
 If both
@@ -484,10 +487,10 @@ command; default value is
 .Dq Li /bin/sh .
 .El
 .Sh FILES
-.Bl -tag -width ".Pa /var/spool/lock/LCK..*" -compact
+.Bl -tag -width ".Pa /var/lock/LCK..*" -compact
 .It Pa /var/log/aculog
 line access log
-.It Pa /var/spool/lock/LCK..*
+.It Pa /var/lock/LCK..*
 lock file to avoid conflicts with
 .Xr uucp 1 Pq Pa ports/net/freebsd-uucp
 .El
@@ -496,6 +499,8 @@ Connect to the first USB serial port at the speed of 115200 baud:
 .Bd -literal -offset indent
 cu -s 115200 -l /dev/ttyUSB0
 .Ed
+.Sh SEE ALSO
+.Xr tip 1
 .Sh HISTORY
 The
 .Nm

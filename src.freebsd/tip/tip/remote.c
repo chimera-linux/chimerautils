@@ -54,6 +54,7 @@ static const char rcsid[] = "$OpenBSD: remote.c,v 1.16 2006/06/06 23:24:52 deraa
 
 #include "pathnames.h"
 #include "tip.h"
+#include "getcap.h"
 
 /*
  * Attributes to be gleened from remote host description
@@ -74,33 +75,6 @@ static char	*db_array[3] = { _PATH_REMOTE, 0, 0 };
 #define cgetflag(f)	(cgetcap(bp, f, ':') != NULL)
 
 static void	getremcap(char *);
-
-/* dummy cap parser, we don't support tip */
-static int cgetset(const char *ent) { (void)ent; return 0; }
-static int cgetent(char **buf, char **arr, const char *name) {
-    (void)buf;
-    (void)arr;
-    (void)name;
-    return -1;
-}
-static int cgetstr(char *buf, const char *cap, char **str) {
-    (void)buf;
-    (void)cap;
-    (void)str;
-    return -1;
-}
-static char *cgetcap(char *buf, const char *cap, int type) {
-    (void)buf;
-    (void)cap;
-    (void)type;
-    return NULL;
-}
-static int cgetnum(char *buf, const char *cap, long *num) {
-    (void)buf;
-    (void)cap;
-    (void)num;
-    return -1;
-}
 
 static void
 getremcap(char *host)

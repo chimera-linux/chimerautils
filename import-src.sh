@@ -310,11 +310,18 @@ rm -rf ${CWD}/src.freebsd/sh/dot.*
 rm -rf ${CWD}/src.freebsd/sh/funcs
 rm -f ${CWD}/src.freebsd/sh/profile
 
-# remove libacu and other junk from tip
-rm -rf ${CWD}/src.orig/tip/libacu
+# tip cap parser
+cp -p usr/src/lib/libc/gen/getcap.c ${CWD}/src.orig/tip
+cp -p usr/src/lib/libc/gen/getcap.c ${CWD}/src.freebsd/tip
+rm -f ${CWD}/src.freebsd/tip/getcap.h
+
+# remote(5)
+cp -p usr/src/share/man/man5/remote.5 ${CWD}/src.orig/tip
+cp -p usr/src/share/man/man5/remote.5 ${CWD}/src.freebsd/tip
+
+# remove leftover makefiles from tip
 rm -f ${CWD}/src.orig/tip/Makefile*
 rm -f ${CWD}/src.orig/tip/tip/Makefile*
-rm -rf ${CWD}/src.freebsd/tip/libacu
 rm -f ${CWD}/src.freebsd/tip/Makefile*
 rm -f ${CWD}/src.freebsd/tip/tip/Makefile*
 

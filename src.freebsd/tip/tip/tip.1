@@ -570,7 +570,7 @@ command; default value is
 .Dq Li /bin/sh .
 .El
 .Sh FILES
-.Bl -tag -width ".Pa /var/spool/lock/LCK..*" -compact
+.Bl -tag -width ".Pa /var/lock/LCK..*" -compact
 .It Pa ~/.tiprc
 initialization file
 .It Pa tip.record
@@ -585,7 +585,7 @@ global
 database
 .It Pa /var/log/aculog
 line access log
-.It Pa /var/spool/lock/LCK..*
+.It Pa /var/lock/LCK..*
 lock file to avoid conflicts with
 .Xr uucp 1 Pq Pa ports/net/freebsd-uucp
 .El

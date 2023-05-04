@@ -68,6 +68,7 @@ static int	escape(void);
 int
 main(int argc, char *argv[])
 {
+	char *sys = NOSTR, sbuf[12], *p;
 	int i;
 
 	/* XXX preserve previous braindamaged behavior */
@@ -77,11 +78,12 @@ main(int argc, char *argv[])
 	egid = getegid();
 	uid = getuid();
 	euid = geteuid();
+	if (equal(__progname, "cu")) {
+		cumode = 1;
+		cumain(argc, argv);
+		goto cucommon;
+	}
 
-	cumode = 1;
-	cumain(argc, argv);
-
-#if 0
 	if (argc > 4) {
 		fprintf(stderr, "usage: tip [-v] [-speed] [system-name]\n");
 		exit(1);
@@ -204,7 +206,7 @@ cucommon:
 	 * From here down the code is shared with
 	 * the "cu" version of tip.
 	 */
-#endif
+
 	i = fcntl(FD, F_GETFL);
 	if (i == -1) {
 		perror("fcntl");
