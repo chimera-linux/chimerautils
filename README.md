@@ -24,7 +24,7 @@ It replaces the following GNU projects:
 
 It also provides the following functionality:
 
-* cu
+* tip/cu
 * telnet
 * fetch
 * vi
