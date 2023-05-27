@@ -241,20 +241,20 @@ static struct option basencopts[] = {
     {"base2msbf",      no_argument,       0, ENCODING_BASE2MSBF},
     {"base2lsbf",      no_argument,       0, ENCODING_BASE2LSBF},
     {"z85",            no_argument,       0, ENCODING_Z85},
-    {"decode",         no_argument,       &opt_decode,         1},
-    {"ignore-garbage", no_argument,       &opt_ignore_garbage, 1},
-    {"wrap",           required_argument, NULL,              'w'},
-    {"help",           no_argument,       NULL,              'h'},
-    {"version",        no_argument,       NULL,              'v'},
+    {"decode",         no_argument,       NULL, 'd'},
+    {"ignore-garbage", no_argument,       NULL, 'i'},
+    {"wrap",           required_argument, NULL, 'w'},
+    {"help",           no_argument,       NULL, 'h'},
+    {"version",        no_argument,       NULL, 'v'},
     {0, 0, 0, 0}
 };
 
 static struct option baseopts[] = {
-    {"decode",         no_argument,       &opt_decode,         1},
-    {"ignore-garbage", no_argument,       &opt_ignore_garbage, 1},
-    {"wrap",           required_argument, NULL,              'w'},
-    {"help",           no_argument,       NULL,              'h'},
-    {"version",        no_argument,       NULL,              'v'},
+    {"decode",         no_argument,       NULL, 'd'},
+    {"ignore-garbage", no_argument,       NULL, 'i'},
+    {"wrap",           required_argument, NULL, 'w'},
+    {"help",           no_argument,       NULL, 'h'},
+    {"version",        no_argument,       NULL, 'v'},
     {0, 0, 0, 0}
 };
 
@@ -743,6 +743,12 @@ int main(int argc, char **argv) {
             case ENCODING_Z85:
                 encoding = c;
                 break;
+	    case 'd':
+		opt_decode = 1;
+		break;
+	    case 'i':
+		opt_ignore_garbage = 1;
+		break;
             case 'w': {
                 char *endptr = NULL;
                 wrap = strtoul(optarg, &endptr, 10);
