@@ -124,7 +124,7 @@ static inline char *HashData(const void *data, unsigned int len, char *buf, cons
 static inline void dn##_Init(dn##_CTX *ctx) { \
     HashInit(ctx, EVP_##dnl()); \
 } \
-static inline void dn##_Update(dn##_CTX *ctx, const void *data, unsigned int len) { \
+static inline void dn##_Update(dn##_CTX *ctx, const void *data, size_t len) { \
     HashUpdate(ctx, data, len); \
 } \
 static inline void dn##_Final(unsigned char *digest, dn##_CTX *ctx) { \
