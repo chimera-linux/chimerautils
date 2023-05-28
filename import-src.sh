@@ -91,6 +91,7 @@ bin/stty
 bin/sync
 bin/test
 bin/timeout
+sbin/md5
 sbin/mknod
 usr.bin/basename
 usr.bin/cksum

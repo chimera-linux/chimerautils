@@ -72,5 +72,6 @@ subdir('who')
 subdir('yes')
 
 if libcrypto.found()
+    subdir('md5')
     subdir('xinstall')
 endif

@@ -30,14 +30,19 @@
 
 #include <openssl/evp.h>
 #include <stdio.h>
+#include <fcntl.h>
+#include <unistd.h>
 #include <stddef.h>
 #include <err.h>
 
 typedef EVP_MD_CTX *MD5_CTX;
-typedef EVP_MD_CTX *RIPEMD160_CTX;
 typedef EVP_MD_CTX *SHA1_CTX;
+typedef EVP_MD_CTX *SHA224_CTX;
 typedef EVP_MD_CTX *SHA256_CTX;
+typedef EVP_MD_CTX *SHA384_CTX;
 typedef EVP_MD_CTX *SHA512_CTX;
+typedef EVP_MD_CTX *SHA512_224_CTX;
+typedef EVP_MD_CTX *SHA512_256_CTX;
 
 static inline void HashInit(EVP_MD_CTX **ctx, const EVP_MD *type) {
     *ctx = EVP_MD_CTX_new();
@@ -75,70 +80,81 @@ static inline char *HashEnd(EVP_MD_CTX **ctx, char *buf) {
     return buf;
 }
 
-static inline char *HashFile(const char *name, char *ibuf, const EVP_MD *type) {
+static inline char *HashFile(const char *name, char *buf, const EVP_MD *type) {
     EVP_MD_CTX *ctx;
-    char *buf;
-    FILE *f;
+    char *fdbuf;
 
-    f = fopen(name, "rb");
-    if (!f) errx(1, "unable to open file %s", name);
+    int fd = open(name, O_RDONLY);
+    if (fd < 0) err(1, "unable to open file %s", name);
 
-    buf = ibuf;
-    if (!buf) buf = malloc(16 * 1024);
-    if (!buf) {
-        fclose(f);
-        errx(1, "unable to allocate buffer");
+    fdbuf = malloc(16 * 1024);
+    if (!fdbuf) {
+        err(1, "out of memory");
     }
 
     HashInit(&ctx, type);
     for (;;) {
-        size_t n = fread(buf, 1, 16 * 1024, f);
-        HashUpdate(&ctx, buf, n);
+        ssize_t n = read(fd, fdbuf, 16 * 1024);
+        if (n < 0) {
+            err(1, "unable to read from file %s", name);
+        }
+        if (n) {
+            HashUpdate(&ctx, fdbuf, n);
+        }
         if (n != (16 * 1024)) {
-            if (feof(f)) break;
-            if (ferror(f)) {
-                if (!buf) free(buf);
-                fclose(f);
-                errx(1, "unable to read file %s", name);
-            }
+            break;
         }
     }
 
-    fclose(f);
-    return HashEnd(&ctx, NULL);
+    close(fd);
+
+    return HashEnd(&ctx, buf);
+}
+
+static inline char *HashData(const void *data, unsigned int len, char *buf, const EVP_MD *type) {
+    EVP_MD_CTX *ctx;
+    HashInit(&ctx, type);
+    HashUpdate(&ctx, data, len);
+    return HashEnd(&ctx, buf);
 }
 
 #define MD5_DIGEST_LENGTH 16
 
-#define MD5Init(ctx) HashInit(ctx, EVP_md5())
-#define MD5Update HashUpdate
-#define MD5Final HashFinal
-#define MD5End HashEnd
-#define MD5File(name, buf) HashFile(name, buf, EVP_md5())
+#define BSD_HASH_FUNCS(dn, dnl) \
+static inline void dn##_Init(dn##_CTX *ctx) { \
+    HashInit(ctx, EVP_##dnl()); \
+} \
+static inline void dn##_Update(dn##_CTX *ctx, const void *data, unsigned int len) { \
+    HashUpdate(ctx, data, len); \
+} \
+static inline void dn##_Final(unsigned char *digest, dn##_CTX *ctx) { \
+    HashFinal(digest, ctx); \
+} \
+static inline char *dn##_End(dn##_CTX *ctx, char *buf) { \
+    return HashEnd(ctx, buf); \
+} \
+static inline char *dn##_File(const char *name, char *buf) { \
+    return HashFile(name, buf, EVP_##dnl()); \
+} \
+static inline char *dn##_Data(const void *data, unsigned int len, char *buf) { \
+    return HashData(data, len, buf, EVP_##dnl()); \
+}
 
-#define RIPEMD160_Init(ctx) HashInit(ctx, EVP_ripemd160())
-#define RIPEMD160_Update HashUpdate
-#define RIPEMD160_Final HashFinal
-#define RIPEMD160_End HashEnd
-#define RIPEMD160_File(name, buf) HashFile(name, buf, EVP_ripemd160())
+BSD_HASH_FUNCS(MD5, md5)
+BSD_HASH_FUNCS(SHA1, sha1)
+BSD_HASH_FUNCS(SHA224, sha224)
+BSD_HASH_FUNCS(SHA256, sha256)
+BSD_HASH_FUNCS(SHA384, sha384)
+BSD_HASH_FUNCS(SHA512, sha512)
+BSD_HASH_FUNCS(SHA512_224, sha512_224)
+BSD_HASH_FUNCS(SHA512_256, sha512_256)
 
-#define SHA1_Init(ctx) HashInit(ctx, EVP_sha1())
-#define SHA1_Update HashUpdate
-#define SHA1_Final HashFinal
-#define SHA1_End HashEnd
-#define SHA1_File(name, buf) HashFile(name, buf, EVP_sha1())
-
-#define SHA256_Init(ctx) HashInit(ctx, EVP_sha256())
-#define SHA256_Update HashUpdate
-#define SHA256_Final HashFinal
-#define SHA256_End HashEnd
-#define SHA256_File(name, buf) HashFile(name, buf, EVP_sha256())
-
-#define SHA512_Init(ctx) HashInit(ctx, EVP_sha512())
-#define SHA512_Update HashUpdate
-#define SHA512_Final HashFinal
-#define SHA512_End HashEnd
-#define SHA512_File(name, buf) HashFile(name, buf, EVP_sha512())
+#define MD5Init MD5_Init
+#define MD5Update MD5_Update
+#define MD5Final MD5_Final
+#define MD5End MD5_End
+#define MD5File MD5_File
+#define MD5Data MD5_Data
 
 #endif
 

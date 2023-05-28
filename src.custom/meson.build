@@ -27,5 +27,4 @@ subdir('taskset')
 
 if libcrypto.found()
     subdir('mcookie')
-    subdir('md5sum')
 endif
