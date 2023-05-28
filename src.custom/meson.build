@@ -8,7 +8,6 @@ configure_file(output: 'config.h', configuration: conf_data)
 inc_main = include_directories('.')
 
 subdir('addpart')
-subdir('basenc')
 subdir('ctrlaltdel')
 subdir('delpart')
 subdir('dir')

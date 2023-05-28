@@ -227,8 +227,7 @@ copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
 copy_cmd usr.bin/shar
 copy_cmd usr.bin/tip
-copy_cmd usr.bin/uudecode
-copy_cmd usr.bin/uuencode
+copy_cmd usr.bin/uuencode "" bintrans
 copy_cmd usr.bin/which
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk
@@ -237,6 +236,14 @@ copy_cmd contrib/vis
 copy_cmd contrib/unvis
 copy_cmd lib/libmp
 copy_cmd lib/libfetch
+
+# merge uudecode into bintrans to match newer freebsd version
+cp -p usr/src/usr.bin/uudecode/uudecode.c ${CWD}/src.orig/bintrans
+cp -p usr/src/usr.bin/uudecode/uudecode.c ${CWD}/src.freebsd/bintrans
+mv ${CWD}/src.orig/bintrans/uuencode.1 ${CWD}/src.orig/bintrans/bintrans.1
+mv ${CWD}/src.freebsd/bintrans/uuencode.1 ${CWD}/src.freebsd/bintrans/bintrans.1
+rm -f ${CWD}/src.freebsd/bintrans/bintrans.c
+rm -f ${CWD}/src.freebsd/bintrans/qp.c
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include

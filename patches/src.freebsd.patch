@@ -1,3 +1,98 @@
+--- src.orig/awk/FIXES
++++ src.freebsd/awk/FIXES
+@@ -23,8 +23,71 @@
+ ****************************************************************/
+ 
+ This file lists all bug fixes, changes, etc., made since the AWK book
+-was sent to the printers in August, 1987.
++was sent to the printers in August 1987.
+ 
++Dec 15, 2022:
++	Force hex escapes in strings to be no more than two characters,
++	as they already are in regular expressions. This brings internal
++	consistency, as well as consistency with gawk. Thanks to
++	Arnold Robbins.
++
++Sep 12, 2022:
++	adjbuf minlen error (cannot be 0) in cat, resulting in NULL pbuf.
++	discovered by todd miller. also use-after-free issue with
++	tempfree in cat, thanks to Miguel Pineiro Jr and valgrind.
++
++Aug 30, 2022:
++	Various leaks and use-after-free issues plugged/fixed.
++	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++May 23, 2022:
++	Memory leak when assigning a string to some of the built-in
++	variables. allocated string erroneously marked DONTFREE.
++	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++Mar 14, 2022:
++	Historic bug: command-line "name=value" assignment had been
++	truncating its entry in ARGV. (circa 1989) Thanks to 
++	Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++Mar 3, 2022:
++	Fixed file management memory leak that appears to have been
++	there since the files array was first initialized with stdin,
++	stdout, and stderr (circa 1992). Thanks to Miguel Pineiro Jr.
++	<mpj@pineiro.cc>.
++
++December 8, 2021:
++	The error handling in closefile and closeall was mangled. Long
++	standing warnings had been made fatal and some fatal errors went
++	undetected. Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
++
++Nov 03, 2021:
++        getline accesses uninitialized data after getrec()
++	returns 0 on EOF and leaves the contents of buf unchanged.
++	Thanks to Volodymyr Gubarkov, and Todd C Miller.
++
++Oct 12, 2021:
++	The fix for #83 changed the code to insert 2 chars, but the
++	call to adjbuf just above it only allows for 1 char. This can
++	cause a heap buffer overflow.
++
++July 27, 2021:
++	As per IEEE Std 1003.1-2008, -F "str" is now consistent with
++	-v FS="str" when str is null. Thanks to Warner Losh.
++
++July 24, 2021:
++	Fix readrec's definition of a record. This fixes an issue
++	with NetBSD's RS regular expression support that can cause
++	an infinite read loop. Thanks to Miguel Pineiro Jr.
++
++	Fix regular expression RS ^-anchoring. RS ^-anchoring needs to
++	know if it is reading the first record of a file. This change
++	restores a missing line that was overlooked when porting NetBSD's
++	RS regex functionality. Thanks to Miguel Pineiro Jr.
++
++	Fix size computation in replace_repeat() for special case
++	REPEAT_WITH_Q. Thanks to Todd C. Miller.
++
+ February 15, 2021:
+ 	Small fix so that awk will compile again with g++. Thanks to
+ 	Arnold Robbins.
+@@ -277,7 +340,7 @@
+ 	#12: Avoid undefined behaviour when using ctype(3) functions in
+ 	     relex(). Thanks to GitHub user iamleot.
+ 	#31: Make getline handle numeric strings, and update FIXES. Thanks
+-	     to GitHub user arnoldrobbins.
++	     to GitHub user Arnold Robbins (arnoldrobbins)
+ 	#32: maketab: support build systems with read-only source. Thanks
+ 	     to GitHub user enh.
+ 
+--- src.orig/awk/awk.h
++++ src.freebsd/awk/awk.h
+@@ -37,7 +37,7 @@
+ 
+ typedef	unsigned char uschar;
+ 
+-#define	xfree(a)	{ if ((a) != NULL) { free((void *)(intptr_t)(a)); (a) = NULL; } }
++#define	xfree(a)	{ free((void *)(intptr_t)(a)); (a) = NULL; }
+ /*
+  * We sometimes cheat writing read-only pointers to NUL-terminate them
+  * and then put back the original value
 --- src.orig/awk/awkgram.y
 +++ src.freebsd/awk/awkgram.y
 @@ -206,9 +206,10 @@
@@ -86,17 +181,6 @@
  			$$ = op4($1, (Node *)1, $3, $5, $7); }
  	| SUBSTR '(' pattern comma pattern comma pattern ')'
  		{ $$ = op3(SUBSTR, $3, $5, $7); }
---- src.orig/awk/awk.h
-+++ src.freebsd/awk/awk.h
-@@ -37,7 +37,7 @@
- 
- typedef	unsigned char uschar;
- 
--#define	xfree(a)	{ if ((a) != NULL) { free((void *)(intptr_t)(a)); (a) = NULL; } }
-+#define	xfree(a)	{ free((void *)(intptr_t)(a)); (a) = NULL; }
- /*
-  * We sometimes cheat writing read-only pointers to NUL-terminate them
-  * and then put back the original value
 --- src.orig/awk/b.c
 +++ src.freebsd/awk/b.c
 @@ -807,6 +807,7 @@
@@ -139,89 +223,6 @@
  						    FATAL("out of space for reg expr %.10s...", lastre);
  						if (cc->cc_func(i)) {
  							/* escape backslash */
---- src.orig/awk/FIXES
-+++ src.freebsd/awk/FIXES
-@@ -23,7 +23,70 @@
- ****************************************************************/
- 
- This file lists all bug fixes, changes, etc., made since the AWK book
--was sent to the printers in August, 1987.
-+was sent to the printers in August 1987.
-+
-+Dec 15, 2022:
-+	Force hex escapes in strings to be no more than two characters,
-+	as they already are in regular expressions. This brings internal
-+	consistency, as well as consistency with gawk. Thanks to
-+	Arnold Robbins.
-+
-+Sep 12, 2022:
-+	adjbuf minlen error (cannot be 0) in cat, resulting in NULL pbuf.
-+	discovered by todd miller. also use-after-free issue with
-+	tempfree in cat, thanks to Miguel Pineiro Jr and valgrind.
-+
-+Aug 30, 2022:
-+	Various leaks and use-after-free issues plugged/fixed.
-+	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+May 23, 2022:
-+	Memory leak when assigning a string to some of the built-in
-+	variables. allocated string erroneously marked DONTFREE.
-+	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+Mar 14, 2022:
-+	Historic bug: command-line "name=value" assignment had been
-+	truncating its entry in ARGV. (circa 1989) Thanks to 
-+	Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+Mar 3, 2022:
-+	Fixed file management memory leak that appears to have been
-+	there since the files array was first initialized with stdin,
-+	stdout, and stderr (circa 1992). Thanks to Miguel Pineiro Jr.
-+	<mpj@pineiro.cc>.
-+
-+December 8, 2021:
-+	The error handling in closefile and closeall was mangled. Long
-+	standing warnings had been made fatal and some fatal errors went
-+	undetected. Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+Nov 03, 2021:
-+        getline accesses uninitialized data after getrec()
-+	returns 0 on EOF and leaves the contents of buf unchanged.
-+	Thanks to Volodymyr Gubarkov, and Todd C Miller.
-+
-+Oct 12, 2021:
-+	The fix for #83 changed the code to insert 2 chars, but the
-+	call to adjbuf just above it only allows for 1 char. This can
-+	cause a heap buffer overflow.
-+
-+July 27, 2021:
-+	As per IEEE Std 1003.1-2008, -F "str" is now consistent with
-+	-v FS="str" when str is null. Thanks to Warner Losh.
-+
-+July 24, 2021:
-+	Fix readrec's definition of a record. This fixes an issue
-+	with NetBSD's RS regular expression support that can cause
-+	an infinite read loop. Thanks to Miguel Pineiro Jr.
-+
-+	Fix regular expression RS ^-anchoring. RS ^-anchoring needs to
-+	know if it is reading the first record of a file. This change
-+	restores a missing line that was overlooked when porting NetBSD's
-+	RS regex functionality. Thanks to Miguel Pineiro Jr.
-+
-+	Fix size computation in replace_repeat() for special case
-+	REPEAT_WITH_Q. Thanks to Todd C. Miller.
- 
- February 15, 2021:
- 	Small fix so that awk will compile again with g++. Thanks to
-@@ -277,7 +340,7 @@
- 	#12: Avoid undefined behaviour when using ctype(3) functions in
- 	     relex(). Thanks to GitHub user iamleot.
- 	#31: Make getline handle numeric strings, and update FIXES. Thanks
--	     to GitHub user arnoldrobbins.
-+	     to GitHub user Arnold Robbins (arnoldrobbins)
- 	#32: maketab: support build systems with read-only source. Thanks
- 	     to GitHub user enh.
- 
 --- src.orig/awk/lex.c
 +++ src.freebsd/awk/lex.c
 @@ -425,19 +425,28 @@
@@ -242,7 +243,7 @@
 +				for (i = 1; i <= 2; i++) {
 +					c = input();
 +					if (c == 0)
-+						break;
+ 						break;
 +					if (isxdigit(c)) {
 +						c = tolower(c);
 +						n *= 16;
@@ -251,7 +252,7 @@
 +						else
 +							n += 10 + (c - 'a');
 +					} else
- 						break;
++						break;
  				}
 -				*px = 0;
 -				unput(c);
@@ -668,6 +669,752 @@
  
  		bn_check(BN_add_word(base_n, base));
  		bn_check(BN_add_word(exponent, iscale));
+--- src.orig/bintrans/bintrans.1
++++ src.freebsd/bintrans/bintrans.1
+@@ -25,13 +25,14 @@
+ .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
+ .\" SUCH DAMAGE.
+ .\"
+-.\"     @(#)uuencode.1	8.1 (Berkeley) 6/6/93
++.\"     From: @(#)uuencode.1	8.1 (Berkeley) 6/6/93
+ .\" $FreeBSD$
+ .\"
+-.Dd January 27, 2002
+-.Dt UUENCODE 1
++.Dd April 18, 2022
++.Dt BINTRANS 1
+ .Os
+ .Sh NAME
++.Nm bintrans ,
+ .Nm uuencode ,
+ .Nm uudecode ,
+ .Nm b64encode ,
+@@ -39,6 +40,9 @@
+ .Nd encode/decode a binary file
+ .Sh SYNOPSIS
+ .Nm
++.Op algorithm
++.Op ...
++.Nm uuencode
+ .Op Fl m
+ .Op Fl r
+ .Op Fl o Ar output_file
+@@ -52,6 +56,7 @@
+ .Fl o Ar output_file
+ .Nm b64encode
+ .Op Fl r
++.Op Fl w Ar column
+ .Op Fl o Ar output_file
+ .Op Ar file
+ .Ar name
+@@ -62,9 +67,13 @@
+ .Op Fl i
+ .Fl o Ar output_file
+ .Op Ar file
++.Nm base64
++.Op Fl d
++.Op Fl w Ar column
++.Op Ar file
+ .Sh DESCRIPTION
+ The
+-.Nm
++.Nm uuencode
+ and
+ .Nm uudecode
+ utilities are used to transmit binary files over transmission mediums
+@@ -74,7 +83,7 @@
+ The
+ .Nm b64encode
+ utility is synonymous with
+-.Nm
++.Nm uuencode
+ with the
+ .Fl m
+ flag specified.
+@@ -87,7 +96,34 @@
+ flag specified.
+ .Pp
+ The
+-.Nm
++.Nm base64
++utility acts as a base64 decoder when passed the
++.Fl -decode
++.Po or
++.Fl d
++.Pc
++flag and as a base64 encoder otherwise.
++As a decoder it only accepts raw base64 input
++and as an encoder it does not produce the framing lines.
++.Nm base64
++reads standard input or
++.Ar file
++if it is provided and writes to standard output.
++Options
++.Fl -wrap
++.Po or
++.Fl w
++.Pc
++and
++.Fl -ignore-garbage
++.Po or
++.Fl i
++.Pc
++are accepted for compatibility with GNU base64,
++but the latter is unimplemented and silently ignored.
++.Pp
++The
++.Nm uuencode
+ utility reads
+ .Ar file
+ (or by default the standard input) and writes an encoded version
+@@ -119,11 +155,11 @@
+ utility ignores any leading and trailing lines.
+ .Pp
+ The following options are available for
+-.Nm :
++.Nm uuencode :
+ .Bl -tag -width ident
+ .It Fl m
+ Use the Base64 method of encoding, rather than the traditional
+-.Nm
++.Nm uuencode
+ algorithm.
+ .It Fl r
+ Produce raw output by excluding the initial and final framing lines.
+@@ -146,7 +182,7 @@
+ When used with the
+ .Fl r
+ flag, decode Base64 input instead of traditional
+-.Nm
++.Nm uuencode
+ input.
+ Without
+ .Fl r
+@@ -163,7 +199,7 @@
+ Decode raw (or broken) input, which is missing the initial and
+ possibly the final framing lines.
+ The input is assumed to be in the traditional
+-.Nm
++.Nm uuencode
+ encoding, but if the
+ .Fl m
+ flag is used, or if the utility is invoked as
+@@ -176,6 +212,32 @@
+ deletes any prefix ending with the last slash '/' for security
+ reasons.
+ .El
++.Pp
++Additionally,
++.Nm b64encode
++accepts the following option:
++.Bl -tag -width ident
++.It Fl w Ar column
++Wrap encoded output after
++.Ar column .
++.El
++.Pp
++.Nm
++is a generic utility that can run
++any of the aforementioned encoders and decoders.
++It can also run algorithms that are not available
++through a dedicated program:
++.Pp
++.Nm qp
++is a quoted-printable converter
++and accepts the following options:
++.Bl -tag -width ident
++.It Fl u
++Decode.
++.It Fl o Ar output_file
++Output to
++.Ar output_file
++instead of standard output.
+ .Sh EXAMPLES
+ The following example packages up a source tree, compresses it,
+ uuencodes it and mails it to a user on another system.
+@@ -213,7 +275,7 @@
+ The
+ .Nm uudecode
+ and
+-.Nm
++.Nm uuencode
+ utilities appeared in
+ .Bx 4.0 .
+ .Sh BUGS
+--- src.orig/bintrans/bintrans.c
++++ src.freebsd/bintrans/bintrans.c
+@@ -0,0 +1,165 @@
++/*-
++ * SPDX-License-Identifier: BSD-2-Clause
++ *
++ * Copyright (c) 2022 The FreeBSD Foundation
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ *
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#include <sys/param.h>
++#include <getopt.h>
++#include <libgen.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include <sysexits.h>
++
++extern int	main_decode(int, char *[]);
++extern int	main_encode(int, char *[]);
++extern int	main_base64_decode(const char *);
++extern int	main_base64_encode(const char *, const char *);
++extern int	main_quotedprintable(int, char*[]);
++
++static int	search(const char *const);
++static void	usage_base64(bool);
++static void	version_base64(void);
++static void	base64_encode_or_decode(int, char *[]);
++
++enum coders {
++	uuencode, uudecode, b64encode, b64decode, base64, qp
++};
++
++int
++main(int argc, char *argv[])
++{
++	const char *const progname = getprogname();
++	int coder = search(progname);
++
++	if (coder == -1 && argc > 1) {
++		argc--;
++		argv++;
++		coder = search(argv[0]);
++	}
++	switch (coder) {
++	case uuencode:
++	case b64encode:
++		main_encode(argc, argv);
++		break;
++	case uudecode:
++	case b64decode:
++		main_decode(argc, argv);
++		break;
++	case base64:
++		base64_encode_or_decode(argc, argv);
++		break;
++	case qp:
++		main_quotedprintable(argc, argv);
++		break;
++	default:
++		(void)fprintf(stderr,
++		    "usage: %1$s <uuencode | uudecode> ...\n"
++		    "       %1$s <b64encode | b64decode> ...\n"
++		    "       %1$s <base64> ...\n"
++		    "       %1$s <qp> ...\n",
++		    progname);
++		exit(EX_USAGE);
++	}
++}
++
++static int
++search(const char *const progname)
++{
++#define DESIGNATE(item) [item] = #item
++	const char *const known[] = {
++		DESIGNATE(uuencode),
++		DESIGNATE(uudecode),
++		DESIGNATE(b64encode),
++		DESIGNATE(b64decode),
++		DESIGNATE(base64),
++		DESIGNATE(qp)
++	};
++
++	for (size_t i = 0; i < nitems(known); i++)
++		if (strcmp(progname, known[i]) == 0)
++			return ((int)i);
++	return (-1);
++}
++
++static void
++usage_base64(bool failure)
++{
++	(void)fputs("usage: base64 [-w col | --wrap=col] "
++	    "[-d | --decode] [FILE]\n"
++	    "       base64 --help\n"
++	    "       base64 --version\n", stderr);
++	exit(failure ? EXIT_FAILURE : EXIT_SUCCESS);
++}
++
++static void
++version_base64(void)
++{
++	(void)fputs("FreeBSD base64\n", stderr);
++	exit(EXIT_SUCCESS);
++}
++
++static void
++base64_encode_or_decode(int argc, char *argv[])
++{
++	int ch;
++	bool decode = false;
++	const char *w = NULL;
++	enum { HELP, VERSION };
++	static const struct option opts[] =
++	{
++		{"decode",	no_argument,		NULL, 'd'},
++		{"ignore-garbage",no_argument,		NULL, 'i'},
++		{"wrap",	required_argument,	NULL, 'w'},
++		{"help",	no_argument,		NULL, HELP},
++		{"version",	no_argument,		NULL, VERSION},
++		{NULL,		no_argument,		NULL, 0}
++	};
++
++	while ((ch = getopt_long(argc, argv, "diw:", opts, NULL)) != -1)
++		switch (ch) {
++		case 'd':
++			decode = true;
++			break;
++		case 'w':
++			w = optarg;
++			break;
++		case 'i':
++			/* silently ignore */
++			break;
++		case VERSION:
++			version_base64();
++			break;
++		case HELP:
++		default:
++			usage_base64(ch == '?');
++		}
++
++	if (decode)
++		main_base64_decode(argv[optind]);
++	else
++		main_base64_encode(argv[optind], w);
++}
+--- src.orig/bintrans/qp.c
++++ src.freebsd/bintrans/qp.c
+@@ -0,0 +1,198 @@
++/*-
++ * SPDX-License-Identifier: BSD-2-Clause
++ *
++ * Copyright (c) 2020 Baptiste Daroussin <bapt@FreeBSD.org>
++ *
++ * Redistribution and use in source and binary forms, with or without
++ * modification, are permitted provided that the following conditions
++ * are met:
++ * 1. Redistributions of source code must retain the above copyright
++ *    notice, this list of conditions and the following disclaimer.
++ * 2. Redistributions in binary form must reproduce the above copyright
++ *    notice, this list of conditions and the following disclaimer in the
++ *    documentation and/or other materials provided with the distribution.
++ * 
++ * THIS SOFTWARE IS PROVIDED BY THE AUTHOR AND CONTRIBUTORS ``AS IS'' AND
++ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++ * IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
++ * ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE
++ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++ * DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS
++ * OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
++ * HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
++ * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
++ * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
++ * SUCH DAMAGE.
++ */
++
++#include <ctype.h>
++#include <stdbool.h>
++#include <stdio.h>
++#include <string.h>
++#include <stdlib.h>
++
++extern int main_quotedprintable(int, char *[]);
++
++static int
++hexval(int c)
++{
++	if ('0' <= c && c <= '9')
++		return c - '0';
++	return (10 + c - 'A');
++}
++
++
++static int
++decode_char(const char *s)
++{
++	return (16 * hexval(toupper(s[1])) + hexval(toupper(s[2])));
++}
++
++
++static void
++decode_quoted_printable(const char *body, FILE *fpo)
++{
++	while (*body != '\0') {
++		switch (*body) {
++		case '=':
++			if (strlen(body) < 2) {
++				fputc(*body, fpo);
++				break;
++			}
++
++			if (body[1] == '\r' && body[2] == '\n') {
++				body += 2;
++				break;
++			}
++			if (body[1] == '\n') {
++				body++;
++				break;
++			}
++			if (strchr("0123456789ABCDEFabcdef", body[1]) == NULL) {
++				fputc(*body, fpo);
++				break;
++			}
++			if (strchr("0123456789ABCDEFabcdef", body[2]) == NULL) {
++				fputc(*body, fpo);
++				break;
++			}
++			fputc(decode_char(body), fpo);
++			body += 2;
++			break;
++		default:
++			fputc(*body, fpo);
++			break;
++		}
++		body++;
++	}
++}
++
++static void
++encode_quoted_printable(const char *body, FILE *fpo)
++{
++	char prev;
++	const char *end = body + strlen(body);
++	size_t linelen = 0;
++
++	while (*body != '\0') {
++		if (linelen == 75) {
++			fputs("=\r\n", fpo);
++			linelen = 0;
++		}
++		if (!isascii(*body) ||
++		    *body == '=' ||
++		    (*body == '.' && body + 1 < end &&
++		      (body[1] == '\n' || body[1] == '\r'))) {
++			fprintf(fpo, "=%02X", (unsigned char)*body);
++			linelen += 2;
++			prev = *body;
++		} else if (*body < 33 && *body != '\n') {
++			if ((*body == ' ' || *body == '\t') &&
++			    body + 1 < end &&
++			    (body[1] != '\n' && body[1] != '\r')) {
++				fputc(*body, fpo);
++				prev = *body;
++			} else {
++				fprintf(fpo, "=%02X", (unsigned char)*body);
++				linelen += 2;
++				prev = '_';
++			}
++		} else if (*body == '\n') {
++			if (prev == ' ' || prev == '\t') {
++				fputc('=', fpo);
++			}
++			fputc('\n', fpo);
++			linelen = 0;
++			prev = 0;
++		} else {
++			fputc(*body, fpo);
++			prev = *body;
++		}
++		body++;
++		linelen++;
++	}
++}
++
++static void
++qp(FILE *fp, FILE *fpo, bool encode)
++{
++	char *line = NULL;
++	size_t linecap = 0;
++	ssize_t linelen;
++	void (*codec)(const char *line, FILE *f);
++
++	codec = encode ? encode_quoted_printable : decode_quoted_printable ;
++
++	while ((linelen = getline(&line, &linecap, fp)) > 0)
++		codec(line, fpo);
++	free(line);
++}
++
++static void
++usage(void)
++{
++	fprintf(stderr,
++	   "usage: bintrans qp [-u] [-o outputfile] [file name]\n");
++}
++
++int
++main_quotedprintable(int argc, char *argv[])
++{
++	int i;
++	bool encode = true;
++	FILE *fp = stdin;
++	FILE *fpo = stdout;
++
++	for (i = 1; i < argc; ++i) {
++		if (argv[i][0] == '-') {
++			switch (argv[i][1]) {
++			case 'o':
++				if (++i >= argc) {
++					fprintf(stderr, "qp: -o requires a file name.\n");
++					exit(EXIT_FAILURE);
++				}
++				fpo = fopen(argv[i], "w");
++				if (fpo == NULL) {
++					perror(argv[i]);
++					exit(EXIT_FAILURE);
++				}
++				break;
++			case 'u':
++				encode = false;
++				break;
++			default:
++				usage();
++				exit(EXIT_FAILURE);
++			}
++		} else {
++			fp = fopen(argv[i], "r");
++			if (fp == NULL) {
++				perror(argv[i]);
++				exit(EXIT_FAILURE);
++			}
++		}
++	}
++	qp(fp, fpo, encode);
++
++	return (EXIT_SUCCESS);
++}
+--- src.orig/bintrans/uudecode.c
++++ src.freebsd/bintrans/uudecode.c
+@@ -60,6 +60,7 @@
+ #include <errno.h>
+ #include <fcntl.h>
+ #include <libgen.h>
++#include <libutil.h>
+ #include <pwd.h>
+ #include <resolv.h>
+ #include <stdbool.h>
+@@ -68,6 +69,9 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++extern int main_decode(int, char *[]);
++extern int main_base64_decode(const char *);
++
+ static const char *infile, *outfile;
+ static FILE *infp, *outfp;
+ static bool base64, cflag, iflag, oflag, pflag, rflag, sflag;
+@@ -79,8 +83,25 @@
+ static int	base64_decode(void);
+ 
+ int
+-main(int argc, char *argv[])
++main_base64_decode(const char *in)
+ {
++	base64 = 1;
++	rflag = 1;
++	if (in != NULL) {
++		infile = in;
++		infp = fopen(infile, "r");
++		if (infp == NULL)
++			err(1, "%s", in);
++	} else {
++		infile = "stdin";
++		infp = stdin;
++	}
++	exit(decode());
++}
++
++int
++main_decode(int argc, char *argv[])
++{
+ 	int rval, ch;
+ 
+ 	if (strcmp(basename(argv[0]), "b64decode") == 0)
+@@ -447,7 +468,7 @@
+ 		strcpy(leftover, inbuf + count4 + 1);
+ 		inbuf[count4 + 1] = 0;
+ 
+-		n = b64_pton(inbuf, outbuf, sizeof(outbuf));
++		n = compat_b64_pton(inbuf, outbuf, sizeof(outbuf));
+ 
+ 		if (n < 0)
+ 			break;
+--- src.orig/bintrans/uuencode.c
++++ src.freebsd/bintrans/uuencode.c
+@@ -55,7 +55,9 @@
+ #include <netinet/in.h>
+ 
+ #include <err.h>
++#include <errno.h>
+ #include <libgen.h>
++#include <libutil.h>
+ #include <resolv.h>
+ #include <stdio.h>
+ #include <stdbool.h>
+@@ -63,18 +65,38 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++extern int main_encode(int, char *[]);
++extern int main_base64_encode(const char *, const char *);
++
+ static void encode(void);
+ static void base64_encode(void);
++static int arg_to_col(const char *);
+ static void usage(void);
+ 
+ static FILE *output;
+ static int mode;
+ static bool raw;
+ static char **av;
++static int columns = 76;
+ 
+ int
+-main(int argc, char *argv[])
++main_base64_encode(const char *in, const char *w)
+ {
++	raw = 1;
++	if (in != NULL && freopen(in, "r", stdin) == NULL)
++		err(1, "%s", in);
++	output = stdout;
++	if (w != NULL)
++		columns = arg_to_col(w);
++	base64_encode();
++	if (ferror(output))
++		errx(1, "write error");
++	exit(0);
++}
++
++int
++main_encode(int argc, char *argv[])
++{
+ 	struct stat sb;
+ 	bool base64;
+ 	int ch;
+@@ -86,7 +108,7 @@
+ 	if (strcmp(basename(argv[0]), "b64encode") == 0)
+ 		base64 = 1;
+ 
+-	while ((ch = getopt(argc, argv, "mo:r")) != -1) {
++	while ((ch = getopt(argc, argv, "mo:rw:")) != -1) {
+ 		switch (ch) {
+ 		case 'm':
+ 			base64 = true;
+@@ -97,6 +119,9 @@
+ 		case 'r':
+ 			raw = true;
+ 			break;
++		case 'w':
++			columns = arg_to_col(optarg);
++			break;
+ 		case '?':
+ 		default:
+ 			usage();
+@@ -149,27 +174,37 @@
+ base64_encode(void)
+ {
+ 	/*
+-	 * Output must fit into 80 columns, chunks come in 4, leave 1.
++	 * This buffer's length should be a multiple of 24 bits to avoid "="
++	 * padding. Once it reached ~1 KB, further expansion didn't improve
++	 * performance for me.
+ 	 */
+-#define	GROUPS	((80 / 4) - 1)
+-	unsigned char buf[3];
++	unsigned char buf[1023];
+ 	char buf2[sizeof(buf) * 2 + 1];
+ 	size_t n;
+-	int rv, sequence;
++	unsigned carry = 0;
++	int rv, written;
+ 
+-	sequence = 0;
+-
+ 	if (!raw)
+ 		fprintf(output, "begin-base64 %o %s\n", mode, *av);
+ 	while ((n = fread(buf, 1, sizeof(buf), stdin))) {
+-		++sequence;
+-		rv = b64_ntop(buf, n, buf2, nitems(buf2));
++		rv = compat_b64_ntop(buf, n, buf2, nitems(buf2));
+ 		if (rv == -1)
+ 			errx(1, "b64_ntop: error encoding base64");
+-		fprintf(output, "%s%s", buf2, (sequence % GROUPS) ? "" : "\n");
++		if (columns == 0) {
++			fputs(buf2, output);
++			continue;
++		}
++		for (int i = 0; i < rv; i += written) {
++			written = fprintf(output, "%.*s", columns - carry,
++			    &buf2[i]);
++
++			carry = (carry + written) % columns;
++			if (carry == 0)
++				fputc('\n', output);
++		}
+ 	}
+-	if (sequence % GROUPS)
+-		fprintf(output, "\n");
++	if (columns == 0 || carry != 0)
++		fputc('\n', output);
+ 	if (!raw)
+ 		fprintf(output, "====\n");
+ }
+@@ -221,6 +256,28 @@
+ 		errx(1, "read error");
+ 	if (!raw)
+ 		(void)fprintf(output, "%c\nend\n", ENC('\0'));
++}
++
++static int
++arg_to_col(const char *w)
++{
++	char *ep;
++	long option;
++
++	errno = 0;
++	option = strtol(w, &ep, 10);
++	if (option > INT_MAX)
++		errno = ERANGE;
++	else if (ep[0] != '\0')
++		errno = EINVAL;
++	if (errno != 0)
++		err(2, NULL);
++
++	if (option < 0) {
++		errno = EINVAL;
++		err(2, "columns argument must be non-negative");
++	}
++	return (option);
+ }
+ 
+ static void
 --- src.orig/compat/merge.c
 +++ src.freebsd/compat/merge.c
 @@ -38,6 +38,8 @@
@@ -774,7 +1521,7 @@
 -#include "timelocal.h"
 +#include <time.h>
 +#include <langinfo.h>
-+
+ 
 +#define DAYSPERWEEK 7
 +#define MONSPERYEAR 12
 +#define HOURSPERDAY 24
@@ -786,7 +1533,7 @@
 +
 +#define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 +#define isleap_sum(a, b) isleap((a) % 400 + (b) % 400)
- 
++
  static char *	_add(const char *, char *, const char *);
 -static char *	_conv(int, const char *, char *, const char *, locale_t);
 -static char *	_fmt(const char *, const struct tm *, char *, const char *,
@@ -1198,7 +1945,7 @@
  
 --- src.orig/compat/strptime.c
 +++ src.freebsd/compat/strptime.c
-@@ -47,20 +47,23 @@
+@@ -47,21 +47,24 @@
  #endif /* not lint */
  __FBSDID("$FreeBSD$");
  
@@ -1222,13 +1969,14 @@
 +#define	TM_SUNDAY 0
 +#define TM_MONDAY 1
 +#define TM_YEAR_BASE 1900
-+
+ 
 +#define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 +
 +static char * _strptime(const char *, const char *, struct tm *, int *);
- 
++
  #define	asizeof(a)	(sizeof(a) / sizeof((a)[0]))
  
+ #define	FLAG_NONE	(1 << 0)
 @@ -86,18 +89,16 @@
  }
  
@@ -1640,17 +2388,18 @@
  	if (ret && gmt) {
  		time_t t = timegm(tm);
  
-@@ -716,10 +721,3 @@
+@@ -715,11 +720,4 @@
+ 	}
  
  	return (ret);
- }
+-}
 -
 -char *
 -strptime(const char * __restrict buf, const char * __restrict fmt,
 -    struct tm * __restrict tm)
 -{
 -	return strptime_l(buf, fmt, tm, __get_locale());
--}
+ }
 --- src.orig/compat/unvis.c
 +++ src.freebsd/compat/unvis.c
 @@ -39,7 +39,6 @@
@@ -2280,10 +3029,12 @@
  	if (aclsetf(dest_dir, acl_type, acl) < 0) {
  		warn("failed to set acl entries on %s", dest_dir);
  		acl_free(acl);
-@@ -508,6 +495,138 @@
+@@ -506,6 +493,138 @@
+ 	}
+ 	acl_free(acl);
  	return (0);
- }
- 
++}
++
 +/* for now we don't really care about warnings or result,
 + * we only support the quiet case for archive mode
 + */
@@ -2414,11 +3165,9 @@
 +        errno = rerrno;
 +    }
 +    return retval;
-+}
-+
+ }
+ 
  void
- usage(void)
- {
 --- src.orig/coreutils/cut/cut.c
 +++ src.freebsd/coreutils/cut/cut.c
 @@ -277,14 +277,15 @@
@@ -2743,20 +3492,20 @@
  Filesystem   1K-blocks      Used      Avail Capacity iused     ifree %iused
  Mounted on
  /dev/ada1p2  223235736 159618992   45757888    78% 1657590  27234568    6%   /
-@@ -280,13 +271,6 @@
+@@ -279,13 +270,6 @@
+ command appeared in
  .At v1 .
  .Sh BUGS
- The
+-The
 -.Fl n
 -flag is ignored if a file or file system is specified.
 -Also, if a mount
 -point is not accessible by the user, it is possible that the file system
 -information could be stale.
 -.Pp
--The
+ The
  .Fl b
  and
- .Fl P
 --- src.orig/coreutils/df/df.c
 +++ src.freebsd/coreutils/df/df.c
 @@ -50,8 +50,8 @@
@@ -2944,7 +3693,13 @@
 -			xo_warn("%s", mntpt);
 -			rv = EXIT_FAILURE;
 -			continue;
--		}
++		for (i = 0; i < mntsize; i++) {
++			/* selected specified filesystems if the mount point or device matches */
++			if (((stbuf.st_dev == mntbuf[i].f_dev) || !strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
++				mntbuf[i].f_selected = 1;
++				break;
++			}
+ 		}
 -
 -		/*
 -		 * Check to make sure the arguments we've been given are
@@ -2955,13 +3710,7 @@
 -		if (checkvfsselected(statfsbuf.f_fstypename) != 0) {
 -			rv = EXIT_FAILURE;
 -			continue;
-+		for (i = 0; i < mntsize; i++) {
-+			/* selected specified filesystems if the mount point or device matches */
-+			if (((stbuf.st_dev == mntbuf[i].f_dev) || !strcmp(mntbuf[i].f_mntfromname, mntpt) || !strcmp(mntbuf[i].f_mntonname, mntpt)) && checkvfsselected(mntbuf[i].f_fstypename) == 0) {
-+				mntbuf[i].f_selected = 1;
-+				break;
-+			}
- 		}
+-		}
 -
 -		/* the user asked for it, so ignore the ignore flag */
 -		statfsbuf.f_flags &= ~MNT_IGNORE;
@@ -3000,11 +3749,11 @@
 -	size_t mntsize, i;
 -	struct statfs *mntbuf;
 +	size_t i;
-+
-+	if (mntsize == 0 || mntbuf == NULL || name == NULL)
-+		return NULL;
  
 -	mntsize = getmntinfo(&mntbuf, MNT_NOWAIT);
++	if (mntsize == 0 || mntbuf == NULL || name == NULL)
++		return NULL;
++
  	for (i = 0; i < mntsize; i++) {
 -		if (!strcmp(mntbuf[i].f_mntfromname, name))
 -			return (mntbuf[i].f_mntonname);
@@ -3122,7 +3871,10 @@
 +	FILE *fp = NULL;
 +	struct statvfs svfsbuf;
 +	struct stat stmnt;
-+
+ 
+-	if (sysctlbyname("vfs.conflist", NULL, &buflen, NULL, 0) < 0) {
+-		xo_warn("sysctl(vfs.conflist)");
+-		return (NULL);
 +#ifdef _PATH_MOUNTED
 +	fp = setmntent(_PATH_MOUNTED, "r");
 +#else
@@ -3132,19 +3884,54 @@
 +	    fp = setmntent("/proc/mounts", "r");
 +	} else if (access("/etc/mtab", R_OK) == 0) {
 +	    fp = setmntent("/etc/mtab", "r");
-+	}
+ 	}
+-	xvfsp = malloc(buflen);
+-	if (xvfsp == NULL) {
+-		xo_warnx("malloc failed");
+-		return (NULL);
+-	}
+-	keep_xvfsp = xvfsp;
+-	if (sysctlbyname("vfs.conflist", xvfsp, &buflen, NULL, 0) < 0) {
+-		xo_warn("sysctl(vfs.conflist)");
+-		free(keep_xvfsp);
+-		return (NULL);
+-	}
+-	maxvfsconf = buflen / sizeof(struct xvfsconf);
 +#endif
-+
+ 
+-	if ((listptr = malloc(sizeof(char*) * maxvfsconf)) == NULL) {
+-		xo_warnx("malloc failed");
+-		free(keep_xvfsp);
+-		return (NULL);
 +	if (fp == NULL) {
 +	    xo_err(1, "setmntent");
-+	}
-+
+ 	}
+ 
+-	for (cnt = 0, i = 0; i < maxvfsconf; i++) {
+-		if (xvfsp->vfc_flags & VFCF_NETWORK) {
+-			listptr[cnt++] = strdup(xvfsp->vfc_name);
+-			if (listptr[cnt-1] == NULL) {
+-				xo_warnx("malloc failed");
+-				free(listptr);
+-				free(keep_xvfsp);
+-				return (NULL);
+-			}
+-		}
+-		xvfsp++;
+-	}
 +	while ((ent = getmntent(fp)) != NULL) {
 +	    /* skip if necessary */
 +	    if (hasmntopt(ent, MNTTYPE_IGNORE) != NULL) {
 +	        continue;
 +	    }
-+
+ 
+-	if (cnt == 0 ||
+-	    (str = malloc(sizeof(char) * (32 * cnt + cnt + 2))) == NULL) {
+-		if (cnt > 0)
+-			xo_warnx("malloc failed");
+-		free(listptr);
+-		free(keep_xvfsp);
+-		return (NULL);
 +	    /* filter out filesystems to be skipped */
 +	    if (vfslist_l || vfslist_t) {
 +	        if (checkvfsselected(ent->mnt_type) != 0)
@@ -3179,55 +3966,22 @@
 +	    current->f_dev = stmnt.st_dev;
 +
 +	    current->f_selected = 1;
- 
--	if (sysctlbyname("vfs.conflist", NULL, &buflen, NULL, 0) < 0) {
--		xo_warn("sysctl(vfs.conflist)");
--		return (NULL);
++
 +	    mntsize++;
  	}
--	xvfsp = malloc(buflen);
--	if (xvfsp == NULL) {
--		xo_warnx("malloc failed");
--		return (NULL);
--	}
--	keep_xvfsp = xvfsp;
--	if (sysctlbyname("vfs.conflist", xvfsp, &buflen, NULL, 0) < 0) {
--		xo_warn("sysctl(vfs.conflist)");
--		free(keep_xvfsp);
--		return (NULL);
--	}
--	maxvfsconf = buflen / sizeof(struct xvfsconf);
  
--	if ((listptr = malloc(sizeof(char*) * maxvfsconf)) == NULL) {
--		xo_warnx("malloc failed");
--		free(keep_xvfsp);
--		return (NULL);
--	}
+-	*str = 'n'; *(str + 1) = 'o';
+-	for (i = 0, strptr = str + 2; i < cnt; i++, strptr++) {
+-		strlcpy(strptr, listptr[i], 32);
+-		strptr += strlen(listptr[i]);
+-		*strptr = ',';
+-		free(listptr[i]);
 +	endmntent(fp);
- 
--	for (cnt = 0, i = 0; i < maxvfsconf; i++) {
--		if (xvfsp->vfc_flags & VFCF_NETWORK) {
--			listptr[cnt++] = strdup(xvfsp->vfc_name);
--			if (listptr[cnt-1] == NULL) {
--				xo_warnx("malloc failed");
--				free(listptr);
--				free(keep_xvfsp);
--				return (NULL);
--			}
--		}
--		xvfsp++;
--	}
++
 +	*mntbuf = list;
 +	return mntsize;
 +}
- 
--	if (cnt == 0 ||
--	    (str = malloc(sizeof(char) * (32 * cnt + cnt + 2))) == NULL) {
--		if (cnt > 0)
--			xo_warnx("malloc failed");
--		free(listptr);
--		free(keep_xvfsp);
--		return (NULL);
++
 +static void
 +freemntinfo(struct mntinfo *mntbuf, int mntsize)
 +{
@@ -3239,16 +3993,8 @@
 +	    free(mntbuf[i].f_mntonname);
 +	    free(mntbuf[i].f_opts);
  	}
- 
--	*str = 'n'; *(str + 1) = 'o';
--	for (i = 0, strptr = str + 2; i < cnt; i++, strptr++) {
--		strlcpy(strptr, listptr[i], 32);
--		strptr += strlen(listptr[i]);
--		*strptr = ',';
--		free(listptr[i]);
--	}
 -	*(--strptr) = '\0';
--
+ 
 -	free(keep_xvfsp);
 -	free(listptr);
 -	return (str);
@@ -3659,20 +4405,21 @@
  .It Fl n
 --- src.orig/coreutils/id/id.c
 +++ src.freebsd/coreutils/id/id.c
-@@ -43,12 +43,8 @@
+@@ -43,13 +43,9 @@
  #include <sys/cdefs.h>
  __FBSDID("$FreeBSD$");
  
 +#include <sys/types.h>
  #include <sys/param.h>
 -#include <sys/mac.h>
--
+ 
 -#ifdef USE_BSM_AUDIT
 -#include <bsm/audit.h>
 -#endif
- 
+-
  #include <err.h>
  #include <errno.h>
+ #include <grp.h>
 @@ -67,7 +63,6 @@
  static void	auditid(void);
  #endif
@@ -4504,7 +5251,7 @@
  			    source_path);
  			return;
  		}
-@@ -481,21 +488,12 @@
+@@ -481,26 +488,80 @@
  	if (acl_supported == 0)
  		return;
  
@@ -4528,10 +5275,11 @@
  		warn("failed to set acl entries for %s", dest_path);
  		acl_free(acl);
  		return;
-@@ -504,6 +502,69 @@
- }
- 
- static void
+ 	}
+ 	acl_free(acl);
++}
++
++static void
 +preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
 +    const char *dest_path)
 +{
@@ -4592,12 +5340,9 @@
 +
 +    if (names != buf) free(names);
 +    if (value != vbuf) free(value);
-+}
-+
-+static void
- usage(void)
- {
+ }
  
+ static void
 --- src.orig/coreutils/pr/pr.c
 +++ src.freebsd/coreutils/pr/pr.c
 @@ -65,6 +65,7 @@
@@ -5729,18 +6474,18 @@
  
  #include "stty.h"
  #include "extern.h"
-@@ -191,13 +195,23 @@
+@@ -191,14 +195,24 @@
  void
  f_extproc(struct info *ip)
  {
 +	struct termios tio;
 +	errno = 0;
-+
+ 
 +	if (tcgetattr(ip->fd, &tio) == -1) {
 +		err(1, "extproc");
 +		return;
 +	}
- 
++
  	if (ip->off) {
 -		int tmp = 0;
 -		(void)ioctl(ip->fd, TIOCEXT, &tmp);
@@ -5749,14 +6494,15 @@
 -		int tmp = 1;
 -		(void)ioctl(ip->fd, TIOCEXT, &tmp);
 +		tio.c_lflag |= EXTPROC;
-+	}
+ 	}
 +
 +	if (tcsetattr(ip->fd, TCSANOW, &tio) == -1) {
 +		err(1, "extproc");
 +		return;
- 	}
++	}
  }
  
+ void
 @@ -258,11 +272,16 @@
  {
  	struct termios def;
@@ -6023,10 +6769,11 @@
  
  #include "stty.h"
  #include "extern.h"
-@@ -60,3 +61,31 @@
+@@ -59,4 +60,32 @@
+ 	    !fstat(STDOUT_FILENO, &sb1) && !fstat(STDERR_FILENO, &sb2) &&
  	    (sb1.st_rdev != sb2.st_rdev))
  warnx("stdout appears redirected, but stdin is the control descriptor");
- }
++}
 +
 +static const int baudlist[] = {
 +	0, 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600,
@@ -6054,7 +6801,7 @@
 +		return baudvals[i];
 +	}
 +	errx(1, "unknown speed for baud %lu", b);
-+}
+ }
 --- src.orig/coreutils/tail/forward.c
 +++ src.freebsd/coreutils/tail/forward.c
 @@ -46,7 +46,6 @@
@@ -6065,12 +6812,12 @@
  
  #include <err.h>
  #include <errno.h>
-@@ -64,16 +63,6 @@
+@@ -64,17 +63,7 @@
  
  static void rlines(FILE *, const char *fn, off_t, struct stat *);
  static int show(file_info_t *);
 -static void set_events(file_info_t *files);
--
+ 
 -/* defines for inner loop actions */
 -#define USE_SLEEP	0
 -#define USE_KQUEUE	1
@@ -6079,9 +6826,10 @@
 -static struct kevent *ev;
 -static int action = USE_SLEEP;
 -static int kq;
- 
+-
  static const file_info_t *last;
  
+ /*
 @@ -265,44 +254,6 @@
  	return 1;
  }
@@ -6203,7 +6951,8 @@
  		for (i = 0, file = files; i < no_files; i++, file++)
 -			if (file->fp && !show(file))
 -				ev_change++;
--
++			if (file->fp) show(file);
+ 
 -		if (ev_change)
 -			set_events(files);
 -
@@ -6229,8 +6978,7 @@
 -				}
 -			}
 -			break;
-+			if (file->fp) show(file);
- 
+-
 -		case USE_SLEEP:
 -			(void) usleep(250000);
 -			break;
@@ -6640,11 +7388,12 @@
 -	if (db == NULL &&
 -	    (db = dbopen(NULL, O_RDWR, 0, DB_HASH, NULL)) == NULL)
 -		err(1, "db: %s", name);
--
--	key.data = name;
--	key.size = strlen(name) + 1;
 +	if (n)
 +		return n;
+ 
+-	key.data = name;
+-	key.size = strlen(name) + 1;
++	nlen = strlen(name) + 1;
  
 -	switch ((*db->get)(db, &key, &data, 0)) {
 -	case 0:
@@ -6656,8 +7405,7 @@
 -	case -1:
 -		err(1, "db: %s", name);
 -	}
-+	nlen = strlen(name) + 1;
- 
+-
 -	if ((n = malloc(sizeof(NODE) + key.size)) == NULL)
 +	if ((n = malloc(sizeof(NODE) + nlen)) == NULL)
  		err(1, NULL);
@@ -6731,7 +7479,7 @@
  #define	MFLAG	0x01
  #define	NFLAG	0x02
  #define	PFLAG	0x04
-@@ -205,95 +204,39 @@
+@@ -205,94 +204,38 @@
  	printf("\n");
  }
  
@@ -6831,31 +7579,29 @@
 -native_kernvers(void)
 -{
 -	static char buf[128];
--
--	snprintf(buf, sizeof(buf), "%d", getosreldate());
--	kernvers = buf;
 +NATIVE_UNAME_GET(sysname, sysname)
 +NATIVE_UNAME_GET(hostname, nodename)
 +NATIVE_UNAME_GET(release, release)
 +NATIVE_UNAME_GET(version, version)
 +NATIVE_UNAME_GET(platform, machine)
-+
+ 
+-	snprintf(buf, sizeof(buf), "%d", getosreldate());
+-	kernvers = buf;
 +#define UNKNOWN_GET(var) \
 +static void \
 +native_##var(void) \
 +{ \
 +	var = "unknown"; \
  }
- 
++
 +UNKNOWN_GET(arch)
 +UNKNOWN_GET(ident)
 +UNKNOWN_GET(buildid)
 +UNKNOWN_GET(uservers)
 +UNKNOWN_GET(kernvers)
-+
+ 
  static void
  usage(void)
- {
 --- src.orig/coreutils/uniq/uniq.c
 +++ src.freebsd/coreutils/uniq/uniq.c
 @@ -174,7 +174,7 @@
@@ -7034,10 +7780,11 @@
  .Xr chgrp 1 ,
  .Xr chmod 1 ,
  .Xr cp 1 ,
-@@ -358,15 +345,6 @@
+@@ -357,15 +344,6 @@
+ Temporary files may be left in the target directory if
  .Nm
  exits abnormally.
- .Pp
+-.Pp
 -File flags cannot be set by
 -.Xr fchflags 2
 -over a NFS file system.
@@ -7046,10 +7793,9 @@
 -.Nm
 -utility will only warn when flags could not be set on a file system
 -that does not support them.
--.Pp
+ .Pp
  The
  .Nm
- utility with
 --- src.orig/coreutils/xinstall/xinstall.c
 +++ src.freebsd/coreutils/xinstall/xinstall.c
 @@ -77,8 +77,6 @@
@@ -7426,19 +8172,19 @@
  		case DB_RECNO:
  			return (__rec_open(fname, flags & USE_OPEN_FLAGS,
  			    mode, openinfo, flags & DB_FLAGS));
-@@ -82,8 +85,56 @@
+@@ -82,11 +85,59 @@
  }
  
  static int
 -__dberr(void)
 +__dberr_del(const struct __db *db, const DBT *dbt, u_int flags)
-+{
+ {
 +	(void)db;
 +	(void)dbt;
 +	(void)flags;
-+	return (RET_ERROR);
-+}
-+
+ 	return (RET_ERROR);
+ }
+ 
 +static int
 +__dberr_fd(const struct __db *db)
 +{
@@ -7478,12 +8224,15 @@
 +
 +static int
 +__dberr_sync(const struct __db *db, u_int flags)
- {
++{
 +	(void)db;
 +	(void)flags;
- 	return (RET_ERROR);
- }
- 
++	return (RET_ERROR);
++}
++
+ /*
+  * __DBPANIC -- Stop.
+  *
 @@ -97,10 +148,10 @@
  __dbpanic(DB *dbp)
  {
@@ -8145,14 +8894,14 @@
 +		err(2, "fcntl");
 +	if (fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC))
 +		err(2, "fcntl");
-+
+ 
 +	pfd.fd = sigpipe[0];
 +	pfd.events = POLLIN;
 +	pfd.revents = 0;
 +
 +	if (signal(SIGCHLD, handle_sig) == SIG_ERR)
 +		err(2, "signal");
- 
++
  	diffargv[diffargc] = file1;
  	diffargv[diffargc + 1] = file3;
  	diffargv[diffargc + 2] = NULL;
@@ -8747,7 +9496,7 @@
 +	struct group *gr = NULL;
 +	char *uname = NULL;
 +	char *gname = NULL;
-+
+ 
 +	pw = getpwuid(sb->st_uid);
 +	if (pw == NULL)
 +		uname = "root";
@@ -8759,7 +9508,7 @@
 +		gname = "root";
 +	else
 +		gname = gr->gr_name;
- 
++
  	(void)printf("%6ju %8"PRId64" ", (uintmax_t)sb->st_ino, sb->st_blocks);
  	(void)strmode(sb->st_mode, modep);
  	(void)printf("%s %3ju %-*s %-*s ", modep, (uintmax_t)sb->st_nlink,
@@ -9002,14 +9751,13 @@
  #
 -# the default list contains all local file systems that are not synthetic,
 -# loopback mounts, or read-only, according to lsvfs.
--#
--# be careful if you add 'nfs' or other network file system types or file
--# systems that generally reside on slow or removable devices like cd9660
--#FILESYSTEMS="ufs ext2fs zfs xfs"
 +# the default list contains filesystems known to be read-write,
 +# non-virtual on-disk file systems; it is not possible to compute
 +# this list reliably, so change it to your liking
-+#
+ #
+-# be careful if you add 'nfs' or other network file system types or file
+-# systems that generally reside on slow or removable devices like cd9660
+-#FILESYSTEMS="ufs ext2fs zfs xfs"
 +# be careful if you add NFS or other network file system types or file
 +# systems that generally reside on slow or removable devices (e.g. iso9660)
 +#FILESYSTEMS="ext2 ext3 ext4 xfs vfat exfat ntfs ntfs3 f2fs zfs btrfs reiserfs reiser4 jfs"
@@ -9380,20 +10128,21 @@
  				break;
 --- src.orig/gzip/zuncompress.c
 +++ src.freebsd/gzip/zuncompress.c
-@@ -40,7 +40,12 @@
+@@ -40,8 +40,13 @@
  
  /* This file is #included by gzip.c */
  
 -static int	zread(void *, char *, int);
 +static ssize_t
 +zread(void *cookie, char *rbp, size_t num);
-+
+ 
 +#ifndef EFTYPE
 +#define EFTYPE EINVAL
 +#endif
- 
++
  #define	tab_prefixof(i)	(zs->zs_codetab[i])
  #define	tab_suffixof(i)	((char_type *)(zs->zs_htab))[i]
+ #define	de_stack	((char_type *)&tab_suffixof(1 << BITS))
 @@ -174,6 +179,7 @@
  zdopen(int fd)
  {
@@ -9429,16 +10178,17 @@
  	struct s_zstate *zs;
 --- src.orig/libfetch/common.c
 +++ src.freebsd/libfetch/common.c
-@@ -137,9 +137,6 @@
+@@ -137,10 +137,7 @@
  	{ SOCKS5_ERR_BAD_PORT,		FETCH_ABORT,	"SOCKS5: Bad port" }
  };
  
 -/* End-of-Line */
 -static const char ENDL[2] = "\r\n";
--
  
+-
  /*** Error-reporting functions ***********************************************/
  
+ /*
 @@ -178,8 +175,12 @@
  	case EPERM:
  	case EACCES:
@@ -10161,7 +10911,7 @@
  #ifdef WITH_ICONV
  #include <iconv.h>
  #include <errno.h>
-@@ -204,7 +205,10 @@
+@@ -204,8 +205,11 @@
  	char dbuf[80];
  	static int d_first;
  
@@ -10169,10 +10919,11 @@
 +	d_first = 0;
 +	if (strlen(nl_langinfo(D_FMT)) >= 2 && nl_langinfo(D_FMT)[1] == 'd')
 +		d_first = 1;
-+
  
++
  	while (walkthrough_dates(&e) != 0) {
  		if (e) {
+ #ifdef DEBUG
 @@ -216,7 +220,7 @@
  			tm.tm_mday = e->day;
  			tm.tm_mon = e->month - 1;
@@ -10200,12 +10951,12 @@
  	for (i = 0; i < nitems(calendarHomes); i++) {
 -		if (snprintf(calendarhome, sizeof (calendarhome), calendarHomes[i],
 -			getlocalbase()) >= (int)sizeof (calendarhome))
--			continue;
--
--		if (chdir(calendarhome) != 0)
 +		if (chdir(calendarHomes[i]) != 0)
  			continue;
  
+-		if (chdir(calendarhome) != 0)
+-			continue;
+-
  		if ((fp = fopen(file, "r")) != NULL) {
  			cal_home = home;
 -			cal_dir = calendarhome;
@@ -10839,17 +11590,18 @@
  int
  main(int argc, char *argv[])
  {
-@@ -65,6 +105,10 @@
+@@ -65,7 +105,11 @@
  	FILE *fp;
  	size_t len;
  	int ch, rval;
 +	size_t bufl = BUF_PIECE;
 +	wchar_t *buf = malloc(bufl * sizeof(wchar_t));
-+
-+	if (!buf) err(1, "malloc");
  
++	if (!buf) err(1, "malloc");
++
  	setlocale(LC_ALL, "");
  
+ 	while ((ch = getopt(argc, argv, "")) != -1)
 @@ -91,7 +135,7 @@
  			}
  			filename = *argv++;
@@ -11352,14 +12104,14 @@
  		if (clp->ti_te != TE_SENT) {
  			clp->ti_te = TE_SENT;
  			if (clp->rmcup == NULL)
-@@ -155,6 +155,7 @@
+@@ -154,6 +154,7 @@
+ 			if (clp->rmcup != NULL)
  				(void)tputs(clp->rmcup, 1, cl_putchar);
  			(void)fflush(stdout);
- 		}
 +		}
+ 		}
  		(void)fflush(stdout);
  		break;
- 	case SA_INVERSE:
 --- src.orig/nvi/common/log.c
 +++ src.freebsd/nvi/common/log.c
 @@ -22,6 +22,7 @@
@@ -11590,6 +12342,11 @@
  /* Define if struct dirent has field d_namlen */
 -#cmakedefine HAVE_DIRENT_D_NAMLEN
 +#mesondefine HAVE_DIRENT_D_NAMLEN
+--- src.orig/nvi/gen_ex_version_h.sh
++++ src.freebsd/nvi/gen_ex_version_h.sh
+@@ -0,0 +1,2 @@
++#!/bin/sh
++exec sed -n 's/^.*version \([^)]*)\).*/\#define VI_VERSION "\1"/p' "$@"
 --- src.orig/nvi/gen_extern_h.sh
 +++ src.freebsd/nvi/gen_extern_h.sh
 @@ -0,0 +1,39 @@
@@ -11632,11 +12389,6 @@
 +echo "#endif"
 +
 +do_sed "$@"
---- src.orig/nvi/gen_ex_version_h.sh
-+++ src.freebsd/nvi/gen_ex_version_h.sh
-@@ -0,0 +1,2 @@
-+#!/bin/sh
-+exec sed -n 's/^.*version \([^)]*)\).*/\#define VI_VERSION "\1"/p' "$@"
 --- src.orig/nvi/vi/v_paragraph.c
 +++ src.freebsd/nvi/vi/v_paragraph.c
 @@ -45,7 +45,7 @@
@@ -12535,17 +13287,18 @@
  Set the file creation mask (see
 --- src.orig/sh/trap.c
 +++ src.freebsd/sh/trap.c
-@@ -58,8 +58,9 @@
+@@ -58,9 +58,10 @@
  #include "trap.h"
  #include "mystring.h"
  #include "builtins.h"
 +#ifndef NO_HISTORY
  #include "myhistedit.h"
--
 +#endif
  
+-
  /*
   * Sigmode records the current value of the signal handlers for the various
+  * modes.  A value of zero means that the current handler is not known.
 @@ -111,10 +112,11 @@
  
  		if (strncasecmp(sig, "SIG", 3) == 0)
@@ -13070,7 +13823,7 @@
  static int
 -logout(void)
 +quitf(int v, char **p)
-+{
+ {
 +	(void)v; (void)p;
 +	quit();
 +	return -1;
@@ -13078,7 +13831,7 @@
 +
 +static int
 +logout(int v, char **p)
- {
++{
 +	(void)v; (void)p;
  	send_do(TELOPT_LOGOUT, 1);
  	(void) netflush();
@@ -13089,12 +13842,12 @@
  
 -static void slc_help(void);
 +static void slc_help(int);
-+
+ 
 +static void slc_mode_exportf(int v) {
 +    (void)v;
 +    slc_mode_export();
 +}
- 
++
  struct slclist SlcList[] = {
      { "export",	"Use local special character definitions",
 -						(void (*)(int))slc_mode_export,	0 },
@@ -13151,11 +13904,11 @@
  static void
 -	env_help(void);
 +	env_help(char *, char *);
-+
+ 
 +static void envf_define(char *a, char *b) {
 +    env_define(a, b);
 +}
- 
++
  struct envlist EnvList[] = {
      { "define",	"Define an environment variable",
 -						(void (*)(unsigned char *, unsigned char *))env_define,	2 },
@@ -13601,18 +14354,19 @@
  	    else
  		continue;
  	    if (line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
-@@ -2847,8 +2946,10 @@
+@@ -2847,9 +2946,11 @@
  	unsigned char *cp, *cp2, *lsrp, *ep;
  	struct sockaddr_in *_sin;
  #ifdef INET6
 +#ifndef INET6_NO_RTHDR
  	struct sockaddr_in6 *sin6;
 -	struct ip6_rthdr *rth;
-+#endif
-+	struct ip6_rthdr *rth = NULL;
  #endif
++	struct ip6_rthdr *rth = NULL;
++#endif
  	struct addrinfo hints, *res;
  	int error;
+ 	char c;
 @@ -2861,7 +2962,7 @@
  	if (cpp == NULL || lenp == NULL)
  		return -1;
@@ -14752,41 +15506,3 @@
  	while ((ch = getopt(argc, argv, "eHhm")) != -1)
  		switch((char)ch) {
  		case 'e':
---- src.orig/uudecode/uudecode.c
-+++ src.freebsd/uudecode/uudecode.c
-@@ -60,6 +60,7 @@
- #include <errno.h>
- #include <fcntl.h>
- #include <libgen.h>
-+#include <libutil.h>
- #include <pwd.h>
- #include <resolv.h>
- #include <stdbool.h>
-@@ -447,7 +448,7 @@
- 		strcpy(leftover, inbuf + count4 + 1);
- 		inbuf[count4 + 1] = 0;
- 
--		n = b64_pton(inbuf, outbuf, sizeof(outbuf));
-+		n = compat_b64_pton(inbuf, outbuf, sizeof(outbuf));
- 
- 		if (n < 0)
- 			break;
---- src.orig/uuencode/uuencode.c
-+++ src.freebsd/uuencode/uuencode.c
-@@ -56,6 +56,7 @@
- 
- #include <err.h>
- #include <libgen.h>
-+#include <libutil.h>
- #include <resolv.h>
- #include <stdio.h>
- #include <stdbool.h>
-@@ -163,7 +164,7 @@
- 		fprintf(output, "begin-base64 %o %s\n", mode, *av);
- 	while ((n = fread(buf, 1, sizeof(buf), stdin))) {
- 		++sequence;
--		rv = b64_ntop(buf, n, buf2, nitems(buf2));
-+		rv = compat_b64_ntop(buf, n, buf2, nitems(buf2));
- 		if (rv == -1)
- 			errx(1, "b64_ntop: error encoding base64");
- 		fprintf(output, "%s%s", buf2, (sequence % GROUPS) ? "" : "\n");
