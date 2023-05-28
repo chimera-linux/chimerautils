@@ -5589,7 +5589,7 @@
  #include <stdbool.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -54,16 +57,20 @@
+@@ -54,20 +57,24 @@
  #define TEST_BLOCK_COUNT 100000
  #define MDTESTCOUNT 8
  
@@ -5616,9 +5616,16 @@
 +static bool failed;
 +static int endl = '\n';
  
- typedef void (DIGEST_Init)(void *);
- typedef void (DIGEST_Update)(void *, const unsigned char *, size_t);
-@@ -77,28 +84,30 @@
+-typedef void (DIGEST_Init)(void *);
+-typedef void (DIGEST_Update)(void *, const unsigned char *, size_t);
+-typedef char *(DIGEST_End)(void *, char *);
++typedef void (DIGEST_Init)(EVP_MD_CTX **);
++typedef void (DIGEST_Update)(EVP_MD_CTX **, const void *, size_t);
++typedef char *(DIGEST_End)(EVP_MD_CTX **, char *);
+ 
+ extern const char *MD5TestOutput[MDTESTCOUNT];
+ extern const char *SHA1_TestOutput[MDTESTCOUNT];
+@@ -77,29 +84,32 @@
  extern const char *SHA512_TestOutput[MDTESTCOUNT];
  extern const char *SHA512t224_TestOutput[MDTESTCOUNT];
  extern const char *SHA512t256_TestOutput[MDTESTCOUNT];
@@ -5651,22 +5658,20 @@
  static void usage(const Algorithm_t *);
 +static void version(void);
  
++#if 0
  typedef union {
  	MD5_CTX md5;
-@@ -107,10 +116,12 @@
- 	SHA256_CTX sha256;
- 	SHA384_CTX sha384;
- 	SHA512_CTX sha512;
-+#if 0
- 	RIPEMD160_CTX ripemd160;
- 	SKEIN256_CTX skein256;
+ 	SHA1_CTX sha1;
+@@ -112,6 +122,8 @@
  	SKEIN512_CTX skein512;
  	SKEIN1024_CTX skein1024;
-+#endif
  } DIGEST_CTX;
++#endif
++typedef EVP_MD_CTX *DIGEST_CTX;
  
  /* max(MD5_DIGEST_LENGTH, SHA_DIGEST_LENGTH,
-@@ -121,53 +132,165 @@
+ 	SHA256_DIGEST_LENGTH, SHA512_DIGEST_LENGTH,
+@@ -121,53 +133,165 @@
  /* algorithm function table */
  
  static const struct Algorithm_t Algorithm[] = {
@@ -5859,7 +5864,7 @@
  
  struct chksumrec {
  	char	*filename;
-@@ -177,60 +300,70 @@
+@@ -177,60 +301,70 @@
  
  static struct chksumrec *head = NULL;
  static struct chksumrec **next = &head;
@@ -5950,7 +5955,7 @@
  		if (rec == NULL)
  			errx(1, "malloc failed");
  		rec->chksum = strdup(hashstr);
-@@ -240,10 +373,10 @@
+@@ -240,10 +374,10 @@
  		rec->next = NULL;
  		*next = rec;
  		next = &rec->next;
@@ -5964,7 +5969,7 @@
  }
  
  /* Main driver.
-@@ -261,18 +394,19 @@
+@@ -261,18 +395,19 @@
  #ifdef HAVE_CAPSICUM
  	cap_rights_t	rights;
  #endif
@@ -5978,8 +5983,9 @@
  	char	buf[HEX_DIGEST_LENGTH];
  	size_t	len;
 -	char	*progname;
- 	struct chksumrec	*rec;
+-	struct chksumrec	*rec;
 -	int	numrecs;
++	struct chksumrec	*rec = NULL;
  
 - 	if ((progname = strrchr(argv[0], '/')) == NULL)
 - 		progname = argv[0];
@@ -5992,7 +5998,7 @@
  
  	/*
  	 * GNU coreutils has a number of programs named *sum. These produce
-@@ -284,60 +418,151 @@
+@@ -284,60 +419,151 @@
  	 * since that means 'text file' there (though it's a nop in coreutils
  	 * on unix-like systems). The -c flag conflicts, so it's just disabled
  	 * in this mode (though in the future it might be implemented).
@@ -6169,7 +6175,7 @@
  		default:
  			usage(&Algorithm[digest]);
  		}
-@@ -349,12 +574,17 @@
+@@ -349,12 +575,17 @@
  		err(1, "unable to limit rights for stdio");
  #endif
  
@@ -6190,7 +6196,7 @@
  		for (rec = head; rec != NULL; rec = rec->next) {
  			argv[argc] = rec->filename;
  			argc++;
-@@ -365,10 +595,27 @@
+@@ -365,10 +596,27 @@
  
  	if (*argv) {
  		do {
@@ -6222,7 +6228,7 @@
  					rec = rec->next;
  				continue;
  			}
-@@ -381,87 +628,177 @@
+@@ -381,87 +629,177 @@
  			if (*(argv + 1) == NULL) {
  #ifdef HAVE_CAPSICUM
  				cap_rights_init(&rights, CAP_READ);
@@ -6298,7 +6304,7 @@
 +	DIGEST_CTX context;
 +	unsigned char *end, *p, *q;
 +	size_t len;
-+	int bits;
++	int bits = 0;
 +	uint8_t byte;
 +	bool cr = false;
 +
@@ -6446,7 +6452,7 @@
  	}
  	if (checkfailed)
  		checksFailed++;
-@@ -613,6 +950,7 @@
+@@ -613,6 +951,7 @@
  	"dd095fc859b336c30a52548b3dc59fcc0d1be8616ebcf3368fad23107db2d736"
  };
  
@@ -6454,7 +6460,7 @@
  const char *RIPEMD160_TestOutput[MDTESTCOUNT] = {
  	"9c1185a5c5e9fc54612808977ee8f548b2258d31",
  	"0bdc9d2d256b3ee9daae347be6f4dc835a467ffe",
-@@ -656,6 +994,7 @@
+@@ -656,6 +995,7 @@
  	"cf21a613620e6c119eca31fdfaad449a8e02f95ca256c21d2a105f8e4157048f9fe1e897893ea18b64e0e37cb07d5ac947f27ba544caf7cbc1ad094e675aed77a366270f7eb7f46543bccfa61c526fd628408058ed00ed566ac35a9761d002e629c4fb0d430b2f4ad016fcc49c44d2981c4002da0eecc42144160e2eaea4855a",
  	"e6799b78db54085a2be7ff4c8007f147fa88d326abab30be0560b953396d8802feee9a15419b48a467574e9283be15685ca8a079ee52b27166b64dd70b124b1d4e4f6aca37224c3f2685e67e67baef9f94b905698adc794a09672aba977a61b20966912acdb08c21a2c37001785355dc884751a21f848ab36e590331ff938138"
  };
@@ -6462,7 +6468,7 @@
  
  static void
  MDTestSuite(const Algorithm_t *alg)
-@@ -671,40 +1010,33 @@
+@@ -671,40 +1011,33 @@
  			printf(" - verified correct\n");
  		} else {
  			printf(" - INCORRECT RESULT!\n");

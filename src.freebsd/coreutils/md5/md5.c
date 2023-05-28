@@ -72,9 +72,9 @@ static int checksFailed;
 static bool failed;
 static int endl = '\n';
 
-typedef void (DIGEST_Init)(void *);
-typedef void (DIGEST_Update)(void *, const unsigned char *, size_t);
-typedef char *(DIGEST_End)(void *, char *);
+typedef void (DIGEST_Init)(EVP_MD_CTX **);
+typedef void (DIGEST_Update)(EVP_MD_CTX **, const void *, size_t);
+typedef char *(DIGEST_End)(EVP_MD_CTX **, char *);
 
 extern const char *MD5TestOutput[MDTESTCOUNT];
 extern const char *SHA1_TestOutput[MDTESTCOUNT];
@@ -109,6 +109,7 @@ static void MDTestSuite(const Algorithm_t *);
 static void usage(const Algorithm_t *);
 static void version(void);
 
+#if 0
 typedef union {
 	MD5_CTX md5;
 	SHA1_CTX sha1;
@@ -116,13 +117,13 @@ typedef union {
 	SHA256_CTX sha256;
 	SHA384_CTX sha384;
 	SHA512_CTX sha512;
-#if 0
 	RIPEMD160_CTX ripemd160;
 	SKEIN256_CTX skein256;
 	SKEIN512_CTX skein512;
 	SKEIN1024_CTX skein1024;
-#endif
 } DIGEST_CTX;
+#endif
+typedef EVP_MD_CTX *DIGEST_CTX;
 
 /* max(MD5_DIGEST_LENGTH, SHA_DIGEST_LENGTH,
 	SHA256_DIGEST_LENGTH, SHA512_DIGEST_LENGTH,
@@ -401,7 +402,7 @@ main(int argc, char *argv[])
 	char   *p, *string = NULL;
 	char	buf[HEX_DIGEST_LENGTH];
 	size_t	len;
-	struct chksumrec	*rec;
+	struct chksumrec	*rec = NULL;
 
 	if ((progname = strrchr(argv[0], '/')) == NULL)
 		progname = argv[0];
@@ -685,7 +686,7 @@ MDInput(const Algorithm_t *alg, FILE *f, char *buf, bool tee)
 	DIGEST_CTX context;
 	unsigned char *end, *p, *q;
 	size_t len;
-	int bits;
+	int bits = 0;
 	uint8_t byte;
 	bool cr = false;
 

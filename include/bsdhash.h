@@ -52,7 +52,7 @@ static inline void HashInit(EVP_MD_CTX **ctx, const EVP_MD *type) {
         errx(1, "could not init digest");
 }
 
-static inline void HashUpdate(EVP_MD_CTX **ctx, const void *data, unsigned int len) {
+static inline void HashUpdate(EVP_MD_CTX **ctx, const void *data, size_t len) {
     if (!EVP_DigestUpdate(*ctx, data, len))
         errx(1, "could not update digest");
 }
