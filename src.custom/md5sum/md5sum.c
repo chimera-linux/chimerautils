@@ -156,6 +156,7 @@ static int handle_file(
         size_t linenum = 1;
         size_t nbadlines = 0;
         size_t nfailread = 0;
+        int status = 0;
         while (getline(&buf, &nc, stream) >= 0) {
             char *dstr = buf;
             char *cfname = strstr(buf, "  ");
@@ -185,6 +186,7 @@ static int handle_file(
                 }
                 ++nbadlines;
                 ++linenum;
+                status = 1;
                 continue;
             }
             cfname += 2;
@@ -199,29 +201,34 @@ static int handle_file(
                 perror(cfname);
                 fprintf(stderr, "%s: FAILED open or read\n", cfname);
                 ++nfailread;
+                status = 1;
                 continue;
             }
             int ret = handle_file(
                 cfname, f, rbuf, md, ctx, hstyle, bname, dstr
             );
             if (ret == 255) {
-                fprintf(stderr, "%s: FAILED\n", cfname);
+                if (!opt_status) {
+                    fprintf(stderr, "%s: FAILED\n", cfname);
+                }
+                status = 1;
                 continue;
             } else if (ret) {
                 fprintf(stderr, "%s: FAILED open or read\n", cfname);
                 ++nfailread;
+                status = 1;
                 continue;
-            } else if (!opt_quiet) {
+            } else if (!opt_quiet && !opt_status) {
                 printf("%s: OK\n", cfname);
             }
         }
-        if (nbadlines) {
+        if (nbadlines && !opt_status) {
             fprintf(
                 stderr, "%s: WARNING: %zu lines are improperly formatted\n",
                 __progname, nbadlines
             );
         }
-        if (nfailread) {
+        if (nfailread && !opt_status) {
             fprintf(
                 stderr, "%s: WARNING: %zu listed files could not be read\n",
                 __progname, nfailread
@@ -229,7 +236,7 @@ static int handle_file(
         }
         opt_check = 1;
         free(buf);
-        return 0;
+        return status;
     }
 
     EVP_MD_CTX_reset(ctx);
