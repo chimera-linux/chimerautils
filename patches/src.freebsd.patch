@@ -1104,7 +1104,7 @@
 +static void
 +encode_quoted_printable(const char *body, FILE *fpo)
 +{
-+	char prev;
++	char prev = 0;
 +	const char *end = body + strlen(body);
 +	size_t linelen = 0;
 +
