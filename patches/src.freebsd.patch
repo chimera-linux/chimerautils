@@ -14189,20 +14189,22 @@
  #define EOF_NLEFT -99		/* value of parsenleft when EOF pushed back */
 --- src.orig/sh/main.c
 +++ src.freebsd/sh/main.c
-@@ -97,10 +97,11 @@
-  * is used to figure out how far we had gotten.
-  */
- 
-+static struct stackmark smark, smark2;
-+
+@@ -100,7 +100,13 @@
  int
  main(int argc, char *argv[])
  {
 -	struct stackmark smark, smark2;
++	/*
++	 * As smark is accessed after a longjmp, it cannot be a local in main().
++	 * The C standard specifies that the values of non-volatile local
++	 * variables are unspecified after a jump if modified between the
++	 * setjmp and longjmp.
++	 */
++	static struct stackmark smark, smark2;
  	volatile int state;
  	char *shinit;
  
-@@ -142,19 +143,16 @@
+@@ -142,19 +148,16 @@
  	INTON;
  	if (iflag)
  		chkmail(1);
@@ -14225,7 +14227,7 @@
  		if ((shinit = lookupvar("ENV")) != NULL && *shinit != '\0') {
  			state = 3;
  			read_profile(shinit);
-@@ -348,4 +346,5 @@
+@@ -348,4 +351,5 @@
  		exitshell(number(argv[1]));
  	else
  		exitshell_savedstatus();
