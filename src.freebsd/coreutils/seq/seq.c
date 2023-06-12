@@ -88,8 +88,8 @@ main(int argc, char *argv[])
 {
 	const char *sep, *term;
 	struct lconv *locale;
-	char pad, *fmt, *cur_print, *last_print;
-	double first, last, incr, last_shown_value, cur, step;
+	char pad, *fmt;
+	double first, last, incr, last_shown_value;
 	int c, errflg, equalize;
 
 	pad = ZERO;
@@ -182,31 +182,17 @@ main(int argc, char *argv[])
 	} else
 		fmt = generate_format(first, incr, last, equalize, pad);
 
-	for (step = 1, cur = first; incr > 0 ? cur <= last : cur >= last;
-	    cur = first + incr * step++) {
-		printf(fmt, cur);
-		fputs(sep, stdout);
-		last_shown_value = cur;
+	if (incr > 0) {
+		for (; first <= last; first += incr) {
+			printf(fmt, first);
+			fputs(sep, stdout);
+		}
+	} else {
+		for (; first >= last; first += incr) {
+			printf(fmt, first);
+			fputs(sep, stdout);
+		}
 	}
-
-	/*
-	 * Did we miss the last value of the range in the loop above?
-	 *
-	 * We might have, so check if the printable version of the last
-	 * computed value ('cur') and desired 'last' value are equal.  If they
-	 * are equal after formatting truncation, but 'cur' and
-	 * 'last_shown_value' are not equal, it means the exit condition of the
-	 * loop held true due to a rounding error and we still need to print
-	 * 'last'.
-	 */
-	asprintf(&cur_print, fmt, cur);
-	asprintf(&last_print, fmt, last);
-	if (strcmp(cur_print, last_print) == 0 && cur != last_shown_value) {
-		fputs(last_print, stdout);
-		fputs(sep, stdout);
-	}
-	free(cur_print);
-	free(last_print);
 
 	if (term != NULL)
 		fputs(term, stdout);

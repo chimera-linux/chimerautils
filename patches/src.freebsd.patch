@@ -7023,6 +7023,61 @@
  	}
  	(void)fflush(stderr);
  
+--- src.orig/coreutils/seq/seq.c
++++ src.freebsd/coreutils/seq/seq.c
+@@ -88,8 +88,8 @@
+ {
+ 	const char *sep, *term;
+ 	struct lconv *locale;
+-	char pad, *fmt, *cur_print, *last_print;
+-	double first, last, incr, last_shown_value, cur, step;
++	char pad, *fmt;
++	double first, last, incr, last_shown_value;
+ 	int c, errflg, equalize;
+ 
+ 	pad = ZERO;
+@@ -182,31 +182,17 @@
+ 	} else
+ 		fmt = generate_format(first, incr, last, equalize, pad);
+ 
+-	for (step = 1, cur = first; incr > 0 ? cur <= last : cur >= last;
+-	    cur = first + incr * step++) {
+-		printf(fmt, cur);
+-		fputs(sep, stdout);
+-		last_shown_value = cur;
++	if (incr > 0) {
++		for (; first <= last; first += incr) {
++			printf(fmt, first);
++			fputs(sep, stdout);
++		}
++	} else {
++		for (; first >= last; first += incr) {
++			printf(fmt, first);
++			fputs(sep, stdout);
++		}
+ 	}
+-
+-	/*
+-	 * Did we miss the last value of the range in the loop above?
+-	 *
+-	 * We might have, so check if the printable version of the last
+-	 * computed value ('cur') and desired 'last' value are equal.  If they
+-	 * are equal after formatting truncation, but 'cur' and
+-	 * 'last_shown_value' are not equal, it means the exit condition of the
+-	 * loop held true due to a rounding error and we still need to print
+-	 * 'last'.
+-	 */
+-	asprintf(&cur_print, fmt, cur);
+-	asprintf(&last_print, fmt, last);
+-	if (strcmp(cur_print, last_print) == 0 && cur != last_shown_value) {
+-		fputs(last_print, stdout);
+-		fputs(sep, stdout);
+-	}
+-	free(cur_print);
+-	free(last_print);
+ 
+ 	if (term != NULL)
+ 		fputs(term, stdout);
 --- src.orig/coreutils/sleep/sleep.1
 +++ src.freebsd/coreutils/sleep/sleep.1
 @@ -52,7 +52,7 @@
@@ -14134,16 +14189,20 @@
  #define EOF_NLEFT -99		/* value of parsenleft when EOF pushed back */
 --- src.orig/sh/main.c
 +++ src.freebsd/sh/main.c
-@@ -100,7 +100,7 @@
+@@ -97,10 +97,11 @@
+  * is used to figure out how far we had gotten.
+  */
+ 
++static struct stackmark smark, smark2;
++
  int
  main(int argc, char *argv[])
  {
 -	struct stackmark smark, smark2;
-+	struct stackmark smark = {0}, smark2;
  	volatile int state;
  	char *shinit;
  
-@@ -142,19 +142,16 @@
+@@ -142,19 +143,16 @@
  	INTON;
  	if (iflag)
  		chkmail(1);
@@ -14166,7 +14225,7 @@
  		if ((shinit = lookupvar("ENV")) != NULL && *shinit != '\0') {
  			state = 3;
  			read_profile(shinit);
-@@ -348,4 +345,5 @@
+@@ -348,4 +346,5 @@
  		exitshell(number(argv[1]));
  	else
  		exitshell_savedstatus();
