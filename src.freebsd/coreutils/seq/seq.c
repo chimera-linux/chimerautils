@@ -38,6 +38,7 @@ __FBSDID("$FreeBSD$");
 #include <errno.h>
 #include <getopt.h>
 #include <math.h>
+#include <float.h>
 #include <locale.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -51,11 +52,16 @@ __FBSDID("$FreeBSD$");
 #define ISSIGN(c)	((int)(c) == '-' || (int)(c) == '+')
 #define ISEXP(c)	((int)(c) == 'e' || (int)(c) == 'E')
 #define ISODIGIT(c)	((int)(c) >= '0' && (int)(c) <= '7')
+#define VALID_INT(v)	(floor(v) == (v) && fabs(v) <= abs_int_max)
 
 /* Globals */
 
 static const char *decimal_point = ".";	/* default */
 static char default_format[] = { "%g" };	/* default */
+static char integer_format[] = { "%.0f" };	/* for integer printing */
+
+/* largest representable integer in a double */
+static const double abs_int_max = (double)(1ULL << DBL_MANT_DIG);
 
 static const struct option long_opts[] =
 {
@@ -74,7 +80,7 @@ static int decimal_places(const char *);
 static int numeric(const char *);
 static int valid_format(const char *);
 
-static char *generate_format(double, double, double, int, char);
+static char *generate_format(double, double, double, int, char, int *);
 static char *unescape(char *);
 
 /*
@@ -90,7 +96,7 @@ main(int argc, char *argv[])
 	struct lconv *locale;
 	char pad, *fmt, *cur_print, *last_print, *prev_print;
 	double first, last, incr, prev, cur, step;
-	int c, errflg, equalize;
+	int c, errflg, equalize, may_trunc = 1;
 
 	pad = ZERO;
 	fmt = NULL;
@@ -180,7 +186,7 @@ main(int argc, char *argv[])
 		 * newline if none found at the end of the format string.
 		 */
 	} else
-		fmt = generate_format(first, incr, last, equalize, pad);
+		fmt = generate_format(first, incr, last, equalize, pad, &may_trunc);
 
 	for (step = 1, cur = first; incr > 0 ? cur <= last : cur >= last;
 	    cur = first + incr * step++) {
@@ -188,6 +194,13 @@ main(int argc, char *argv[])
 		fputs(sep, stdout);
 		prev = cur;
 	}
+
+	/*
+	 * If we guarantee no truncation (which happens when only integers are
+	 * used), skip the code below in order to avoid extra allocations.
+	 */
+	if (!may_trunc)
+		goto do_term;
 
 	/*
 	 * Did we miss the last value of the range in the loop above?
@@ -212,6 +225,7 @@ main(int argc, char *argv[])
 	free(last_print);
 	free(prev_print);
 
+do_term:
 	if (term != NULL)
 		fputs(term, stdout);
 
@@ -459,14 +473,13 @@ decimal_places(const char *number)
  * when "%g" prints as "%e" (this way no width adjustments are made)
  */
 static char *
-generate_format(double first, double incr, double last, int equalize, char pad)
+generate_format(double first, double incr, double last, int equalize, char pad, int *may_trunc)
 {
 	static char buf[256];
 	char cc = '\0';
 	int precision, width1, width2, places;
-
-	if (equalize == 0)
-		return (default_format);
+	int do_ints = 0;
+	char *def_fmt;
 
 	/* figure out "last" value printed */
 	if (first > last)
@@ -474,12 +487,22 @@ generate_format(double first, double incr, double last, int equalize, char pad)
 	else
 		last = first + incr * floor((last - first) / incr);
 
-	sprintf(buf, "%g", incr);
+	do_ints = VALID_INT(first) && VALID_INT(last) && VALID_INT(incr);
+	if (do_ints) {
+		*may_trunc = 0;
+		def_fmt = (integer_format);
+	} else
+		def_fmt = (default_format);
+
+	if (equalize == 0)
+		return def_fmt;
+
+	sprintf(buf, def_fmt, incr);
 	if (strchr(buf, 'e'))
 		cc = 'e';
 	precision = decimal_places(buf);
 
-	width1 = sprintf(buf, "%g", first);
+	width1 = sprintf(buf, def_fmt, first);
 	if (strchr(buf, 'e'))
 		cc = 'e';
 	if ((places = decimal_places(buf)))
@@ -487,7 +510,7 @@ generate_format(double first, double incr, double last, int equalize, char pad)
 
 	precision = MAX(places, precision);
 
-	width2 = sprintf(buf, "%g", last);
+	width2 = sprintf(buf, def_fmt, last);
 	if (strchr(buf, 'e'))
 		cc = 'e';
 	if ((places = decimal_places(buf)))
@@ -497,6 +520,8 @@ generate_format(double first, double incr, double last, int equalize, char pad)
 		sprintf(buf, "%%%c%d.%d%c", pad,
 		    MAX(width1, width2) + (int) strlen(decimal_point) +
 		    precision, precision, (cc) ? cc : 'f');
+	} else if (do_ints) {
+		sprintf(buf, "%%%c%d.0f", pad, MAX(width1, width2));
 	} else {
 		sprintf(buf, "%%%c%d%c", pad, MAX(width1, width2),
 		    (cc) ? cc : 'g');

@@ -97,7 +97,10 @@ can contain character escape sequences in backslash notation as
 defined in
 .St -ansiC .
 The default is
-.Cm %g .
+.Cm %g ,
+unless all numbers are integers representable losslessly as floating
+point (with mantissa bits), in which case the default is
+.Cm %.0f .
 .It Fl s Ar string , Fl -separator Ar string
 Use
 .Ar string
