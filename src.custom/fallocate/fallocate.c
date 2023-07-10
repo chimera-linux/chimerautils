@@ -258,15 +258,16 @@ int main(int argc, char **argv) {
     }
 
     if (!dig) {
-        int errv;
+        int errv = 0;
         if (!have_len) {
             errx(1, "length not specified");
         } else if (!length) {
             errx(1, "length must be non-zero");
         }
-        errno = 0;
         if (posix) {
-            errv = posix_fallocate(fd, offset, length);
+            if ((errno = posix_fallocate(fd, offset, length))) {
+                errv = -1;
+            }
         } else {
             errv = fallocate(fd, flags, offset, length);
         }
