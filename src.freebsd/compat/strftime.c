@@ -50,6 +50,8 @@ __FBSDID("$FreeBSD$");
 #define DAYSPERNYEAR 365
 #define DAYSPERLYEAR 366
 #define TM_YEAR_BASE 1900
+#define TM_GMTOFF tm_gmtoff
+#define TM_ZONE tm_zone
 
 #define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 #define isleap_sum(a, b) isleap((a) % 400 + (b) % 400)

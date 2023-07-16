@@ -1500,7 +1500,7 @@
  
 --- src.orig/compat/strftime.c
 +++ src.freebsd/compat/strftime.c
-@@ -30,27 +30,34 @@
+@@ -30,27 +30,36 @@
  #endif /* !defined NOID */
  #endif /* !defined lint */
  
@@ -1530,6 +1530,8 @@
 +#define DAYSPERNYEAR 365
 +#define DAYSPERLYEAR 366
 +#define TM_YEAR_BASE 1900
++#define TM_GMTOFF tm_gmtoff
++#define TM_ZONE tm_zone
 +
 +#define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 +#define isleap_sum(a, b) isleap((a) % 400 + (b) % 400)
@@ -1545,7 +1547,7 @@
  
  extern char *	tzname[];
  
-@@ -88,51 +95,23 @@
+@@ -88,51 +97,23 @@
  };
  
  size_t
@@ -1601,7 +1603,7 @@
  
  	for ( ; *format; ++format) {
  		if (*format == '%') {
-@@ -147,27 +126,26 @@
+@@ -147,27 +128,26 @@
  			case 'A':
  				pt = _add((t->tm_wday < 0 ||
  					t->tm_wday >= DAYSPERWEEK) ?
@@ -1633,7 +1635,7 @@
  					pt, ptlim);
  				continue;
  			case 'C':
-@@ -179,26 +157,18 @@
+@@ -179,26 +159,18 @@
  				 * (ado, 1993-05-24)
  				 */
  				pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 0,
@@ -1664,7 +1666,7 @@
  				continue;
  			case 'E':
  				if (Ealternative || Oalternative)
-@@ -225,25 +195,25 @@
+@@ -225,25 +197,25 @@
  			case 'e':
  				pt = _conv(t->tm_mday,
  					fmt_padding[PAD_FMT_SDAYOFMONTH][PadIndex],
@@ -1695,7 +1697,7 @@
  				continue;
  			case 'k':
  				/*
-@@ -257,7 +227,7 @@
+@@ -257,7 +229,7 @@
  				 * (ado, 1993-05-24)
  				 */
  				pt = _conv(t->tm_hour, fmt_padding[PAD_FMT_SHMS][PadIndex],
@@ -1704,7 +1706,7 @@
  				continue;
  #ifdef KITCHEN_SINK
  			case 'K':
-@@ -280,55 +250,49 @@
+@@ -280,55 +252,49 @@
  				pt = _conv((t->tm_hour % 12) ?
  					(t->tm_hour % 12) : 12,
  					fmt_padding[PAD_FMT_SHMS][PadIndex],
@@ -1771,7 +1773,7 @@
  				continue;
  			case 't':
  				pt = _add("\t", pt, ptlim);
-@@ -337,7 +301,7 @@
+@@ -337,7 +303,7 @@
  				pt = _conv((t->tm_yday + DAYSPERWEEK -
  					t->tm_wday) / DAYSPERWEEK,
  					fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
@@ -1780,7 +1782,7 @@
  				continue;
  			case 'u':
  				/*
-@@ -348,7 +312,7 @@
+@@ -348,7 +314,7 @@
  				 */
  				pt = _conv((t->tm_wday == 0) ?
  					DAYSPERWEEK : t->tm_wday,
@@ -1789,7 +1791,7 @@
  				continue;
  			case 'V':	/* ISO 8601 week number */
  			case 'G':	/* ISO 8601 year (four digits) */
-@@ -429,13 +393,12 @@
+@@ -429,13 +395,12 @@
  #endif /* defined XPG4_1994_04_09 */
  					if (*format == 'V')
  						pt = _conv(w, fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
@@ -1806,7 +1808,7 @@
  				}
  				continue;
  			case 'v':
-@@ -444,7 +407,7 @@
+@@ -444,7 +409,7 @@
  				 * "date as dd-bbb-YYYY"
  				 * (ado, 1993-05-24)
  				 */
@@ -1815,7 +1817,7 @@
  				continue;
  			case 'W':
  				pt = _conv((t->tm_yday + DAYSPERWEEK -
-@@ -452,33 +415,24 @@
+@@ -452,33 +417,24 @@
  					(t->tm_wday - 1) :
  					(DAYSPERWEEK - 1))) / DAYSPERWEEK,
  					fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
@@ -1855,7 +1857,7 @@
  				continue;
  			case 'Z':
  #ifdef TM_ZONE
-@@ -548,12 +502,15 @@
+@@ -548,12 +504,15 @@
  					(diff % MINSPERHOUR);
  				pt = _conv(diff,
  					fmt_padding[PAD_FMT_YEAR][PadIndex],
@@ -1874,7 +1876,7 @@
  				continue;
  			case '-':
  				if (PadIndex != PAD_DEFAULT)
-@@ -589,11 +546,11 @@
+@@ -589,11 +548,11 @@
  
  static char *
  _conv(const int n, const char * const format, char * const pt,
@@ -1889,7 +1891,7 @@
  	return _add(buf, pt, ptlim);
  }
  
-@@ -615,7 +572,7 @@
+@@ -615,7 +574,7 @@
  
  static char *
  _yconv(const int a, const int b, const int convert_top, const int convert_yy,
@@ -1898,7 +1900,7 @@
  {
  	register int	lead;
  	register int	trail;
-@@ -634,10 +591,10 @@
+@@ -634,10 +593,10 @@
  	if (convert_top) {
  		if (lead == 0 && trail < 0)
  			pt = _add("-0", pt, ptlim);
@@ -7023,6 +7025,20 @@
  	}
  	(void)fflush(stderr);
  
+--- src.orig/coreutils/seq/seq.1
++++ src.freebsd/coreutils/seq/seq.1
+@@ -97,7 +97,10 @@
+ defined in
+ .St -ansiC .
+ The default is
+-.Cm %g .
++.Cm %g ,
++unless all numbers are integers representable losslessly as floating
++point (with mantissa bits), in which case the default is
++.Cm %.0f .
+ .It Fl s Ar string , Fl -separator Ar string
+ Use
+ .Ar string
 --- src.orig/coreutils/seq/seq.c
 +++ src.freebsd/coreutils/seq/seq.c
 @@ -1,6 +1,6 @@
@@ -7033,15 +7049,51 @@
   *
   * Copyright (c) 2005 The NetBSD Foundation, Inc.
   * All rights reserved.
-@@ -88,14 +88,14 @@
+@@ -38,6 +38,7 @@
+ #include <errno.h>
+ #include <getopt.h>
+ #include <math.h>
++#include <float.h>
+ #include <locale.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+@@ -51,12 +52,17 @@
+ #define ISSIGN(c)	((int)(c) == '-' || (int)(c) == '+')
+ #define ISEXP(c)	((int)(c) == 'e' || (int)(c) == 'E')
+ #define ISODIGIT(c)	((int)(c) >= '0' && (int)(c) <= '7')
++#define VALID_INT(v)	(floor(v) == (v) && fabs(v) <= abs_int_max)
+ 
+ /* Globals */
+ 
+ static const char *decimal_point = ".";	/* default */
+ static char default_format[] = { "%g" };	/* default */
++static char integer_format[] = { "%.0f" };	/* for integer printing */
+ 
++/* largest representable integer in a double */
++static const double abs_int_max = (double)(1ULL << DBL_MANT_DIG);
++
+ static const struct option long_opts[] =
+ {
+ 	{"format",	required_argument,	NULL, 'f'},
+@@ -74,7 +80,7 @@
+ static int numeric(const char *);
+ static int valid_format(const char *);
+ 
+-static char *generate_format(double, double, double, int, char);
++static char *generate_format(double, double, double, int, char, int *);
+ static char *unescape(char *);
+ 
+ /*
+@@ -88,14 +94,14 @@
  {
  	const char *sep, *term;
  	struct lconv *locale;
 -	char pad, *fmt, *cur_print, *last_print;
 -	double first, last, incr, last_shown_value, cur, step;
+-	int c, errflg, equalize;
 +	char pad, *fmt, *cur_print, *last_print, *prev_print;
 +	double first, last, incr, prev, cur, step;
- 	int c, errflg, equalize;
++	int c, errflg, equalize, may_trunc = 1;
  
  	pad = ZERO;
  	fmt = NULL;
@@ -7051,7 +7103,7 @@
  	c = errflg = equalize = 0;
  	sep = "\n";
  	term = NULL;
-@@ -151,7 +151,7 @@
+@@ -151,7 +157,7 @@
  
  	if (argc > 1)
  		first = e_atof(argv[0]);
@@ -7060,7 +7112,14 @@
  	if (argc > 2) {
  		incr = e_atof(argv[1]);
  		/* Plan 9/GNU don't do zero */
-@@ -186,7 +186,7 @@
+@@ -180,34 +186,46 @@
+ 		 * newline if none found at the end of the format string.
+ 		 */
+ 	} else
+-		fmt = generate_format(first, incr, last, equalize, pad);
++		fmt = generate_format(first, incr, last, equalize, pad, &may_trunc);
+ 
+ 	for (step = 1, cur = first; incr > 0 ? cur <= last : cur >= last;
  	    cur = first + incr * step++) {
  		printf(fmt, cur);
  		fputs(sep, stdout);
@@ -7069,7 +7128,14 @@
  	}
  
  	/*
-@@ -194,19 +194,23 @@
++	 * If we guarantee no truncation (which happens when only integers are
++	 * used), skip the code below in order to avoid extra allocations.
++	 */
++	if (!may_trunc)
++		goto do_term;
++
++	/*
+ 	 * Did we miss the last value of the range in the loop above?
  	 *
  	 * We might have, so check if the printable version of the last
  	 * computed value ('cur') and desired 'last' value are equal.  If they
@@ -7098,8 +7164,71 @@
  	free(last_print);
 +	free(prev_print);
  
++do_term:
  	if (term != NULL)
  		fputs(term, stdout);
+ 
+@@ -455,27 +473,36 @@
+  * when "%g" prints as "%e" (this way no width adjustments are made)
+  */
+ static char *
+-generate_format(double first, double incr, double last, int equalize, char pad)
++generate_format(double first, double incr, double last, int equalize, char pad, int *may_trunc)
+ {
+ 	static char buf[256];
+ 	char cc = '\0';
+ 	int precision, width1, width2, places;
++	int do_ints = 0;
++	char *def_fmt;
+ 
+-	if (equalize == 0)
+-		return (default_format);
+-
+ 	/* figure out "last" value printed */
+ 	if (first > last)
+ 		last = first - incr * floor((first - last) / incr);
+ 	else
+ 		last = first + incr * floor((last - first) / incr);
+ 
+-	sprintf(buf, "%g", incr);
++	do_ints = VALID_INT(first) && VALID_INT(last) && VALID_INT(incr);
++	if (do_ints) {
++		*may_trunc = 0;
++		def_fmt = (integer_format);
++	} else
++		def_fmt = (default_format);
++
++	if (equalize == 0)
++		return def_fmt;
++
++	sprintf(buf, def_fmt, incr);
+ 	if (strchr(buf, 'e'))
+ 		cc = 'e';
+ 	precision = decimal_places(buf);
+ 
+-	width1 = sprintf(buf, "%g", first);
++	width1 = sprintf(buf, def_fmt, first);
+ 	if (strchr(buf, 'e'))
+ 		cc = 'e';
+ 	if ((places = decimal_places(buf)))
+@@ -483,7 +510,7 @@
+ 
+ 	precision = MAX(places, precision);
+ 
+-	width2 = sprintf(buf, "%g", last);
++	width2 = sprintf(buf, def_fmt, last);
+ 	if (strchr(buf, 'e'))
+ 		cc = 'e';
+ 	if ((places = decimal_places(buf)))
+@@ -493,6 +520,8 @@
+ 		sprintf(buf, "%%%c%d.%d%c", pad,
+ 		    MAX(width1, width2) + (int) strlen(decimal_point) +
+ 		    precision, precision, (cc) ? cc : 'f');
++	} else if (do_ints) {
++		sprintf(buf, "%%%c%d.0f", pad, MAX(width1, width2));
+ 	} else {
+ 		sprintf(buf, "%%%c%d%c", pad, MAX(width1, width2),
+ 		    (cc) ? cc : 'g');
 --- src.orig/coreutils/sleep/sleep.1
 +++ src.freebsd/coreutils/sleep/sleep.1
 @@ -52,7 +52,7 @@
