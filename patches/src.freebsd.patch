@@ -7830,7 +7830,29 @@
  #include <unistd.h>
  
  #if HAVE_STRUCT_STAT_ST_FLAGS
-@@ -209,17 +210,14 @@
+@@ -82,10 +83,12 @@
+ #define DEF_B "\"%SB\" "
+ #define RAW_B "%B "
+ #define SHELL_B "st_birthtime=%B "
++#define STR_B "%SB"
+ #else /* HAVE_STRUCT_STAT_ST_BIRTHTIME */
+ #define DEF_B
+ #define RAW_B
+ #define SHELL_B
++#define STR_B "-"
+ #endif /* HAVE_STRUCT_STAT_ST_BIRTHTIME */
+ 
+ #if HAVE_STRUCT_STAT_ST_ATIM
+@@ -114,7 +117,7 @@
+ 	"Access: %Sa%n" \
+ 	"Modify: %Sm%n" \
+ 	"Change: %Sc%n"	\
+-	" Birth: %SB"
++	" Birth: " STR_B
+ 
+ #define TIME_FORMAT	"%b %e %T %Y"
+ 
+@@ -209,17 +212,14 @@
  {
  	struct stat st;
  	int ch, rc, errs, am_readlink;
@@ -7849,7 +7871,7 @@
  	nonl = 0;
  	quiet = 0;
  	linkfail = 0;
-@@ -234,7 +232,7 @@
+@@ -234,7 +234,7 @@
  		fmtchar = 'f';
  		quiet = 1;
  	} else {
@@ -7858,7 +7880,7 @@
  		synopsis = "[-FLnq] [-f format | -l | -r | -s | -x] "
  		    "[-t timefmt] [file|handle ...]";
  	}
-@@ -244,9 +242,6 @@
+@@ -244,9 +244,6 @@
  		case 'F':
  			lsF = 1;
  			break;
@@ -7868,7 +7890,7 @@
  		case 'L':
  			usestat = 1;
  			break;
-@@ -324,37 +319,11 @@
+@@ -324,37 +321,11 @@
  	errs = 0;
  	do {
  		if (argc == 0) {
@@ -7908,7 +7930,7 @@
  				/*
  				 * Try stat() and if it fails, fall back to
  				 * lstat() just in case we're examining a
-@@ -619,8 +588,10 @@
+@@ -619,8 +590,10 @@
  {
  	u_int64_t data;
  	char *stmp, lfmt[24], tmp[20];
@@ -7921,7 +7943,7 @@
  	const struct timespec *tsp;
  	struct timespec ts;
  	struct tm *tm;
-@@ -712,10 +683,12 @@
+@@ -712,10 +685,12 @@
  	case SHOW_st_uid:
  		small = (sizeof(st->st_uid) == 4);
  		data = st->st_uid;
@@ -7936,7 +7958,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -725,10 +698,12 @@
+@@ -725,10 +700,12 @@
  	case SHOW_st_gid:
  		small = (sizeof(st->st_gid) == 4);
  		data = st->st_gid;
@@ -7951,7 +7973,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -736,15 +711,15 @@
+@@ -736,15 +713,15 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -7970,7 +7992,7 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
-@@ -760,7 +735,7 @@
+@@ -760,7 +737,7 @@
  			tm = localtime(&ts.tv_sec);
  		}
  		(void)setlocale(LC_TIME, "");
@@ -7979,7 +8001,7 @@
  		sdata = path;
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_FLOAT | FMTF_STRING;
-@@ -1088,7 +1063,7 @@
+@@ -1088,7 +1065,7 @@
  #define hex2nibble(c) (c <= '9' ? c - '0' : toupper(c) - 'A' + 10)
  int
  hex2byte(const char c[2]) {
