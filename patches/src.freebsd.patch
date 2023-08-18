@@ -13458,6 +13458,156 @@
  					localtime(&tclock));
  				    (void)write(STDOUT_FILENO, buf, l);
  				}
+--- src.orig/miscutils/time/time.1
++++ src.freebsd/miscutils/time/time.1
+@@ -36,7 +36,7 @@
+ .Nd time command execution
+ .Sh SYNOPSIS
+ .Nm
+-.Op Fl al
++.Op Fl a
+ .Op Fl h | Fl p
+ .Op Fl o Ar file
+ .Ar utility Op Ar argument ...
+@@ -70,10 +70,6 @@
+ Print times in a human friendly format.
+ Times are printed in minutes, hours,
+ etc.\& as appropriate.
+-.It Fl l
+-The contents of the
+-.Em rusage
+-structure are printed as well.
+ .It Fl o Ar file
+ Write the output to
+ .Ar file
+@@ -99,7 +95,7 @@
+ If
+ .Nm
+ receives a
+-.Dv SIGINFO
++.Dv SIGUSR1
+ (see the status argument for
+ .Xr stty 1 )
+ signal, the current time the given command is running will be written to the
+@@ -162,33 +158,15 @@
+ Time the
+ .Xr sleep 1
+ command and show the results in a human friendly format.
+-Show the contents of the
+-.Em rusage
+-structure too:
+ .Bd -literal -offset indent
+-$ /usr/bin/time -l -h -p sleep 5
++$ /usr/bin/time -h -p sleep 5
+ real 5.01
+ user 0.00
+ sys 0.00
+-         0  maximum resident set size
+-         0  average shared memory size
+-         0  average unshared data size
+-         0  average unshared stack size
+-        80  page reclaims
+-         0  page faults
+-         0  swaps
+-         1  block input operations
+-         0  block output operations
+-         0  messages sent
+-         0  messages received
+-         0  signals received
+-         3  voluntary context switches
+-         0  involuntary context switches
+ .Ed
+ .Sh SEE ALSO
+ .Xr builtin 1 ,
+ .Xr csh 1 ,
+-.Xr getrusage 2 ,
+ .Xr wait 2
+ .Sh STANDARDS
+ The
+--- src.orig/miscutils/time/time.c
++++ src.freebsd/miscutils/time/time.c
+@@ -43,10 +43,9 @@
+   "$FreeBSD$";
+ #endif /* not lint */
+ 
++#include <sys/cdefs.h>
+ #include <sys/types.h>
+ #include <sys/resource.h>
+-#include <sys/signal.h>
+-#include <sys/sysctl.h>
+ #include <sys/time.h>
+ #include <sys/wait.h>
+ 
+@@ -61,7 +60,6 @@
+ #include <time.h>
+ #include <unistd.h>
+ 
+-static int getstathz(void);
+ static void humantime(FILE *, long, long);
+ static void showtime(FILE *, struct timespec *, struct timespec *,
+     struct rusage *);
+@@ -76,7 +74,7 @@
+ int
+ main(int argc, char **argv)
+ {
+-	int aflag, ch, lflag, status;
++	int aflag, ch, status;
+ 	int exitonsig;
+ 	pid_t pid;
+ 	struct rlimit rl;
+@@ -88,8 +86,8 @@
+ 	(void) setlocale(LC_NUMERIC, "");
+ 	decimal_point = localeconv()->decimal_point[0];
+ 
+-	aflag = hflag = lflag = pflag = 0;
+-	while ((ch = getopt(argc, argv, "ahlo:p")) != -1)
++	aflag = hflag = pflag = 0;
++	while ((ch = getopt(argc, argv, "aho:p")) != -1)
+ 		switch((char)ch) {
+ 		case 'a':
+ 			aflag = 1;
+@@ -97,9 +95,6 @@
+ 		case 'h':
+ 			hflag = 1;
+ 			break;
+-		case 'l':
+-			lflag = 1;
+-			break;
+ 		case 'o':
+ 			ofn = optarg;
+ 			break;
+@@ -153,6 +148,7 @@
+ 		warnx("command terminated abnormally");
+ 	exitonsig = WIFSIGNALED(status) ? WTERMSIG(status) : 0;
+ 	showtime(out, &before_ts, &after, &ru);
++#if 0
+ 	if (lflag) {
+ 		int hz = getstathz();
+ 		u_long ticks;
+@@ -196,6 +192,7 @@
+ 		fprintf(out, "%10ld  %s\n",
+ 			ru.ru_nivcsw, "involuntary context switches");
+ 	}
++#endif
+ 	/*
+ 	 * If the child has exited on a signal, exit on the same
+ 	 * signal, too, in order to reproduce the child's exit status.
+@@ -222,6 +219,7 @@
+ 	exit(1);
+ }
+ 
++#if 0
+ /*
+  * Return the frequency of the kernel's statistics clock.
+  */
+@@ -239,6 +237,7 @@
+ 		err(1, "sysctl kern.clockrate");
+ 	return clockrate.stathz;
+ }
++#endif
+ 
+ static void
+ humantime(FILE *out, long sec, long centisec)
 --- src.orig/miscutils/wall/ttymsg.c
 +++ src.freebsd/miscutils/wall/ttymsg.c
 @@ -37,6 +37,7 @@
