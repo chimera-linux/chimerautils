@@ -13546,7 +13546,7 @@
  static void humantime(FILE *, long, long);
  static void showtime(FILE *, struct timespec *, struct timespec *,
      struct rusage *);
-@@ -76,7 +74,7 @@
+@@ -76,20 +74,21 @@
  int
  main(int argc, char **argv)
  {
@@ -13555,7 +13555,12 @@
  	int exitonsig;
  	pid_t pid;
  	struct rlimit rl;
-@@ -88,8 +86,8 @@
+ 	struct rusage ru;
+ 	struct timespec after;
++	struct sigaction sa = { .sa_handler = siginfo, .sa_flags = 0 };
+ 	char *ofn = NULL;
+ 	FILE *out = stderr;
+ 
  	(void) setlocale(LC_NUMERIC, "");
  	decimal_point = localeconv()->decimal_point[0];
  
@@ -13566,7 +13571,7 @@
  		switch((char)ch) {
  		case 'a':
  			aflag = 1;
-@@ -97,9 +95,6 @@
+@@ -97,9 +96,6 @@
  		case 'h':
  			hflag = 1;
  			break;
@@ -13576,7 +13581,18 @@
  		case 'o':
  			ofn = optarg;
  			break;
-@@ -153,6 +148,7 @@
+@@ -136,8 +132,8 @@
+ 	(void)signal(SIGINT, SIG_IGN);
+ 	(void)signal(SIGQUIT, SIG_IGN);
+ 	siginfo_recvd = 0;
+-	(void)signal(SIGINFO, siginfo);
+-	(void)siginterrupt(SIGINFO, 1);
++	sa.sa_handler = siginfo;
++	(void)sigaction(SIGINFO, &sa, NULL);
+ 	while (wait4(pid, &status, 0, &ru) != pid) {
+ 		if (siginfo_recvd) {
+ 			siginfo_recvd = 0;
+@@ -153,6 +149,7 @@
  		warnx("command terminated abnormally");
  	exitonsig = WIFSIGNALED(status) ? WTERMSIG(status) : 0;
  	showtime(out, &before_ts, &after, &ru);
@@ -13584,7 +13600,7 @@
  	if (lflag) {
  		int hz = getstathz();
  		u_long ticks;
-@@ -196,6 +192,7 @@
+@@ -196,6 +193,7 @@
  		fprintf(out, "%10ld  %s\n",
  			ru.ru_nivcsw, "involuntary context switches");
  	}
@@ -13592,7 +13608,7 @@
  	/*
  	 * If the child has exited on a signal, exit on the same
  	 * signal, too, in order to reproduce the child's exit status.
-@@ -222,6 +219,7 @@
+@@ -222,6 +220,7 @@
  	exit(1);
  }
  
@@ -13600,7 +13616,7 @@
  /*
   * Return the frequency of the kernel's statistics clock.
   */
-@@ -239,6 +237,7 @@
+@@ -239,6 +238,7 @@
  		err(1, "sysctl kern.clockrate");
  	return clockrate.stathz;
  }

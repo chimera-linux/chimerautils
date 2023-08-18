@@ -80,6 +80,7 @@ main(int argc, char **argv)
 	struct rlimit rl;
 	struct rusage ru;
 	struct timespec after;
+	struct sigaction sa = { .sa_handler = siginfo, .sa_flags = 0 };
 	char *ofn = NULL;
 	FILE *out = stderr;
 
@@ -131,8 +132,8 @@ main(int argc, char **argv)
 	(void)signal(SIGINT, SIG_IGN);
 	(void)signal(SIGQUIT, SIG_IGN);
 	siginfo_recvd = 0;
-	(void)signal(SIGINFO, siginfo);
-	(void)siginterrupt(SIGINFO, 1);
+	sa.sa_handler = siginfo;
+	(void)sigaction(SIGINFO, &sa, NULL);
 	while (wait4(pid, &status, 0, &ru) != pid) {
 		if (siginfo_recvd) {
 			siginfo_recvd = 0;
