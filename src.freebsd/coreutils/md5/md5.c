@@ -400,7 +400,7 @@ main(int argc, char *argv[])
 	char   *p, *string = NULL;
 	char	buf[HEX_DIGEST_LENGTH];
 	size_t	len;
-	struct chksumrec	*rec;
+	struct chksumrec	*rec = NULL;
 
 	if ((progname = strrchr(argv[0], '/')) == NULL)
 		progname = argv[0];
@@ -684,7 +684,7 @@ MDInput(const Algorithm_t *alg, FILE *f, char *buf, bool tee)
 	DIGEST_CTX context;
 	char *end, *p, *q;
 	size_t len;
-	int bits;
+	int bits = 0;
 	uint8_t byte;
 	bool cr = false;
 

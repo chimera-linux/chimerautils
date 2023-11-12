@@ -4625,6 +4625,24 @@
  
  struct chksumrec {
  	char	*filename;
+@@ -393,7 +400,7 @@
+ 	char   *p, *string = NULL;
+ 	char	buf[HEX_DIGEST_LENGTH];
+ 	size_t	len;
+-	struct chksumrec	*rec;
++	struct chksumrec	*rec = NULL;
+ 
+ 	if ((progname = strrchr(argv[0], '/')) == NULL)
+ 		progname = argv[0];
+@@ -677,7 +684,7 @@
+ 	DIGEST_CTX context;
+ 	char *end, *p, *q;
+ 	size_t len;
+-	int bits;
++	int bits = 0;
+ 	uint8_t byte;
+ 	bool cr = false;
+ 
 @@ -942,6 +949,7 @@
  	"dd095fc859b336c30a52548b3dc59fcc0d1be8616ebcf3368fad23107db2d736"
  };
