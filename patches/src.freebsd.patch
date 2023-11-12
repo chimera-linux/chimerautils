@@ -9364,7 +9364,7 @@
   *	Replace occurrences of {} in s1 with s2 and return the result string.
 --- src.orig/findutils/locate/bigram/locate.bigram.c
 +++ src.freebsd/findutils/locate/bigram/locate.bigram.c
-@@ -47,7 +47,7 @@
+@@ -47,11 +47,12 @@
  #endif /* not lint */
  #endif
  
@@ -9373,7 +9373,12 @@
  #include <capsicum_helpers.h>
  #include <err.h>
  #include <stdio.h>
-@@ -68,7 +68,7 @@
+ #include <stdlib.h>
++#include <limits.h>
+ #include "locate.h"
+ 
+ u_char buf1[LOCATE_PATH_MAX] = " ";
+@@ -68,7 +69,7 @@
  	if (caph_limit_stdio() < 0 || caph_enter() < 0)
  		err(1, "capsicum");
  

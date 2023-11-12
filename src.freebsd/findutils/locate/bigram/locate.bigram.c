@@ -52,6 +52,7 @@ static char sccsid[] = "@(#)locate.bigram.c	8.1 (Berkeley) 6/6/93";
 #include <err.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 #include "locate.h"
 
 u_char buf1[LOCATE_PATH_MAX] = " ";
