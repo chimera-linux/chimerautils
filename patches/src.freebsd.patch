@@ -618,6 +618,17 @@
  {
  
  	stack_dup(&bmachine.stack);
+--- src.orig/bintrans/qp.c
++++ src.freebsd/bintrans/qp.c
+@@ -90,7 +90,7 @@
+ static void
+ encode_quoted_printable(const char *body, FILE *fpo)
+ {
+-	char prev;
++	char prev = 0;
+ 	const char *end = body + strlen(body);
+ 	size_t linelen = 0;
+ 
 --- src.orig/bintrans/uudecode.c
 +++ src.freebsd/bintrans/uudecode.c
 @@ -58,6 +58,7 @@
