@@ -68,6 +68,10 @@ static char sccsid[] = "@(#)cat.c	8.2 (Berkeley) 4/27/95";
 #include <wchar.h>
 #include <wctype.h>
 
+#ifndef BOOTSTRAP_CAT
+#include <sys/sendfile.h>
+#endif
+
 #include <libcasper.h>
 #include <casper/cap_fileargs.h>
 #include <casper/cap_net.h>
@@ -99,6 +103,9 @@ static int udom_open(const char *path, int flags);
 
 /* Maximum buffer size in bytes - do not allow it to grow larger than this. */
 #define	BUFSIZE_MAX (2 * 1024 * 1024)
+
+/* Maximum length to send when using sendfile */
+#define SPLICEBUF_MAX (16 * 1024)
 
 /*
  * Small (default) buffer size in bytes. It's inefficient for this to be
@@ -389,6 +396,18 @@ ilseq:
 }
 
 static ssize_t
+spliced_copy(int rfd, int wfd)
+{
+	ssize_t ret = 1;
+	off_t off = 0;
+
+	while (ret > 0)
+		ret = sendfile(wfd, rfd, &off, SPLICEBUF_MAX);
+
+	return (ret);
+}
+
+static ssize_t
 in_kernel_copy(int rfd)
 {
 	int wfd;
@@ -399,6 +418,9 @@ in_kernel_copy(int rfd)
 
 	while (ret > 0)
 		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);
+
+	if (ret < 0)
+		ret = spliced_copy(rfd, wfd);
 
 	return (ret);
 }

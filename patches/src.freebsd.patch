@@ -1813,7 +1813,28 @@
  	return (NULL);
 --- src.orig/coreutils/cat/cat.c
 +++ src.freebsd/coreutils/cat/cat.c
-@@ -351,7 +351,6 @@
+@@ -68,6 +68,10 @@
+ #include <wchar.h>
+ #include <wctype.h>
+ 
++#ifndef BOOTSTRAP_CAT
++#include <sys/sendfile.h>
++#endif
++
+ #include <libcasper.h>
+ #include <casper/cap_fileargs.h>
+ #include <casper/cap_net.h>
+@@ -100,6 +104,9 @@
+ /* Maximum buffer size in bytes - do not allow it to grow larger than this. */
+ #define	BUFSIZE_MAX (2 * 1024 * 1024)
+ 
++/* Maximum length to send when using sendfile */
++#define SPLICEBUF_MAX (16 * 1024)
++
+ /*
+  * Small (default) buffer size in bytes. It's inefficient for this to be
+  * smaller than MAXPHYS.
+@@ -351,7 +358,6 @@
  				if (ferror(fp) && errno == EILSEQ) {
  					clearerr(fp);
  					/* Resync attempt. */
@@ -1821,6 +1842,35 @@
  					if ((ch = getc(fp)) == EOF)
  						break;
  					wch = ch;
+@@ -390,6 +396,18 @@
+ }
+ 
+ static ssize_t
++spliced_copy(int rfd, int wfd)
++{
++	ssize_t ret = 1;
++	off_t off = 0;
++
++	while (ret > 0)
++		ret = sendfile(wfd, rfd, &off, SPLICEBUF_MAX);
++
++	return (ret);
++}
++
++static ssize_t
+ in_kernel_copy(int rfd)
+ {
+ 	int wfd;
+@@ -400,6 +418,9 @@
+ 
+ 	while (ret > 0)
+ 		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);
++
++	if (ret < 0)
++		ret = spliced_copy(rfd, wfd);
+ 
+ 	return (ret);
+ }
 --- src.orig/coreutils/chmod/chmod.1
 +++ src.freebsd/coreutils/chmod/chmod.1
 @@ -39,7 +39,7 @@
