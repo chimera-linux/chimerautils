@@ -38,8 +38,6 @@ static char sccsid[] = "@(#)options.c	8.2 (Berkeley) 5/4/95";
 #endif
 #endif /* not lint */
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
@@ -112,7 +110,7 @@ procargs(int argc, char **argv)
 	arg0 = argv[0];
 	if (sflag == 0 && minusc == NULL) {
 		scriptname = *argptr++;
-		setinputfile(scriptname, 0);
+		setinputfile(scriptname, 0, -1 /* verify */);
 		commandname = arg0 = scriptname;
 	}
 	/* POSIX 1003.2: first arg after -c cmd is $0, remainder $1... */

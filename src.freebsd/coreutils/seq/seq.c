@@ -31,8 +31,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <ctype.h>
 #include <err.h>
 #include <errno.h>
@@ -63,8 +61,7 @@ static char integer_format[] = { "%.0f" };	/* for integer printing */
 /* largest representable integer in a double */
 static const double abs_int_max = (double)(1ULL << DBL_MANT_DIG);
 
-static const struct option long_opts[] =
-{
+static const struct option long_opts[] = {
 	{"format",	required_argument,	NULL, 'f'},
 	{"separator",	required_argument,	NULL, 's'},
 	{"terminator",	required_argument,	NULL, 't'},
@@ -112,9 +109,9 @@ main(int argc, char *argv[])
 		decimal_point = locale->decimal_point;
 
 	/*
-         * Process options, but handle negative numbers separately
-         * least they trip up getopt(3).
-         */
+	 * Process options, but handle negative numbers separately
+	 * least they trip up getopt(3).
+	 */
 	while ((optind < argc) && !numeric(argv[optind]) &&
 	    (c = getopt_long(argc, argv, "+f:hs:t:w", long_opts, NULL)) != -1) {
 
@@ -162,7 +159,7 @@ main(int argc, char *argv[])
 		incr = e_atof(argv[1]);
 		/* Plan 9/GNU don't do zero */
 		if (incr == 0.0)
-			errx(1, "zero %screment", (first < last)? "in" : "de");
+			errx(1, "zero %screment", (first < last) ? "in" : "de");
 	}
 
 	/* default is one for Plan 9/GNU work alike */
@@ -182,7 +179,7 @@ main(int argc, char *argv[])
 		if (!valid_format(fmt))
 			errx(1, "invalid format string");
 		/*
-	         * XXX to be bug for bug compatible with Plan 9 add a
+		 * XXX to be bug for bug compatible with Plan 9 add a
 		 * newline if none found at the end of the format string.
 		 */
 	} else
@@ -311,18 +308,18 @@ valid_format(const char *fmt)
 
 		/* conversion */
 		switch (*fmt) {
-		    case 'A':
-		    case 'a':
-		    case 'E':
-		    case 'e':
-		    case 'F':
-		    case 'f':
-		    case 'G':
-		    case 'g':
+		case 'A':
+		case 'a':
+		case 'E':
+		case 'e':
+		case 'F':
+		case 'f':
+		case 'G':
+		case 'g':
 			/* floating point formats are accepted */
 			conversions++;
 			break;
-		    default:
+		default:
 			/* anything else is not */
 			return 0;
 		}

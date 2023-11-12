@@ -31,7 +31,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 #ifndef lint
 static const char copyright[] =
 "@(#) Copyright (c) 1980, 1992, 1993\n\
@@ -105,7 +104,7 @@ static void finish(void);
 static void record(FILE *, char *, size_t, int);
 static void consume(FILE *, off_t, char *, int);
 static void playback(FILE *) __dead2;
-static void usage(void);
+static void usage(void) __dead2;
 
 int
 main(int argc, char *argv[])

@@ -1,5 +1,5 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 2002 Tim J. Robbins.
  * All rights reserved.
@@ -27,8 +27,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/ioctl.h>
@@ -217,6 +215,8 @@ ttystat(char *line)
 	struct stat sb;
 	char ttybuf[MAXPATHLEN];
 
+	if (line == NULL)
+		return (0);
 	(void)snprintf(ttybuf, sizeof(ttybuf), "%s%s", _PATH_DEV, line);
 	if (stat(ttybuf, &sb) == 0) {
 		return (0);
@@ -230,9 +230,10 @@ process_utmp(void)
 	struct utmpx *utx;
 
 	while ((utx = getutxent()) != NULL) {
-		if (((aflag || !bflag) && utx->ut_type == USER_PROCESS) ||
-		    (bflag && utx->ut_type == BOOT_TIME))
+		if ((aflag || !bflag) && utx->ut_type == USER_PROCESS) {
 			if (ttystat(utx->ut_line) == 0)
+				row(utx);
+		} else if (bflag && utx->ut_type == BOOT_TIME)
 				row(utx);
 	}
 }

@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-3-Clause
  *
- * Copyright (c) 1995 Wolfram Schneider <wosch@FreeBSD.org>. Berlin.
+ * Copyright (c) 1995-2022 Wolfram Schneider <wosch@FreeBSD.org>
  * Copyright (c) 1989, 1993
  *	The Regents of the University of California.  All rights reserved.
  *
@@ -31,8 +31,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- * $FreeBSD$
  */
 
 
@@ -42,18 +40,19 @@
 void 
 statistic (FILE *fp, char *path_fcodes)
 {
-	register int lines, chars, size, big, zwerg;
-	register u_char *p, *s;
-	register int c;
-	int count, umlaut;
-	u_char bigram1[NBG], bigram2[NBG], path[MAXPATHLEN];
+	long lines, chars, size, size_nbg, big, zwerg, umlaut;
+	u_char *p, *s;
+	int c;
+	int count, longest_path;
+	int error = 0;
+	u_char bigram1[NBG], bigram2[NBG], path[LOCATE_PATH_MAX];
 
 	for (c = 0, p = bigram1, s = bigram2; c < NBG; c++) {
 		p[c] = check_bigram_char(getc(fp));
 		s[c] = check_bigram_char(getc(fp));
 	}
 
-	lines = chars = big = zwerg = umlaut = 0;
+	lines = chars = big = zwerg = umlaut = longest_path = 0;
 	size = NBG + NBG;
 
 	for (c = getc(fp), count = 0; c != EOF; size++) {
@@ -64,6 +63,13 @@ statistic (FILE *fp, char *path_fcodes)
 		} else
 			count += c - OFFSET;
 		
+		if (count < 0 || count >= LOCATE_PATH_MAX) {
+			/* stop on error and display the statstics anyway */
+			warnx("corrupted database: %s %d", path_fcodes, count);
+			error = 1;
+			break;
+		}
+
 		for (p = path + count; (c = getc(fp)) > SWITCH; size++)
 			if (c < PARITY) {
 				if (c == UMLAUT) {
@@ -81,21 +87,29 @@ statistic (FILE *fp, char *path_fcodes)
 		p++;
 		lines++;
 		chars += (p - path);
+		if ((p - path) > longest_path)
+			longest_path = p - path;
 	}
 
-	(void)printf("\nDatabase: %s\n", path_fcodes);
-	(void)printf("Compression: Front: %2.2f%%, ",
-		     (size + big - (2 * NBG)) / (chars / (float)100));
-	(void)printf("Bigram: %2.2f%%, ", (size - big) / (size / (float)100));
-	(void)printf("Total: %2.2f%%\n", 
-		     (size - (2 * NBG)) / (chars / (float)100));
-	(void)printf("Filenames: %d, ", lines);
-	(void)printf("Characters: %d, ", chars);
-	(void)printf("Database size: %d\n", size);
-	(void)printf("Bigram characters: %d, ", big);
-	(void)printf("Integers: %d, ", zwerg);
-	(void)printf("8-Bit characters: %d\n", umlaut);
+	/* size without bigram db */
+	size_nbg = size - (2 * NBG); 
 
+	(void)printf("\nDatabase: %s\n", path_fcodes);
+	(void)printf("Compression: Front: %2.2f%%, ", chars > 0 ?  (size_nbg + big) / (chars / (float)100) : 0);
+	(void)printf("Bigram: %2.2f%%, ", big > 0 ? (size_nbg - big) / (size_nbg / (float)100) : 0);
+	/* incl. bigram db overhead */
+	(void)printf("Total: %2.2f%%\n", chars > 0 ?  size / (chars / (float)100) : 0);
+	(void)printf("Filenames: %ld, ", lines);
+	(void)printf("Characters: %ld, ", chars);
+	(void)printf("Database size: %ld\n", size);
+	(void)printf("Bigram characters: %ld, ", big);
+	(void)printf("Integers: %ld, ", zwerg);
+	(void)printf("8-Bit characters: %ld\n", umlaut);
+	printf("Longest path: %d\n", longest_path > 0 ? longest_path - 1 : 0);
+
+	/* non zero exit on corrupt database */
+	if (error)
+		exit(error);
 }
 #endif /* _LOCATE_STATISTIC_ */
 
@@ -110,22 +124,29 @@ fastfind_mmap_icase
 #else
 fastfind_mmap
 #endif /* FF_ICASE */
-(char *pathpart, caddr_t paddr, int len, char *database)
+(char *pathpart, caddr_t paddr, off_t len, char *database)
+
+
 #else /* MMAP */
+
+
 #ifdef FF_ICASE
 fastfind_icase
 #else
 fastfind
 #endif /* FF_ICASE */
+
 (FILE *fp, char *pathpart, char *database)
+
+
 #endif /* MMAP */
 
 {
-	register u_char *p, *s, *patend, *q, *foundchar;
-	register int c, cc;
+	u_char *p, *s, *patend, *q, *foundchar;
+	int c, cc;
 	int count, found, globflag;
 	u_char *cutoff;
-	u_char bigram1[NBG], bigram2[NBG], path[MAXPATHLEN];
+	u_char bigram1[NBG], bigram2[NBG], path[LOCATE_PATH_MAX + 2];
 
 #ifdef FF_ICASE
 	/* use a lookup table for case insensitive search */
@@ -176,7 +197,9 @@ fastfind
 	foundchar = 0;
 
 #ifdef FF_MMAP
-	c = (u_char)*paddr++; len--;
+	c = (u_char)*paddr++;
+	len--;
+
 	for (; len > 0; ) {
 #else
 	c = getc(fp);
@@ -186,8 +209,12 @@ fastfind
 		/* go forward or backward */
 		if (c == SWITCH) { /* big step, an integer */
 #ifdef FF_MMAP
+			if (len < (off_t)sizeof(int))
+				errx(1, "corrupted database: %s", database);
+
 			count += getwm(paddr) - OFFSET;
-			len -= INTSIZE; paddr += INTSIZE;
+			len -= INTSIZE;
+			paddr += INTSIZE;
 #else
 			count +=  getwf(fp) - OFFSET;
 #endif /* FF_MMAP */
@@ -195,8 +222,9 @@ fastfind
 			count += c - OFFSET;
 		}
 
-		if (count < 0 || count > MAXPATHLEN)
-			errx(1, "corrupted database: %s", database);
+		if (count < 0 || count >= LOCATE_PATH_MAX)
+			errx(1, "corrupted database: %s %d", database, count);
+
 		/* overlay old path */
 		p = path + count;
 		foundchar = p - 1;
@@ -255,6 +283,10 @@ fastfind
 				*p++ = bigram1[c];
 				*p++ = bigram2[c];
 			}
+
+			if (p - path >= LOCATE_PATH_MAX) 
+				errx(1, "corrupted database: %s %td", database, p - path);
+
 		}
 		
 		if (found) {                     /* previous line matched */
@@ -299,7 +331,7 @@ fastfind
 							if (f_limit >= (int)counter)
 								(void)printf("%s%c",path,separator);
 							else 
-								errx(0, "[show only %d lines]", counter - 1);
+								errx(0, "[show only %ld lines]", counter - 1);
 						} else
 							(void)printf("%s%c",path,separator);
 					}

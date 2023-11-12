@@ -29,7 +29,6 @@
  * SUCH DAMAGE.
  *
  *	@(#)extern.h	8.2 (Berkeley) 4/1/94
- * $FreeBSD$
  */
 
 typedef struct {
@@ -52,5 +51,5 @@ int	preserve_dir_acls(struct stat *, char *, char *);
 int	preserve_fd_acls(int, int);
 int	preserve_fd_xattrs(int, int);
 int	preserve_dir_xattrs(const char *, const char *);
-void	usage(void);
+void	usage(void) __dead2;
 __END_DECLS

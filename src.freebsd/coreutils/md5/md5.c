@@ -17,11 +17,9 @@
  *  documentation and/or software.
  */
 
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include "config-compat.h"
 
+#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/resource.h>
 #include <sys/stat.h>
@@ -402,7 +400,7 @@ main(int argc, char *argv[])
 	char   *p, *string = NULL;
 	char	buf[HEX_DIGEST_LENGTH];
 	size_t	len;
-	struct chksumrec	*rec = NULL;
+	struct chksumrec	*rec;
 
 	if ((progname = strrchr(argv[0], '/')) == NULL)
 		progname = argv[0];
@@ -628,7 +626,7 @@ main(int argc, char *argv[])
 			 */
 			if (*(argv + 1) == NULL) {
 #ifdef HAVE_CAPSICUM
-				cap_rights_init(&rights, CAP_READ);
+				cap_rights_init(&rights, CAP_READ, CAP_FSTAT);
 				if (caph_rights_limit(fileno(f), &rights) < 0 ||
 				    caph_enter() < 0)
 					err(1, "capsicum");
@@ -682,11 +680,11 @@ main(int argc, char *argv[])
 static char *
 MDInput(const Algorithm_t *alg, FILE *f, char *buf, bool tee)
 {
-	unsigned char block[4096];
+	char block[4096];
 	DIGEST_CTX context;
-	unsigned char *end, *p, *q;
+	char *end, *p, *q;
 	size_t len;
-	int bits = 0;
+	int bits;
 	uint8_t byte;
 	bool cr = false;
 
@@ -707,7 +705,7 @@ MDInput(const Algorithm_t *alg, FILE *f, char *buf, bool tee)
 						p++;
 					if (tee && putchar('\n') == EOF)
 						err(1, "stdout");
-					alg->Update(&context, (unsigned char *)"\n", 1);
+					alg->Update(&context, "\n", 1);
 					cr = false;
 				}
 				for (q = p; q < end && *q != '\r'; q++)
@@ -750,7 +748,7 @@ MDInput(const Algorithm_t *alg, FILE *f, char *buf, bool tee)
 	if (cr) {
 		if (tee && putchar('\n') == EOF)
 			err(1, "stdout");
-		alg->Update(&context, (unsigned char *)"\n", 1);
+		alg->Update(&context, "\n", 1);
 	}
 	if (input_mode == input_bits && bits != 0)
 		errx(1, "input length was not a multiple of 8");
@@ -1038,6 +1036,7 @@ static void
 version(void)
 {
 	if (mode == mode_gnu)
-		printf("%s (FreeBSD) %s\n", progname, PROJECT_VERSION);
+		printf("%s (FreeBSD) ", progname);
+	printf("%s\n", PROJECT_VERSION);
 	exit(0);
 }

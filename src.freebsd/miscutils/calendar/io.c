@@ -42,8 +42,6 @@ static char sccsid[] = "@(#)calendar.c  8.3 (Berkeley) 3/25/94";
 #endif
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -144,6 +142,7 @@ cal_fopen(const char *file)
 	}
 
 	warnx("can't open calendar file \"%s\"", file);
+
 	return (NULL);
 }
 

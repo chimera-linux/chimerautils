@@ -35,8 +35,6 @@ static char sccsid[] = "@(#)display.c	8.1 (Berkeley) 6/6/93";
 #endif
 #endif /* not lint */
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/param.h>
 #include <sys/capsicum.h>
 #include <sys/ioctl.h>
@@ -123,8 +121,8 @@ print(PR *pr, u_char *bp)
 	   double f8;
 	    float f4;
 	  int16_t s2;
-	   int8_t s8;
 	  int32_t s4;
+	  int64_t s8;
 	u_int16_t u2;
 	u_int32_t u4;
 	u_int64_t u8;
@@ -263,7 +261,7 @@ get(void)
 		 * block and set the end flag.
 		 */
 		if (!length || (ateof && !next((char **)NULL))) {
-			if (odmode && address < skip)
+			if (odmode && skip > 0)
 				errx(1, "cannot skip past end of input");
 			if (need == blocksize)
 				return((u_char *)NULL);
@@ -271,11 +269,13 @@ get(void)
 			 * XXX bcmp() is not quite right in the presence
 			 * of multibyte characters.
 			 */
-			if (vflag != ALL && 
+			if (need == 0 && vflag != ALL &&
 			    valid_save && 
 			    bcmp(curp, savp, nread) == 0) {
-				if (vflag != DUP)
+				if (vflag != DUP) {
 					(void)printf("*\n");
+					(void)fflush(stdout);
+				}
 				return((u_char *)NULL);
 			}
 			bzero((char *)curp + nread, need);
@@ -305,8 +305,10 @@ get(void)
 					vflag = WAIT;
 				return(curp);
 			}
-			if (vflag == WAIT)
+			if (vflag == WAIT) {
 				(void)printf("*\n");
+				(void)fflush(stdout);
+			}
 			vflag = DUP;
 			address += blocksize;
 			need = blocksize;

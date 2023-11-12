@@ -12,8 +12,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/types.h>
 
 #include <stdio.h>
@@ -95,7 +93,7 @@ static const uint32_t crctab[256] = {
 	0xb40bbe37, 0xc30c8ea1, 0x5a05df1b, 0x2d02ef8d,
 };
 
-uint32_t crc32_total = 0;
+static uint32_t crc32_total = 0;
 
 int
 crc32(int fd, uint32_t *cval, off_t *clen)

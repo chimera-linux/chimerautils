@@ -24,8 +24,6 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\" $FreeBSD$
-.\"
 .Dd November 24, 2020
 .Dt FETCH 3
 .Os
@@ -457,8 +455,7 @@ the environment variable
 .Ev SSL_CLIENT_KEY_FILE
 can be set to point to the key file.
 In case the key uses a password, the user will be prompted on standard
-input (see
-.Xr PEM 3 ) .
+input.
 .Pp
 By default
 .Nm libfetch

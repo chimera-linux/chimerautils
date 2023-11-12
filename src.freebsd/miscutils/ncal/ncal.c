@@ -1,5 +1,5 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 1997 Wolfgang Helbig
  * All rights reserved.
@@ -27,8 +27,6 @@
  */
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <calendar.h>
 #include <ctype.h>
 #include <err.h>
@@ -94,7 +92,7 @@ static struct djswitch {
 	{"IS", "Iceland",       {1700, 11, 16}},
 	{"IT", "Italy",         {1582, 10,  4}},
 	{"JP", "Japan",         {1918, 12, 18}},
-	{"LI", "Lithuania",     {1918,  2,  1}},
+	{"LT", "Lithuania",     {1918,  2,  1}},
 	{"LU", "Luxembourg",    {1582, 12, 14}},
 	{"LV", "Latvia",        {1918,  2,  1}},
 	{"NL", "Netherlands",   {1582, 12, 14}},
@@ -497,6 +495,8 @@ main(int argc, char *argv[])
 			monthrangeb(y, m, flag_julian_day, before, after);
 		else
 			monthranger(y, m, flag_julian_day, before, after);
+	if (ferror(stdout) != 0 || fflush(stdout) != 0)
+		err(1, "stdout");
 	return (0);
 }
 

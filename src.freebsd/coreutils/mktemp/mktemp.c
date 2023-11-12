@@ -1,5 +1,5 @@
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (c) 1994, 1995, 1996, 1998 Peter Wemm <peter@netplex.com.au>
  * All rights reserved.
@@ -36,6 +36,7 @@
  * more like the OpenBSD version - which was first to publish the interface.
  */
 
+#include <sys/cdefs.h>
 #include <err.h>
 #include <getopt.h>
 #include <paths.h>
@@ -50,7 +51,7 @@ static const char rcsid[] =
 	"$FreeBSD$";
 #endif /* not lint */
 
-static void usage(void);
+static void usage(void) __dead2;
 
 static const struct option long_opts[] = {
 	{"directory",	no_argument,	NULL,	'd'},
@@ -141,9 +142,9 @@ main(int argc, char **argv)
 			tmpdir = _PATH_TMP;
 		len = strlen(tmpdir);
 		if (len > 0 && tmpdir[len - 1] == '/')
-			asprintf(&name, "%s%s.XXXXXXXX", tmpdir, prefix);
+			asprintf(&name, "%s%s.XXXXXXXXXX", tmpdir, prefix);
 		else
-			asprintf(&name, "%s/%s.XXXXXXXX", tmpdir, prefix);
+			asprintf(&name, "%s/%s.XXXXXXXXXX", tmpdir, prefix);
 		/* if this fails, the program is in big trouble already */
 		if (name == NULL) {
 			if (qflag)

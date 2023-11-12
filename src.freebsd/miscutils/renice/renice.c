@@ -42,8 +42,6 @@ static char sccsid[] = "@(#)renice.c	8.1 (Berkeley) 6/9/93";
 #endif
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/types.h>
 #include <sys/time.h>
 #include <sys/resource.h>
@@ -94,7 +92,7 @@ main(int argc, char *argv[])
 			}
 			if (strcmp(*argv, "-n") == 0) {
 				/* may occur only once, prior to priority */
-				if (haveprio || incr)
+				if (haveprio || incr || argc < 2)
 					usage();
 				incr = true;
 				(void)argc--, argv++;

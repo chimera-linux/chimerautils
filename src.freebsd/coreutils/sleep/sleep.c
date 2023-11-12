@@ -39,8 +39,6 @@ static char sccsid[] = "@(#)sleep.c	8.3 (Berkeley) 4/2/94";
 #endif /* not lint */
 #endif
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <capsicum_helpers.h>
 #include <err.h>
 #include <errno.h>
@@ -50,7 +48,7 @@ __FBSDID("$FreeBSD$");
 #include <stdlib.h>
 #include <time.h>
 
-static void usage(void);
+static void usage(void) __dead2;
 
 static volatile sig_atomic_t report_requested;
 static void
@@ -64,24 +62,48 @@ int
 main(int argc, char *argv[])
 {
 	struct timespec time_to_sleep;
-	double d;
+	double d, seconds;
 	time_t original;
+	char unit;
 	char buf[2];
+	int i, matches;
 
 	if (caph_limit_stdio() < 0 || caph_enter() < 0)
 		err(1, "capsicum");
 
-	if (argc != 2)
+	if (argc < 2)
 		usage();
 
-	if (sscanf(argv[1], "%lf%1s", &d, buf) != 1)
+	seconds = 0;
+	for (i = 1; i < argc; i++) {
+		matches = sscanf(argv[i], "%lf%c%1s", &d, &unit, buf);
+		if (matches == 2)
+			switch(unit) {
+			case 'd':
+				d *= 24;
+				/* FALLTHROUGH */
+			case 'h':
+				d *= 60;
+				/* FALLTHROUGH */
+			case 'm':
+				d *= 60;
+				/* FALLTHROUGH */
+			case 's':
+				break;
+			default:
+				usage();
+			}
+		else
+			if (matches != 1)
+				usage();
+		seconds += d;
+	}
+	if (seconds > INT_MAX)
 		usage();
-	if (d > INT_MAX)
-		usage();
-	if (d <= 0)
+	if (seconds <= 0)
 		return (0);
-	original = time_to_sleep.tv_sec = (time_t)d;
-	time_to_sleep.tv_nsec = 1e9 * (d - time_to_sleep.tv_sec);
+	original = time_to_sleep.tv_sec = (time_t)seconds;
+	time_to_sleep.tv_nsec = 1e9 * (seconds - time_to_sleep.tv_sec);
 
 	signal(SIGINFO, report_request);
 
@@ -106,6 +128,8 @@ static void
 usage(void)
 {
 
-	fprintf(stderr, "usage: sleep seconds\n");
+	fprintf(stderr, "usage: sleep number[unit] ...\n");
+	fprintf(stderr, "Unit can be 's' (seconds, the default), "
+			"m (minutes), h (hours), or d (days).\n");
 	exit(1);
 }

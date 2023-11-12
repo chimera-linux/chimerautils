@@ -31,6 +31,7 @@ cd ${TMPDIR}
 if [ -z "$SRCTAR" ]; then
     SRCTAR="src.txz"
     curl -L --retry 3 --ftp-pasv -O ${SRC} || fail_exit
+    echo "$SHA256 '$SRC'" | sha256sum --quiet --check - || fail_exit
 fi
 xz -dc "$SRCTAR" | tar -xf -
 
@@ -220,6 +221,7 @@ done
 # equivalents of standalone projects
 copy_cmd bin/ed
 copy_cmd bin/sh
+copy_cmd usr.bin/bintrans
 copy_cmd usr.bin/compress
 copy_cmd usr.bin/fetch
 copy_cmd usr.bin/grep
@@ -229,7 +231,6 @@ copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
 copy_cmd usr.bin/shar
 copy_cmd usr.bin/tip
-copy_cmd usr.bin/uuencode "" bintrans
 copy_cmd usr.bin/which
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk
@@ -238,14 +239,6 @@ copy_cmd contrib/vis
 copy_cmd contrib/unvis
 copy_cmd lib/libmp
 copy_cmd lib/libfetch
-
-# merge uudecode into bintrans to match newer freebsd version
-cp -p usr/src/usr.bin/uudecode/uudecode.c ${CWD}/src.orig/bintrans
-cp -p usr/src/usr.bin/uudecode/uudecode.c ${CWD}/src.freebsd/bintrans
-mv ${CWD}/src.orig/bintrans/uuencode.1 ${CWD}/src.orig/bintrans/bintrans.1
-mv ${CWD}/src.freebsd/bintrans/uuencode.1 ${CWD}/src.freebsd/bintrans/bintrans.1
-rm -f ${CWD}/src.freebsd/bintrans/bintrans.c
-rm -f ${CWD}/src.freebsd/bintrans/qp.c
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
@@ -341,6 +334,10 @@ rm -rf ${CWD}/src.freebsd/telnet/telnetd
 # remove our own scripts before patching
 rm -f ${CWD}/src.freebsd/nvi/*.sh
 rm -f ${CWD}/src.freebsd/libfetch/*.sh
+
+# meh
+rm -rf ${CWD}/src.orig/awk/testdir
+rm -rf ${CWD}/src.freebsd/awk/testdir
 
 #####################
 # APPLY ANY PATCHES #

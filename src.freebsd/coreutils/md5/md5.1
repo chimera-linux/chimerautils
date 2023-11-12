@@ -1,5 +1,4 @@
-.\" $FreeBSD$
-.Dd April 12, 2023
+.Dd May 10, 2023
 .Dt MD5 1
 .Os
 .Sh NAME
@@ -269,7 +268,7 @@ When verifying checksums, warn about malformed input.
 .El
 .Sh EXIT STATUS
 The
-.Nm md5 , sha1 , sha224 , sha256 , sha512 , sha512t224 ,
+.Nm md5 , sha1 , sha224 , sha256 , sha384 , sha512 , sha512t224 ,
 and
 .Nm sha512t256
 utilities exit 0 on success,
@@ -279,10 +278,10 @@ and 2 if at least one file does not have the same hash as the
 option.
 .Pp
 The
-.Nm md5sum , sha1sum , sha224sum , sha256sum , sha512sum ,
-.Nm sha512t224sum , sha512t256sum ,
+.Nm md5sum , sha1sum , sha224sum , sha256sum , sha384sum , sha512sum ,
+.Nm sha512t224sum ,
 and
-.Nm shasum
+.Nm sha512t256sum
 utilities exit 0 on success and 1 if at least one of the input files
 could not be read or, when verifying checksums, does not have the
 expected checksum.

@@ -1,7 +1,6 @@
-/*	$FreeBSD$	*/
 
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2009 Gabor Kovesdan <gabor@FreeBSD.org>
  * Copyright (C) 2012 Oleg Moskalenko <mom040267@gmail.com>
@@ -45,15 +44,7 @@
 
 #define	VERSION	"2.3-FreeBSD"
 
-#ifdef WITHOUT_NLS
 #define	getstr(n)	 nlsstr[n]
-#else
-#include <nl_types.h>
-
-extern nl_catd catalog;
-#define	getstr(n)	\
-	(catalog == (nl_catd)-1 ? nlsstr[n] : catgets(catalog, 1, n, nlsstr[n]))
-#endif
 
 extern const char *nlsstr[];
 

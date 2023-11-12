@@ -121,6 +121,9 @@ bzip2 = cc.find_library('bz2', required: get_option('bzip2'))
 # gzip needs liblzma
 lzma = dependency('liblzma', required: get_option('lzma'))
 
+# gzip needs zstd
+zstd = dependency('libzstd', required: get_option('zstd'))
+
 # needed by a few utils; provided by glibc, but not by e.g. musl
 
 fts_dirs = []

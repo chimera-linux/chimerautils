@@ -29,9 +29,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
 
 #ifndef lint
 static const char copyright[] =
@@ -48,6 +45,7 @@ static const char sccsid[] = "@(#)wall.c	8.2 (Berkeley) 11/16/93";
  * is entitled "Mechanisms for Broadcast and Selective Broadcast".
  */
 
+#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -71,7 +69,7 @@ static const char sccsid[] = "@(#)wall.c	8.2 (Berkeley) 11/16/93";
 #include "ttymsg.h"
 
 static void makemsg(char *);
-static void usage(void);
+static void usage(void) __dead2;
 
 static struct wallgroup {
 	struct wallgroup *next;

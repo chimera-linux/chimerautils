@@ -43,8 +43,6 @@ static char sccsid[] = "@(#)xinstall.c	8.1 (Berkeley) 7/21/93";
 #endif
 
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/param.h>
 #include <sys/mman.h>
 #include <sys/mount.h>
@@ -1306,6 +1304,9 @@ copy(int from_fd, const char *from_name, int to_fd, const char *to_name,
 	static size_t bufsize;
 	int nr, nw;
 	int serrno;
+#ifndef BOOTSTRAP_XINSTALL
+	ssize_t ret;
+#endif
 	char *p;
 	int done_copy;
 	DIGEST_CTX ctx;
@@ -1316,6 +1317,28 @@ copy(int from_fd, const char *from_name, int to_fd, const char *to_name,
 	if (lseek(to_fd, (off_t)0, SEEK_SET) == (off_t)-1)
 		err(EX_OSERR, "lseek: %s", to_name);
 
+#ifndef BOOTSTRAP_XINSTALL
+	/* Try copy_file_range() if no digest is requested */
+	if (digesttype == DIGEST_NONE) {
+		ret = 1;
+		while (ret > 0) {
+			ret = copy_file_range(from_fd, NULL, to_fd, NULL,
+			    SSIZE_MAX, 0);
+		}
+		if (ret == 0) {
+			/* DIGEST_NONE always returns NULL */
+			return (NULL);
+		}
+		if (errno != EINVAL) {
+			serrno = errno;
+			(void)unlink(to_name);
+			errno = serrno;
+			err(EX_OSERR, "%s", to_name);
+		}
+		/* Fall back */
+	}
+
+#endif
 	digest_init(&ctx);
 
 	done_copy = 0;
@@ -1391,7 +1414,7 @@ copy(int from_fd, const char *from_name, int to_fd, const char *to_name,
  * strip --
  *	Use strip(1) to strip the target file.
  *	Just invoke strip(1) on to_name if from_name is NULL, else try
- *	to run "strip -o to_name -- from_name" and return 0 on failure.
+ *	to run "strip -o to_name from_name" and return 0 on failure.
  *	Return 1 on success and assign result of digest_file(to_name)
  *	to *dresp.
  */
@@ -1399,10 +1422,12 @@ static int
 strip(const char *to_name, int to_fd, const char *from_name, char **dresp)
 {
 	const char *stripbin;
-	const char *args[6];
+	const char *args[5];
+	char *prefixed_from_name;
 	pid_t pid;
 	int error, serrno, status;
 
+	prefixed_from_name = NULL;
 	stripbin = getenv("STRIPBIN");
 	if (stripbin == NULL)
 		stripbin = "strip";
@@ -1413,9 +1438,16 @@ strip(const char *to_name, int to_fd, const char *from_name, char **dresp)
 	} else {
 		args[1] = "-o";
 		args[2] = to_name;
-		args[3] = "--";
-		args[4] = from_name;
-		args[5] = NULL;
+
+		/* Prepend './' if from_name begins with '-' */
+		if (from_name[0] == '-') {
+			if (asprintf(&prefixed_from_name, "./%s", from_name) == -1)
+				return (0);
+			args[3] = prefixed_from_name;
+		} else {
+			args[3] = from_name;
+		}
+		args[4] = NULL;
 	}
 	error = posix_spawnp(&pid, stripbin, NULL, NULL,
 	    __DECONST(char **, args), environ);
@@ -1424,6 +1456,7 @@ strip(const char *to_name, int to_fd, const char *from_name, char **dresp)
 		errc(error == EAGAIN || error == ENOMEM ?
 		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
 	}
+	free(prefixed_from_name);
 	if (waitpid(pid, &status, 0) == -1) {
 		error = errno;
 		(void)unlink(to_name);

@@ -34,9 +34,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
 
 #ifndef lint
 static const char copyright[] =
@@ -48,6 +45,7 @@ static const char copyright[] =
 static const char sccsid[] = "@(#)uname.c	8.2 (Berkeley) 5/4/95";
 #endif
 
+#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/utsname.h>
 #include <sys/types.h>
@@ -84,7 +82,7 @@ static void native_uservers(void);
 static void native_buildid(void);
 static void print_uname(u_int);
 static void setup_get(void);
-static void usage(void);
+static void usage(void) __dead2;
 
 static char *buildid, *ident, *platform, *hostname, *arch, *release, *sysname,
     *version, *kernvers, *uservers;

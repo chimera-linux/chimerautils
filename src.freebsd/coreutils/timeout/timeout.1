@@ -1,4 +1,4 @@
-.\" SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+.\" SPDX-License-Identifier: BSD-2-Clause
 .\"
 .\" Copyright (c) 2014 Baptiste Daroussin <bapt@FreeBSD.org>
 .\" All rights reserved.
@@ -24,9 +24,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\" $FreeBSD$
-.\"
-.Dd October 21, 2021
+.Dd June 26, 2023
 .Dt TIMEOUT 1
 .Os
 .Sh NAME
@@ -180,7 +178,7 @@ $ echo $?
 .Pp
 Try to
 .Xr fetch 1
-the single page version of the
+the PDF version of the
 .Fx
 Handbook.
 Send a
@@ -190,11 +188,13 @@ signal after 1 minute and send a
 signal 5 seconds later if the process refuses to stop:
 .Bd -literal -offset indent
 $ timeout -k 5s 1m fetch \\
-> https://www.freebsd.org/doc/en_US.ISO8859-1/books/handbook/book.html
+> https://download.freebsd.org/ftp/doc/en/books/handbook/book.pdf
 .Ed
 .Sh SEE ALSO
 .Xr kill 1 ,
-.Xr signal 3
+.Xr nohup 1 ,
+.Xr signal 3 ,
+.Xr daemon 8
 .Sh HISTORY
 The
 .Nm

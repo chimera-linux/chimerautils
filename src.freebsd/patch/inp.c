@@ -24,7 +24,6 @@
  * behaviour
  *
  * $OpenBSD: inp.c,v 1.44 2015/07/26 14:32:19 millert Exp $
- * $FreeBSD$
  */
 
 #include <sys/types.h>
@@ -285,7 +284,7 @@ static void
 plan_b(const char *filename)
 {
 	FILE	*ifp;
-	size_t	i = 0, j, blen = 0, maxlen = 1;
+	size_t	i, j, blen = 0, maxlen;
 	ssize_t len;
 	char	*p = NULL;
 	bool	found_revision = (revision == NULL);
@@ -296,6 +295,8 @@ plan_b(const char *filename)
 	unlink(TMPINNAME);
 	if ((tifd = open(TMPINNAME, O_EXCL | O_CREAT | O_WRONLY, 0666)) < 0)
 		pfatal("can't open file %s", TMPINNAME);
+	len = 0;
+	maxlen = 1;
 	while ((len = getline(&p, &blen, ifp)) >= 0) {
 		if (p[len - 1] == '\n')
 			p[len - 1] = '\0';

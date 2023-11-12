@@ -38,8 +38,6 @@ static char sccsid[] = "@(#)crc.c	8.1 (Berkeley) 6/17/93";
 #endif
 #endif /* not lint */
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/types.h>
 
 #include <stdint.h>
@@ -108,7 +106,7 @@ static const uint32_t crctab[] = {
  * locations to store the crc and the number of bytes read.  It returns 0 on
  * success and 1 on failure.  Errno is set on failure.
  */
-uint32_t crc_total = ~0;		/* The crc over a number of files. */
+static uint32_t crc_total = ~0;		/* The crc over a number of files. */
 
 int
 crc(int fd, uint32_t *cval, off_t *clen)

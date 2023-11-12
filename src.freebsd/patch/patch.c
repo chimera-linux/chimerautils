@@ -24,7 +24,6 @@
  * behaviour
  *
  * $OpenBSD: patch.c,v 1.54 2014/12/13 10:31:07 tobias Exp $
- * $FreeBSD$
  *
  */
 
@@ -463,9 +462,13 @@ main(int argc, char *argv[])
 			if (!check_only)
 				say("%d out of %d hunks %s--saving rejects to %s\n",
 				    failed, hunk, skip_rest_of_patch ? "ignored" : "failed", rejname);
-			else
+			else if (filearg[0] != NULL)
 				say("%d out of %d hunks %s while patching %s\n",
 				    failed, hunk, skip_rest_of_patch ? "ignored" : "failed", filearg[0]);
+			else
+				/* File prompt ignored, just note # hunks. */
+				say("%d out of %d hunks %s\n",
+				    failed, hunk, skip_rest_of_patch ? "ignored" : "failed");
 			if (!check_only && move_file(TMPREJNAME, rejname) < 0)
 				trejkeep = true;
 		}

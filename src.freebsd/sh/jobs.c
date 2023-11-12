@@ -36,8 +36,6 @@ static char sccsid[] = "@(#)jobs.c	8.5 (Berkeley) 5/4/95";
 #endif
 #endif /* not lint */
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/ioctl.h>
 #include <sys/param.h>
 #include <sys/resource.h>
@@ -587,6 +585,8 @@ waitcmdloop(struct job *job)
 				return retval;
 			}
 		} else {
+			if (njobs == 0)
+				return 0;
 			for (jp = jobtab ; jp < jobtab + njobs; jp++)
 				if (jp->used && jp->state == JOBDONE) {
 					if (! iflag || ! jp->changed)

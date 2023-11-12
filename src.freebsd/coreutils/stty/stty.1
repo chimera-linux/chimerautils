@@ -30,7 +30,6 @@
 .\" SUCH DAMAGE.
 .\"
 .\"     @(#)stty.1	8.4 (Berkeley) 4/18/94
-.\" $FreeBSD$
 .\"
 .Dd September 27, 2022
 .Dt STTY 1
@@ -145,7 +144,7 @@ Assume a line without (with) modem
 control.
 .It Cm crtscts Pq Fl crtscts
 Enable (disable) RTS/CTS flow control.
-.It Cm rtsdtr Pq Fl -rtsdtr
+.It Cm rtsdtr Pq Fl rtsdtr
 Enable (disable) asserting RTS/DTR on open.
 .El
 .Ss Input Modes:
@@ -225,6 +224,9 @@ if
 .Cm imaxbel
 is unset and the input queue is full, the next input character causes
 the entire input and output queues to be discarded.
+.It Cm iutf8 Pq Fl iutf8
+Assume that input characters are UTF-8 encoded. Setting this flag
+causes backspace to properly delete multibyte characters in canonical mode.
 .El
 .Ss Output Modes:
 This corresponds to the c_oflag of the termios structure.

@@ -30,7 +30,6 @@
 .\" SUCH DAMAGE.
 .\"
 .\"	@(#)paste.1	8.1 (Berkeley) 6/6/93
-.\" $FreeBSD$
 .\"
 .Dd November 6, 2022
 .Dt PASTE 1
@@ -120,7 +119,7 @@ Combine pairs of lines from a file into single lines:
 Number the lines in a file, similar to
 .Xr nl 1 :
 .Pp
-.Dl "sed = myfile | paste -s -d '\et\en' - -"
+.Dl "sed = myfile | paste - -"
 .Pp
 Create a colon-separated list of directories named
 .Pa bin ,

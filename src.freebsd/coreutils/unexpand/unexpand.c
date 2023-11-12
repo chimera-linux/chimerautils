@@ -29,9 +29,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
 
 #ifndef lint
 static const char copyright[] =
@@ -42,6 +39,8 @@ static const char copyright[] =
 #ifndef lint
 static const char sccsid[] = "@(#)unexpand.c	8.1 (Berkeley) 6/6/93";
 #endif
+
+#include <sys/cdefs.h>
 
 /*
  * unexpand - put tabs into a file replacing blanks
@@ -62,7 +61,7 @@ static int	nstops;
 static int	tabstops[100];
 
 static void getstops(const char *);
-static void usage(void);
+static void usage(void) __dead2;
 static int tabify(const char *);
 
 int

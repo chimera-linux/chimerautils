@@ -45,8 +45,6 @@ static char sccsid[] = "@(#)dd.c	8.5 (Berkeley) 4/2/94";
 #endif /* not lint */
 #endif
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/capsicum.h>
@@ -61,6 +59,7 @@ __FBSDID("$FreeBSD$");
 #include <fcntl.h>
 #include <inttypes.h>
 #include <locale.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -88,11 +87,14 @@ char	fill_char;		/* Character to fill with if defined */
 size_t	speed = 0;		/* maximum speed, in bytes per second */
 volatile sig_atomic_t need_summary;
 volatile sig_atomic_t need_progress;
+volatile sig_atomic_t kill_signal;
 
 int
 main(int argc __unused, char *argv[])
 {
 	struct itimerval itv = { { 1, 0 }, { 1, 0 } }; /* SIGALARM every second, if needed */
+
+	prepare_io();
 
 	(void)setlocale(LC_CTYPE, "");
 	jcl(argv);
@@ -107,7 +109,6 @@ main(int argc __unused, char *argv[])
 		(void)signal(SIGALRM, sigalarm_handler);
 		setitimer(ITIMER_REAL, &itv, NULL);
 	}
-	(void)signal(SIGINT, terminate);
 
 	atexit(summary);
 
@@ -151,7 +152,9 @@ setup(void)
 		iflags = 0;
 		if (ddflags & C_IDIRECT)
 			iflags |= O_DIRECT;
+		before_io();
 		in.fd = open(in.name, O_RDONLY | iflags, 0);
+		after_io();
 		if (in.fd == -1)
 			err(1, "%s", in.name);
 	}
@@ -188,14 +191,18 @@ setup(void)
 			oflags |= O_SYNC;
 		if (ddflags & C_ODIRECT)
 			oflags |= O_DIRECT;
+		before_io();
 		out.fd = open(out.name, O_RDWR | oflags, DEFFILEMODE);
+		after_io();
 		/*
 		 * May not have read access, so try again with write only.
 		 * Without read we may have a problem if output also does
 		 * not support seeks.
 		 */
 		if (out.fd == -1) {
+			before_io();
 			out.fd = open(out.name, O_WRONLY | oflags, DEFFILEMODE);
+			after_io();
 			out.flags |= NOREAD;
 			cap_rights_clear(&rights, CAP_READ);
 		}
@@ -405,7 +412,9 @@ dd_in(void)
 
 		in.dbrcnt = 0;
 fill:
+		before_io();
 		n = read(in.fd, in.dbp + in.dbrcnt, in.dbsz - in.dbrcnt);
+		after_io();
 
 		/* EOF */
 		if (n == 0 && in.dbrcnt == 0)
@@ -586,7 +595,9 @@ dd_out(int force)
 					pending = 0;
 				}
 				if (cnt) {
+					before_io();
 					nw = write(out.fd, outp, cnt);
+					after_io();
 					out.seek_offset = 0;
 				} else {
 					return;

@@ -38,8 +38,6 @@ static char sccsid[] = "@(#)parser.c	8.7 (Berkeley) 5/16/95";
 #endif
 #endif /* not lint */
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
-
 #include <sys/param.h>
 #include <pwd.h>
 #include <stdlib.h>
@@ -70,7 +68,7 @@ __FBSDID("$FreeBSD$");
  * Shell command parser.
  */
 
-#define	PROMPTLEN	128
+#define	PROMPTLEN	192
 
 /* values of checkkwd variable */
 #define CHKALIAS	0x1
@@ -480,9 +478,9 @@ command(void)
 		n1 = (union node *)stalloc(sizeof (struct nfor));
 		n1->type = NFOR;
 		n1->nfor.var = wordtext;
-		while (readtoken() == TNL)
-			;
-		if (lasttoken == TWORD && ! quoteflag && equal(wordtext, "in")) {
+		checkkwd = CHKNL;
+		if (readtoken() == TWORD && !quoteflag &&
+		    equal(wordtext, "in")) {
 			app = &ap;
 			while (readtoken() == TWORD) {
 				n2 = makename();
@@ -491,7 +489,9 @@ command(void)
 			}
 			*app = NULL;
 			n1->nfor.args = ap;
-			if (lasttoken != TNL && lasttoken != TSEMI)
+			if (lasttoken == TNL)
+				tokpushback++;
+			else if (lasttoken != TSEMI)
 				synexpect(-1);
 		} else {
 			static char argvars[5] = {
@@ -507,7 +507,7 @@ command(void)
 			 * Newline or semicolon here is optional (but note
 			 * that the original Bourne shell only allowed NL).
 			 */
-			if (lasttoken != TNL && lasttoken != TSEMI)
+			if (lasttoken != TSEMI)
 				tokpushback++;
 		}
 		checkkwd = CHKNL | CHKKWD | CHKALIAS;
@@ -526,8 +526,8 @@ command(void)
 		n1->type = NCASE;
 		consumetoken(TWORD);
 		n1->ncase.expr = makename();
-		while (readtoken() == TNL);
-		if (lasttoken != TWORD || ! equal(wordtext, "in"))
+		checkkwd = CHKNL;
+		if (readtoken() != TWORD || ! equal(wordtext, "in"))
 			synerror("expecting \"in\"");
 		cpp = &n1->ncase.cases;
 		checkkwd = CHKNL | CHKKWD, readtoken();
@@ -2060,6 +2060,44 @@ getprompt(void *unused __unused)
 			switch (*++fmt) {
 
 				/*
+				 * Non-printing sequence begin and end.
+				 */
+			case '[':
+			case ']':
+				ps[i] = '\001';
+				break;
+
+				/*
+				 * Literal \ and some ASCII characters:
+				 * \a	BEL
+				 * \e	ESC
+				 * \r	CR
+				 */
+			case '\\':
+			case 'a':
+			case 'e':
+			case 'r':
+				if (*fmt == 'a')
+					ps[i] = '\007';
+				else if (*fmt == 'e')
+					ps[i] = '\033';
+				else if (*fmt == 'r')
+					ps[i] = '\r';
+				else
+					ps[i] = '\\';
+				break;
+
+				/*
+				 * CRLF sequence
+				 */
+			case 'n':
+				if (i < PROMPTLEN - 3) {
+					ps[i++] = '\r';
+					ps[i] = '\n';
+				}
+				break;
+
+				/*
 				 * Hostname.
 				 *
 				 * \h specifies just the local hostname,
@@ -2133,13 +2171,6 @@ getprompt(void *unused __unused)
 				 */
 			case '$':
 				ps[i] = (geteuid() != 0) ? '$' : '#';
-				break;
-
-				/*
-				 * A literal \.
-				 */
-			case '\\':
-				ps[i] = '\\';
 				break;
 
 				/*

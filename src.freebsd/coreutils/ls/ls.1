@@ -30,9 +30,8 @@
 .\" SUCH DAMAGE.
 .\"
 .\"     @(#)ls.1	8.7 (Berkeley) 7/29/94
-.\" $FreeBSD$
 .\"
-.Dd October 31, 2022
+.Dd July 18, 2023
 .Dt LS 1
 .Os
 .Sh NAME
@@ -285,14 +284,9 @@ and
 .Fl s
 options.
 .It Fl g
-This option has no effect.
-It is only available for compatibility with
-.Bx 4.3 ,
-where it was used to display the group name in the long
+Display the long
 .Pq Fl l
-format output.
-This option is incompatible with
-.St -p1003.1-2008 .
+format output without the file owner's name or number.
 .It Fl h
 When used with the
 .Fl l
@@ -659,7 +653,7 @@ The default
 .Dq Li cons25
 console has the proper capabilities,
 but to display the colors in an
-.Xr xterm 1 ,
+.Xr xterm 1 Pq Pa ports/x11/xterm ,
 for example,
 the
 .Ev TERM
@@ -860,7 +854,7 @@ specification.
 .Xr chmod 1 ,
 .Xr getfacl 1 ,
 .Xr sort 1 ,
-.Xr xterm 1 ,
+.Xr xterm 1 Pq Pa ports/x11/xterm ,
 .Xr localeconv 3 ,
 .Xr strcoll 3 ,
 .Xr strftime 3 ,

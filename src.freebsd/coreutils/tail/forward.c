@@ -32,9 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
 
 #ifndef lint
 static const char sccsid[] = "@(#)forward.c	8.1 (Berkeley) 6/6/93";
@@ -235,8 +232,8 @@ show(file_info_t *file)
 	int ch;
 
 	while ((ch = getc(file->fp)) != EOF) {
-		if (last != file && no_files > 1) {
-			if (!qflag)
+		if (last != file) {
+			if (vflag || (qflag == 0 && no_files > 1))
 				printfn(file->file_name, 1);
 			last = file;
 		}
@@ -273,7 +270,7 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 	for (i = 0; i < no_files; i++, file++) {
 		if (file->fp) {
 			active = 1;
-			if (no_files > 1 && !qflag)
+			if (vflag || (qflag == 0 && no_files > 1))
 				printfn(file->file_name, 1);
 			forward(file->fp, file->file_name, style, off, &file->st);
 		}

@@ -36,7 +36,6 @@
 static char sccsid[] = "@(#)merge.c	8.2 (Berkeley) 2/14/94";
 #endif /* LIBC_SCCS and not lint */
 #include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #define __is_aligned(x, align) (((uintptr_t)x & ((align) - 1)) == 0)
 

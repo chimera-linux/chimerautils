@@ -30,10 +30,11 @@
 
 #include_next <string.h>
 
+#include <sys/types.h>
+
 #include "config-compat.h"
 
-void strmode(int, char *);
-
+void strmode(mode_t, char *);
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *d, const char *s, size_t n);
 #endif

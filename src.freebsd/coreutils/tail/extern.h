@@ -29,8 +29,6 @@
  * SUCH DAMAGE.
  *
  *	@(#)extern.h	8.1 (Berkeley) 6/6/93
- *
- * $FreeBSD$
  */
 
 #define	WR(p, size) do { \
@@ -77,5 +75,5 @@ int mapprint(struct mapinfo *, off_t, off_t);
 int maparound(struct mapinfo *, off_t);
 void printfn(const char *, int);
 
-extern int Fflag, fflag, qflag, rflag, rval, no_files;
+extern int Fflag, fflag, qflag, rflag, rval, no_files, vflag;
 extern fileargs_t *fa;

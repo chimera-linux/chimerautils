@@ -30,7 +30,6 @@
  * SUCH DAMAGE.
  *
  *	@(#)locate.h	8.1 (Berkeley) 6/6/93
- * $FreeBSD$
  */
 
 /* Symbolic constants shared by locate.c and code.c */
@@ -68,3 +67,9 @@ extern u_char myctype[UCHAR_MAX + 1];
 #define INTSIZE (sizeof(int))
 
 #define LOCATE_REG "*?[]\\"  /* fnmatch(3) meta characters */
+
+/* max. path length for locate. Should be at least 1024 (PATH_MAX), but can be longer */
+#ifndef LOCATE_PATH_MAX
+#define LOCATE_PATH_MAX (1*1024)
+#endif
+

@@ -13,12 +13,16 @@ else
     diff_links += [ 'xzcmp', 'xzdiff' ]
 endif
 
+if not zstd.found()
+    extra_defs += [ '-DNO_ZSTD_SUPPORT' ]
+endif
+
 gzip_prog = executable(
     'gzip',
     [ 'gzip.c', ],
     include_directories : [ inc, ],
     link_with : [ libcompat ],
-    dependencies : [ zlib, bzip2, lzma, libfts, ],
+    dependencies : [ zlib, bzip2, lzma, zstd, libfts, ],
     c_args : extra_defs,
     install : true,
 )

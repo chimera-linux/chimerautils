@@ -30,8 +30,6 @@
  *
  *	@(#)extern.h	8.3 (Berkeley) 4/2/94
  *
- * $FreeBSD$
- *
  */
 
 #include <stdbool.h>

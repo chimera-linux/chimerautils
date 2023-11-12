@@ -1,7 +1,6 @@
-/*	$FreeBSD$	*/
 
 /*-
- * SPDX-License-Identifier: BSD-2-Clause-FreeBSD
+ * SPDX-License-Identifier: BSD-2-Clause
  *
  * Copyright (C) 2009 Gabor Kovesdan <gabor@FreeBSD.org>
  * Copyright (C) 2012 Oleg Moskalenko <mom040267@gmail.com>
@@ -41,8 +40,8 @@
 #define	SORT_HEAPSORT	3
 #define	SORT_RADIXSORT  4
 
-#define	DEFAULT_SORT_ALGORITHM SORT_HEAPSORT
-#define	DEFAULT_SORT_FUNC heapsort
+#define	DEFAULT_SORT_ALGORITHM SORT_MERGESORT
+#define	DEFAULT_SORT_FUNC mergesort
 
 /*
  * List of data to be sorted.
