@@ -25,7 +25,7 @@ jobs:
         steps:
             - name: dependencies
               run: |
-                  sudo env DEBIAN_FRONTEND=noninteractive apt-get -y install meson ninja-build libedit-dev libacl1-dev libbz2-dev zlib1g-dev liblzma-dev curl
+                  sudo env DEBIAN_FRONTEND=noninteractive apt-get -y install meson ninja-build libedit-dev libacl1-dev libbz2-dev zlib1g-dev libzstd-dev liblzma-dev curl
 
             - name: libxo
               run: |
@@ -59,7 +59,7 @@ jobs:
         steps:
             - name: dependencies
               run: |
-                  apk add curl git libtool autoconf automake make patch gcc musl-dev linux-headers g++ meson flex bison libedit-dev openssl-dev musl-fts-dev acl-dev zlib-dev bzip2-dev xz-dev bsd-compat-headers
+                  apk add curl git libtool autoconf automake make patch gcc musl-dev linux-headers g++ meson flex bison libedit-dev openssl-dev musl-fts-dev acl-dev zlib-dev bzip2-dev xz-dev zstd-dev bsd-compat-headers
 
             - name: libxo
               run: |
