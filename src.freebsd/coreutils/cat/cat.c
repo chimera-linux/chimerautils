@@ -310,7 +310,7 @@ static void
 cook_cat(FILE *fp)
 {
 	int ch, gobble, line, prev;
-	wint_t wch;
+	wchar_t wch;
 
 	/* Reset EOF condition on stdin. */
 	if (fp == stdin && feof(stdin))
@@ -349,22 +349,33 @@ cook_cat(FILE *fp)
 				continue;
 			}
 		} else if (vflag) {
-			(void)ungetc(ch, fp);
-			/*
-			 * Our getwc(3) doesn't change file position
-			 * on error.
-			 */
-			if ((wch = getwc(fp)) == WEOF) {
-				if (ferror(fp) && errno == EILSEQ) {
-					clearerr(fp);
-					/* Resync attempt. */
-					if ((ch = getc(fp)) == EOF)
-						break;
+			mbstate_t st = {0};
+			unsigned char b;
+			size_t l = (size_t)-2;
+			if (ch == EOF)
+				break;
+			b = ch;
+			l = mbrtowc(&wch, (void *)&b, 1, &st);
+			if (l == (size_t)-1) {
+				wch = ch;
+				goto ilseq;
+			}
+			while (l == (size_t)-2) {
+				int nch = getc(fp);
+				if (nch == EOF) {
 					wch = ch;
 					goto ilseq;
-				} else
-					break;
+				}
+				b = nch;
+				l = mbrtowc(&wch, (void *)&b, 1, &st);
+				if (l == (size_t)-1) {
+					/* go back by the failed char */
+					ungetc(ch, fp);
+					wch = ch;
+					goto ilseq;
+				}
 			}
+			/* wch should be a valid multibyte char now */
 			if (!iswascii(wch) && !iswprint(wch)) {
 ilseq:
 				if (putchar('M') == EOF || putchar('-') == EOF)

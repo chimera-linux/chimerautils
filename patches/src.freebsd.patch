@@ -175,38 +175,6 @@
  							/* escape backslash */
 --- src.orig/awk/bugs
 +++ src.freebsd/awk/bugs
-@@ -0,0 +1,29 @@
-+normal status 42
-+death by signal status 257
-+death by signal with core dump status 518
-+normal status 42
-+death by signal status 0.00390625
-+death by signal with core dump status 0.523438
-+# Unmodified nawk prints the 16 bit exit status divided by 256, but
-+# does so using floating point arithmetic, yielding strange results.
-+#
-+# The fix is to use the various macros defined for wait(2) and to
-+# use the signal number + 256 for death by signal, or signal number + 512
-+# for death by signal with core dump.
-+
-+BEGIN {
-+	status = system("exit 42")
-+	print "normal status", status
-+
-+	status = system("kill -HUP $$")
-+	print "death by signal status", status
-+
-+	status = system("kill -ABRT $$")
-+	print "death by signal with core dump status", status
-+
-+	system("rm -f core*")
-+}
-+../a.out: cannot set NF to a negative value
-+ source line number 1
-+../a.out: not enough args in printf(%*s)
-+ source line number 1
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
 @@ -0,0 +1,2 @@
 +../a.out: not enough args in printf(%*s)
 + source line number 1
@@ -1834,15 +1802,64 @@
  /*
   * Small (default) buffer size in bytes. It's inefficient for this to be
   * smaller than MAXPHYS.
-@@ -351,7 +358,6 @@
- 				if (ferror(fp) && errno == EILSEQ) {
- 					clearerr(fp);
- 					/* Resync attempt. */
+@@ -303,7 +310,7 @@
+ cook_cat(FILE *fp)
+ {
+ 	int ch, gobble, line, prev;
+-	wint_t wch;
++	wchar_t wch;
+ 
+ 	/* Reset EOF condition on stdin. */
+ 	if (fp == stdin && feof(stdin))
+@@ -342,23 +349,33 @@
+ 				continue;
+ 			}
+ 		} else if (vflag) {
+-			(void)ungetc(ch, fp);
+-			/*
+-			 * Our getwc(3) doesn't change file position
+-			 * on error.
+-			 */
+-			if ((wch = getwc(fp)) == WEOF) {
+-				if (ferror(fp) && errno == EILSEQ) {
+-					clearerr(fp);
+-					/* Resync attempt. */
 -					memset(&fp->_mbstate, 0, sizeof(mbstate_t));
- 					if ((ch = getc(fp)) == EOF)
- 						break;
+-					if ((ch = getc(fp)) == EOF)
+-						break;
++			mbstate_t st = {0};
++			unsigned char b;
++			size_t l = (size_t)-2;
++			if (ch == EOF)
++				break;
++			b = ch;
++			l = mbrtowc(&wch, (void *)&b, 1, &st);
++			if (l == (size_t)-1) {
++				wch = ch;
++				goto ilseq;
++			}
++			while (l == (size_t)-2) {
++				int nch = getc(fp);
++				if (nch == EOF) {
  					wch = ch;
-@@ -390,6 +396,18 @@
+ 					goto ilseq;
+-				} else
+-					break;
++				}
++				b = nch;
++				l = mbrtowc(&wch, (void *)&b, 1, &st);
++				if (l == (size_t)-1) {
++					/* go back by the failed char */
++					ungetc(ch, fp);
++					wch = ch;
++					goto ilseq;
++				}
+ 			}
++			/* wch should be a valid multibyte char now */
+ 			if (!iswascii(wch) && !iswprint(wch)) {
+ ilseq:
+ 				if (putchar('M') == EOF || putchar('-') == EOF)
+@@ -390,6 +407,18 @@
  }
  
  static ssize_t
@@ -1861,7 +1878,7 @@
  in_kernel_copy(int rfd)
  {
  	int wfd;
-@@ -400,6 +418,9 @@
+@@ -400,6 +429,9 @@
  
  	while (ret > 0)
  		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);
