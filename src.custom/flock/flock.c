@@ -41,6 +41,7 @@
 #include <sysexits.h>
 #include <paths.h>
 #include <fcntl.h>
+#include <time.h>
 #include <err.h>
 
 extern char const *__progname;
@@ -52,6 +53,7 @@ static struct option gnuopts[] = {
     {"nonblocking", no_argument, NULL, 'n'},
     {"nb",          no_argument, NULL, 'n'},
     {"no-fork",     no_argument, NULL, 'F'},
+    {"timeout",     no_argument, NULL, 'w'},
     {"help",        no_argument, NULL, 'h'},
     {"version",     no_argument, NULL, 'V'},
     {0, 0, 0, 0}
@@ -75,6 +77,12 @@ static int open_f(char const *fname, int *flags) {
     return fd;
 }
 
+static void sighandler(int sig, siginfo_t *si, void *uc) {
+    (void)sig;
+    (void)uc;
+    *((int *)si->si_value.sival_ptr) = 1;
+}
+
 int main(int argc, char **argv) {
     char const *fname = NULL;
     pid_t fpid;
@@ -86,12 +94,18 @@ int main(int argc, char **argv) {
     int fd = -1;
     int help = 0;
     int version = 0;
+    int timeout = -1;
+    int alrm = 0;
+    timer_t timid;
+    struct sigevent sev = {};
+    struct sigaction sa = {};
+    struct itimerspec its = {};
     char **cargv = NULL;
     char *sargv[4];
 
     for (;;) {
         int opt_idx = 0;
-        int c = getopt_long(argc, argv, "+sexunFhV", gnuopts, &opt_idx);
+        int c = getopt_long(argc, argv, "+sexunw:FhV", gnuopts, &opt_idx);
         if (c == -1) {
             break;
         }
@@ -113,6 +127,16 @@ int main(int argc, char **argv) {
             case 'F':
                 do_fork = 0;
                 break;
+            case 'w': {
+                char *err = NULL;
+                long uv = strtoul(optarg, &err, 10);
+                if (!err || *err || uv > INT_MAX) {
+                    fprintf(stderr, "%s: invalid timeout value\n", __progname);
+                    return EX_USAGE;
+                }
+                timeout = (int)uv;
+                break;
+            }
             case 'h':
                 help = 1;
                 break;
@@ -143,6 +167,7 @@ int main(int argc, char **argv) {
 "      -u, --unlock       remove a lock\n"
 "      -n, --nonblocking  fail rather than wait\n"
 "      -F, --no-fork      execute command without forking\n"
+"      -w, --timeout VAL  wait for at most VAL seconds\n"
 "      -h, --help         display this help and exit\n"
 "      -V, --version      output version information and exit\n",
             __progname, __progname, __progname
@@ -191,11 +216,38 @@ int main(int argc, char **argv) {
         errx(EX_USAGE, "path or file descriptor is required");
     }
 
+    if (!timeout) {
+        /* zero timeout is like nonblock */
+        type = LOCK_NB;
+    } else if (timeout > 0) {
+        sa.sa_flags = SA_SIGINFO;
+        sa.sa_sigaction = sighandler;
+        sigemptyset(&sa.sa_mask);
+        if (sigaction(SIGALRM, &sa, NULL) < 0) {
+            err(EXIT_FAILURE, "sigaction");
+        }
+        sev.sigev_notify = SIGEV_SIGNAL;
+        sev.sigev_signo = SIGALRM;
+        sev.sigev_value.sival_ptr = &alrm;
+        if (timer_create(CLOCK_MONOTONIC, &sev, &timid) < 0) {
+            err(EXIT_FAILURE, "timer_create");
+        }
+        its.it_value.tv_sec = timeout;
+        its.it_value.tv_nsec = 0;
+        if (timer_settime(timid, 0, &its, NULL) < 0) {
+            err(EXIT_FAILURE, "timer_settime");
+        }
+    }
+
     while (flock(fd, type | block)) {
         switch (errno) {
             case EWOULDBLOCK:
                 return EXIT_FAILURE;
             case EINTR:
+                if ((timeout > 0) && alrm) {
+                    /* timed out */
+                    return 1;
+                }
                 continue;
             case EIO:
             case EBADF:
@@ -223,6 +275,14 @@ int main(int argc, char **argv) {
                     return EX_OSERR;
                 }
                 return EX_DATAERR;
+        }
+    }
+
+    if (timeout > 0) {
+        timer_delete(timid);
+        sa.sa_handler = SIG_DFL;
+        if (sigaction(SIGALRM, &sa, NULL) < 0) {
+            err(EXIT_FAILURE, "sigaction");
         }
     }
 
