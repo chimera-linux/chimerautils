@@ -348,12 +348,10 @@ cook_cat(FILE *fp)
 					break;
 				continue;
 			}
-		} else if (vflag) {
+		} else if (vflag && !isprint(ch)) {
 			mbstate_t st = {0};
 			unsigned char b;
-			size_t l = (size_t)-2;
-			if (ch == EOF)
-				break;
+			size_t l;
 			b = ch;
 			l = mbrtowc(&wch, (void *)&b, 1, &st);
 			if (l == (size_t)-1) {
@@ -370,7 +368,7 @@ cook_cat(FILE *fp)
 				l = mbrtowc(&wch, (void *)&b, 1, &st);
 				if (l == (size_t)-1) {
 					/* go back by the failed char */
-					ungetc(ch, fp);
+					ungetc(nch, fp);
 					wch = ch;
 					goto ilseq;
 				}

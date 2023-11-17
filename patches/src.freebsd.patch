@@ -1843,10 +1843,11 @@
  
  	/* Reset EOF condition on stdin. */
  	if (fp == stdin && feof(stdin))
-@@ -342,23 +349,33 @@
+@@ -341,24 +348,32 @@
+ 					break;
  				continue;
  			}
- 		} else if (vflag) {
+-		} else if (vflag) {
 -			(void)ungetc(ch, fp);
 -			/*
 -			 * Our getwc(3) doesn't change file position
@@ -1859,11 +1860,10 @@
 -					memset(&fp->_mbstate, 0, sizeof(mbstate_t));
 -					if ((ch = getc(fp)) == EOF)
 -						break;
++		} else if (vflag && !isprint(ch)) {
 +			mbstate_t st = {0};
 +			unsigned char b;
-+			size_t l = (size_t)-2;
-+			if (ch == EOF)
-+				break;
++			size_t l;
 +			b = ch;
 +			l = mbrtowc(&wch, (void *)&b, 1, &st);
 +			if (l == (size_t)-1) {
@@ -1882,7 +1882,7 @@
 +				l = mbrtowc(&wch, (void *)&b, 1, &st);
 +				if (l == (size_t)-1) {
 +					/* go back by the failed char */
-+					ungetc(ch, fp);
++					ungetc(nch, fp);
 +					wch = ch;
 +					goto ilseq;
 +				}
@@ -1891,7 +1891,7 @@
  			if (!iswascii(wch) && !iswprint(wch)) {
  ilseq:
  				if (putchar('M') == EOF || putchar('-') == EOF)
-@@ -390,6 +407,18 @@
+@@ -390,6 +405,18 @@
  }
  
  static ssize_t
@@ -1910,7 +1910,7 @@
  in_kernel_copy(int rfd)
  {
  	int wfd;
-@@ -400,6 +429,9 @@
+@@ -400,6 +427,9 @@
  
  	while (ret > 0)
  		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);
