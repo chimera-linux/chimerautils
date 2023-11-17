@@ -1834,6 +1834,15 @@
  /*
   * Small (default) buffer size in bytes. It's inefficient for this to be
   * smaller than MAXPHYS.
+@@ -281,7 +288,7 @@
+ 		} else {
+ #ifndef BOOTSTRAP_CAT
+ 			if (in_kernel_copy(fd) == -1) {
+-				if (errno == EINVAL || errno == EBADF)
++				if (errno == EINVAL || errno == EBADF || errno == ESPIPE)
+ 					raw_cat(fd);
+ 				else
+ 					err(1, "stdout");
 @@ -303,7 +310,7 @@
  cook_cat(FILE *fp)
  {
