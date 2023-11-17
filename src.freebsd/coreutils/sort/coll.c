@@ -1028,6 +1028,9 @@ randomcoll(struct key_value *kv1, struct key_value *kv2,
 	memcpy(&ctx1, &md5_ctx, sizeof(MD5_CTX));
 	memcpy(&ctx2, &md5_ctx, sizeof(MD5_CTX));
 
+	MD5Init(&ctx1);
+	MD5Init(&ctx2);
+
 	MD5Update(&ctx1, bwsrawdata(s1), bwsrawlen(s1));
 	MD5Update(&ctx2, bwsrawdata(s2), bwsrawlen(s2));
 

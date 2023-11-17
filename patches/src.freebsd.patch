@@ -5514,7 +5514,17 @@
  /* Use hint space to memoize md5 computations, at least. */
  static void
  randomcoll_init_hint(struct key_value *kv, void *hash)
-@@ -1033,6 +1041,7 @@
+@@ -1020,6 +1028,9 @@
+ 	memcpy(&ctx1, &md5_ctx, sizeof(MD5_CTX));
+ 	memcpy(&ctx2, &md5_ctx, sizeof(MD5_CTX));
+ 
++	MD5Init(&ctx1);
++	MD5Init(&ctx2);
++
+ 	MD5Update(&ctx1, bwsrawdata(s1), bwsrawlen(s1));
+ 	MD5Update(&ctx2, bwsrawdata(s2), bwsrawlen(s2));
+ 
+@@ -1033,6 +1044,7 @@
  
  	return (memcmp(hash1, hash2, sizeof(hash1)));
  }
