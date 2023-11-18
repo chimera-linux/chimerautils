@@ -17,10 +17,10 @@ It replaces the following GNU projects:
 * sed
 * ed
 * m4
-* bc
 * patch
 * gzip
 * gawk
+* bc (optional, bc-gh is recommended now)
 
 It also provides the following functionality:
 

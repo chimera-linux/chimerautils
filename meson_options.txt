@@ -1,3 +1,8 @@
+option('bc',
+    type: 'boolean', value: false,
+    description: 'Build classic FreeBSD bc/dc'
+)
+
 option('static_fts',
     type: 'boolean', value: false,
     description: 'Prefer static libfts'

@@ -45,7 +45,10 @@ endif
 
 # tool collections
 
-subdir('bc')
+if get_option('bc')
+    subdir('bc')
+endif
+
 subdir('coreutils')
 subdir('diffutils')
 subdir('findutils')
