@@ -1834,16 +1834,28 @@
  /*
   * Small (default) buffer size in bytes. It's inefficient for this to be
   * smaller than MAXPHYS.
-@@ -281,7 +288,7 @@
+@@ -281,10 +288,18 @@
  		} else {
  #ifndef BOOTSTRAP_CAT
  			if (in_kernel_copy(fd) == -1) {
 -				if (errno == EINVAL || errno == EBADF)
-+				if (errno == EINVAL || errno == EBADF || errno == ESPIPE)
++				switch (errno) {
++				case EINVAL:
++				case EBADF:
++				case EXDEV:
++				case ESPIPE:
++				case ENOSYS:
  					raw_cat(fd);
- 				else
+-				else
++					break;
++				default:
  					err(1, "stdout");
-@@ -303,7 +310,7 @@
++					break;
++				}
+ 			}
+ #else
+ 			raw_cat(fd);
+@@ -303,7 +318,7 @@
  cook_cat(FILE *fp)
  {
  	int ch, gobble, line, prev;
@@ -1852,7 +1864,7 @@
  
  	/* Reset EOF condition on stdin. */
  	if (fp == stdin && feof(stdin))
-@@ -341,24 +348,32 @@
+@@ -341,24 +356,32 @@
  					break;
  				continue;
  			}
@@ -1900,7 +1912,7 @@
  			if (!iswascii(wch) && !iswprint(wch)) {
  ilseq:
  				if (putchar('M') == EOF || putchar('-') == EOF)
-@@ -390,6 +405,18 @@
+@@ -390,6 +413,18 @@
  }
  
  static ssize_t
@@ -1919,7 +1931,7 @@
  in_kernel_copy(int rfd)
  {
  	int wfd;
-@@ -400,6 +427,9 @@
+@@ -400,6 +435,9 @@
  
  	while (ret > 0)
  		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);
@@ -7920,7 +7932,26 @@
  {
  	char backup[MAXPATHLEN];
  	int saved_errno = 0;
-@@ -1447,7 +1453,7 @@
+@@ -1323,11 +1329,17 @@
+ 			/* DIGEST_NONE always returns NULL */
+ 			return (NULL);
+ 		}
+-		if (errno != EINVAL) {
++		switch (errno) {
++		case EINVAL:
++		case ENOSYS:
++		case EXDEV:
++			break;
++		default:
+ 			serrno = errno;
+ 			(void)unlink(to_name);
+ 			errno = serrno;
+ 			err(EX_OSERR, "%s", to_name);
++			break;
+ 		}
+ 		/* Fall back */
+ 	}
+@@ -1447,7 +1459,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);

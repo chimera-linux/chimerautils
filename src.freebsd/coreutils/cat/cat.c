@@ -288,10 +288,18 @@ scanfiles(char *argv[], int cooked __unused)
 		} else {
 #ifndef BOOTSTRAP_CAT
 			if (in_kernel_copy(fd) == -1) {
-				if (errno == EINVAL || errno == EBADF || errno == ESPIPE)
+				switch (errno) {
+				case EINVAL:
+				case EBADF:
+				case EXDEV:
+				case ESPIPE:
+				case ENOSYS:
 					raw_cat(fd);
-				else
+					break;
+				default:
 					err(1, "stdout");
+					break;
+				}
 			}
 #else
 			raw_cat(fd);

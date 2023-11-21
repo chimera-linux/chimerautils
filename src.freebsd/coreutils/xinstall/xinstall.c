@@ -1329,11 +1329,17 @@ copy(int from_fd, const char *from_name, int to_fd, const char *to_name,
 			/* DIGEST_NONE always returns NULL */
 			return (NULL);
 		}
-		if (errno != EINVAL) {
+		switch (errno) {
+		case EINVAL:
+		case ENOSYS:
+		case EXDEV:
+			break;
+		default:
 			serrno = errno;
 			(void)unlink(to_name);
 			errno = serrno;
 			err(EX_OSERR, "%s", to_name);
+			break;
 		}
 		/* Fall back */
 	}
