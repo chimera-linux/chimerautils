@@ -1943,26 +1943,48 @@
  }
 --- src.orig/coreutils/chmod/chmod.1
 +++ src.freebsd/coreutils/chmod/chmod.1
-@@ -39,7 +39,7 @@
+@@ -39,8 +39,8 @@
  .Nd change file modes
  .Sh SYNOPSIS
  .Nm
 -.Op Fl fhv
+-.Op Fl R Op Fl H | L | P
 +.Op Fl fv
- .Op Fl R Op Fl H | L | P
++.Op Fl R Op Fl L | P
  .Ar mode
  .Ar
-@@ -65,9 +65,6 @@
- option is specified, symbolic links on the command line are followed
- and hence unaffected by the command.
- (Symbolic links encountered during tree traversal are not followed.)
+ .Sh DESCRIPTION
+@@ -59,15 +59,6 @@
+ could not modify the mode for
+ .Va file ,
+ nor modify the exit status to reflect such failures.
+-.It Fl H
+-If the
+-.Fl R
+-option is specified, symbolic links on the command line are followed
+-and hence unaffected by the command.
+-(Symbolic links encountered during tree traversal are not followed.)
 -.It Fl h
 -If the file is a symbolic link, change the mode of the link itself
 -rather than the file that the link points to.
  .It Fl L
  If the
  .Fl R
-@@ -108,7 +105,7 @@
+@@ -95,7 +86,6 @@
+ .El
+ .Pp
+ The
+-.Fl H ,
+ .Fl L
+ and
+ .Fl P
+@@ -104,11 +94,13 @@
+ option is specified.
+ In addition, these options override each other and the
+ command's actions are determined by the last one specified.
++Symbolic links specified on the command line are always
++followed, regardless of the option.
+ .Pp
  If
  .Nm
  receives a
@@ -1971,7 +1993,7 @@
  signal (see the
  .Cm status
  argument for
-@@ -332,7 +329,6 @@
+@@ -332,7 +324,6 @@
  .Sh SEE ALSO
  .Xr chflags 1 ,
  .Xr install 1 ,
@@ -1986,11 +2008,24 @@
  	set = NULL;
  	Hflag = Lflag = Rflag = fflag = hflag = vflag = 0;
 -	while ((ch = getopt(argc, argv, "HLPRXfghorstuvwx")) != -1)
-+	while ((ch = getopt(argc, argv, "HLPRXfgorstuvwx")) != -1)
++	while ((ch = getopt(argc, argv, "LPRXfgorstuvwx")) != -1)
  		switch (ch) {
  		case 'H':
  			Hflag = 1;
-@@ -200,16 +200,24 @@
+@@ -144,11 +144,7 @@
+ 		if (Lflag) {
+ 			fts_options = FTS_LOGICAL;
+ 		} else {
+-			fts_options = FTS_PHYSICAL;
+-
+-			if (Hflag) {
+-				fts_options |= FTS_COMFOLLOW;
+-			}
++			fts_options = FTS_PHYSICAL | FTS_COMFOLLOW;
+ 		}
+ 	} else if (hflag) {
+ 		fts_options = FTS_PHYSICAL;
+@@ -200,16 +196,24 @@
  		if (may_have_nfs4acl(p, hflag) == 0 &&
  		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
  				continue;
@@ -2016,7 +2051,7 @@
  				strmode(p->fts_statp->st_mode, m1);
  				strmode((p->fts_statp->st_mode &
  				    S_IFMT) | newmode, m2);
-@@ -238,6 +246,7 @@
+@@ -238,6 +242,7 @@
  static int
  may_have_nfs4acl(const FTSENT *ent, int hflag)
  {
@@ -2024,7 +2059,7 @@
  	int ret;
  	static dev_t previous_dev = NODEV;
  	static int supports_acls = -1;
-@@ -257,4 +266,10 @@
+@@ -257,4 +262,10 @@
  	}
  
  	return (supports_acls);

@@ -80,7 +80,7 @@ main(int argc, char *argv[])
 
 	set = NULL;
 	Hflag = Lflag = Rflag = fflag = hflag = vflag = 0;
-	while ((ch = getopt(argc, argv, "HLPRXfgorstuvwx")) != -1)
+	while ((ch = getopt(argc, argv, "LPRXfgorstuvwx")) != -1)
 		switch (ch) {
 		case 'H':
 			Hflag = 1;
@@ -144,11 +144,7 @@ done:	argv += optind;
 		if (Lflag) {
 			fts_options = FTS_LOGICAL;
 		} else {
-			fts_options = FTS_PHYSICAL;
-
-			if (Hflag) {
-				fts_options |= FTS_COMFOLLOW;
-			}
+			fts_options = FTS_PHYSICAL | FTS_COMFOLLOW;
 		}
 	} else if (hflag) {
 		fts_options = FTS_PHYSICAL;

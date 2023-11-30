@@ -40,7 +40,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl fv
-.Op Fl R Op Fl H | L | P
+.Op Fl R Op Fl L | P
 .Ar mode
 .Ar
 .Sh DESCRIPTION
@@ -59,12 +59,6 @@ Do not display a diagnostic message if
 could not modify the mode for
 .Va file ,
 nor modify the exit status to reflect such failures.
-.It Fl H
-If the
-.Fl R
-option is specified, symbolic links on the command line are followed
-and hence unaffected by the command.
-(Symbolic links encountered during tree traversal are not followed.)
 .It Fl L
 If the
 .Fl R
@@ -92,7 +86,6 @@ will also be printed, in both octal and symbolic notation.
 .El
 .Pp
 The
-.Fl H ,
 .Fl L
 and
 .Fl P
@@ -101,6 +94,8 @@ options are ignored unless the
 option is specified.
 In addition, these options override each other and the
 command's actions are determined by the last one specified.
+Symbolic links specified on the command line are always
+followed, regardless of the option.
 .Pp
 If
 .Nm
