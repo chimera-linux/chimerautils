@@ -2012,20 +2012,16 @@
  		switch (ch) {
  		case 'H':
  			Hflag = 1;
-@@ -144,11 +144,7 @@
+@@ -144,7 +144,7 @@
  		if (Lflag) {
  			fts_options = FTS_LOGICAL;
  		} else {
 -			fts_options = FTS_PHYSICAL;
--
--			if (Hflag) {
--				fts_options |= FTS_COMFOLLOW;
--			}
 +			fts_options = FTS_PHYSICAL | FTS_COMFOLLOW;
- 		}
- 	} else if (hflag) {
- 		fts_options = FTS_PHYSICAL;
-@@ -200,16 +196,24 @@
+ 
+ 			if (Hflag) {
+ 				fts_options |= FTS_COMFOLLOW;
+@@ -200,16 +200,24 @@
  		if (may_have_nfs4acl(p, hflag) == 0 &&
  		    (newmode & ALLPERMS) == (p->fts_statp->st_mode & ALLPERMS))
  				continue;
@@ -2051,7 +2047,7 @@
  				strmode(p->fts_statp->st_mode, m1);
  				strmode((p->fts_statp->st_mode &
  				    S_IFMT) | newmode, m2);
-@@ -238,6 +242,7 @@
+@@ -238,6 +246,7 @@
  static int
  may_have_nfs4acl(const FTSENT *ent, int hflag)
  {
@@ -2059,7 +2055,7 @@
  	int ret;
  	static dev_t previous_dev = NODEV;
  	static int supports_acls = -1;
-@@ -257,4 +262,10 @@
+@@ -257,4 +266,10 @@
  	}
  
  	return (supports_acls);

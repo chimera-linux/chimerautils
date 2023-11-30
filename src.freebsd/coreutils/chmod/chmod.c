@@ -145,6 +145,10 @@ done:	argv += optind;
 			fts_options = FTS_LOGICAL;
 		} else {
 			fts_options = FTS_PHYSICAL | FTS_COMFOLLOW;
+
+			if (Hflag) {
+				fts_options |= FTS_COMFOLLOW;
+			}
 		}
 	} else if (hflag) {
 		fts_options = FTS_PHYSICAL;
