@@ -111,9 +111,9 @@ main(int argc, char *argv[])
 		usage();						\
 	if (expand_number(optarg, &uoff))				\
 		err(1, "illegal offset -- %s", optarg);			\
-	if (uoff > INT64_MAX / units )	\
+	off = uoff;							\
+	if (off > INT64_MAX / units || off < INT64_MIN / units )	\
 		errx(1, "illegal offset -- %s", optarg);		\
-	off = uoff; \
 	switch(optarg[0]) {						\
 	case '+':							\
 		if (off)						\

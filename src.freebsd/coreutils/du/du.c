@@ -189,13 +189,8 @@ main(int argc, char *argv[])
 			break;
 		case 't' : {
 			uint64_t thresh;
-			/* expand_number takes an unsigned pointer but will happily store
-			 * negative values (represented as values beyond signed maximum)
-			 * store in unsigned and then copy to avoid UB
-			 */
-			int ret = expand_number(optarg, &thresh);
-			memcpy(&threshold, &thresh, sizeof(threshold));
-			if (ret != 0 || threshold == 0) {
+			if (expand_number(optarg, &thresh) != 0 ||
+			    (threshold = thresh) == 0) {
 				warnx("invalid threshold: %s", optarg);
 				usage();
 			} else if (threshold < 0)

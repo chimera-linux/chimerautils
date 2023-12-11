@@ -3447,7 +3447,7 @@
  	    long_options, NULL)) != -1)
  		switch (ch) {
  		case 'A':
-@@ -185,19 +185,23 @@
+@@ -185,19 +185,18 @@
  			hflag = 0;
  			blocksize = 1048576;
  			break;
@@ -3461,13 +3461,8 @@
 -			    threshold == 0) {
 +		case 't' : {
 +			uint64_t thresh;
-+			/* expand_number takes an unsigned pointer but will happily store
-+			 * negative values (represented as values beyond signed maximum)
-+			 * store in unsigned and then copy to avoid UB
-+			 */
-+			int ret = expand_number(optarg, &thresh);
-+			memcpy(&threshold, &thresh, sizeof(threshold));
-+			if (ret != 0 || threshold == 0) {
++			if (expand_number(optarg, &thresh) != 0 ||
++			    (threshold = thresh) == 0) {
  				warnx("invalid threshold: %s", optarg);
  				usage();
  			} else if (threshold < 0)
@@ -3477,7 +3472,7 @@
  		case 'x':
  			ftsoptions |= FTS_XDEV;
  			break;
-@@ -279,18 +283,18 @@
+@@ -279,18 +278,18 @@
  			curblocks = Aflag ?
  			    howmany(p->fts_statp->st_size, cblocksize) :
  			    howmany(p->fts_statp->st_blocks, cblocksize);
@@ -3500,7 +3495,7 @@
  					    cblocksize, blocksize),
  					    p->fts_path);
  				}
-@@ -332,9 +336,9 @@
+@@ -332,9 +331,9 @@
  				}
  			}
  
@@ -3512,7 +3507,7 @@
  	}
  
  	if (errno)
-@@ -545,8 +549,6 @@
+@@ -545,8 +544,6 @@
  {
  	struct ignentry *ign;
  
@@ -3749,24 +3744,21 @@
  	int ch, first, eval;
  	fileargs_t *fa;
  	cap_rights_t rights;
-@@ -101,12 +102,14 @@
+@@ -101,11 +102,11 @@
  	while ((ch = getopt_long(argc, argv, "+n:c:qv", long_opts, NULL)) != -1) {
  		switch(ch) {
  		case 'c':
 -			if (expand_number(optarg, &bytecnt) || bytecnt <= 0)
-+			if (expand_number(optarg, &ucnt))
++			if (expand_number(optarg, &ucnt) || ((bytecnt = ucnt) <= 0))
  				errx(1, "illegal byte count -- %s", optarg);
-+			bytecnt = ucnt;
  			break;
  		case 'n':
 -			if (expand_number(optarg, &linecnt) || linecnt <= 0)
-+			if (expand_number(optarg, &ucnt))
++			if (expand_number(optarg, &ucnt) || ((linecnt = ucnt) <= 0))
  				errx(1, "illegal line count -- %s", optarg);
-+			linecnt = ucnt;
  			break;
  		case 'q':
- 			qflag = 1;
-@@ -168,15 +171,17 @@
+@@ -168,15 +169,17 @@
  static void
  head(FILE *fp, intmax_t cnt)
  {
@@ -6912,20 +6904,17 @@
  	enum STYLE style;
  	int ch, first;
  	file_info_t file, *filep, *files;
-@@ -107,10 +109,11 @@
+@@ -107,8 +109,9 @@
  #define	ARG(units, forward, backward) {					\
  	if (style)							\
  		usage();						\
 -	if (expand_number(optarg, &off))				\
 +	if (expand_number(optarg, &uoff))				\
  		err(1, "illegal offset -- %s", optarg);			\
--	if (off > INT64_MAX / units || off < INT64_MIN / units )	\
-+	if (uoff > INT64_MAX / units )	\
++	off = uoff;							\
+ 	if (off > INT64_MAX / units || off < INT64_MIN / units )	\
  		errx(1, "illegal offset -- %s", optarg);		\
-+	off = uoff; \
  	switch(optarg[0]) {						\
- 	case '+':							\
- 		if (off)						\
 --- src.orig/coreutils/tee/tee.c
 +++ src.freebsd/coreutils/tee/tee.c
 @@ -43,6 +43,7 @@
@@ -8440,33 +8429,75 @@
  
  #include <libutil.h>
  
-@@ -87,7 +88,7 @@
- static void usage(void) __dead2;
- 
- static bool
--parse_iskipspec(char *spec, off_t *skip1, off_t *skip2)
-+parse_iskipspec(char *spec, uint64_t *skip1, uint64_t *skip2)
+@@ -90,16 +91,22 @@
+ parse_iskipspec(char *spec, off_t *skip1, off_t *skip2)
  {
  	char *colon;
++	uint64_t uskip1, uskip2;
  
-@@ -109,7 +110,7 @@
- main(int argc, char *argv[])
+ 	colon = strchr(spec, ':');
+ 	if (colon != NULL)
+ 		*colon++ = '\0';
+ 
+-	if (expand_number(spec, skip1) < 0)
++	if (expand_number(spec, &uskip1) < 0)
+ 		return (false);
++	*skip1 = uskip1;
+ 
+-	if (colon != NULL)
+-		return (expand_number(colon, skip2) == 0);
++	if (colon != NULL) {
++		if (expand_number(colon, &uskip2) < 0)
++			return false;
++		*skip2 = uskip2;
++		return true;
++	}
+ 
+ 	*skip2 = *skip1;
+ 	return (true);
+@@ -110,11 +117,13 @@
  {
  	struct stat sb1, sb2;
--	off_t skip1, skip2, limit;
-+	uint64_t skip1, skip2, limit;
+ 	off_t skip1, skip2, limit;
++	uint64_t uskip1, uskip2, ulimit;
  	int ch, fd1, fd2, oflag;
  	bool special;
  	const char *file1, *file2;
-@@ -136,7 +137,7 @@
+ 
+ 	limit = skip1 = skip2 = 0;
++	ulimit = uskip1 = uskip2 = 0;
+ 	oflag = O_RDONLY;
+ 	while ((ch = getopt_long(argc, argv, "+bhi:ln:sxz", long_opts, NULL)) != -1)
+ 		switch (ch) {
+@@ -136,7 +145,7 @@
  			lflag = true;
  			break;
  		case 'n':		/* Limit */
 -			if (expand_number(optarg, &limit) < 0 || limit < 0) {
-+			if (expand_number(optarg, &limit) < 0) {
++			if (expand_number(optarg, &ulimit) < 0 || ((limit = ulimit) < 0)) {
  				fprintf(stderr, "Invalid --bytes: %s\n",
  				    optarg);
  				usage();
+@@ -197,15 +206,17 @@
+ 			exit(ERR_EXIT);
+ 	}
+ 
+-	if (argc > 2 && expand_number(argv[2], &skip1) < 0) {
++	if (argc > 2 && expand_number(argv[2], &uskip1) < 0) {
+ 		fprintf(stderr, "Invalid skip1: %s\n", argv[2]);
+ 		usage();
+ 	}
++	skip1 = uskip1;
+ 
+-	if (argc == 4 && expand_number(argv[3], &skip2) < 0) {
++	if (argc == 4 && expand_number(argv[3], &uskip2) < 0) {
+ 		fprintf(stderr, "Invalid skip2: %s\n", argv[3]);
+ 		usage();
+ 	}
++	skip2 = uskip2;
+ 
+ 	if (sflag && skip1 == 0 && skip2 == 0)
+ 		zflag = true;
 --- src.orig/diffutils/cmp/extern.h
 +++ src.freebsd/diffutils/cmp/extern.h
 @@ -32,6 +32,8 @@

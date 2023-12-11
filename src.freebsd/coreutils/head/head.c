@@ -102,14 +102,12 @@ main(int argc, char *argv[])
 	while ((ch = getopt_long(argc, argv, "+n:c:qv", long_opts, NULL)) != -1) {
 		switch(ch) {
 		case 'c':
-			if (expand_number(optarg, &ucnt))
+			if (expand_number(optarg, &ucnt) || ((bytecnt = ucnt) <= 0))
 				errx(1, "illegal byte count -- %s", optarg);
-			bytecnt = ucnt;
 			break;
 		case 'n':
-			if (expand_number(optarg, &ucnt))
+			if (expand_number(optarg, &ucnt) || ((linecnt = ucnt) <= 0))
 				errx(1, "illegal line count -- %s", optarg);
-			linecnt = ucnt;
 			break;
 		case 'q':
 			qflag = 1;

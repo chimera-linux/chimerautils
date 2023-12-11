@@ -88,19 +88,25 @@ siginfo(int signo)
 static void usage(void) __dead2;
 
 static bool
-parse_iskipspec(char *spec, uint64_t *skip1, uint64_t *skip2)
+parse_iskipspec(char *spec, off_t *skip1, off_t *skip2)
 {
 	char *colon;
+	uint64_t uskip1, uskip2;
 
 	colon = strchr(spec, ':');
 	if (colon != NULL)
 		*colon++ = '\0';
 
-	if (expand_number(spec, skip1) < 0)
+	if (expand_number(spec, &uskip1) < 0)
 		return (false);
+	*skip1 = uskip1;
 
-	if (colon != NULL)
-		return (expand_number(colon, skip2) == 0);
+	if (colon != NULL) {
+		if (expand_number(colon, &uskip2) < 0)
+			return false;
+		*skip2 = uskip2;
+		return true;
+	}
 
 	*skip2 = *skip1;
 	return (true);
@@ -110,12 +116,14 @@ int
 main(int argc, char *argv[])
 {
 	struct stat sb1, sb2;
-	uint64_t skip1, skip2, limit;
+	off_t skip1, skip2, limit;
+	uint64_t uskip1, uskip2, ulimit;
 	int ch, fd1, fd2, oflag;
 	bool special;
 	const char *file1, *file2;
 
 	limit = skip1 = skip2 = 0;
+	ulimit = uskip1 = uskip2 = 0;
 	oflag = O_RDONLY;
 	while ((ch = getopt_long(argc, argv, "+bhi:ln:sxz", long_opts, NULL)) != -1)
 		switch (ch) {
@@ -137,7 +145,7 @@ main(int argc, char *argv[])
 			lflag = true;
 			break;
 		case 'n':		/* Limit */
-			if (expand_number(optarg, &limit) < 0) {
+			if (expand_number(optarg, &ulimit) < 0 || ((limit = ulimit) < 0)) {
 				fprintf(stderr, "Invalid --bytes: %s\n",
 				    optarg);
 				usage();
@@ -198,15 +206,17 @@ main(int argc, char *argv[])
 			exit(ERR_EXIT);
 	}
 
-	if (argc > 2 && expand_number(argv[2], &skip1) < 0) {
+	if (argc > 2 && expand_number(argv[2], &uskip1) < 0) {
 		fprintf(stderr, "Invalid skip1: %s\n", argv[2]);
 		usage();
 	}
+	skip1 = uskip1;
 
-	if (argc == 4 && expand_number(argv[3], &skip2) < 0) {
+	if (argc == 4 && expand_number(argv[3], &uskip2) < 0) {
 		fprintf(stderr, "Invalid skip2: %s\n", argv[3]);
 		usage();
 	}
+	skip2 = uskip2;
 
 	if (sflag && skip1 == 0 && skip2 == 0)
 		zflag = true;
