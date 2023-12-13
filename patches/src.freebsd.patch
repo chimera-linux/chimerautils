@@ -6963,17 +6963,16 @@
  			return (i);
  	}
  
-@@ -171,8 +175,7 @@
+@@ -171,8 +175,6 @@
  	bool do_second_kill = false;
  	bool child_done = false;
  	struct sigaction signals;
 -	struct procctl_reaper_status info;
 -	struct procctl_reaper_kill killemall;
-+	unsigned long info;
  	int signums[] = {
  		-1,
  		SIGTERM,
-@@ -225,8 +228,8 @@
+@@ -225,8 +227,8 @@
  
  	if (!foreground) {
  		/* Acquire a reaper */
@@ -6984,19 +6983,18 @@
  	}
  
  	memset(&signals, 0, sizeof(signals));
-@@ -294,9 +297,8 @@
+@@ -294,9 +296,7 @@
  				if (foreground) {
  					break;
  				} else {
 -					procctl(P_PID, getpid(),
 -					    PROC_REAP_STATUS, &info);
 -					if (info.rs_children == 0)
-+					prctl(PR_GET_CHILD_SUBREAPER, &info, 0, 0);
-+					if (info == 0)
++					if (waitpid(-1, NULL, WNOHANG) < 0)
  						break;
  				}
  			}
-@@ -305,10 +307,8 @@
+@@ -305,10 +305,8 @@
  
  			timedout = true;
  			if (!foreground) {
@@ -7009,7 +7007,7 @@
  			} else
  				kill(pid, killsig);
  
-@@ -322,10 +322,8 @@
+@@ -322,10 +320,8 @@
  
  		} else if (sig_term) {
  			if (!foreground) {
@@ -7022,7 +7020,7 @@
  			} else
  				kill(pid, sig_term);
  
-@@ -345,7 +343,7 @@
+@@ -345,7 +341,7 @@
  	}
  
  	if (!foreground)

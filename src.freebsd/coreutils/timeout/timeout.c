@@ -175,7 +175,6 @@ main(int argc, char **argv)
 	bool do_second_kill = false;
 	bool child_done = false;
 	struct sigaction signals;
-	unsigned long info;
 	int signums[] = {
 		-1,
 		SIGTERM,
@@ -297,8 +296,7 @@ main(int argc, char **argv)
 				if (foreground) {
 					break;
 				} else {
-					prctl(PR_GET_CHILD_SUBREAPER, &info, 0, 0);
-					if (info == 0)
+					if (waitpid(-1, NULL, WNOHANG) < 0)
 						break;
 				}
 			}
