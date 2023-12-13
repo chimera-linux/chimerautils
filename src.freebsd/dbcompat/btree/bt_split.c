@@ -602,7 +602,7 @@ bt_psplit(BTREE *t, PAGE *h, PAGE *l, PAGE *r, indx_t *pskip, size_t ilen)
 	CURSOR *c;
 	RLEAF *rl;
 	PAGE *rval;
-	void *src;
+	void *src = NULL;
 	indx_t full, half, nxt, off, skip, top, used;
 	u_int32_t nbytes;
 	int bigkeycnt, isbigkey;

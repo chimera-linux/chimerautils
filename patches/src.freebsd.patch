@@ -8147,6 +8147,15 @@
  	int parentsplit;
  	char *dest;
  
+@@ -598,7 +602,7 @@
+ 	CURSOR *c;
+ 	RLEAF *rl;
+ 	PAGE *rval;
+-	void *src;
++	void *src = NULL;
+ 	indx_t full, half, nxt, off, skip, top, used;
+ 	u_int32_t nbytes;
+ 	int bigkeycnt, isbigkey;
 --- src.orig/dbcompat/db.c
 +++ src.freebsd/dbcompat/db.c
 @@ -42,8 +42,6 @@
