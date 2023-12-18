@@ -11098,7 +11098,7 @@
  static void usage(void) __dead2;
  
  int
-@@ -89,9 +88,9 @@
+@@ -89,9 +88,12 @@
  				errx(2, "illegal signal number: %s", *argv);
  			if (numsig >= 128)
  				numsig -= 128;
@@ -11106,11 +11106,14 @@
 +			if (numsig <= 0 || numsig >= NSIG)
  				nosig(*argv);
 -			printf("%s\n", sys_signame[numsig]);
-+			printf("%s\n", signum_to_signame(numsig));
++			if (numsig > SIGUNUSED)
++				printf("%d\n", numsig);
++			else
++				printf("%s\n", signum_to_signame(numsig));
  			return (0);
  		}
  		printsignals(stdout);
-@@ -155,20 +154,6 @@
+@@ -155,20 +157,6 @@
  	return (errors);
  }
  
@@ -11131,16 +11134,16 @@
  static void
  nosig(const char *name)
  {
-@@ -187,9 +172,9 @@
+@@ -187,9 +175,9 @@
  {
  	int n;
  
 -	for (n = 1; n < sys_nsig; n++) {
 -		(void)fprintf(fp, "%s", sys_signame[n]);
 -		if (n == (sys_nsig / 2) || n == (sys_nsig - 1))
-+	for (n = 1; n < NSIG; n++) {
++	for (n = 1; n <= SIGUNUSED; n++) {
 +		(void)fprintf(fp, "%s", signum_to_signame(n));
-+		if (n == (NSIG / 2) || n == (NSIG - 1))
++		if (n == (SIGUNUSED / 2) || n == SIGUNUSED)
  			(void)fprintf(fp, "\n");
  		else
  			(void)fprintf(fp, " ");

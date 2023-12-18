@@ -90,7 +90,10 @@ main(int argc, char *argv[])
 				numsig -= 128;
 			if (numsig <= 0 || numsig >= NSIG)
 				nosig(*argv);
-			printf("%s\n", signum_to_signame(numsig));
+			if (numsig > SIGUNUSED)
+				printf("%d\n", numsig);
+			else
+				printf("%s\n", signum_to_signame(numsig));
 			return (0);
 		}
 		printsignals(stdout);
@@ -172,9 +175,9 @@ printsignals(FILE *fp)
 {
 	int n;
 
-	for (n = 1; n < NSIG; n++) {
+	for (n = 1; n <= SIGUNUSED; n++) {
 		(void)fprintf(fp, "%s", signum_to_signame(n));
-		if (n == (NSIG / 2) || n == (NSIG - 1))
+		if (n == (SIGUNUSED / 2) || n == SIGUNUSED)
 			(void)fprintf(fp, "\n");
 		else
 			(void)fprintf(fp, " ");
