@@ -69,6 +69,7 @@ main(int argc, char *argv[])
 	pid_t pid;
 	int errors, numsig, ret;
 	char *ep;
+	const char *sign;
 
 	if (argc < 2)
 		usage();
@@ -90,10 +91,11 @@ main(int argc, char *argv[])
 				numsig -= 128;
 			if (numsig <= 0 || numsig >= NSIG)
 				nosig(*argv);
-			if (numsig > SIGUNUSED)
+			sign = signum_to_signame(numsig);
+			if (!sign)
 				printf("%d\n", numsig);
 			else
-				printf("%s\n", signum_to_signame(numsig));
+				printf("%s\n", sign);
 			return (0);
 		}
 		printsignals(stdout);
@@ -175,13 +177,13 @@ printsignals(FILE *fp)
 {
 	int n;
 
-	for (n = 1; n <= SIGUNUSED; n++) {
-		(void)fprintf(fp, "%s", signum_to_signame(n));
-		if (n == (SIGUNUSED / 2) || n == SIGUNUSED)
-			(void)fprintf(fp, "\n");
-		else
-			(void)fprintf(fp, " ");
+	for (n = 1; n <= NSIG; n++) {
+		const char *sign = signum_to_signame(n);
+		if (!sign) break;
+		if (n > 1) fprintf(fp, " ");
+		fprintf(fp, "%s", sign);
 	}
+	fprintf(fp, "\n");
 }
 
 static void
