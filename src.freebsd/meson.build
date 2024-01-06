@@ -28,6 +28,7 @@ subdir('unvis')
 subdir('bintrans')
 subdir('vis')
 subdir('which')
+subdir('libstdbuf')
 
 if not get_option('zlib').disabled() and zlib.found()
     subdir('gzip')

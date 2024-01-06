@@ -173,82 +173,6 @@
  						    FATAL("out of space for reg expr %.10s...", lastre);
  						if (cc->cc_func(i)) {
  							/* escape backslash */
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
-@@ -0,0 +1,29 @@
-+normal status 42
-+death by signal status 257
-+death by signal with core dump status 518
-+normal status 42
-+death by signal status 0.00390625
-+death by signal with core dump status 0.523438
-+# Unmodified nawk prints the 16 bit exit status divided by 256, but
-+# does so using floating point arithmetic, yielding strange results.
-+#
-+# The fix is to use the various macros defined for wait(2) and to
-+# use the signal number + 256 for death by signal, or signal number + 512
-+# for death by signal with core dump.
-+
-+BEGIN {
-+	status = system("exit 42")
-+	print "normal status", status
-+
-+	status = system("kill -HUP $$")
-+	print "death by signal status", status
-+
-+	status = system("kill -ABRT $$")
-+	print "death by signal with core dump status", status
-+
-+	system("rm -f core*")
-+}
-+../a.out: cannot set NF to a negative value
-+ source line number 1
-+../a.out: not enough args in printf(%*s)
-+ source line number 1
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
-@@ -0,0 +1,2 @@
-+../a.out: not enough args in printf(%*s)
-+ source line number 1
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
-@@ -0,0 +1,2 @@
-+../a.out: cannot set NF to a negative value
-+ source line number 1
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
-@@ -0,0 +1,19 @@
-+# Unmodified nawk prints the 16 bit exit status divided by 256, but
-+# does so using floating point arithmetic, yielding strange results.
-+#
-+# The fix is to use the various macros defined for wait(2) and to
-+# use the signal number + 256 for death by signal, or signal number + 512
-+# for death by signal with core dump.
-+
-+BEGIN {
-+	status = system("exit 42")
-+	print "normal status", status
-+
-+	status = system("kill -HUP $$")
-+	print "death by signal status", status
-+
-+	status = system("kill -ABRT $$")
-+	print "death by signal with core dump status", status
-+
-+	system("rm -f core*")
-+}
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
-@@ -0,0 +1,3 @@
-+normal status 42
-+death by signal status 0.00390625
-+death by signal with core dump status 0.523438
---- src.orig/awk/bugs
-+++ src.freebsd/awk/bugs
-@@ -0,0 +1,3 @@
-+normal status 42
-+death by signal status 257
-+death by signal with core dump status 518
 --- src.orig/awk/lex.c
 +++ src.freebsd/awk/lex.c
 @@ -425,19 +425,28 @@
@@ -6258,6 +6182,27 @@
  		return -1;
  	return (hex2nibble(c[0]) << 4) + hex2nibble(c[1]);
  }
+--- src.orig/coreutils/stdbuf/stdbuf.c
++++ src.freebsd/coreutils/stdbuf/stdbuf.c
+@@ -31,8 +31,9 @@
+ #include <stdlib.h>
+ #include <unistd.h>
+ 
++#ifndef LIBSTDBUF
+ #define	LIBSTDBUF	"/usr/lib/libstdbuf.so"
+-#define	LIBSTDBUF32	"/usr/lib32/libstdbuf.so"
++#endif
+ 
+ static int
+ appendenv(const char *key, const char *value)
+@@ -101,7 +102,6 @@
+ 		    "_STDBUF_E", ebuf);
+ 
+ 	appendenv("LD_PRELOAD", LIBSTDBUF);
+-	appendenv("LD_32_PRELOAD", LIBSTDBUF32);
+ 
+ 	execvp(argv[0], argv);
+ 	err(2, "%s", argv[0]);
 --- src.orig/coreutils/stty/cchar.c
 +++ src.freebsd/coreutils/stty/cchar.c
 @@ -34,11 +34,14 @@

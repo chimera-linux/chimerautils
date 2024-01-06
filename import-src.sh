@@ -239,6 +239,7 @@ copy_cmd contrib/vis
 copy_cmd contrib/unvis
 copy_cmd lib/libmp
 copy_cmd lib/libfetch
+copy_cmd lib/libstdbuf
 
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
