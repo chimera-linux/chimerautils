@@ -739,7 +739,7 @@ timeout_connect(int s, const struct sockaddr *name, socklen_t namelen)
 {
 	struct pollfd pfd;
 	socklen_t optlen;
-	int flags, optval;
+	int flags = 0, optval;
 	int ret;
 
 	if (timeout != -1) {

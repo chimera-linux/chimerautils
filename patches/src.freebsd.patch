@@ -4934,7 +4934,15 @@
  #include <err.h>
  #include <getopt.h>
  #include <paths.h>
-@@ -167,7 +168,7 @@
+@@ -43,6 +44,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
++#include <stdint.h>
+ #include <unistd.h>
+ 
+ #ifndef lint
+@@ -167,7 +169,7 @@
  		}
  
  		if (dflag) {
@@ -4943,7 +4951,7 @@
  				ret = 1;
  				if (!qflag)
  					warn("mkdtemp failed on %s", name);
-@@ -177,7 +178,7 @@
+@@ -177,7 +179,7 @@
  					rmdir(name);
  			}
  		} else {
@@ -12660,6 +12668,15 @@
  			memset(&ahints, 0, sizeof(struct addrinfo));
  			ahints.ai_family = res0->ai_family;
  			ahints.ai_socktype = uflag ? SOCK_DGRAM : SOCK_STREAM;
+@@ -738,7 +739,7 @@
+ {
+ 	struct pollfd pfd;
+ 	socklen_t optlen;
+-	int flags, optval;
++	int flags = 0, optval;
+ 	int ret;
+ 
+ 	if (timeout != -1) {
 @@ -801,20 +802,10 @@
  		    res0->ai_protocol)) < 0)
  			continue;
