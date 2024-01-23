@@ -12449,11 +12449,10 @@
  .It Fl v
  Have
  .Nm
-@@ -477,16 +446,6 @@
- IP for the local end of the connection:
+@@ -478,16 +447,6 @@
  .Pp
  .Dl $ nc -s 10.1.2.3 host.example.com 42
--.Pp
+ .Pp
 -Open a TCP connection to port 42 of host.example.com using IPsec ESP for
 -incoming and outgoing traffic.
 -.Pp
@@ -12463,9 +12462,18 @@
 -outgoing traffic only.
 -.Pp
 -.Dl $ nc -e 'out ipsec esp/transport//require' host.example.com 42
- .Pp
+-.Pp
  Create and listen on a
  .Ux Ns -domain
+ stream socket:
+@@ -515,7 +474,6 @@
+ .Ex -std
+ .Sh SEE ALSO
+ .Xr cat 1 ,
+-.Xr setfib 1 ,
+ .Xr ssh 1 ,
+ .Xr tcp 4
+ .Sh AUTHORS
 --- src.orig/netcat/netcat.c
 +++ src.freebsd/netcat/netcat.c
 @@ -35,17 +35,12 @@
