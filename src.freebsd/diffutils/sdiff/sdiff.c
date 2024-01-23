@@ -174,7 +174,7 @@ mktmpcpy(const char *source_file)
 	/* Not a regular file, so copy input into temporary file. */
 	if (asprintf(&target_file, "%s/sdiff.XXXXXXXXXX", tmpdir) == -1)
 		err(2, "asprintf");
-	if ((ofd = mkstemp(target_file)) == -1) {
+	if ((ofd = compat_mkstemp(target_file)) == -1) {
 		warn("error opening %s", target_file);
 		goto FAIL;
 	}

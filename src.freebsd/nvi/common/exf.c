@@ -178,7 +178,7 @@ file_init(SCR *sp, FREF *frp, char *rcv_name, int flags)
 			msgq(sp, M_SYSERR, NULL);
 			goto err;
 		}
-		if ((fd = mkstemp(tname)) == -1 || fstat(fd, &sb)) {
+		if ((fd = compat_mkstemp(tname)) == -1 || fstat(fd, &sb)) {
 			free(tname);
 			msgq(sp, M_SYSERR,
 			    "237|Unable to create temporary file");

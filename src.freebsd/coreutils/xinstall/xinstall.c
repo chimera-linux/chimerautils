@@ -566,7 +566,7 @@ quiet_mktemp(char *template)
 {
 	int fd;
 
-	if ((fd = mkstemp(template)) == -1)
+	if ((fd = compat_mkstemp(template)) == -1)
 		return (NULL);
 	close (fd);
 	if (unlink(template) == -1)
@@ -1230,7 +1230,7 @@ create_tempfile(const char *path, char *temp, size_t tsize)
 		p = temp;
 	(void)strncpy(p, "INS@XXXXXX", &temp[tsize - 1] - p);
 	temp[tsize - 1] = '\0';
-	return (mkstemp(temp));
+	return (compat_mkstemp(temp));
 }
 
 /*

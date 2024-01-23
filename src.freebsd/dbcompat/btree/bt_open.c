@@ -399,7 +399,7 @@ tmp(void)
 
 	(void)sigfillset(&set);
 	(void)sigprocmask(SIG_BLOCK, &set, &oset);
-	if ((fd = mkostemp(path, O_CLOEXEC)) != -1)
+	if ((fd = compat_mkostemp(path, O_CLOEXEC)) != -1)
 		(void)unlink(path);
 	(void)sigprocmask(SIG_SETMASK, &oset, NULL);
 	return(fd);

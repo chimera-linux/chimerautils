@@ -191,7 +191,7 @@ new_tmp_file_name(void)
 
 	if (asprintf(&ret, "%s/.bsdsort.XXXXXXXXXX", tmpdir) == -1)
 		err(2, "asprintf()");
-	if ((fd = mkstemp(ret)) == -1)
+	if ((fd = compat_mkstemp(ret)) == -1)
 		err(2, "mkstemp()");
 	close(fd);
 

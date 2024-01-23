@@ -3,6 +3,7 @@ libcompat_sources = [
     'heapsort.c',
     'humanize_number.c',
     'merge.c',
+    'mktemp.c',
     'ohash.c',
     'setmode.c',
     'strmode.c',

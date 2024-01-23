@@ -174,25 +174,25 @@ main(int argc, char *argv[])
 	i++;
 	if (asprintf(&TMPOUTNAME, "%.*s/patchoXXXXXXXXXX", i, tmpdir) == -1)
 		fatal("cannot allocate memory");
-	if ((fd = mkstemp(TMPOUTNAME)) < 0)
+	if ((fd = compat_mkstemp(TMPOUTNAME)) < 0)
 		pfatal("can't create %s", TMPOUTNAME);
 	close(fd);
 
 	if (asprintf(&TMPINNAME, "%.*s/patchiXXXXXXXXXX", i, tmpdir) == -1)
 		fatal("cannot allocate memory");
-	if ((fd = mkstemp(TMPINNAME)) < 0)
+	if ((fd = compat_mkstemp(TMPINNAME)) < 0)
 		pfatal("can't create %s", TMPINNAME);
 	close(fd);
 
 	if (asprintf(&TMPREJNAME, "%.*s/patchrXXXXXXXXXX", i, tmpdir) == -1)
 		fatal("cannot allocate memory");
-	if ((fd = mkstemp(TMPREJNAME)) < 0)
+	if ((fd = compat_mkstemp(TMPREJNAME)) < 0)
 		pfatal("can't create %s", TMPREJNAME);
 	close(fd);
 
 	if (asprintf(&TMPPATNAME, "%.*s/patchpXXXXXXXXXX", i, tmpdir) == -1)
 		fatal("cannot allocate memory");
-	if ((fd = mkstemp(TMPPATNAME)) < 0)
+	if ((fd = compat_mkstemp(TMPPATNAME)) < 0)
 		pfatal("can't create %s", TMPPATNAME);
 	close(fd);
 

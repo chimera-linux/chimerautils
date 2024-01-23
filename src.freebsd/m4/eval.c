@@ -409,7 +409,7 @@ expand_builtin(const char *argv[], int argc, int td)
 
 			temp = xstrdup(argv[2]);
 
-			fd = mkstemp(temp);
+			fd = compat_mkstemp(temp);
 			if (fd == -1)
 				err(1,
 	    "%s at line %lu: couldn't make temp file %s",
@@ -843,7 +843,7 @@ dodiv(int n)
 	if (outfile[n] == NULL) {
 		char fname[] = _PATH_DIVNAME;
 
-		if ((fd = mkstemp(fname)) == -1 ||
+		if ((fd = compat_mkstemp(fname)) == -1 ||
 		    unlink(fname) == -1 ||
 		    (outfile[n] = fdopen(fd, "w+")) == NULL)
 			err(1, "%s: cannot divert", fname);

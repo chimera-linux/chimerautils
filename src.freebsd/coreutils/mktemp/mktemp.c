@@ -168,7 +168,7 @@ main(int argc, char **argv)
 		}
 
 		if (dflag) {
-			if (mkdtemp(name) == NULL) {
+			if (compat_mkdtemp(name) == NULL) {
 				ret = 1;
 				if (!qflag)
 					warn("mkdtemp failed on %s", name);
@@ -178,7 +178,7 @@ main(int argc, char **argv)
 					rmdir(name);
 			}
 		} else {
-			fd = mkstemp(name);
+			fd = compat_mkstemp(name);
 			if (fd < 0) {
 				ret = 1;
 				if (!qflag)

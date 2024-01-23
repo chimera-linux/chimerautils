@@ -617,6 +617,184 @@
  
  #ifdef I_AM_MERGESORT_B
  #include "block_abi.h"
+--- src.orig/compat/mktemp.c
++++ src.freebsd/compat/mktemp.c
+@@ -33,9 +33,10 @@
+ static char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
+ #endif /* LIBC_SCCS and not lint */
+ #include <sys/cdefs.h>
+-#include "namespace.h"
+ #include <sys/param.h>
+ #include <sys/stat.h>
++#include <sys/random.h>
++#include <sys/types.h>
+ #include <fcntl.h>
+ #include <errno.h>
+ #include <stdio.h>
+@@ -43,89 +44,48 @@
+ #include <string.h>
+ #include <ctype.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
++#include <time.h>
+ 
+ char *_mktemp(char *);
+ 
+-static int _gettemp(int, char *, int *, int, int, int);
++static int _gettemp(int, char *, int *, int, int);
+ 
+ static const unsigned char padchar[] =
+ "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
+ 
+ int
+-mkostempsat(int dfd, char *path, int slen, int oflags)
++compat_mkostemp(char *path, int oflags)
+ {
+ 	int fd;
+ 
+-	return (_gettemp(dfd, path, &fd, 0, slen, oflags) ? fd : -1);
++	return (_gettemp(AT_FDCWD, path, &fd, 0, oflags) ? fd : -1);
+ }
+ 
+ int
+-mkostemps(char *path, int slen, int oflags)
++compat_mkstemp(char *path)
+ {
+ 	int fd;
+ 
+-	return (_gettemp(AT_FDCWD, path, &fd, 0, slen, oflags) ? fd : -1);
++	return (_gettemp(AT_FDCWD, path, &fd, 0, 0) ? fd : -1);
+ }
+ 
+-int
+-mkstemps(char *path, int slen)
+-{
+-	int fd;
+-
+-	return (_gettemp(AT_FDCWD, path, &fd, 0, slen, 0) ? fd : -1);
+-}
+-
+-int
+-mkostemp(char *path, int oflags)
+-{
+-	int fd;
+-
+-	return (_gettemp(AT_FDCWD, path, &fd, 0, 0, oflags) ? fd : -1);
+-}
+-
+-int
+-mkstemp(char *path)
+-{
+-	int fd;
+-
+-	return (_gettemp(AT_FDCWD, path, &fd, 0, 0, 0) ? fd : -1);
+-}
+-
+ char *
+-mkdtemp(char *path)
++compat_mkdtemp(char *path)
+ {
+-	return (_gettemp(AT_FDCWD, path, (int *)NULL, 1, 0, 0) ? path : (char *)NULL);
++	return (_gettemp(AT_FDCWD, path, (int *)NULL, 1, 0) ? path : (char *)NULL);
+ }
+ 
+-char *
+-_mktemp(char *path)
+-{
+-	return (_gettemp(AT_FDCWD, path, (int *)NULL, 0, 0, 0) ? path : (char *)NULL);
+-}
+-
+-__warn_references(mktemp,
+-    "warning: mktemp() possibly used unsafely; consider using mkstemp()");
+-
+-char *
+-mktemp(char *path)
+-{
+-	return (_mktemp(path));
+-}
+-
+ static int
+-_gettemp(int dfd, char *path, int *doopen, int domkdir, int slen, int oflags)
++_gettemp(int dfd, char *path, int *doopen, int domkdir, int oflags)
+ {
+ 	char *start, *trv, *suffp, *carryp;
+ 	char *pad;
+ 	struct stat sbuf;
+-	uint32_t rand;
+ 	char carrybuf[MAXPATHLEN];
+ 	int saved;
+ 
+-	if ((doopen != NULL && domkdir) || slen < 0 ||
+-	    (oflags & ~(O_APPEND | O_DIRECT | O_SHLOCK | O_EXLOCK | O_SYNC |
+-	    O_CLOEXEC)) != 0) {
++	if ((doopen != NULL && domkdir) ||
++	    (oflags & ~(O_APPEND | O_DIRECT | O_SYNC | O_CLOEXEC)) != 0) {
+ 		errno = EINVAL;
+ 		return (0);
+ 	}
+@@ -135,26 +95,45 @@
+ 		errno = ENAMETOOLONG;
+ 		return (0);
+ 	}
+-	trv -= slen;
+ 	suffp = trv;
+ 	--trv;
+-	if (trv < path || NULL != strchr(suffp, '/')) {
++	if (trv < path) {
+ 		errno = EINVAL;
+ 		return (0);
+ 	}
+ 
+ 	/* Fill space with random characters */
+-	while (trv >= path && *trv == 'X') {
+-		rand = arc4random_uniform(sizeof(padchar) - 1);
+-		*trv-- = padchar[rand];
+-	}
+-	start = trv + 1;
++	if (*trv == 'X') {
++		char *bx = trv;
++		while (bx > path && *(bx - 1) == 'X') --bx;
++		if ((suffp - bx) > 256) {
++			errno = EINVAL;
++			return (0);
++		}
++		if (getrandom(bx, suffp - bx, GRND_NONBLOCK) < 0) {
++			/* fall back to crappy randomness */
++			struct timespec ts;
++			uint64_t seed;
++			clock_gettime(CLOCK_REALTIME, &ts);
++			seed = ts.tv_sec + ts.tv_nsec + gettid() * 65537UL - 1;
++			for (char *buf = bx; buf < suffp; buf += sizeof(seed)) {
++				size_t left = (suffp - buf);
++				seed = 6364136223846793005ULL * seed + 1;
++				memcpy(buf, &seed, (left > sizeof(seed)) ? sizeof(seed) : left);
++			}
++		}
++		start = bx;
++		while (bx < suffp) {
++			*bx = padchar[*bx % sizeof(padchar)];
++			++bx;
++		}
++	} else start = trv + 1;
+ 
+ 	saved = 0;
+ 	oflags |= O_CREAT | O_EXCL | O_RDWR;
+ 	for (;;) {
+ 		if (doopen) {
+-			*doopen = _openat(dfd, path, oflags, 0600);
++			*doopen = openat(dfd, path, oflags, 0600);
+ 			if (*doopen >= 0)
+ 				return (1);
+ 			if (errno != EEXIST)
+@@ -178,7 +157,7 @@
+ 			/* have we tried all possible permutations? */
+ 			if (trv == suffp)
+ 				return (0); /* yes - exit with EEXIST */
+-			pad = strchr(padchar, *trv);
++			pad = strchr((char *)padchar, *trv);
+ 			if (pad == NULL) {
+ 				/* this should never happen */
+ 				errno = EIO;
 --- src.orig/compat/setmode.c
 +++ src.freebsd/compat/setmode.c
 @@ -34,10 +34,8 @@
@@ -4756,6 +4934,24 @@
  #include <err.h>
  #include <getopt.h>
  #include <paths.h>
+@@ -167,7 +168,7 @@
+ 		}
+ 
+ 		if (dflag) {
+-			if (mkdtemp(name) == NULL) {
++			if (compat_mkdtemp(name) == NULL) {
+ 				ret = 1;
+ 				if (!qflag)
+ 					warn("mkdtemp failed on %s", name);
+@@ -177,7 +178,7 @@
+ 					rmdir(name);
+ 			}
+ 		} else {
+-			fd = mkstemp(name);
++			fd = compat_mkstemp(name);
+ 			if (fd < 0) {
+ 				ret = 1;
+ 				if (!qflag)
 --- src.orig/coreutils/mv/mv.c
 +++ src.freebsd/coreutils/mv/mv.c
 @@ -50,7 +50,10 @@
@@ -5547,6 +5743,15 @@
  #endif
  #include <semaphore.h>
  #include <stdio.h>
+@@ -190,7 +191,7 @@
+ 
+ 	if (asprintf(&ret, "%s/.bsdsort.XXXXXXXXXX", tmpdir) == -1)
+ 		err(2, "asprintf()");
+-	if ((fd = mkstemp(ret)) == -1)
++	if ((fd = compat_mkstemp(ret)) == -1)
+ 		err(2, "mkstemp()");
+ 	close(fd);
+ 
 @@ -609,7 +610,7 @@
  			size_t sz = 0;
  			int fd, flags;
@@ -7830,6 +8035,15 @@
  		}
  		if (to_sb.st_dev == from_sb.st_dev &&
  		    to_sb.st_ino == from_sb.st_ino)
+@@ -557,7 +566,7 @@
+ {
+ 	int fd;
+ 
+-	if ((fd = mkstemp(template)) == -1)
++	if ((fd = compat_mkstemp(template)) == -1)
+ 		return (NULL);
+ 	close (fd);
+ 	if (unlink(template) == -1)
 @@ -574,7 +583,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
@@ -7892,6 +8106,15 @@
  	}
  
  	return rv;
+@@ -1224,7 +1230,7 @@
+ 		p = temp;
+ 	(void)strncpy(p, "INS@XXXXXX", &temp[tsize - 1] - p);
+ 	temp[tsize - 1] = '\0';
+-	return (mkstemp(temp));
++	return (compat_mkstemp(temp));
+ }
+ 
+ /*
 @@ -1232,7 +1238,7 @@
   *	create a new file, overwriting an existing one if necessary
   */
@@ -8031,8 +8254,9 @@
  
  	(void)sigfillset(&set);
 -	(void)__libc_sigprocmask(SIG_BLOCK, &set, &oset);
+-	if ((fd = mkostemp(path, O_CLOEXEC)) != -1)
 +	(void)sigprocmask(SIG_BLOCK, &set, &oset);
- 	if ((fd = mkostemp(path, O_CLOEXEC)) != -1)
++	if ((fd = compat_mkostemp(path, O_CLOEXEC)) != -1)
  		(void)unlink(path);
 -	(void)__libc_sigprocmask(SIG_SETMASK, &oset, NULL);
 +	(void)sigprocmask(SIG_SETMASK, &oset, NULL);
@@ -8530,6 +8754,15 @@
  
  #include "pr.h"
  #include "diff.h"
+@@ -470,7 +473,7 @@
+ 
+ 	(void)strlcpy(tempfile, _PATH_TMP "/diff.XXXXXXXX", sizeof(tempfile));
+ 
+-	if ((ofd = mkstemp(tempfile)) == -1) {
++	if ((ofd = compat_mkstemp(tempfile)) == -1) {
+ 		close(ifd);
+ 		return (NULL);
+ 	}
 @@ -1396,7 +1399,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
@@ -8881,8 +9114,28 @@
  	}
  	merge(m, n);
  
+--- src.orig/diffutils/sdiff/edit.c
++++ src.freebsd/diffutils/sdiff/edit.c
+@@ -141,7 +141,7 @@
+ 	/* Create temp file. */
+ 	if (asprintf(&filename, "%s/sdiff.XXXXXXXXXX", tmpdir) == -1)
+ 		err(2, "asprintf");
+-	if ((fd = mkstemp(filename)) == -1)
++	if ((fd = compat_mkstemp(filename)) == -1)
+ 		err(2, "mkstemp");
+ 	if (text != NULL) {
+ 		size_t len;
 --- src.orig/diffutils/sdiff/sdiff.c
 +++ src.freebsd/diffutils/sdiff/sdiff.c
+@@ -174,7 +174,7 @@
+ 	/* Not a regular file, so copy input into temporary file. */
+ 	if (asprintf(&target_file, "%s/sdiff.XXXXXXXXXX", tmpdir) == -1)
+ 		err(2, "asprintf");
+-	if ((ofd = mkstemp(target_file)) == -1) {
++	if ((ofd = compat_mkstemp(target_file)) == -1) {
+ 		warn("error opening %s", target_file);
+ 		goto FAIL;
+ 	}
 @@ -258,16 +258,19 @@
  		case 'E':
  		case 'i':
@@ -10622,6 +10875,26 @@
  
  /*
   * Print the value of mp to standard output in base 10.  See blurb
+--- src.orig/m4/eval.c
++++ src.freebsd/m4/eval.c
+@@ -409,7 +409,7 @@
+ 
+ 			temp = xstrdup(argv[2]);
+ 
+-			fd = mkstemp(temp);
++			fd = compat_mkstemp(temp);
+ 			if (fd == -1)
+ 				err(1,
+ 	    "%s at line %lu: couldn't make temp file %s",
+@@ -843,7 +843,7 @@
+ 	if (outfile[n] == NULL) {
+ 		char fname[] = _PATH_DIVNAME;
+ 
+-		if ((fd = mkstemp(fname)) == -1 ||
++		if ((fd = compat_mkstemp(fname)) == -1 ||
+ 		    unlink(fname) == -1 ||
+ 		    (outfile[n] = fdopen(fd, "w+")) == NULL)
+ 			err(1, "%s: cannot divert", fname);
 --- src.orig/m4/parser.y
 +++ src.freebsd/m4/parser.y
 @@ -18,6 +18,7 @@
@@ -12624,6 +12897,17 @@
  		}
  		(void)fflush(stdout);
  		break;
+--- src.orig/nvi/common/exf.c
++++ src.freebsd/nvi/common/exf.c
+@@ -178,7 +178,7 @@
+ 			msgq(sp, M_SYSERR, NULL);
+ 			goto err;
+ 		}
+-		if ((fd = mkstemp(tname)) == -1 || fstat(fd, &sb)) {
++		if ((fd = compat_mkstemp(tname)) == -1 || fstat(fd, &sb)) {
+ 			free(tname);
+ 			msgq(sp, M_SYSERR,
+ 			    "237|Unable to create temporary file");
 --- src.orig/nvi/common/log.c
 +++ src.freebsd/nvi/common/log.c
 @@ -22,6 +22,7 @@
@@ -12776,6 +13060,15 @@
  
  #include "../ex/version.h"
  #include "common.h"
+@@ -811,7 +812,7 @@
+ {
+ 	int fd;
+ 
+-	if ((fd = mkstemp(path)) == -1)
++	if ((fd = compat_mkstemp(path)) == -1)
+ 		msgq_str(sp, M_SYSERR, dname, "%s");
+ 	return (fd);
+ }
 @@ -851,7 +852,7 @@
  	GET_SPACE_GOTOC(sp, bp, blen, (len + 2) / 3 * 4 + dlen + 2);
  	(void)memcpy(bp, dtype, dlen);
@@ -12989,6 +13282,36 @@
  
 --- src.orig/patch/patch.c
 +++ src.freebsd/patch/patch.c
+@@ -174,25 +174,25 @@
+ 	i++;
+ 	if (asprintf(&TMPOUTNAME, "%.*s/patchoXXXXXXXXXX", i, tmpdir) == -1)
+ 		fatal("cannot allocate memory");
+-	if ((fd = mkstemp(TMPOUTNAME)) < 0)
++	if ((fd = compat_mkstemp(TMPOUTNAME)) < 0)
+ 		pfatal("can't create %s", TMPOUTNAME);
+ 	close(fd);
+ 
+ 	if (asprintf(&TMPINNAME, "%.*s/patchiXXXXXXXXXX", i, tmpdir) == -1)
+ 		fatal("cannot allocate memory");
+-	if ((fd = mkstemp(TMPINNAME)) < 0)
++	if ((fd = compat_mkstemp(TMPINNAME)) < 0)
+ 		pfatal("can't create %s", TMPINNAME);
+ 	close(fd);
+ 
+ 	if (asprintf(&TMPREJNAME, "%.*s/patchrXXXXXXXXXX", i, tmpdir) == -1)
+ 		fatal("cannot allocate memory");
+-	if ((fd = mkstemp(TMPREJNAME)) < 0)
++	if ((fd = compat_mkstemp(TMPREJNAME)) < 0)
+ 		pfatal("can't create %s", TMPREJNAME);
+ 	close(fd);
+ 
+ 	if (asprintf(&TMPPATNAME, "%.*s/patchpXXXXXXXXXX", i, tmpdir) == -1)
+ 		fatal("cannot allocate memory");
+-	if ((fd = mkstemp(TMPPATNAME)) < 0)
++	if ((fd = compat_mkstemp(TMPPATNAME)) < 0)
+ 		pfatal("can't create %s", TMPPATNAME);
+ 	close(fd);
+ 
 @@ -561,7 +561,11 @@
  	Argv_last = Argv;
  	if (!Argc)
@@ -13164,6 +13487,24 @@
  
  static const char *
  get_histfile(void)
+@@ -114,7 +118,7 @@
+ 		INTON;
+ 		return;
+ 	}
+-	fd = mkstemp(histtmpname);
++	fd = compat_mkstemp(histtmpname);
+ 	if (fd == -1 || (f = fdopen(fd, "w")) == NULL) {
+ 		free(histtmpname);
+ 		INTON;
+@@ -384,7 +388,7 @@
+ 		int fd;
+ 		INTOFF;		/* easier */
+ 		sprintf(editfilestr, "%s/_shXXXXXX", _PATH_TMP);
+-		if ((fd = mkstemp(editfilestr)) < 0)
++		if ((fd = compat_mkstemp(editfilestr)) < 0)
+ 			error("can't create temporary file %s", editfile);
+ 		editfile = editfilestr;
+ 		if ((efp = fdopen(fd, "w")) == NULL) {
 @@ -579,17 +583,17 @@
  	return ret;
  }

@@ -812,7 +812,7 @@ rcv_mktemp(SCR *sp, char *path, char *dname)
 {
 	int fd;
 
-	if ((fd = mkstemp(path)) == -1)
+	if ((fd = compat_mkstemp(path)) == -1)
 		msgq_str(sp, M_SYSERR, dname, "%s");
 	return (fd);
 }

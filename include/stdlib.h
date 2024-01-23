@@ -56,4 +56,8 @@ static inline const char *getprogname_impl(void) {
 #define getprogname getprogname_impl
 #endif
 
+int compat_mkostemp(char *path, int oflags);
+int compat_mkstemp(char *path);
+char *compat_mkdtemp(char *path);
+
 #endif

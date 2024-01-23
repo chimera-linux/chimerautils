@@ -118,7 +118,7 @@ histsave(void)
 		INTON;
 		return;
 	}
-	fd = mkstemp(histtmpname);
+	fd = compat_mkstemp(histtmpname);
 	if (fd == -1 || (f = fdopen(fd, "w")) == NULL) {
 		free(histtmpname);
 		INTON;
@@ -388,7 +388,7 @@ operands:
 		int fd;
 		INTOFF;		/* easier */
 		sprintf(editfilestr, "%s/_shXXXXXX", _PATH_TMP);
-		if ((fd = mkstemp(editfilestr)) < 0)
+		if ((fd = compat_mkstemp(editfilestr)) < 0)
 			error("can't create temporary file %s", editfile);
 		editfile = editfilestr;
 		if ((efp = fdopen(fd, "w")) == NULL) {

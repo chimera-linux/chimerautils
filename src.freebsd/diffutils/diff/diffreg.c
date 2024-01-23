@@ -473,7 +473,7 @@ opentemp(const char *f)
 
 	(void)strlcpy(tempfile, _PATH_TMP "/diff.XXXXXXXX", sizeof(tempfile));
 
-	if ((ofd = mkstemp(tempfile)) == -1) {
+	if ((ofd = compat_mkstemp(tempfile)) == -1) {
 		close(ifd);
 		return (NULL);
 	}

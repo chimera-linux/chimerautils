@@ -255,6 +255,7 @@ cp -p usr/src/lib/libc/string/strmode.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/gen/stringlist.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/stdtime/strptime.c ${CWD}/src.orig/compat
 cp -p usr/src/lib/libc/stdtime/strftime.c ${CWD}/src.orig/compat
+cp -p usr/src/lib/libc/stdio/mktemp.c ${CWD}/src.orig/compat
 cp -p usr/src/contrib/libc-vis/vis.c ${CWD}/src.orig/compat
 cp -p usr/src/contrib/libc-vis/unvis.c ${CWD}/src.orig/compat
 cp -p usr/src/include/stringlist.h ${CWD}/src.orig/include

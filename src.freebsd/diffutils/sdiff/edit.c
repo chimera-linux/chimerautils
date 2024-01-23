@@ -141,7 +141,7 @@ RIGHT:
 	/* Create temp file. */
 	if (asprintf(&filename, "%s/sdiff.XXXXXXXXXX", tmpdir) == -1)
 		err(2, "asprintf");
-	if ((fd = mkstemp(filename)) == -1)
+	if ((fd = compat_mkstemp(filename)) == -1)
 		err(2, "mkstemp");
 	if (text != NULL) {
 		size_t len;
