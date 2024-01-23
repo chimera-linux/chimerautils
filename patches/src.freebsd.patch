@@ -619,7 +619,7 @@
  #include "block_abi.h"
 --- src.orig/compat/mktemp.c
 +++ src.freebsd/compat/mktemp.c
-@@ -33,9 +33,10 @@
+@@ -33,99 +33,60 @@
  static char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
  #endif /* LIBC_SCCS and not lint */
  #include <sys/cdefs.h>
@@ -631,8 +631,9 @@
  #include <fcntl.h>
  #include <errno.h>
  #include <stdio.h>
-@@ -43,89 +44,48 @@
+ #include <stdlib.h>
  #include <string.h>
++#include <stdint.h>
  #include <ctype.h>
  #include <unistd.h>
 -#include "un-namespace.h"
@@ -732,7 +733,7 @@
  		errno = EINVAL;
  		return (0);
  	}
-@@ -135,26 +95,45 @@
+@@ -135,26 +96,45 @@
  		errno = ENAMETOOLONG;
  		return (0);
  	}
@@ -786,7 +787,7 @@
  			if (*doopen >= 0)
  				return (1);
  			if (errno != EEXIST)
-@@ -178,7 +157,7 @@
+@@ -178,7 +158,7 @@
  			/* have we tried all possible permutations? */
  			if (trv == suffp)
  				return (0); /* yes - exit with EEXIST */
@@ -4934,15 +4935,7 @@
  #include <err.h>
  #include <getopt.h>
  #include <paths.h>
-@@ -43,6 +44,7 @@
- #include <stdio.h>
- #include <stdlib.h>
- #include <string.h>
-+#include <stdint.h>
- #include <unistd.h>
- 
- #ifndef lint
-@@ -167,7 +169,7 @@
+@@ -167,7 +168,7 @@
  		}
  
  		if (dflag) {
@@ -4951,7 +4944,7 @@
  				ret = 1;
  				if (!qflag)
  					warn("mkdtemp failed on %s", name);
-@@ -177,7 +179,7 @@
+@@ -177,7 +178,7 @@
  					rmdir(name);
  			}
  		} else {
