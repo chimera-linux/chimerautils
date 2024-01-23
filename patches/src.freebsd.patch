@@ -12096,6 +12096,515 @@
  
  	(void)signal(SIGINT, done);
  	(void)signal(SIGHUP, done);
+--- src.orig/netcat/nc.1
++++ src.freebsd/netcat/nc.1
+@@ -36,11 +36,9 @@
+ .Sh SYNOPSIS
+ .Nm nc
+ .Bk -words
+-.Op Fl 46DdEFhklMNnrStUuvz
+-.Op Fl e Ar IPsec_policy
++.Op Fl 46DdFhklNnrStUuvz
+ .Op Fl I Ar length
+ .Op Fl i Ar interval
+-.Op Fl -no-tcpopt
+ .Op Fl -sctp
+ .Op Fl O Ar length
+ .Op Fl P Ar proxy_username
+@@ -48,7 +46,6 @@
+ .Op Fl s Ar source
+ .Op Fl T Ar toskeyword
+ .Op Fl -tun Ar tundev
+-.Op Fl V Ar rtable
+ .Op Fl w Ar timeout
+ .Op Fl X Ar proxy_protocol
+ .Oo Xo
+@@ -108,20 +105,6 @@
+ Enable debugging on the socket.
+ .It Fl d
+ Do not attempt to read from stdin.
+-.It Fl E
+-Shortcut for
+-.Qo
+-.Li "-e 'in ipsec esp/transport//require'"
+-.Li "-e 'out ipsec esp/transport//require'" 
+-.Qc ,
+-which enables IPsec ESP transport mode in both
+-directions.
+-.It Fl e
+-If IPsec support is available, then one can specify the IPsec policies
+-to be used using the syntax described in
+-.Xr ipsec_set_policy 3 .
+-This flag can be specified up to two times, as typically one policy for
+-each direction is needed.
+ .It Fl F
+ Pass the first connected socket using
+ .Xr sendmsg 2
+@@ -172,12 +155,6 @@
+ Additionally, any timeouts specified with the
+ .Fl w
+ option are ignored.
+-.It Fl M
+-Collect per-connection TCP statistics using the
+-.Xr stats 3
+-framework and print them in JSON format to
+-.Xr stderr 4
+-after the connection is closed.
+ .It Fl N
+ .Xr shutdown 2
+ the network socket after EOF on the input.
+@@ -185,10 +162,6 @@
+ .It Fl n
+ Do not do any DNS or service lookups on any specified addresses,
+ hostnames or ports.
+-.It Fl -no-tcpopt
+-Disables the use of TCP options on the socket, by setting the boolean
+-TCP_NOOPT
+-socket option.
+ .It Fl -sctp
+ Use SCTP instead of the default option of TCP.
+ .It Fl O Ar length
+@@ -263,10 +236,6 @@
+ unless the
+ .Fl s
+ flag is given.
+-.It Fl V Ar rtable
+-Set the routing table
+-.Pq Dq FIB
+-to be used.
+ .It Fl v
+ Have
+ .Nm
+@@ -477,16 +446,6 @@
+ IP for the local end of the connection:
+ .Pp
+ .Dl $ nc -s 10.1.2.3 host.example.com 42
+-.Pp
+-Open a TCP connection to port 42 of host.example.com using IPsec ESP for
+-incoming and outgoing traffic.
+-.Pp
+-.Dl $ nc -E host.example.com 42
+-.Pp
+-Open a TCP connection to port 42 of host.example.com using IPsec ESP for
+-outgoing traffic only.
+-.Pp
+-.Dl $ nc -e 'out ipsec esp/transport//require' host.example.com 42
+ .Pp
+ Create and listen on a
+ .Ux Ns -domain
+--- src.orig/netcat/netcat.c
++++ src.freebsd/netcat/netcat.c
+@@ -35,17 +35,12 @@
+ 
+ #include <errno.h>
+ #include <stdio.h>
+-#include <sys/arb.h>
+-#include <sys/limits.h>
+ #include <sys/types.h>
+-#include <sys/sbuf.h>
+ #include <sys/socket.h>
+-#include <sys/sysctl.h>
+-#include <sys/qmath.h>
+-#include <sys/stats.h>
+ #include <sys/time.h>
+ #include <sys/uio.h>
+ #include <sys/un.h>
++#include <sys/random.h>
+ 
+ #include <netinet/in.h>
+ #ifdef IPSEC
+@@ -68,6 +63,45 @@
+ #include <unistd.h>
+ #include "atomicio.h"
+ 
++#ifndef IPTOS_LOWDELAY
++# define IPTOS_LOWDELAY 0x10
++# define IPTOS_THROUGHPUT 0x08
++# define IPTOS_RELIABILITY 0x04
++# define IPTOS_LOWCOST 0x02
++# define IPTOS_MINCOST IPTOS_LOWCOST
++#endif /* IPTOS_LOWDELAY */
++
++# ifndef IPTOS_DSCP_AF11
++# define	IPTOS_DSCP_AF11		0x28
++# define	IPTOS_DSCP_AF12		0x30
++# define	IPTOS_DSCP_AF13		0x38
++# define	IPTOS_DSCP_AF21		0x48
++# define	IPTOS_DSCP_AF22		0x50
++# define	IPTOS_DSCP_AF23		0x58
++# define	IPTOS_DSCP_AF31		0x68
++# define	IPTOS_DSCP_AF32		0x70
++# define	IPTOS_DSCP_AF33		0x78
++# define	IPTOS_DSCP_AF41		0x88
++# define	IPTOS_DSCP_AF42		0x90
++# define	IPTOS_DSCP_AF43		0x98
++# define	IPTOS_DSCP_EF		0xb8
++#endif /* IPTOS_DSCP_AF11 */
++
++#ifndef IPTOS_DSCP_CS0
++# define	IPTOS_DSCP_CS0		0x00
++# define	IPTOS_DSCP_CS1		0x20
++# define	IPTOS_DSCP_CS2		0x40
++# define	IPTOS_DSCP_CS3		0x60
++# define	IPTOS_DSCP_CS4		0x80
++# define	IPTOS_DSCP_CS5		0xa0
++# define	IPTOS_DSCP_CS6		0xc0
++# define	IPTOS_DSCP_CS7		0xe0
++#endif /* IPTOS_DSCP_CS0 */
++
++#ifndef IPTOS_DSCP_EF
++# define	IPTOS_DSCP_EF		0xb8
++#endif /* IPTOS_DSCP_EF */
++
+ #ifndef SUN_LEN
+ #define SUN_LEN(su) \
+ 	(sizeof(*(su)) - sizeof((su)->sun_path) + strlen((su)->sun_path))
+@@ -89,10 +123,8 @@
+ unsigned int iflag;				/* Interval Flag */
+ int	kflag;					/* More than one connect */
+ int	lflag;					/* Bind to local port */
+-int	FreeBSD_Mflag;				/* Measure using stats(3) */
+ int	Nflag;					/* shutdown() network socket */
+ int	nflag;					/* Don't do name look up */
+-int	FreeBSD_Oflag;				/* Do not use TCP options */
+ int	FreeBSD_sctp;				/* Use SCTP */
+ char   *Pflag;					/* Proxy username */
+ char   *pflag;					/* Localport flag */
+@@ -108,7 +140,6 @@
+ int	Oflag;					/* TCP send buffer size */
+ int	Sflag;					/* TCP MD5 signature option */
+ int	Tflag = -1;				/* IP Type of Service */
+-int	rtableid = -1;
+ 
+ int timeout = -1;
+ int family = AF_UNSPEC;
+@@ -130,8 +161,6 @@
+ int	unix_bind(char *);
+ int	unix_connect(char *);
+ int	unix_listen(char *);
+-void	FreeBSD_stats_setup(int);
+-void	FreeBSD_stats_print(int);
+ void	set_common_sockopts(int, int);
+ int	map_tos(char *, int *);
+ void	report_connect(const struct sockaddr *, socklen_t);
+@@ -152,9 +181,7 @@
+ int
+ main(int argc, char *argv[])
+ {
+-	int ch, s, ret, socksv, ipsec_count;
+-	int numfibs;
+-	size_t intsize = sizeof(int);
++	int ch, s, ret, socksv;
+ 	char *host, *uport;
+ 	struct addrinfo hints;
+ 	struct servent *sv;
+@@ -165,14 +192,12 @@
+ 	struct addrinfo proxyhints;
+ 	char unix_dg_tmp_socket_buf[UNIX_DG_TMP_SOCKET_SIZE];
+ 	struct option longopts[] = {
+-		{ "no-tcpopt",	no_argument,	&FreeBSD_Oflag,	1 },
+ 		{ "sctp",	no_argument,	&FreeBSD_sctp,	1 },
+ 		{ "tun",	required_argument,	NULL,	FREEBSD_TUN },
+ 		{ NULL,		0,		NULL,		0 }
+ 	};
+ 
+ 	ret = 1;
+-	ipsec_count = 0;
+ 	s = 0;
+ 	socksv = 5;
+ 	host = NULL;
+@@ -182,7 +207,7 @@
+ 	signal(SIGPIPE, SIG_IGN);
+ 
+ 	while ((ch = getopt_long(argc, argv,
+-	    "46DdEe:FhI:i:klMNnoO:P:p:rSs:tT:UuV:vw:X:x:z",
++	    "46DdFhI:i:klNnoO:P:p:rSs:tT:Uuvw:X:x:z",
+ 	    longopts, NULL)) != -1) {
+ 		switch (ch) {
+ 		case '4':
+@@ -239,13 +264,6 @@
+ 		case 'l':
+ 			lflag = 1;
+ 			break;
+-		case 'M':
+-#ifndef WITH_STATS
+-			errx(1, "-M requires stats(3) support");
+-#else
+-			FreeBSD_Mflag = 1;
+-#endif
+-			break;
+ 		case 'N':
+ 			Nflag = 1;
+ 			break;
+@@ -273,14 +291,6 @@
+ 		case 'u':
+ 			uflag = 1;
+ 			break;
+-		case 'V':
+-			if (sysctlbyname("net.fibs", &numfibs, &intsize, NULL, 0) == -1)
+-				errx(1, "Multiple FIBS not supported");
+-			rtableid = (int)strtonum(optarg, 0,
+-			    numfibs - 1, &errstr);
+-			if (errstr)
+-				errx(1, "rtable %s: %s", errstr, optarg);
+-			break;
+ 		case 'v':
+ 			vflag = 1;
+ 			break;
+@@ -495,9 +505,6 @@
+ 				}
+ 				if (vflag)
+ 					report_connect((struct sockaddr *)&cliaddr, len);
+-
+-				if (FreeBSD_Mflag)
+-					FreeBSD_stats_setup(connfd);
+ 				readwrite(connfd);
+ 				close(connfd);
+ 			}
+@@ -681,7 +688,7 @@
+ remote_connect(const char *host, const char *port, struct addrinfo hints)
+ {
+ 	struct addrinfo *res, *res0;
+-	int s, error, on = 1;
++	int s, error;
+ 
+ 	if ((error = getaddrinfo(host, port, &hints, &res)))
+ 		errx(1, "getaddrinfo: %s", gai_strerror(error));
+@@ -692,16 +699,10 @@
+ 		    res0->ai_protocol)) < 0)
+ 			continue;
+ 
+-		if (rtableid >= 0 && (setsockopt(s, SOL_SOCKET, SO_SETFIB,
+-		    &rtableid, sizeof(rtableid)) == -1))
+-			err(1, "setsockopt SO_SETFIB");
+-
+ 		/* Bind to a local port or source address if specified. */
+ 		if (sflag || pflag) {
+ 			struct addrinfo ahints, *ares;
+ 
+-			/* try IP_BINDANY, but don't insist */
+-			setsockopt(s, IPPROTO_IP, IP_BINDANY, &on, sizeof(on));
+ 			memset(&ahints, 0, sizeof(struct addrinfo));
+ 			ahints.ai_family = res0->ai_family;
+ 			ahints.ai_socktype = uflag ? SOCK_DGRAM : SOCK_STREAM;
+@@ -801,20 +802,10 @@
+ 		    res0->ai_protocol)) < 0)
+ 			continue;
+ 
+-		if (rtableid >= 0 && (setsockopt(s, SOL_SOCKET, SO_SETFIB,
+-		    &rtableid, sizeof(rtableid)) == -1))
+-			err(1, "setsockopt SO_SETFIB");
+-
+ 		ret = setsockopt(s, SOL_SOCKET, SO_REUSEPORT, &x, sizeof(x));
+ 		if (ret == -1)
+ 			err(1, NULL);
+ 
+-		if (FreeBSD_Oflag) {
+-			if (setsockopt(s, IPPROTO_TCP, TCP_NOOPT,
+-			    &FreeBSD_Oflag, sizeof(FreeBSD_Oflag)) == -1)
+-				err(1, "disable TCP options");
+-		}
+-
+ 		set_common_sockopts(s, res0->ai_family);
+ 
+ 		if (bind(s, (struct sockaddr *)res0->ai_addr,
+@@ -850,7 +841,6 @@
+ 	unsigned char stdinbuf[BUFSIZE];
+ 	size_t stdinbufpos = 0;
+ 	int n, num_fds;
+-	int stats_printed = 0;
+ 	ssize_t ret;
+ 
+ 	/* don't read from stdin if requested */
+@@ -877,23 +867,17 @@
+ 		/* both inputs are gone, buffers are empty, we are done */
+ 		if (pfd[POLL_STDIN].fd == -1 && pfd[POLL_NETIN].fd == -1
+ 		    && stdinbufpos == 0 && netinbufpos == 0) {
+-			if (FreeBSD_Mflag && !stats_printed)
+-				FreeBSD_stats_print(net_fd);
+ 			close(net_fd);
+ 			return;
+ 		}
+ 		/* both outputs are gone, we can't continue */
+ 		if (pfd[POLL_NETOUT].fd == -1 && pfd[POLL_STDOUT].fd == -1) {
+-			if (FreeBSD_Mflag && !stats_printed)
+-				FreeBSD_stats_print(net_fd);
+ 			close(net_fd);
+ 			return;
+ 		}
+ 		/* listen and net in gone, queues empty, done */
+ 		if (lflag && pfd[POLL_NETIN].fd == -1
+ 		    && stdinbufpos == 0 && netinbufpos == 0) {
+-			if (FreeBSD_Mflag && !stats_printed)
+-				FreeBSD_stats_print(net_fd);
+ 			close(net_fd);
+ 			return;
+ 		}
+@@ -915,8 +899,6 @@
+ 
+ 		/* timeout happened */
+ 		if (num_fds == 0) {
+-			if (FreeBSD_Mflag)
+-				FreeBSD_stats_print(net_fd);
+ 			return;
+ 		}
+ 
+@@ -1021,10 +1003,6 @@
+ 		/* stdin gone and queue empty? */
+ 		if (pfd[POLL_STDIN].fd == -1 && stdinbufpos == 0) {
+ 			if (pfd[POLL_NETOUT].fd != -1 && Nflag) {
+-				if (FreeBSD_Mflag) {
+-					FreeBSD_stats_print(net_fd);
+-					stats_printed = 1;
+-				}
+ 				shutdown(pfd[POLL_NETOUT].fd, SHUT_WR);
+ 			}
+ 			pfd[POLL_NETOUT].fd = -1;
+@@ -1209,7 +1187,9 @@
+ 			char *c;
+ 
+ 			for (x = 0; x <= (hi - lo); x++) {
+-				y = (arc4random() & 0xFFFF) % (hi - lo);
++				if (getrandom(&y, sizeof(y), 0) < 0)
++					err(1, "getrandom");
++				y = (y & 0xFFFF) % (hi - lo);
+ 				c = portlist[x];
+ 				portlist[x] = portlist[y];
+ 				portlist[y] = c;
+@@ -1243,7 +1223,7 @@
+ 	}
+ 	return (ret);
+ }
+-
++#if 0
+ void
+ FreeBSD_stats_setup(int s)
+ {
+@@ -1304,7 +1284,7 @@
+ 	fprintf(stderr, "%s\n", sbuf_data(sb));
+ #endif
+ }
+-
++#endif
+ void
+ set_common_sockopts(int s, int af)
+ {
+@@ -1344,13 +1324,6 @@
+ 		    &Oflag, sizeof(Oflag)) == -1)
+ 			err(1, "set TCP send buffer size");
+ 	}
+-	if (FreeBSD_Oflag) {
+-		if (setsockopt(s, IPPROTO_TCP, TCP_NOOPT,
+-		    &FreeBSD_Oflag, sizeof(FreeBSD_Oflag)) == -1)
+-			err(1, "disable TCP options");
+-	}
+-	if (FreeBSD_Mflag)
+-		FreeBSD_stats_setup(s);
+ #ifdef IPSEC
+ 	if (ipsec_policy[0] != NULL)
+ 		add_ipsec_policy(s, af, ipsec_policy[0]);
+--- src.orig/netcat/socks.c
++++ src.freebsd/netcat/socks.c
+@@ -38,7 +38,7 @@
+ #include <string.h>
+ #include <unistd.h>
+ #include <resolv.h>
+-#include <readpassphrase.h>
++#include <libutil.h>
+ #include "atomicio.h"
+ 
+ #define SOCKS_PORT	"1080"
+@@ -113,11 +113,12 @@
+ getproxypass(const char *proxyuser, const char *proxyhost)
+ {
+ 	char prompt[512];
+-	static char pw[256];
++	const char *pw;
+ 
+ 	snprintf(prompt, sizeof(prompt), "Proxy password for %s@%s: ",
+ 	   proxyuser, proxyhost);
+-	if (readpassphrase(prompt, pw, sizeof(pw), RPP_REQUIRE_TTY) == NULL)
++	/* deprecated but CBA to write a replacement at the moment */
++	if ((pw = getpass(prompt)) == NULL)
+ 		errx(1, "Unable to read proxy passphrase");
+ 	return (pw);
+ }
+@@ -272,38 +273,38 @@
+ 
+ 		/* Try to be sane about numeric IPv6 addresses */
+ 		if (strchr(host, ':') != NULL) {
+-			r = snprintf(buf, sizeof(buf),
++			r = snprintf((char *)buf, sizeof(buf),
+ 			    "CONNECT [%s]:%d HTTP/1.0\r\n",
+ 			    host, ntohs(serverport));
+ 		} else {
+-			r = snprintf(buf, sizeof(buf),
++			r = snprintf((char *)buf, sizeof(buf),
+ 			    "CONNECT %s:%d HTTP/1.0\r\n",
+ 			    host, ntohs(serverport));
+ 		}
+ 		if (r == -1 || (size_t)r >= sizeof(buf))
+ 			errx(1, "hostname too long");
+-		r = strlen(buf);
++		r = strlen((char *)buf);
+ 
+ 		cnt = atomicio(vwrite, proxyfd, buf, r);
+-		if (cnt != r)
++		if (cnt != (size_t)r)
+ 			err(1, "write failed (%zu/%d)", cnt, r);
+ 
+ 		if (authretry > 1) {
+ 			char resp[1024];
+ 
+ 			proxypass = getproxypass(proxyuser, proxyhost);
+-			r = snprintf(buf, sizeof(buf), "%s:%s",
++			r = snprintf((char *)buf, sizeof(buf), "%s:%s",
+ 			    proxyuser, proxypass);
+ 			if (r == -1 || (size_t)r >= sizeof(buf) ||
+-			    b64_ntop(buf, strlen(buf), resp,
++			    compat_b64_ntop(buf, strlen((char *)buf), resp,
+ 			    sizeof(resp)) == -1)
+ 				errx(1, "Proxy username/password too long");
+-			r = snprintf(buf, sizeof(buf), "Proxy-Authorization: "
++			r = snprintf((char *)buf, sizeof(buf), "Proxy-Authorization: "
+ 			    "Basic %s\r\n", resp);
+ 			if (r == -1 || (size_t)r >= sizeof(buf))
+ 				errx(1, "Proxy auth response too long");
+-			r = strlen(buf);
+-			if ((cnt = atomicio(vwrite, proxyfd, buf, r)) != r)
++			r = strlen((char *)buf);
++			if ((cnt = atomicio(vwrite, proxyfd, buf, r)) != (size_t)r)
+ 				err(1, "write failed (%zu/%d)", cnt, r);
+ 		}
+ 
+@@ -312,22 +313,22 @@
+ 			err(1, "write failed (%zu/2)", cnt);
+ 
+ 		/* Read status reply */
+-		proxy_read_line(proxyfd, buf, sizeof(buf));
++		proxy_read_line(proxyfd, (char *)buf, sizeof(buf));
+ 		if (proxyuser != NULL &&
+-		    strncmp(buf, "HTTP/1.0 407 ", 12) == 0) {
++		    strncmp((char *)buf, "HTTP/1.0 407 ", 12) == 0) {
+ 			if (authretry > 1) {
+ 				fprintf(stderr, "Proxy authentication "
+ 				    "failed\n");
+ 			}
+ 			close(proxyfd);
+ 			goto again;
+-		} else if (strncmp(buf, "HTTP/1.0 200 ", 12) != 0 &&
+-		    strncmp(buf, "HTTP/1.1 200 ", 12) != 0)
++		} else if (strncmp((char *)buf, "HTTP/1.0 200 ", 12) != 0 &&
++		    strncmp((char *)buf, "HTTP/1.1 200 ", 12) != 0)
+ 			errx(1, "Proxy error: \"%s\"", buf);
+ 
+ 		/* Headers continue until we hit an empty line */
+ 		for (r = 0; r < HTTP_MAXHDRS; r++) {
+-			proxy_read_line(proxyfd, buf, sizeof(buf));
++			proxy_read_line(proxyfd, (char *)buf, sizeof(buf));
+ 			if (*buf == '\0')
+ 				break;
+ 		}
 --- src.orig/nvi/cl/cl_funcs.c
 +++ src.freebsd/nvi/cl/cl_funcs.c
 @@ -146,7 +146,7 @@

@@ -232,6 +232,7 @@ copy_cmd usr.bin/sed
 copy_cmd usr.bin/shar
 copy_cmd usr.bin/tip
 copy_cmd usr.bin/which
+copy_cmd contrib/netcat
 copy_cmd contrib/nvi
 copy_cmd contrib/one-true-awk "" awk
 copy_cmd contrib/telnet
