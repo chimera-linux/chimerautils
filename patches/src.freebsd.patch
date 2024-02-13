@@ -10038,6 +10038,38 @@
  	(void)fclose(ttyfp);
  	regfree(&cre);
  	return (match == 0);
+--- src.orig/gencat/gencat.c
++++ src.freebsd/gencat/gencat.c
+@@ -84,6 +84,29 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++/* the following nls stuff was grabbed from freebsd's nl_types.h */
++#define _NLS_MAGIC	0xff88ff89
++
++struct _nls_cat_hdr {
++	int32_t __magic;
++	int32_t __nsets;
++	int32_t __mem;
++	int32_t __msg_hdr_offset;
++	int32_t __msg_txt_offset;
++} ;
++
++struct _nls_set_hdr {
++	int32_t __setno;	/* set number: 0 < x <= NL_SETMAX */
++	int32_t __nmsgs;	/* number of messages in the set  */
++	int32_t __index;	/* index of first msg_hdr in msg_hdr table */
++} ;
++
++struct _nls_msg_hdr {
++	int32_t __msgno;	/* msg number: 0 < x <= NL_MSGMAX */
++	int32_t __msglen;
++	int32_t __offset;
++} ;
++
+ struct _msgT {
+ 	long    msgId;
+ 	char   *str;
 --- src.orig/grep/file.c
 +++ src.freebsd/grep/file.c
 @@ -40,6 +40,7 @@
