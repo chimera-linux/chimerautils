@@ -76,7 +76,7 @@ static wchar_t *get_wln(FILE *f, size_t *len, wchar_t **sbuf, size_t *blen) {
 		wchar_t *nptr;
 		*blen = wlen + BUF_PIECE;
 		*sbuf = realloc(*sbuf, *blen * sizeof(wchar_t));
-		if (*sbuf) err(1, "realloc");
+		if (!*sbuf) err(1, "realloc");
 
 		nptr = fgetws(*sbuf + wlen, BUF_PIECE, f);
 		if (!nptr) {
