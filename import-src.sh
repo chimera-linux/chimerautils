@@ -224,6 +224,7 @@ copy_cmd bin/sh
 copy_cmd usr.bin/bintrans
 copy_cmd usr.bin/compress
 copy_cmd usr.bin/fetch
+copy_cmd usr.bin/gencat
 copy_cmd usr.bin/grep
 copy_cmd usr.bin/gzip
 copy_cmd usr.bin/m4

@@ -27,6 +27,7 @@ It also provides the following functionality:
 * tip/cu
 * telnet
 * fetch
+* gencat
 * nc
 * vi
 * sh
