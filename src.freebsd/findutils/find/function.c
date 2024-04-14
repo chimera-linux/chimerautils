@@ -912,7 +912,7 @@ f_fstypename(dev_t curdev)
 			unsigned int maj, min;
 			memset(curfstype, 0, sizeof(curfstype));
 			if (sscanf(
-			    lbuf, "%*d %*d %u:%u %*[^-]- %63s %*s %*s",
+			    lbuf, "%*d %*d %u:%u %*s %*s %*[^-]- %63s %*s %*s",
 			    &maj, &min, curfstype
 			) <= 0)
 				continue;
