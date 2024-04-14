@@ -910,8 +910,9 @@ f_fstypename(dev_t curdev)
 		const char *rfs = NULL;
 		while (getline(&lbuf, &lsize, f) > 0) {
 			unsigned int maj, min;
+			memset(curfstype, 0, sizeof(curfstype));
 			if (sscanf(
-			    lbuf, "%*d %*d %u:%u %*s %*s %*s %*s - %63s %*s %*s",
+			    lbuf, "%*d %*d %u:%u %*[^-]- %63s %*s %*s",
 			    &maj, &min, curfstype
 			) <= 0)
 				continue;
