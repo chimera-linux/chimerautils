@@ -64,10 +64,6 @@ jobs:
                   tar -xf libxo-${VER}.tar.gz
                   cd libxo-${VER}
 
-                  # remove this once it's merged and a new release includes it
-                  curl -k -f -L -O https://github.com/Juniper/libxo/pull/82.patch
-                  [ -f 82.patch ] && patch -p1 < 82.patch
-
                   ./configure --prefix=/usr/local
                   make
                   make install
