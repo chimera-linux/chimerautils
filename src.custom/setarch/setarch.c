@@ -439,7 +439,7 @@ really_ok:
             fflush(NULL);
         }
         execvp(argv[0], argv);
-        err(1, "execvp");
+        err(1, "execvp: failed to execute '%s'", argv[0]);
         return 1;
     }
 
