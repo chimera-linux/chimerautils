@@ -1,7 +1,7 @@
 /*
  * SPDX-License-Identifier: BSD-2-Clause
  *
- * Copyright (c) 2023 Daniel Kolesa
+ * Copyright (c) 2023 q66 <q66@chimera-linux.org>
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -103,7 +103,7 @@ usage_help:
     } else if (version) {
         printf(
 "%s (" PROJECT_NAME ") " PROJECT_VERSION "\n"
-"Copyright (C) 2023 Daniel Kolesa\n"
+"Copyright (C) 2023 q66 <q66@chimera-linux.org>\n"
 "SPDX-License-Identifier: BSD-2-Clause\n",
             __progname
         );
