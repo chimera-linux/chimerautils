@@ -5207,6 +5207,50 @@
  	timefrmt = strdup(d_first ? TIMEFMTD : TIMEFMTM);
  
  	return(0);
+--- src.orig/coreutils/printf/printf.1
++++ src.freebsd/coreutils/printf/printf.1
+@@ -96,6 +96,14 @@
+ Write a <tab> character.
+ .It Cm \ev
+ Write a <vertical tab> character.
++.It Cm \ex Ns Ar num
++Write a byte whose
++value is the 1- or 2-digit
++hexadecimal number
++.Ar num .
++Multibyte characters can be constructed using multiple
++.Cm \ex Ns Ar num
++sequences.
+ .It Cm \e\'
+ Write a <single quote> character.
+ .It Cm \e\e
+--- src.orig/coreutils/printf/printf.c
++++ src.freebsd/coreutils/printf/printf.c
+@@ -522,6 +522,24 @@
+ 		case 'v':		/* vertical tab */
+ 			*store = '\v';
+ 			break;
++		case 'x':		/* hexadecimal constant */
++			if (!percent) {
++				*store = 'x';
++				break;
++			}
++			c = 2;
++			++fmt;
++			for (value = 0; c-- && (
++				(*fmt >= '0' && *fmt <= '9') ||
++				((*fmt|32) >= 'a' && (*fmt|32) <= 'f')
++			); ++fmt) {
++				value <<= 4;
++				value += ((*fmt|32) >= 'a')
++					? (10 + (*fmt|32) - 'a') : (*fmt - '0');
++			}
++			--fmt;
++			*store = (char)value;
++			break;
+ 					/* octal constant */
+ 		case '0': case '1': case '2': case '3':
+ 		case '4': case '5': case '6': case '7':
 --- src.orig/coreutils/rm/rm.1
 +++ src.freebsd/coreutils/rm/rm.1
 @@ -41,7 +41,7 @@

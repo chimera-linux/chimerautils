@@ -522,6 +522,24 @@ escape(char *fmt, int percent, size_t *len)
 		case 'v':		/* vertical tab */
 			*store = '\v';
 			break;
+		case 'x':		/* hexadecimal constant */
+			if (!percent) {
+				*store = 'x';
+				break;
+			}
+			c = 2;
+			++fmt;
+			for (value = 0; c-- && (
+				(*fmt >= '0' && *fmt <= '9') ||
+				((*fmt|32) >= 'a' && (*fmt|32) <= 'f')
+			); ++fmt) {
+				value <<= 4;
+				value += ((*fmt|32) >= 'a')
+					? (10 + (*fmt|32) - 'a') : (*fmt - '0');
+			}
+			--fmt;
+			*store = (char)value;
+			break;
 					/* octal constant */
 		case '0': case '1': case '2': case '3':
 		case '4': case '5': case '6': case '7':

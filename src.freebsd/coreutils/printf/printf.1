@@ -96,6 +96,14 @@ Write a <carriage return> character.
 Write a <tab> character.
 .It Cm \ev
 Write a <vertical tab> character.
+.It Cm \ex Ns Ar num
+Write a byte whose
+value is the 1- or 2-digit
+hexadecimal number
+.Ar num .
+Multibyte characters can be constructed using multiple
+.Cm \ex Ns Ar num
+sequences.
 .It Cm \e\'
 Write a <single quote> character.
 .It Cm \e\e
