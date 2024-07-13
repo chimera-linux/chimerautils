@@ -9,6 +9,14 @@
  		// not seen yet, insert and return
  		gtt *tab = & f->gototab[state];
  		if (tab->inuse + 1 >= tab->allocated)
+@@ -1017,6 +1017,7 @@
+ 		}
+ 		else
+ 			FATAL("syntax error in regular expression %s at %s", lastre, prestr);
++		break;
+ 	default:
+ 		FATAL("illegal primary in regular expression %s at %s", lastre, prestr);
+ 	}
 --- src.orig/awk/run.c
 +++ src.freebsd/awk/run.c
 @@ -1982,7 +1982,6 @@

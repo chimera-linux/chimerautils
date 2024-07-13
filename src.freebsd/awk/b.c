@@ -1017,6 +1017,7 @@ Node *primary(void)
 		}
 		else
 			FATAL("syntax error in regular expression %s at %s", lastre, prestr);
+		break;
 	default:
 		FATAL("illegal primary in regular expression %s at %s", lastre, prestr);
 	}
