@@ -133,7 +133,7 @@
  #include "block_abi.h"
 --- src.orig/compat/mktemp.c
 +++ src.freebsd/compat/mktemp.c
-@@ -32,8 +32,9 @@
+@@ -32,99 +32,60 @@
  #if defined(LIBC_SCCS) && !defined(lint)
  static char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
  #endif /* LIBC_SCCS and not lint */
@@ -144,8 +144,10 @@
  #include <sys/stat.h>
  #include <fcntl.h>
  #include <errno.h>
-@@ -42,89 +43,48 @@
+ #include <stdio.h>
+ #include <stdlib.h>
  #include <string.h>
++#include <stdint.h>
  #include <ctype.h>
  #include <unistd.h>
 -#include "un-namespace.h"
@@ -245,7 +247,7 @@
  		errno = EINVAL;
  		return (0);
  	}
-@@ -134,26 +94,45 @@
+@@ -134,26 +95,45 @@
  		errno = ENAMETOOLONG;
  		return (0);
  	}
@@ -299,7 +301,7 @@
  			if (*doopen >= 0)
  				return (1);
  			if (errno != EEXIST)
-@@ -177,7 +156,7 @@
+@@ -177,7 +157,7 @@
  			/* have we tried all possible permutations? */
  			if (trv == suffp)
  				return (0); /* yes - exit with EEXIST */

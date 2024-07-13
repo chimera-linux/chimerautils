@@ -42,7 +42,7 @@ jobs:
 
             - name: build and check
               run: |
-                  meson setup build --werror -Db_buildtype=debug
+                  meson setup build --werror -Dbuildtype=debug
                   ninja -C build -v
                   meson test -C build -v
 
@@ -81,6 +81,6 @@ jobs:
 
             - name: build and check
               run: |
-                  meson setup build --werror -Db_buildtype=debug -Drpmatch_path=/usr/local/lib
+                  meson setup build --werror -Dbuildtype=debug -Drpmatch_path=/usr/local/lib
                   ninja -C build -v
                   meson test -C build -v
