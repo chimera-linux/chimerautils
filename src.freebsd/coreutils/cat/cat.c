@@ -162,7 +162,7 @@ init_casper(int argc, char *argv[])
 		err(EXIT_FAILURE, "unable to create Casper");
 
 	fa = fileargs_cinit(casper, argc, argv, O_RDONLY, 0,
-	    cap_rights_init(&rights, CAP_READ | CAP_FSTAT | CAP_FCNTL),
+	    cap_rights_init(&rights, CAP_READ, CAP_FSTAT, CAP_FCNTL, CAP_SEEK),
 	    FA_OPEN | FA_REALPATH);
 	if (fa == NULL)
 		err(EXIT_FAILURE, "unable to create fileargs");
@@ -288,18 +288,12 @@ scanfiles(char *argv[], int cooked __unused)
 		} else {
 #ifndef BOOTSTRAP_CAT
 			if (in_kernel_copy(fd) == -1) {
-				switch (errno) {
-				case EINVAL:
-				case EBADF:
-				case EXDEV:
-				case ESPIPE:
-				case ENOSYS:
+				if (errno == EINVAL || errno == EBADF ||
+				    errno == EISDIR || errno == EXDEV ||
+				    errno == ESPIPE || errno == ENOSYS)
 					raw_cat(fd);
-					break;
-				default:
+				else
 					err(1, "stdout");
-					break;
-				}
 			}
 #else
 			raw_cat(fd);

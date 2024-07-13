@@ -27,10 +27,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
-
 #ifndef lint
 #if 0
 static const char sccsid[] = "@(#)encrypt.c	8.2 (Berkeley) 5/30/95";
@@ -608,7 +604,7 @@ encrypt_reply(unsigned char *data, int cnt)
  * Called when a ENCRYPT START command is received.
  */
 void
-encrypt_start(unsigned char *data __unused, int cnt __unused)
+encrypt_start(unsigned char *data __attribute__((unused)), int cnt __attribute__((unused)))
 {
 	Encryptions *ep;
 
@@ -686,7 +682,7 @@ encrypt_request_end(void)
  * can.
  */
 void
-encrypt_request_start(unsigned char *data __unused, int cnt __unused)
+encrypt_request_start(unsigned char *data __attribute__((unused)), int cnt __attribute__((unused)))
 {
 	if (encrypt_mode == 0)  {
 		if (Server)

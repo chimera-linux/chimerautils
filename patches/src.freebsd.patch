@@ -1,349 +1,25 @@
---- src.orig/awk/FIXES
-+++ src.freebsd/awk/FIXES
-@@ -23,7 +23,53 @@
- ****************************************************************/
- 
- This file lists all bug fixes, changes, etc., made since the AWK book
--was sent to the printers in August, 1987.
-++was sent to the printers in August 1987.
-+ 
-++Dec 15, 2022:
-+	Force hex escapes in strings to be no more than two characters,
-++	as they already are in regular expressions. This brings internal
-+	consistency, as well as consistency with gawk. Thanks to
-+	Arnold Robbins.
-++
-+Sep 12, 2022:
-+	adjbuf minlen error (cannot be 0) in cat, resulting in NULL pbuf.
-+	discovered by todd miller. also use-after-free issue with
-+	tempfree in cat, thanks to Miguel Pineiro Jr and valgrind.
-+
-+Aug 30, 2022:
-+	Various leaks and use-after-free issues plugged/fixed.
-+	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+May 23, 2022:
-+	Memory leak when assigning a string to some of the built-in
-+	variables. allocated string erroneously marked DONTFREE.
-+	Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+Mar 14, 2022:
-+	Historic bug: command-line "name=value" assignment had been
-+	truncating its entry in ARGV. (circa 1989) Thanks to 
-+	Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+Mar 3, 2022:
-+	Fixed file management memory leak that appears to have been
-+	there since the files array was first initialized with stdin,
-+	stdout, and stderr (circa 1992). Thanks to Miguel Pineiro Jr.
-+	<mpj@pineiro.cc>.
-+
-+December 8, 2021:
-+	The error handling in closefile and closeall was mangled. Long
-+	standing warnings had been made fatal and some fatal errors went
-+	undetected. Thanks to Miguel Pineiro Jr. <mpj@pineiro.cc>.
-+
-+Nov 03, 2021:
-+        getline accesses uninitialized data after getrec()
-+	returns 0 on EOF and leaves the contents of buf unchanged.
-+	Thanks to Volodymyr Gubarkov, and Todd C Miller.
-+
-+Oct 12, 2021:
-+	The fix for #83 changed the code to insert 2 chars, but the
-+	call to adjbuf just above it only allows for 1 char. This can
-+	cause a heap buffer overflow.
- 
- July 27, 2021:
- 	As per IEEE Std 1003.1-2008, -F "str" is now consistent with
---- src.orig/awk/awk.h
-+++ src.freebsd/awk/awk.h
-@@ -37,7 +37,7 @@
- 
- typedef	unsigned char uschar;
- 
--#define	xfree(a)	{ if ((a) != NULL) { free((void *)(intptr_t)(a)); (a) = NULL; } }
-+#define	xfree(a)	{ free((void *)(intptr_t)(a)); (a) = NULL; }
- /*
-  * We sometimes cheat writing read-only pointers to NUL-terminate them
-  * and then put back the original value
---- src.orig/awk/awkgram.y
-+++ src.freebsd/awk/awkgram.y
-@@ -206,9 +206,10 @@
- 		{ $$ = op2(AND, notnull($1), notnull($3)); }
- 	| ppattern MATCHOP reg_expr	{ $$ = op3($2, NIL, $1, (Node*)makedfa($3, 0)); }
- 	| ppattern MATCHOP ppattern
--		{ if (constnode($3))
-+		{ if (constnode($3)) {
- 			$$ = op3($2, NIL, $1, (Node*)makedfa(strnode($3), 0));
--		  else
-+			free($3);
-+		  } else
- 			$$ = op3($2, (Node *)1, $1, $3); }
- 	| ppattern IN varname		{ $$ = op2(INTEST, $1, makearr($3)); }
- 	| '(' plist ')' IN varname	{ $$ = op2(INTEST, $2, makearr($5)); }
-@@ -233,9 +234,10 @@
- 	| pattern NE pattern		{ $$ = op2($2, $1, $3); }
- 	| pattern MATCHOP reg_expr	{ $$ = op3($2, NIL, $1, (Node*)makedfa($3, 0)); }
- 	| pattern MATCHOP pattern
--		{ if (constnode($3))
-+		{ if (constnode($3)) {
- 			$$ = op3($2, NIL, $1, (Node*)makedfa(strnode($3), 0));
--		  else
-+			free($3);
-+		  } else
- 			$$ = op3($2, (Node *)1, $1, $3); }
- 	| pattern IN varname		{ $$ = op2(INTEST, $1, makearr($3)); }
- 	| '(' plist ')' IN varname	{ $$ = op2(INTEST, $2, makearr($5)); }
-@@ -378,17 +380,19 @@
- 	| GENSUB '(' reg_expr comma pattern comma pattern ')'
- 		{ $$ = op5(GENSUB, NIL, (Node*)makedfa($3, 1), $5, $7, rectonode()); }
- 	| GENSUB '(' pattern comma pattern comma pattern ')'
--		{ if (constnode($3))
-+		{ if (constnode($3)) {
- 			$$ = op5(GENSUB, NIL, (Node *)makedfa(strnode($3), 1), $5, $7, rectonode());
--		  else
-+			free($3);
-+		  } else
- 			$$ = op5(GENSUB, (Node *)1, $3, $5, $7, rectonode());
- 		}
- 	| GENSUB '(' reg_expr comma pattern comma pattern comma pattern ')'
- 		{ $$ = op5(GENSUB, NIL, (Node*)makedfa($3, 1), $5, $7, $9); }
- 	| GENSUB '(' pattern comma pattern comma pattern comma pattern ')'
--		{ if (constnode($3))
-+		{ if (constnode($3)) {
- 			$$ = op5(GENSUB, NIL, (Node *)makedfa(strnode($3),1), $5,$7,$9);
--		  else
-+			free($3);
-+		  } else
- 			$$ = op5(GENSUB, (Node *)1, $3, $5, $7, $9);
- 		}
- 	| GETLINE var LT term		{ $$ = op3(GETLINE, $2, itonp($3), $4); }
-@@ -404,9 +408,10 @@
- 	| MATCHFCN '(' pattern comma reg_expr ')'
- 		{ $$ = op3(MATCHFCN, NIL, $3, (Node*)makedfa($5, 1)); }
- 	| MATCHFCN '(' pattern comma pattern ')'
--		{ if (constnode($5))
-+		{ if (constnode($5)) {
- 			$$ = op3(MATCHFCN, NIL, $3, (Node*)makedfa(strnode($5), 1));
--		  else
-+			free($5);
-+		  } else
- 			$$ = op3(MATCHFCN, (Node *)1, $3, $5); }
- 	| NUMBER			{ $$ = celltonode($1, CCON); }
- 	| SPLIT '(' pattern comma varname comma pattern ')'     /* string */
-@@ -420,16 +425,18 @@
- 	| subop '(' reg_expr comma pattern ')'
- 		{ $$ = op4($1, NIL, (Node*)makedfa($3, 1), $5, rectonode()); }
- 	| subop '(' pattern comma pattern ')'
--		{ if (constnode($3))
-+		{ if (constnode($3)) {
- 			$$ = op4($1, NIL, (Node*)makedfa(strnode($3), 1), $5, rectonode());
--		  else
-+			free($3);
-+		  } else
- 			$$ = op4($1, (Node *)1, $3, $5, rectonode()); }
- 	| subop '(' reg_expr comma pattern comma var ')'
- 		{ $$ = op4($1, NIL, (Node*)makedfa($3, 1), $5, $7); }
- 	| subop '(' pattern comma pattern comma var ')'
--		{ if (constnode($3))
-+		{ if (constnode($3)) {
- 			$$ = op4($1, NIL, (Node*)makedfa(strnode($3), 1), $5, $7);
--		  else
-+			free($3);
-+		  } else
- 			$$ = op4($1, (Node *)1, $3, $5, $7); }
- 	| SUBSTR '(' pattern comma pattern comma pattern ')'
- 		{ $$ = op3(SUBSTR, $3, $5, $7); }
 --- src.orig/awk/b.c
 +++ src.freebsd/awk/b.c
-@@ -807,6 +807,7 @@
- 		}
- 		else
- 			FATAL("syntax error in regular expression %s at %s", lastre, prestr);
-+		/* FALLTHROUGH */
- 	default:
- 		FATAL("illegal primary in regular expression %s at %s", lastre, prestr);
- 	}
-@@ -1101,7 +1102,7 @@
- 					 * program to track each string's length.
- 					 */
- 					for (i = 1; i <= UCHAR_MAX; i++) {
--						if (!adjbuf((char **) &buf, &bufsz, bp-buf+1, 100, (char **) &bp, "relex2"))
-+						if (!adjbuf((char **) &buf, &bufsz, bp-buf+2, 100, (char **) &bp, "relex2"))
- 						    FATAL("out of space for reg expr %.10s...", lastre);
- 						if (cc->cc_func(i)) {
- 							/* escape backslash */
---- src.orig/awk/lex.c
-+++ src.freebsd/awk/lex.c
-@@ -425,19 +425,28 @@
- 				break;
- 
- 			case 'x':	/* hex  \x0-9a-fA-F + */
--			    {	char xbuf[100], *px;
--				for (px = xbuf; (c = input()) != 0 && px-xbuf < 100-2; ) {
--					if (isdigit(c)
--					 || (c >= 'a' && c <= 'f')
--					 || (c >= 'A' && c <= 'F'))
--						*px++ = c;
--					else
-+			    {
-+				int i;
-+
-+				n = 0;
-+				for (i = 1; i <= 2; i++) {
-+					c = input();
-+					if (c == 0)
- 						break;
-+					if (isxdigit(c)) {
-+						c = tolower(c);
-+						n *= 16;
-+						if (isdigit(c))
-+							n += (c - '0');
-+						else
-+							n += 10 + (c - 'a');
-+					} else
-+						break;
- 				}
--				*px = 0;
--				unput(c);
--	  			sscanf(xbuf, "%x", (unsigned int *) &n);
--				*bp++ = n;
-+				if (n)
-+					*bp++ = n;
-+				else
-+					unput(c);
- 				break;
- 			    }
- 
-@@ -534,7 +543,7 @@
- 	char *bp;
- 
- 	if (buf == NULL && (buf = (char *) malloc(bufsz)) == NULL)
--		FATAL("out of space for rex expr");
-+		FATAL("out of space for reg expr");
- 	bp = buf;
- 	for ( ; (c = input()) != '/' && c != 0; ) {
- 		if (!adjbuf(&buf, &bufsz, bp-buf+3, 500, &bp, "regexpr"))
-@@ -554,7 +563,7 @@
- 	*bp = 0;
- 	if (c == 0)
- 		SYNTAX("non-terminated regular expression %.10s...", buf);
--	yylval.s = tostring(buf);
-+	yylval.s = buf;
- 	unput('/');
- 	RET(REGEXPR);
- }
---- src.orig/awk/lib.c
-+++ src.freebsd/awk/lib.c
-@@ -297,12 +297,13 @@
- 
- void setclvar(char *s)	/* set var=value from s */
- {
--	char *p;
-+	char *e, *p;
- 	Cell *q;
- 	double result;
- 
- 	for (p=s; *p != '='; p++)
- 		;
-+	e = p;
- 	*p++ = 0;
- 	p = qstring(p, '\0');
- 	q = setsymtab(s, p, 0.0, STR, symtab);
-@@ -312,6 +313,8 @@
- 		q->tval |= NUM;
- 	}
- 	DPRINTF("command line set %s to |%s|\n", s, p);
-+	free(p);
-+	*e = '=';
- }
- 
- 
---- src.orig/awk/main.c
-+++ src.freebsd/awk/main.c
-@@ -22,7 +22,7 @@
- THIS SOFTWARE.
- ****************************************************************/
- 
--const char	*version = "version 20210724";
-+const char	*version = "version 20221215";
- 
- #define DEBUG
- #include <stdio.h>
+@@ -645,7 +645,7 @@
+ 		f->gototab[state].entries[0].state = val;
+ 		f->gototab[state].inuse++;
+ 		return val;
+-	} else if (ch > f->gototab[state].entries[f->gototab[state].inuse-1].ch) {
++	} else if (ch > (int)f->gototab[state].entries[f->gototab[state].inuse-1].ch) {
+ 		// not seen yet, insert and return
+ 		gtt *tab = & f->gototab[state];
+ 		if (tab->inuse + 1 >= tab->allocated)
 --- src.orig/awk/run.c
 +++ src.freebsd/awk/run.c
-@@ -447,13 +447,15 @@
- 			n = getrec(&record, &recsize, true);
- 		else {			/* getline var */
- 			n = getrec(&buf, &bufsize, false);
--			x = execute(a[0]);
--			setsval(x, buf);
--			if (is_number(x->sval, & result)) {
--				x->fval = result;
--				x->tval |= NUM;
-+			if (n > 0) {
-+				x = execute(a[0]);
-+				setsval(x, buf);
-+				if (is_number(x->sval, & result)) {
-+					x->fval = result;
-+					x->tval |= NUM;
-+				}
-+				tempfree(x);
- 			}
--			tempfree(x);
- 		}
- 	}
- 	setfval(r, (Awkfloat) n);
-@@ -972,8 +974,10 @@
- 	}
- 	*p = '\0';
- 	free(fmt);
--	for ( ; a; a = a->nnext)		/* evaluate any remaining args */
--		execute(a);
-+	for ( ; a; a = a->nnext) {		/* evaluate any remaining args */
-+		x = execute(a);
-+		tempfree(x);
-+	}
- 	*pbuf = buf;
- 	*pbufsize = bufsize;
- 	return p - buf;
-@@ -1196,16 +1200,17 @@
+@@ -1982,7 +1982,6 @@
+ 	size_t n       = 0;
+ 	wchar_t wc;
+ 	const size_t sz = awk_mb_cur_max;
+-	int unused;
  
- 	x = execute(a[0]);
- 	n1 = strlen(getsval(x));
--	adjbuf(&s, &ssz, n1, recsize, 0, "cat1");
-+	adjbuf(&s, &ssz, n1 + 1, recsize, 0, "cat1");
- 	memcpy(s, x->sval, n1);
- 
-+	tempfree(x);
-+
- 	y = execute(a[1]);
- 	n2 = strlen(getsval(y));
- 	adjbuf(&s, &ssz, n1 + n2 + 1, recsize, 0, "cat2");
- 	memcpy(s + n1, y->sval, n2);
- 	s[n1 + n2] = '\0';
- 
--	tempfree(x);
- 	tempfree(y);
- 
- 	z = gettemp();
-@@ -1267,6 +1272,7 @@
- 
- 	y = execute(a[0]);	/* source string */
- 	origs = s = strdup(getsval(y));
-+	tempfree(y);
- 	arg3type = ptoi(a[3]);
- 	if (a[2] == NULL)		/* fs string */
- 		fs = getsval(fsloc);
-@@ -1387,7 +1393,6 @@
- 		}
- 	}
- 	tempfree(ap);
--	tempfree(y);
- 	xfree(origs);
- 	xfree(origfs);
- 	x = gettemp();
-@@ -1541,14 +1546,8 @@
+ 	if (sz == 1) {
+ 		buf = tostring(s);
+@@ -1996,14 +1995,8 @@
  		buf = tostringN(s, strlen(s) * sz + 1);
  
  		(void) mbtowc(NULL, NULL, 0);	/* reset internal state */
@@ -353,14 +29,14 @@
 -		 * doesn't work.)
 -		 * Increment said variable to avoid a different warning.
 -		 */
--		int unused = wctomb(NULL, L'\0');
+-		unused = wctomb(NULL, L'\0');
 -		unused++;
 +		/* Reset internal state here too. */
 +		(void) wctomb(NULL, L'\0');
  
  		ps   = s;
  		pbuf = buf;
-@@ -1604,7 +1603,7 @@
+@@ -2061,7 +2054,7 @@
  Cell *bltin(Node **a, int n)	/* builtin functions. a[0] is type, a[1] is arg list */
  {
  	Cell *x, *y;
@@ -369,150 +45,6 @@
  	int t, sz;
  	Awkfloat tmp;
  	char *buf, *fmt;
-@@ -1808,8 +1807,10 @@
- 	setfval(x, u);
- 	if (nextarg != NULL) {
- 		WARNING("warning: function has too many arguments");
--		for ( ; nextarg; nextarg = nextarg->nnext)
--			execute(nextarg);
-+		for ( ; nextarg; nextarg = nextarg->nnext) {
-+			y = execute(nextarg);
-+			tempfree(y);
-+		}
- 	}
- 	return(x);
- }
-@@ -1876,13 +1877,13 @@
- 	if (files == NULL)
- 		FATAL("can't allocate file memory for %zu files", nfiles);
-         files[0].fp = stdin;
--	files[0].fname = "/dev/stdin";
-+	files[0].fname = tostring("/dev/stdin");
- 	files[0].mode = LT;
-         files[1].fp = stdout;
--	files[1].fname = "/dev/stdout";
-+	files[1].fname = tostring("/dev/stdout");
- 	files[1].mode = GT;
-         files[2].fp = stderr;
--	files[2].fname = "/dev/stderr";
-+	files[2].fname = tostring("/dev/stderr");
- 	files[2].mode = GT;
- }
- 
-@@ -1956,8 +1957,8 @@
- 	return "???";
- }
- 
-- Cell *closefile(Node **a, int n)
-- {
-+Cell *closefile(Node **a, int n)
-+{
-  	Cell *x;
- 	size_t i;
- 	bool stat;
-@@ -1968,8 +1969,15 @@
-  	for (i = 0; i < nfiles; i++) {
- 		if (!files[i].fname || strcmp(x->sval, files[i].fname) != 0)
- 			continue;
--		if (ferror(files[i].fp))
--			FATAL("i/o error occurred on %s", files[i].fname);
-+		if (files[i].mode == GT || files[i].mode == '|')
-+			fflush(files[i].fp);
-+		if (ferror(files[i].fp)) {
-+			if ((files[i].mode == GT && files[i].fp != stderr)
-+			  || files[i].mode == '|')
-+				FATAL("write error on %s", files[i].fname);
-+			else
-+				WARNING("i/o error occurred on %s", files[i].fname);
-+		}
- 		if (files[i].fp == stdin || files[i].fp == stdout ||
- 		    files[i].fp == stderr)
- 			stat = freopen("/dev/null", "r+", files[i].fp) == NULL;
-@@ -1978,9 +1986,8 @@
- 		else
- 			stat = fclose(files[i].fp) == EOF;
- 		if (stat)
--			FATAL("i/o error occurred closing %s", files[i].fname);
--		if (i > 2)	/* don't do /dev/std... */
--			xfree(files[i].fname);
-+			WARNING("i/o error occurred closing %s", files[i].fname);
-+		xfree(files[i].fname);
- 		files[i].fname = NULL;	/* watch out for ref thru this */
- 		files[i].fp = NULL;
- 		break;
-@@ -1989,7 +1996,7 @@
-  	x = gettemp();
- 	setfval(x, (Awkfloat) (stat ? -1 : 0));
-  	return(x);
-- }
-+}
- 
- void closeall(void)
- {
-@@ -1999,18 +2006,24 @@
- 	for (i = 0; i < nfiles; i++) {
- 		if (! files[i].fp)
- 			continue;
--		if (ferror(files[i].fp))
--			FATAL( "i/o error occurred on %s", files[i].fname );
--		if (files[i].fp == stdin)
-+		if (files[i].mode == GT || files[i].mode == '|')
-+			fflush(files[i].fp);
-+		if (ferror(files[i].fp)) {
-+			if ((files[i].mode == GT && files[i].fp != stderr)
-+			  || files[i].mode == '|')
-+				FATAL("write error on %s", files[i].fname);
-+			else
-+				WARNING("i/o error occurred on %s", files[i].fname);
-+		}
-+		if (files[i].fp == stdin || files[i].fp == stdout ||
-+		    files[i].fp == stderr)
- 			continue;
- 		if (files[i].mode == '|' || files[i].mode == LE)
- 			stat = pclose(files[i].fp) == -1;
--		else if (files[i].fp == stdout || files[i].fp == stderr)
--			stat = fflush(files[i].fp) == EOF;
- 		else
- 			stat = fclose(files[i].fp) == EOF;
- 		if (stat)
--			FATAL( "i/o error occurred while closing %s", files[i].fname );
-+			WARNING("i/o error occurred while closing %s", files[i].fname);
- 	}
- }
- 
---- src.orig/awk/tran.c
-+++ src.freebsd/awk/tran.c
-@@ -70,18 +70,6 @@
- 
- extern Cell **fldtab;
- 
--static void
--setfree(Cell *vp)
--{
--	if (&vp->sval == FS || &vp->sval == RS ||
--	    &vp->sval == OFS || &vp->sval == ORS ||
--	    &vp->sval == OFMT || &vp->sval == CONVFMT ||
--	    &vp->sval == FILENAME || &vp->sval == SUBSEP)
--		vp->tval |= DONTFREE;
--	else
--		vp->tval &= ~DONTFREE;
--}
--
- void syminit(void)	/* initialize symbol table with builtin vars */
- {
- 	literal0 = setsymtab("0", "0", 0.0, NUM|STR|CON|DONTFREE, symtab);
-@@ -377,10 +365,9 @@
- 	t = s ? tostring(s) : tostring("");	/* in case it's self-assign */
- 	if (freeable(vp))
- 		xfree(vp->sval);
--	vp->tval &= ~(NUM|CONVC|CONVO);
-+	vp->tval &= ~(NUM|DONTFREE|CONVC|CONVO);
- 	vp->tval |= STR;
- 	vp->fmt = NULL;
--	setfree(vp);
- 	DPRINTF("setsval %p: %s = \"%s (%p) \", t=%o r,f=%d,%d\n",
- 		(void*)vp, NN(vp->nval), t, (void*)t, vp->tval, donerec, donefld);
- 	vp->sval = t;
 --- src.orig/bc/dc/bcode.c
 +++ src.freebsd/bc/dc/bcode.c
 @@ -70,7 +70,7 @@
@@ -542,17 +74,6 @@
  {
  
  	stack_dup(&bmachine.stack);
---- src.orig/bintrans/qp.c
-+++ src.freebsd/bintrans/qp.c
-@@ -90,7 +90,7 @@
- static void
- encode_quoted_printable(const char *body, FILE *fpo)
- {
--	char prev;
-+	char prev = 0;
- 	const char *end = body + strlen(body);
- 	size_t linelen = 0;
- 
 --- src.orig/bintrans/uudecode.c
 +++ src.freebsd/bintrans/uudecode.c
 @@ -58,6 +58,7 @@
@@ -563,7 +84,7 @@
  #include <pwd.h>
  #include <resolv.h>
  #include <stdbool.h>
-@@ -465,7 +466,7 @@
+@@ -476,7 +477,7 @@
  		strcpy(leftover, inbuf + count4 + 1);
  		inbuf[count4 + 1] = 0;
  
@@ -593,23 +114,16 @@
  		if (columns == 0) {
 --- src.orig/compat/merge.c
 +++ src.freebsd/compat/merge.c
-@@ -36,6 +36,9 @@
- static char sccsid[] = "@(#)merge.c	8.2 (Berkeley) 2/14/94";
- #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
-+
-+#define __is_aligned(x, align) (((uintptr_t)x & ((align) - 1)) == 0)
-+
- /*
-  * Hybrid exponential search/linear search merge sort with hybrid
-  * natural/pairwise first pass.  Requires about .3% more comparisons
-@@ -50,11 +53,13 @@
+@@ -49,11 +49,16 @@
   * (The default is pairwise merging.)
   */
  
++#include <sys/cdefs.h>
 +#include <sys/types.h>
  #include <sys/param.h>
  
++#define __is_aligned(x, align) (((uintptr_t)x & ((align) - 1)) == 0)
++
  #include <errno.h>
  #include <stdlib.h>
  #include <string.h>
@@ -619,21 +133,19 @@
  #include "block_abi.h"
 --- src.orig/compat/mktemp.c
 +++ src.freebsd/compat/mktemp.c
-@@ -33,99 +33,60 @@
+@@ -32,8 +32,9 @@
+ #if defined(LIBC_SCCS) && !defined(lint)
  static char sccsid[] = "@(#)mktemp.c	8.1 (Berkeley) 6/4/93";
  #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
 -#include "namespace.h"
++#include <sys/cdefs.h>
  #include <sys/param.h>
- #include <sys/stat.h>
 +#include <sys/random.h>
-+#include <sys/types.h>
+ #include <sys/stat.h>
  #include <fcntl.h>
  #include <errno.h>
- #include <stdio.h>
- #include <stdlib.h>
+@@ -42,89 +43,48 @@
  #include <string.h>
-+#include <stdint.h>
  #include <ctype.h>
  #include <unistd.h>
 -#include "un-namespace.h"
@@ -733,7 +245,7 @@
  		errno = EINVAL;
  		return (0);
  	}
-@@ -135,26 +96,45 @@
+@@ -134,26 +94,45 @@
  		errno = ENAMETOOLONG;
  		return (0);
  	}
@@ -787,7 +299,7 @@
  			if (*doopen >= 0)
  				return (1);
  			if (errno != EEXIST)
-@@ -178,7 +158,7 @@
+@@ -177,7 +156,7 @@
  			/* have we tried all possible permutations? */
  			if (trv == suffp)
  				return (0); /* yes - exit with EEXIST */
@@ -856,7 +368,7 @@
  
 --- src.orig/compat/strftime.c
 +++ src.freebsd/compat/strftime.c
-@@ -30,25 +30,34 @@
+@@ -30,24 +30,33 @@
  #endif /* !defined NOID */
  #endif /* !defined lint */
  
@@ -866,7 +378,6 @@
  #if defined(LIBC_SCCS) && !defined(lint)
  static const char	sccsid[] = "@(#)strftime.c	5.4 (Berkeley) 3/14/89";
  #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
 -#include "tzfile.h"
  #include <fcntl.h>
  #include <sys/stat.h>
@@ -875,7 +386,7 @@
 -#include "timelocal.h"
 +#include <time.h>
 +#include <langinfo.h>
-+ 
+ 
 +#define DAYSPERWEEK 7
 +#define MONSPERYEAR 12
 +#define HOURSPERDAY 24
@@ -886,7 +397,7 @@
 +#define TM_YEAR_BASE 1900
 +#define TM_GMTOFF tm_gmtoff
 +#define TM_ZONE tm_zone
- 
++
 +#define isleap(y) (((y) % 4) == 0 && (((y) % 100) != 0 || ((y) % 400) == 0))
 +#define isleap_sum(a, b) isleap((a) % 400 + (b) % 400)
 +
@@ -901,7 +412,7 @@
  
  extern char *	tzname[];
  
-@@ -86,51 +95,23 @@
+@@ -85,51 +94,23 @@
  };
  
  size_t
@@ -957,7 +468,7 @@
  
  	for ( ; *format; ++format) {
  		if (*format == '%') {
-@@ -145,27 +126,26 @@
+@@ -144,27 +125,26 @@
  			case 'A':
  				pt = _add((t->tm_wday < 0 ||
  					t->tm_wday >= DAYSPERWEEK) ?
@@ -989,7 +500,7 @@
  					pt, ptlim);
  				continue;
  			case 'C':
-@@ -177,26 +157,18 @@
+@@ -176,26 +156,18 @@
  				 * (ado, 1993-05-24)
  				 */
  				pt = _yconv(t->tm_year, TM_YEAR_BASE, 1, 0,
@@ -1020,7 +531,7 @@
  				continue;
  			case 'E':
  				if (Ealternative || Oalternative)
-@@ -223,25 +195,25 @@
+@@ -222,25 +194,25 @@
  			case 'e':
  				pt = _conv(t->tm_mday,
  					fmt_padding[PAD_FMT_SDAYOFMONTH][PadIndex],
@@ -1051,7 +562,7 @@
  				continue;
  			case 'k':
  				/*
-@@ -255,7 +227,7 @@
+@@ -254,7 +226,7 @@
  				 * (ado, 1993-05-24)
  				 */
  				pt = _conv(t->tm_hour, fmt_padding[PAD_FMT_SHMS][PadIndex],
@@ -1060,7 +571,7 @@
  				continue;
  #ifdef KITCHEN_SINK
  			case 'K':
-@@ -278,55 +250,49 @@
+@@ -277,55 +249,49 @@
  				pt = _conv((t->tm_hour % 12) ?
  					(t->tm_hour % 12) : 12,
  					fmt_padding[PAD_FMT_SHMS][PadIndex],
@@ -1111,12 +622,13 @@
  					time_t		mkt;
  
  					tm = *t;
- 					mkt = mktime(&tm);
+-					mkt = timeoff(&tm, t->tm_gmtoff);
 -					if (TYPE_SIGNED(time_t))
 -						(void) sprintf_l(buf, loc, "%ld",
 -							(long) mkt);
 -					else	(void) sprintf_l(buf, loc, "%lu",
 -							(unsigned long) mkt);
++					mkt = mktime(&tm);
 +					(void) sprintf(buf, "%lld", (long long) mkt);
  					pt = _add(buf, pt, ptlim);
  				}
@@ -1127,7 +639,7 @@
  				continue;
  			case 't':
  				pt = _add("\t", pt, ptlim);
-@@ -335,7 +301,7 @@
+@@ -334,7 +300,7 @@
  				pt = _conv((t->tm_yday + DAYSPERWEEK -
  					t->tm_wday) / DAYSPERWEEK,
  					fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
@@ -1136,7 +648,7 @@
  				continue;
  			case 'u':
  				/*
-@@ -346,7 +312,7 @@
+@@ -345,7 +311,7 @@
  				 */
  				pt = _conv((t->tm_wday == 0) ?
  					DAYSPERWEEK : t->tm_wday,
@@ -1145,7 +657,7 @@
  				continue;
  			case 'V':	/* ISO 8601 week number */
  			case 'G':	/* ISO 8601 year (four digits) */
-@@ -427,13 +393,12 @@
+@@ -426,13 +392,12 @@
  #endif /* defined XPG4_1994_04_09 */
  					if (*format == 'V')
  						pt = _conv(w, fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
@@ -1162,7 +674,7 @@
  				}
  				continue;
  			case 'v':
-@@ -442,7 +407,7 @@
+@@ -441,7 +406,7 @@
  				 * "date as dd-bbb-YYYY"
  				 * (ado, 1993-05-24)
  				 */
@@ -1171,7 +683,7 @@
  				continue;
  			case 'W':
  				pt = _conv((t->tm_yday + DAYSPERWEEK -
-@@ -450,33 +415,24 @@
+@@ -449,33 +414,24 @@
  					(t->tm_wday - 1) :
  					(DAYSPERWEEK - 1))) / DAYSPERWEEK,
  					fmt_padding[PAD_FMT_WEEKOFYEAR][PadIndex],
@@ -1211,7 +723,7 @@
  				continue;
  			case 'Z':
  #ifdef TM_ZONE
-@@ -546,12 +502,15 @@
+@@ -545,12 +501,15 @@
  					(diff % MINSPERHOUR);
  				pt = _conv(diff,
  					fmt_padding[PAD_FMT_YEAR][PadIndex],
@@ -1230,7 +742,7 @@
  				continue;
  			case '-':
  				if (PadIndex != PAD_DEFAULT)
-@@ -587,11 +546,11 @@
+@@ -586,11 +545,11 @@
  
  static char *
  _conv(const int n, const char * const format, char * const pt,
@@ -1245,7 +757,7 @@
  	return _add(buf, pt, ptlim);
  }
  
-@@ -613,7 +572,7 @@
+@@ -612,7 +571,7 @@
  
  static char *
  _yconv(const int a, const int b, const int convert_top, const int convert_yy,
@@ -1254,7 +766,7 @@
  {
  	register int	lead;
  	register int	trail;
-@@ -632,10 +591,10 @@
+@@ -631,10 +590,10 @@
  	if (convert_top) {
  		if (lead == 0 && trail < 0)
  			pt = _add("-0", pt, ptlim);
@@ -1758,9 +1270,9 @@
  }
 --- src.orig/compat/unvis.c
 +++ src.freebsd/compat/unvis.c
-@@ -39,7 +39,6 @@
+@@ -38,7 +38,6 @@
+ #endif
  #endif /* LIBC_SCCS and not lint */
- __FBSDID("$FreeBSD$");
  
 -#include "namespace.h"
  #include <sys/types.h>
@@ -1768,15 +1280,15 @@
  #include <assert.h>
 --- src.orig/compat/vis.c
 +++ src.freebsd/compat/vis.c
-@@ -64,7 +64,6 @@
- #define	_DIAGASSERT(x)	assert(x)
- #endif
+@@ -60,7 +60,6 @@
+ __RCSID("$NetBSD: vis.c,v 1.83 2023/08/12 12:48:52 riastradh Exp $");
+ #endif /* LIBC_SCCS and not lint */
  
 -#include "namespace.h"
  #include <sys/types.h>
  #include <sys/param.h>
  
-@@ -73,8 +72,10 @@
+@@ -69,8 +68,10 @@
  #include <errno.h>
  #include <stdint.h>
  #include <stdlib.h>
@@ -1787,7 +1299,7 @@
  
  #ifdef __weak_alias
  __weak_alias(strvisx,_strvisx)
-@@ -82,7 +83,6 @@
+@@ -78,7 +79,6 @@
  
  #if !HAVE_VIS || !HAVE_SVIS
  #include <ctype.h>
@@ -1937,28 +1449,17 @@
  /*
   * Small (default) buffer size in bytes. It's inefficient for this to be
   * smaller than MAXPHYS.
-@@ -281,10 +288,18 @@
- 		} else {
+@@ -282,7 +289,8 @@
  #ifndef BOOTSTRAP_CAT
  			if (in_kernel_copy(fd) == -1) {
--				if (errno == EINVAL || errno == EBADF)
-+				switch (errno) {
-+				case EINVAL:
-+				case EBADF:
-+				case EXDEV:
-+				case ESPIPE:
-+				case ENOSYS:
+ 				if (errno == EINVAL || errno == EBADF ||
+-				    errno == EISDIR)
++				    errno == EISDIR || errno == EXDEV ||
++				    errno == ESPIPE || errno == ENOSYS)
  					raw_cat(fd);
--				else
-+					break;
-+				default:
+ 				else
  					err(1, "stdout");
-+					break;
-+				}
- 			}
- #else
- 			raw_cat(fd);
-@@ -303,7 +318,7 @@
+@@ -304,7 +312,7 @@
  cook_cat(FILE *fp)
  {
  	int ch, gobble, line, prev;
@@ -1967,7 +1468,7 @@
  
  	/* Reset EOF condition on stdin. */
  	if (fp == stdin && feof(stdin))
-@@ -341,24 +356,32 @@
+@@ -342,24 +350,32 @@
  					break;
  				continue;
  			}
@@ -2015,7 +1516,7 @@
  			if (!iswascii(wch) && !iswprint(wch)) {
  ilseq:
  				if (putchar('M') == EOF || putchar('-') == EOF)
-@@ -390,6 +413,18 @@
+@@ -391,6 +407,18 @@
  }
  
  static ssize_t
@@ -2034,7 +1535,7 @@
  in_kernel_copy(int rfd)
  {
  	int wfd;
-@@ -400,6 +435,9 @@
+@@ -401,6 +429,9 @@
  
  	while (ret > 0)
  		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);
@@ -2254,6 +1755,34 @@
  	if (chdir(argv[0]) == -1 || chroot(".") == -1)
 --- src.orig/coreutils/cp/cp.1
 +++ src.freebsd/coreutils/cp/cp.1
+@@ -44,7 +44,7 @@
+ .Op Fl H | Fl L | Fl P
+ .Oc
+ .Op Fl f | i | n
+-.Op Fl alNpsvx
++.Op Fl alpsvx
+ .Ar source_file target_file
+ .Nm
+ .Oo
+@@ -52,15 +52,15 @@
+ .Op Fl H | Fl L | Fl P
+ .Oc
+ .Op Fl f | i | n
+-.Op Fl alNpsvx
++.Op Fl alpsvx
+ .Ar source_file ... target_directory
+ .Nm
+ .Op Fl f | i | n
+-.Op Fl alNPpsvx
++.Op Fl alPpsvx
+ .Ar source_file target_file
+ .Nm
+ .Op Fl f | i | n
+-.Op Fl alNPpsvx
++.Op Fl alPpsvx
+ .Ar source_file ... target_directory
+ .Sh DESCRIPTION
+ In the first synopsis form, the
 @@ -125,8 +125,9 @@
  instead.
  .It Fl a
@@ -2266,15 +1795,28 @@
  .It Fl f
  For each existing destination pathname, remove it and
  create a new file, without prompting for confirmation
-@@ -172,6 +173,7 @@
+@@ -157,10 +158,6 @@
+ options.)
+ .It Fl l
+ Create hard links to regular files in a hierarchy instead of copying.
+-.It Fl N
+-When used with
+-.Fl p ,
+-suppress copying file flags.
+ .It Fl n
+ Do not overwrite an existing file.
+ (The
+@@ -175,7 +172,8 @@
+ .Nm
  to preserve the following attributes of each source
  file in the copy: modification time, access time,
- file flags, file mode, ACL, user ID, and group ID, as allowed by permissions.
+-file flags, file mode, ACL, user ID, and group ID, as allowed by permissions.
++file mode, ACL, user ID, and group ID, as allowed by permissions.
 +Extended attributes are not preserved, except in archive mode.
  .Pp
  If the user ID and group ID cannot be preserved, no error message
  is displayed and the exit value is not altered.
-@@ -251,7 +253,7 @@
+@@ -255,7 +253,7 @@
  If
  .Nm
  receives a
@@ -2289,12 +1831,21 @@
  
  PATH_T to = { to.p_path, emptystring, "" };
  
--int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
+-int Nflag, fflag, iflag, lflag, nflag, pflag, sflag, vflag;
 +int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
- static int Hflag, Lflag, Rflag, rflag;
+ static int Hflag, Lflag, Pflag, Rflag, rflag;
  volatile sig_atomic_t info;
  
-@@ -121,6 +121,7 @@
+@@ -102,7 +102,7 @@
+ 	char *target;
+ 
+ 	fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
+-	while ((ch = getopt(argc, argv, "HLPRafilNnprsvx")) != -1)
++	while ((ch = getopt(argc, argv, "HLPRafilnprsvx")) != -1)
+ 		switch (ch) {
+ 		case 'H':
+ 			Hflag = 1;
+@@ -120,6 +120,7 @@
  			Rflag = 1;
  			break;
  		case 'a':
@@ -2302,7 +1853,17 @@
  			pflag = 1;
  			Rflag = 1;
  			Pflag = 1;
-@@ -450,6 +451,7 @@
+@@ -136,9 +137,6 @@
+ 		case 'l':
+ 			lflag = 1;
+ 			break;
+-		case 'N':
+-			Nflag = 1;
+-			break;
+ 		case 'n':
+ 			nflag = 1;
+ 			fflag = iflag = 0;
+@@ -451,6 +449,7 @@
  				if (preserve_dir_acls(curr->fts_statp,
  				    curr->fts_accpath, to.p_path) != 0)
  					rval = 1;
@@ -2316,7 +1877,7 @@
  } PATH_T;
  
  extern PATH_T to;
--extern int fflag, iflag, lflag, nflag, pflag, sflag, vflag;
+-extern int Nflag, fflag, iflag, lflag, nflag, pflag, sflag, vflag;
 +extern int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
  extern volatile sig_atomic_t info;
  
@@ -2349,32 +1910,32 @@
  #include <sysexits.h>
  #include <unistd.h>
  
-@@ -178,9 +182,14 @@
- 			if (use_copy_file_range) {
- 				wcount = copy_file_range(from_fd, NULL,
- 				    to_fd, NULL, SSIZE_MAX, 0);
--				if (wcount < 0 && errno == EINVAL) {
--					/* Prob a non-seekable FD */
-+				if (wcount < 0) switch (errno) {
-+				case EINVAL: /* Prob a non-seekable FD */
-+				case EXDEV: /* Cross-FS link */
-+				case ENOSYS: /* Syscall not supported */
- 					use_copy_file_range = 0;
-+					break;
-+				default:
-+					break;
- 				}
+@@ -205,9 +209,14 @@
+ 		if (use_copy_file_range) {
+ 			wcount = copy_file_range(from_fd, NULL,
+ 			    to_fd, NULL, SSIZE_MAX, 0);
+-			if (wcount < 0 && errno == EINVAL) {
+-				/* probably a non-seekable descriptor */
++			if (wcount < 0) switch (errno) {
++			case EINVAL: /* Prob a non-seekable FD */
++			case EXDEV: /* Cross-FS link */
++			case ENOSYS: /* Syscall not supported */
+ 				use_copy_file_range = 0;
++				break;
++			default:
++				break;
  			}
- 			if (!use_copy_file_range) {
-@@ -223,6 +232,7 @@
- 			rval = 1;
- 		if (pflag && preserve_fd_acls(from_fd, to_fd) != 0)
- 			rval = 1;
-+		if (aflag) preserve_fd_xattrs(from_fd, to_fd);
- 		if (close(to_fd)) {
- 			warn("%s", to.p_path);
- 			rval = 1;
-@@ -349,12 +359,13 @@
+ 		}
+ 		if (!use_copy_file_range) {
+@@ -237,6 +246,7 @@
+ 		rval = 1;
+ 	if (pflag && preserve_fd_acls(from_fd, to_fd) != 0)
+ 		rval = 1;
++	if (aflag) preserve_fd_xattrs(from_fd, to_fd);
+ 	if (close(to_fd)) {
+ 		warn("%s", to.p_path);
+ 		rval = 1;
+@@ -362,12 +372,13 @@
  
  	if (!gotstat || fs->st_mode != ts.st_mode)
  		if (fdval ? fchmod(fd, fs->st_mode) :
@@ -2386,18 +1947,18 @@
  		}
  
 +#if 0
- 	if (!gotstat || fs->st_flags != ts.st_flags)
+ 	if (!Nflag && (!gotstat || fs->st_flags != ts.st_flags))
  		if (fdval ?
  		    fchflags(fd, fs->st_flags) :
-@@ -363,6 +374,7 @@
- 			warn("chflags: %s", to.p_path);
- 			rval = 1;
+@@ -385,6 +396,7 @@
+ 				rval = 1;
+ 			}
  		}
 +#endif
  
  	return (rval);
  }
-@@ -371,9 +383,9 @@
+@@ -393,9 +405,9 @@
  preserve_fd_acls(int source_fd, int dest_fd)
  {
  	acl_t acl;
@@ -2409,7 +1970,7 @@
  	ret = fpathconf(source_fd, _PC_ACL_NFS4);
  	if (ret > 0 ) {
  		acl_supported = 1;
-@@ -382,13 +394,13 @@
+@@ -404,13 +416,13 @@
  		warn("fpathconf(..., _PC_ACL_NFS4) failed for %s", to.p_path);
  		return (1);
  	}
@@ -2427,7 +1988,7 @@
  			    to.p_path);
  			return (1);
  		}
-@@ -396,21 +408,12 @@
+@@ -418,21 +430,12 @@
  	if (acl_supported == 0)
  		return (0);
  
@@ -2451,7 +2012,7 @@
  		warn("failed to set acl entries for %s", to.p_path);
  		acl_free(acl);
  		return (1);
-@@ -424,11 +427,11 @@
+@@ -446,11 +449,11 @@
  {
  	acl_t (*aclgetf)(const char *, acl_type_t);
  	int (*aclsetf)(const char *, acl_type_t, acl_t);
@@ -2465,7 +2026,7 @@
  	ret = pathconf(source_dir, _PC_ACL_NFS4);
  	if (ret > 0) {
  		acl_supported = 1;
-@@ -437,13 +440,14 @@
+@@ -459,13 +462,14 @@
  		warn("fpathconf(..., _PC_ACL_NFS4) failed for %s", source_dir);
  		return (1);
  	}
@@ -2484,7 +2045,7 @@
  			    source_dir);
  			return (1);
  		}
-@@ -451,30 +455,22 @@
+@@ -473,30 +477,22 @@
  	if (acl_supported == 0)
  		return (0);
  
@@ -2520,7 +2081,7 @@
  		    ACL_TYPE_DEFAULT, acl) < 0) {
  			warn("failed to set default acl entries on %s",
  			    dest_dir);
-@@ -488,15 +484,6 @@
+@@ -510,15 +506,6 @@
  		warn("failed to get acl entries on %s", source_dir);
  		return (1);
  	}
@@ -2536,7 +2097,7 @@
  	if (aclsetf(dest_dir, acl_type, acl) < 0) {
  		warn("failed to set acl entries on %s", dest_dir);
  		acl_free(acl);
-@@ -504,6 +491,138 @@
+@@ -526,6 +513,138 @@
  	}
  	acl_free(acl);
  	return (0);
@@ -2767,7 +2328,7 @@
  
 --- src.orig/coreutils/date/date.1
 +++ src.freebsd/coreutils/date/date.1
-@@ -128,7 +128,7 @@
+@@ -126,7 +126,7 @@
  .Oc Ar MM Op Cm \&. Ar SS
  .Sm on
  format.
@@ -2780,14 +2341,14 @@
  The format string may contain any of the conversion specifications
  described in the
  .Xr strftime 3
--manual page, as well as any arbitrary text.
-+FreeBSD manual page, as well as any arbitrary text.
+-manual page and
++FreeBSD manual page and
+ .Ql %N
+ for nanoseconds, as well as any arbitrary text.
  A newline
- .Pq Ql \en
- character is always output after the characters specified by
 --- src.orig/coreutils/date/date.c
 +++ src.freebsd/coreutils/date/date.c
-@@ -56,6 +56,8 @@
+@@ -57,6 +57,8 @@
  #include <syslog.h>
  #include <unistd.h>
  #include <utmpx.h>
@@ -2796,29 +2357,15 @@
  
  #include "vary.h"
  
-@@ -215,7 +217,7 @@
- 		setlocale(LC_TIME, "C");
+@@ -264,6 +266,7 @@
+ 	struct utmpx utx;
+ 	struct tm *lt;
+ 	const char *dot, *t;
++	struct timeval tv;
+ 	int century;
  
- 
--	(void)strftime(buf, sizeof(buf), format, lt);
-+	(void)strftime_bsd(buf, sizeof(buf), format, lt);
- 	printdate(buf);
- }
- 
-@@ -238,10 +240,10 @@
- 	for (it = iso8601_fmts; it <= iso8601_selected; it++)
- 		strlcat(fmtbuf, it->format_string, sizeof(fmtbuf));
- 
--	(void)strftime(buf, sizeof(buf), fmtbuf, lt);
-+	(void)strftime_bsd(buf, sizeof(buf), fmtbuf, lt);
- 
- 	if (iso8601_selected > iso8601_fmts) {
--		(void)strftime(tzbuf, sizeof(tzbuf), "%z", lt);
-+		(void)strftime_bsd(tzbuf, sizeof(tzbuf), "%z", lt);
- 		memmove(&tzbuf[4], &tzbuf[3], 3);
- 		tzbuf[3] = ':';
- 		strlcat(buf, tzbuf, sizeof(buf));
-@@ -267,7 +269,7 @@
+ 	lt = localtime(&ts->tv_sec);
+@@ -272,7 +275,7 @@
  	lt->tm_isdst = -1;		/* divine correct DST */
  
  	if (fmt != NULL) {
@@ -2827,7 +2374,7 @@
  		if (t == NULL) {
  			fprintf(stderr, "Failed conversion of ``%s''"
  				" using format ``%s''\n", p, fmt);
-@@ -348,14 +350,18 @@
+@@ -356,12 +359,16 @@
  	if (!jflag) {
  		utx.ut_type = OLD_TIME;
  		memset(utx.ut_id, 0, sizeof(utx.ut_id));
@@ -2836,10 +2383,8 @@
 +		utx.ut_tv.tv_sec = tv.tv_sec;
 +		utx.ut_tv.tv_usec = tv.tv_usec;
  		pututxline(&utx);
- 		tv.tv_sec = tval;
- 		tv.tv_usec = 0;
- 		if (settimeofday(&tv, NULL) != 0)
- 			err(1, "settimeofday (timeval)");
+ 		if (clock_settime(CLOCK_REALTIME, ts) != 0)
+ 			err(1, "clock_settime");
  		utx.ut_type = NEW_TIME;
 -		(void)gettimeofday(&utx.ut_tv, NULL);
 +		(void)gettimeofday(&tv, NULL);
@@ -2848,6 +2393,15 @@
  		pututxline(&utx);
  
  		if ((p = getlogin()) == NULL)
+@@ -441,7 +448,7 @@
+ 		}
+ 	}
+ 
+-	ret = strftime(s, maxsize, newformat, t);
++	ret = strftime_bsd(s, maxsize, newformat, t);
+ 	free(newformat);
+ 	return (ret);
+ }
 --- src.orig/coreutils/dd/dd.1
 +++ src.freebsd/coreutils/dd/dd.1
 @@ -416,7 +416,7 @@
@@ -3810,7 +3364,7 @@
  	} else {
 --- src.orig/coreutils/factor/factor.c
 +++ src.freebsd/coreutils/factor/factor.c
-@@ -65,6 +65,7 @@
+@@ -63,6 +63,7 @@
   * If no args are given, the list of numbers are read from stdin.
   */
  
@@ -4171,14 +3725,14 @@
  static char *
 --- src.orig/coreutils/ln/ln.c
 +++ src.freebsd/coreutils/ln/ln.c
-@@ -146,6 +146,7 @@
- 	switch(argc) {
+@@ -151,6 +151,7 @@
+ 	switch (argc) {
  	case 0:
  		usage();
 +		break;
  		/* NOTREACHED */
  	case 1:				/* ln source */
- 		exit(linkit(argv[0], ".", 1));
+ 		exit(linkit(argv[0], ".", true));
 --- src.orig/coreutils/ls/cmp.c
 +++ src.freebsd/coreutils/ls/cmp.c
 @@ -136,7 +136,7 @@
@@ -4248,7 +3802,7 @@
  .It Fl a
  Include directory entries whose names begin with a
  dot
-@@ -332,15 +316,6 @@
+@@ -334,15 +318,6 @@
  or group name in a long
  .Pq Fl l
  output.
@@ -4264,7 +3818,7 @@
  .It Fl p
  Write a slash
  .Pq Ql /
-@@ -502,7 +477,6 @@
+@@ -504,7 +479,6 @@
  is displayed for each file:
  file mode,
  number of links, owner name, group name,
@@ -4272,7 +3826,7 @@
  number of bytes in the file, abbreviated
  month, day-of-month file was last modified,
  hour file last modified, minute file last
-@@ -569,8 +543,6 @@
+@@ -571,8 +545,6 @@
  .Tn FIFO .
  .It Sy s
  Socket.
@@ -4281,7 +3835,7 @@
  .El
  .Pp
  The next three fields
-@@ -862,11 +834,10 @@
+@@ -864,11 +836,10 @@
  .Dl $ ls -l
  .Pp
  In addition to listing the contents of the current working directory in
@@ -4295,7 +3849,7 @@
  .Pp
  List the files in
  .Pa /var/log ,
-@@ -880,7 +851,6 @@
+@@ -882,7 +853,6 @@
  .St -p1003.2
  specification.
  .Sh SEE ALSO
@@ -4303,7 +3857,7 @@
  .Xr chmod 1 ,
  .Xr getfacl 1 ,
  .Xr sort 1 ,
-@@ -891,15 +861,14 @@
+@@ -893,15 +863,14 @@
  .Xr strmode 3 ,
  .Xr strverscmp 3 ,
  .Xr termcap 5 ,
@@ -4321,7 +3875,7 @@
  the
  .Nm
  utility conforms to
-@@ -907,7 +876,7 @@
+@@ -909,7 +878,7 @@
  and
  .St -p1003.1-2008 .
  The options
@@ -4359,7 +3913,7 @@
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
-@@ -469,8 +469,6 @@
+@@ -473,8 +473,6 @@
  				errx(2, "unsupported --color value '%s' (must be always, auto, or never)",
  				    optarg);
  			break;
@@ -4368,7 +3922,7 @@
  #endif
  		default:
  		case '?':
-@@ -708,7 +706,7 @@
+@@ -713,7 +711,7 @@
   * points to the parent directory of the display list.
   */
  static void
@@ -4377,7 +3931,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -726,8 +724,9 @@
+@@ -731,8 +729,9 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -4388,7 +3942,7 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -736,6 +735,7 @@
+@@ -741,6 +740,7 @@
  	needstats = f_inode || f_longform || f_size;
  	flen = 0;
  	btotal = 0;
@@ -4396,7 +3950,7 @@
  
  #define LS_COLWIDTHS_FIELDS	9
  	initmax = getenv("LS_COLWIDTHS");
-@@ -784,7 +784,6 @@
+@@ -789,7 +789,6 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -4404,7 +3958,7 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -839,27 +838,33 @@
+@@ -844,27 +843,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -4451,7 +4005,7 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -927,7 +932,7 @@
+@@ -932,7 +937,7 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -4460,7 +4014,7 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -945,17 +950,6 @@
+@@ -950,17 +955,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4478,7 +4032,7 @@
  				cur->fts_pointer = np;
  			}
  		}
-@@ -1005,7 +999,7 @@
+@@ -1010,7 +1004,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -4671,7 +4225,7 @@
  utilities do the same, but with command-line options and an output
  format that match those of their similary named GNU utilities.
  .Pp
-@@ -82,8 +79,7 @@
+@@ -87,8 +84,7 @@
  It is conjectured that it is computationally infeasible to
  produce two messages having the same message digest, or to produce any
  message having a given prespecified target message digest.
@@ -4681,7 +4235,7 @@
  algorithms are intended for digital signature applications, where a
  large file must be
  .Dq compressed
-@@ -107,7 +103,7 @@
+@@ -112,7 +108,7 @@
  SHA-512t224 is identical to SHA-512t256, but with the digest truncated
  to 224 bits.
  .Pp
@@ -4690,7 +4244,7 @@
  instead of one of the other hash functions.
  .Ss BSD OPTIONS
  The following options are available in BSD mode, i.e. when the program
-@@ -272,11 +268,9 @@
+@@ -279,11 +275,9 @@
  .El
  .Sh EXIT STATUS
  The
@@ -4704,7 +4258,7 @@
  utilities exit 0 on success,
  1 if at least one of the input files could not be read,
  and 2 if at least one file does not have the same hash as the
-@@ -285,10 +279,9 @@
+@@ -292,10 +286,9 @@
  .Pp
  The
  .Nm md5sum , sha1sum , sha224sum , sha256sum , sha384sum , sha512sum ,
@@ -4717,7 +4271,7 @@
  utilities exit 0 on success and 1 if at least one of the input files
  could not be read or, when verifying checksums, does not have the
  expected checksum.
-@@ -373,12 +366,10 @@
+@@ -380,12 +373,10 @@
  .Sh SEE ALSO
  .Xr cksum 1 ,
  .Xr md5 3 ,
@@ -4730,7 +4284,7 @@
  .Rs
  .%A R. Rivest
  .%T The MD5 Message-Digest Algorithm
-@@ -395,15 +386,8 @@
+@@ -402,15 +393,8 @@
  .%O RFC 3174
  .Re
  .Pp
@@ -4746,7 +4300,7 @@
  .Sh BUGS
  In bits mode, the original
  .Nm shasum
-@@ -415,15 +399,12 @@
+@@ -422,15 +406,12 @@
  This utility was originally derived from a program which was placed in
  the public domain for free general use by RSA Data Security.
  .Pp
@@ -4790,7 +4344,7 @@
  #include <stdbool.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -71,9 +70,9 @@
+@@ -73,9 +72,9 @@
  static bool failed;
  static int endl = '\n';
  
@@ -4803,7 +4357,7 @@
  
  extern const char *MD5TestOutput[MDTESTCOUNT];
  extern const char *SHA1_TestOutput[MDTESTCOUNT];
-@@ -83,10 +82,12 @@
+@@ -85,10 +84,12 @@
  extern const char *SHA512_TestOutput[MDTESTCOUNT];
  extern const char *SHA512t224_TestOutput[MDTESTCOUNT];
  extern const char *SHA512t256_TestOutput[MDTESTCOUNT];
@@ -4816,7 +4370,7 @@
  
  typedef struct Algorithm_t {
  	const char *progname;
-@@ -99,7 +100,6 @@
+@@ -101,7 +102,6 @@
  	char *(*Data)(const void *, unsigned int, char *);
  } Algorithm_t;
  
@@ -4824,7 +4378,7 @@
  static char *MDInput(const Algorithm_t *, FILE *, char *, bool);
  static void MDOutput(const Algorithm_t *, char *, const char *);
  static void MDTimeTrial(const Algorithm_t *);
-@@ -107,6 +107,7 @@
+@@ -109,6 +109,7 @@
  static void usage(const Algorithm_t *);
  static void version(void);
  
@@ -4832,7 +4386,7 @@
  typedef union {
  	MD5_CTX md5;
  	SHA1_CTX sha1;
-@@ -119,6 +120,8 @@
+@@ -121,6 +122,8 @@
  	SKEIN512_CTX skein512;
  	SKEIN1024_CTX skein1024;
  } DIGEST_CTX;
@@ -4841,7 +4395,7 @@
  
  /* max(MD5_DIGEST_LENGTH, SHA_DIGEST_LENGTH,
  	SHA256_DIGEST_LENGTH, SHA512_DIGEST_LENGTH,
-@@ -160,6 +163,7 @@
+@@ -162,6 +165,7 @@
  		&SHA512t256_TestOutput, (DIGEST_Init*)&SHA512_256_Init,
  		(DIGEST_Update*)&SHA512_256_Update, (DIGEST_End*)&SHA512_256_End,
  		&SHA512_256_Data },
@@ -4849,7 +4403,7 @@
  	{ "rmd160", NULL, "RMD160",
  		&RIPEMD160_TestOutput,
  		(DIGEST_Init*)&RIPEMD160_Init, (DIGEST_Update*)&RIPEMD160_Update,
-@@ -176,6 +180,7 @@
+@@ -178,6 +182,7 @@
  		&SKEIN1024_TestOutput,
  		(DIGEST_Init*)&SKEIN1024_Init, (DIGEST_Update*)&SKEIN1024_Update,
  		(DIGEST_End*)&SKEIN1024_End, &SKEIN1024_Data },
@@ -4857,7 +4411,7 @@
  	{ }
  };
  
-@@ -278,11 +283,13 @@
+@@ -281,11 +286,13 @@
  };
  static const char *perl_shortopts = "0a:bchqstUvw";
  
@@ -4870,17 +4424,17 @@
 +#endif
  
  struct chksumrec {
- 	char	*filename;
-@@ -393,7 +400,7 @@
- 	char   *p, *string = NULL;
- 	char	buf[HEX_DIGEST_LENGTH];
- 	size_t	len;
--	struct chksumrec	*rec;
-+	struct chksumrec	*rec = NULL;
- 
- 	if ((progname = strrchr(argv[0], '/')) == NULL)
- 		progname = argv[0];
-@@ -677,7 +684,7 @@
+ 	char *filename;
+@@ -311,7 +318,7 @@
+ 	int lineno;
+ 	char *filename;
+ 	char *hashstr;
+-	struct chksumrec *rec;
++	struct chksumrec *rec = NULL;
+ 	const char *digestname;
+ 	size_t digestnamelen;
+ 	size_t hashstrlen;
+@@ -687,7 +694,7 @@
  	DIGEST_CTX context;
  	char *end, *p, *q;
  	size_t len;
@@ -4889,7 +4443,7 @@
  	uint8_t byte;
  	bool cr = false;
  
-@@ -942,6 +949,7 @@
+@@ -952,6 +959,7 @@
  	"dd095fc859b336c30a52548b3dc59fcc0d1be8616ebcf3368fad23107db2d736"
  };
  
@@ -4897,7 +4451,7 @@
  const char *RIPEMD160_TestOutput[MDTESTCOUNT] = {
  	"9c1185a5c5e9fc54612808977ee8f548b2258d31",
  	"0bdc9d2d256b3ee9daae347be6f4dc835a467ffe",
-@@ -985,6 +993,7 @@
+@@ -995,6 +1003,7 @@
  	"cf21a613620e6c119eca31fdfaad449a8e02f95ca256c21d2a105f8e4157048f9fe1e897893ea18b64e0e37cb07d5ac947f27ba544caf7cbc1ad094e675aed77a366270f7eb7f46543bccfa61c526fd628408058ed00ed566ac35a9761d002e629c4fb0d430b2f4ad016fcc49c44d2981c4002da0eecc42144160e2eaea4855a",
  	"e6799b78db54085a2be7ff4c8007f147fa88d326abab30be0560b953396d8802feee9a15419b48a467574e9283be15685ca8a079ee52b27166b64dd70b124b1d4e4f6aca37224c3f2685e67e67baef9f94b905698adc794a09672aba977a61b20966912acdb08c21a2c37001785355dc884751a21f848ab36e590331ff938138"
  };
@@ -4905,7 +4459,7 @@
  
  static void
  MDTestSuite(const Algorithm_t *alg)
-@@ -1028,8 +1037,6 @@
+@@ -1038,8 +1047,6 @@
  {
  	if (mode == mode_gnu)
  		printf("%s (FreeBSD) ", progname);
@@ -4917,7 +4471,7 @@
  }
 --- src.orig/coreutils/mknod/mknod.c
 +++ src.freebsd/coreutils/mknod/mknod.c
-@@ -48,6 +48,7 @@
+@@ -46,6 +46,7 @@
  
  #include <sys/types.h>
  #include <sys/stat.h>
@@ -4935,7 +4489,7 @@
  #include <err.h>
  #include <getopt.h>
  #include <paths.h>
-@@ -167,7 +168,7 @@
+@@ -162,7 +163,7 @@
  		}
  
  		if (dflag) {
@@ -4944,7 +4498,7 @@
  				ret = 1;
  				if (!qflag)
  					warn("mkdtemp failed on %s", name);
-@@ -177,7 +178,7 @@
+@@ -172,7 +173,7 @@
  					rmdir(name);
  			}
  		} else {
@@ -5038,7 +4592,7 @@
  	/*
  	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
  	 * for dest_file, then its ACLs shall reflect the ACLs of the
-@@ -338,6 +344,7 @@
+@@ -344,6 +350,7 @@
  	 * if the server supports flags and we were trying to *remove* flags
  	 * on a file that we copied, i.e., that we didn't create.)
  	 */
@@ -5046,16 +4600,16 @@
  	if (fstat(to_fd, &tsb) == 0) {
  		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
  		    (tsb.st_flags & ~UF_ARCHIVE)) {
-@@ -350,7 +357,7 @@
+@@ -356,7 +363,7 @@
  		}
  	} else
  		warn("%s: cannot stat", to);
 -
 +#endif
- 	ts[0] = sbp->st_atim;
- 	ts[1] = sbp->st_mtim;
- 	if (futimens(to_fd, ts))
-@@ -453,9 +460,9 @@
+ 	if (close(to_fd)) {
+ 		warn("%s", to);
+ 		return (1);
+@@ -454,9 +461,9 @@
      const char *dest_path)
  {
  	acl_t acl;
@@ -5067,7 +4621,7 @@
  	ret = fpathconf(source_fd, _PC_ACL_NFS4);
  	if (ret > 0 ) {
  		acl_supported = 1;
-@@ -465,13 +472,13 @@
+@@ -466,13 +473,13 @@
  		    source_path);
  		return;
  	}
@@ -5085,7 +4639,7 @@
  			    source_path);
  			return;
  		}
-@@ -479,26 +486,80 @@
+@@ -480,26 +487,80 @@
  	if (acl_supported == 0)
  		return;
  
@@ -5226,7 +4780,7 @@
  .It Cm \e\e
 --- src.orig/coreutils/printf/printf.c
 +++ src.freebsd/coreutils/printf/printf.c
-@@ -522,6 +522,24 @@
+@@ -520,6 +520,24 @@
  		case 'v':		/* vertical tab */
  			*store = '\v';
  			break;
@@ -5881,7 +5435,7 @@
  		pthread_cond_init(&g_ls_cond, NULL);
 --- src.orig/coreutils/sort/sort.1
 +++ src.freebsd/coreutils/sort/sort.1
-@@ -327,9 +327,9 @@
+@@ -325,9 +325,9 @@
  .It Fl Fl debug
  Print some extra information about the sorting process to the
  standard output.
@@ -6110,23 +5664,26 @@
  
  static off_t	 bytecnt;		/* Byte count to split on. */
 @@ -87,6 +91,7 @@
- 	const char *p;
- 	char *ep;
+ 	char errbuf[64];
+ 	const char *p, *errstr;
  	int ch, error;
 +	uint64_t ubytecnt;
  
  	setlocale(LC_ALL, "");
  
-@@ -117,7 +122,8 @@
+@@ -123,10 +128,11 @@
+ 			}
  			break;
  		case 'b':		/* Byte count. */
- 			errno = 0;
--			error = expand_number(optarg, &bytecnt);
-+			error = expand_number(optarg, &ubytecnt);
+-			if (expand_number(optarg, &bytecnt) != 0) {
++			if (expand_number(optarg, &ubytecnt) != 0) {
+ 				errx(EX_USAGE, "%s: byte count is invalid",
+ 				    optarg);
+ 			}
 +			bytecnt = ubytecnt;
- 			if (error == -1)
- 				errx(EX_USAGE, "%s: offset too large", optarg);
  			break;
+ 		case 'c':               /* Continue, don't overwrite output files. */
+ 			clobber = false;
 --- src.orig/coreutils/stat/stat.1
 +++ src.freebsd/coreutils/stat/stat.1
 @@ -36,7 +36,7 @@
@@ -6936,7 +6493,7 @@
 -
 -	action = USE_KQUEUE;
 -	for (i = 0, file = files; i < no_files; i++, file++) {
--		if (! file->fp)
+-		if (!file->fp)
 -			continue;
 -
 -		if (fstatfs(fileno(file->fp), &sf) == 0 &&
@@ -6964,11 +6521,11 @@
  /*
   * follow -- display the file, from an offset, forward.
   *
-@@ -307,26 +258,21 @@
+@@ -307,11 +258,10 @@
  void
  follow(file_info_t *files, enum STYLE style, off_t off)
  {
--	int active, ev_change, i, n = -1;
+-	int active, ev_change, i, n;
 +	int active, i;
  	struct stat sb2;
  	file_info_t *file;
@@ -6976,32 +6533,22 @@
 -	struct timespec ts;
  
  	/* Position each of the files */
- 
- 	file = files;
  	active = 0;
--	n = 0;
- 	for (i = 0; i < no_files; i++, file++) {
- 		if (file->fp) {
- 			active = 1;
--			n++;
- 			if (vflag || (qflag == 0 && no_files > 1))
- 				printfn(file->file_name, 1);
- 			forward(file->fp, file->file_name, style, off, &file->st);
--			if (Fflag && fileno(file->fp) != STDIN_FILENO)
--				n++;
- 		}
- 	}
- 	if (!Fflag && !active)
-@@ -334,16 +280,7 @@
+@@ -328,21 +278,7 @@
  
  	last = --file;
  
 -	kq = kqueue();
 -	if (kq < 0)
 -		err(1, "kqueue");
--	ev = malloc(n * sizeof(struct kevent));
--	if (! ev)
--	    err(1, "Couldn't allocate memory for kevents.");
+-	/*
+-	 * The number of kqueue events we track may vary over time and may
+-	 * even grow past its initial value in the -F case, but it will
+-	 * never exceed two per file, so just preallocate that.
+-	 */
+-	ev = malloc(no_files * 2 * sizeof(struct kevent));
+-	if (ev == NULL)
+-		err(1, "failed to allocate memory for kevents");
 -	set_events(files);
 -
  	for (;;) {
@@ -7009,7 +6556,7 @@
  		if (Fflag) {
  			for (i = 0, file = files; i < no_files; i++, file++) {
  				if (!file->fp) {
-@@ -356,8 +293,6 @@
+@@ -355,8 +291,6 @@
  						fclose(file->fp);
  						file->fp = NULL;
  					}
@@ -7018,7 +6565,7 @@
  					continue;
  				}
  				if (fileno(file->fp) == STDIN_FILENO)
-@@ -375,7 +310,6 @@
+@@ -374,7 +308,6 @@
  					if (ftmp != NULL) {
  						fclose(ftmp);
  					}
@@ -7026,7 +6573,7 @@
  					continue;
  				}
  
-@@ -387,7 +321,6 @@
+@@ -386,7 +319,6 @@
  					file->fp = ftmp;
  					memcpy(&file->st, &sb2,
  					    sizeof(struct stat));
@@ -7034,7 +6581,7 @@
  				} else {
  					fclose(ftmp);
  				}
-@@ -395,44 +328,8 @@
+@@ -394,42 +326,8 @@
  		}
  
  		for (i = 0, file = files; i < no_files; i++, file++)
@@ -7052,14 +6599,12 @@
 -			/*
 -			 * In the -F case we set a timeout to ensure that
 -			 * we re-stat the file at least once every second.
--			 * If we've recieved EINTR, ignore it. Both reasons
+-			 * If we've received EINTR, ignore it. Both reasons
 -			 * for its generation are transient.
 -			 */
 -			do {
 -				n = kevent(kq, NULL, 0, ev, 1, Fflag ? &ts : NULL);
--				if (n < 0 && errno == EINTR)
--					continue;
--				if (n < 0)
+-				if (n < 0 && errno != EINTR)
 -					err(1, "kevent");
 -			} while (n < 0);
 -			if (n == 0) {
@@ -7112,8 +6657,8 @@
  	switch(optarg[0]) {						\
 --- src.orig/coreutils/tee/tee.c
 +++ src.freebsd/coreutils/tee/tee.c
-@@ -43,6 +43,7 @@
-   "$FreeBSD$";
+@@ -41,6 +41,7 @@
+ #endif
  #endif /* not lint */
  
 +#include <sys/cdefs.h>
@@ -7235,7 +6780,7 @@
  #include <unistd.h>
  
  static void	stime_arg1(const char *, struct timespec *);
-@@ -330,7 +330,7 @@
+@@ -333,7 +333,7 @@
  		goto bad;
  	fmt = strchr(arg, 'T') != NULL ? "%Y-%m-%dT%H:%M:%S" :
  	    "%Y-%m-%d %H:%M:%S";
@@ -7400,18 +6945,7 @@
  The
 --- src.orig/coreutils/truncate/truncate.c
 +++ src.freebsd/coreutils/truncate/truncate.c
-@@ -32,8 +32,10 @@
-  *
-  */
- 
-+#if 0
- static const char rcsid[] =
-     "$FreeBSD$";
-+#endif
- 
- #include <sys/stat.h>
- 
-@@ -44,6 +46,7 @@
+@@ -41,6 +41,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <unistd.h>
@@ -7419,7 +6953,7 @@
  
  #include <libutil.h>
  
-@@ -65,7 +68,6 @@
+@@ -62,7 +63,6 @@
  	int do_refer;
  	int got_size;
  	char *fname, *rname;
@@ -7427,7 +6961,7 @@
  
  	fd = -1;
  	rsize = tsize = sz = off = 0;
-@@ -201,9 +203,7 @@
+@@ -198,9 +198,7 @@
  			tsize = 0;
  
  		if (do_dealloc == 1) {
@@ -7791,7 +7325,7 @@
   */
 --- src.orig/coreutils/uniq/uniq.c
 +++ src.freebsd/coreutils/uniq/uniq.c
-@@ -174,7 +174,7 @@
+@@ -172,7 +172,7 @@
  	if (cap_rights_is_set(&rights, CAP_IOCTL)) {
  		unsigned long cmd;
  
@@ -7936,7 +7470,7 @@
  .It Fl m Ar mode
  Specify an alternate mode.
  The default mode is set to rwxr-xr-x (0755).
-@@ -255,7 +249,7 @@
+@@ -257,7 +251,7 @@
  .Fl M Ar metalog .
  .It Fl U
  Indicate that install is running unprivileged, and that it should not
@@ -7945,7 +7479,7 @@
  The information that would have been updated can be stored in a log
  file with
  .Fl M Ar metalog .
-@@ -266,12 +260,6 @@
+@@ -268,12 +262,6 @@
  showing files as they are installed or backed up.
  .El
  .Pp
@@ -7958,7 +7492,7 @@
  The
  .Nm
  utility attempts to prevent moving a file onto itself.
-@@ -327,7 +315,6 @@
+@@ -321,7 +309,6 @@
  The default was changed to copy in
  .Fx 4.4 .
  .Sh SEE ALSO
@@ -7966,7 +7500,7 @@
  .Xr chgrp 1 ,
  .Xr chmod 1 ,
  .Xr cp 1 ,
-@@ -356,15 +343,6 @@
+@@ -349,15 +336,6 @@
  Temporary files may be left in the target directory if
  .Nm
  exits abnormally.
@@ -7984,7 +7518,15 @@
  .Nm
 --- src.orig/coreutils/xinstall/xinstall.c
 +++ src.freebsd/coreutils/xinstall/xinstall.c
-@@ -75,8 +75,6 @@
+@@ -42,6 +42,7 @@
+ #endif /* not lint */
+ #endif
+ 
++#include <sys/param.h>
+ #include <sys/stat.h>
+ #include <sys/time.h>
+ #include <sys/wait.h>
+@@ -71,8 +72,6 @@
  #include <unistd.h>
  #include <vis.h>
  
@@ -7993,16 +7535,16 @@
  /*
   * Memory strategy threshold, in pages: if physmem is larger then this, use a
   * large buffer.
-@@ -190,7 +188,7 @@
- 	fset = 0;
+@@ -185,7 +184,7 @@
  	iflags = 0;
+ 	set = NULL;
  	group = owner = NULL;
 -	while ((ch = getopt(argc, argv, "B:bCcD:df:g:h:l:M:m:N:o:pSsT:Uv")) !=
 +	while ((ch = getopt(argc, argv, "B:bCcD:dg:h:l:M:m:o:pSsT:Uv")) !=
  	     -1)
  		switch((char)ch) {
  		case 'B':
-@@ -211,10 +209,12 @@
+@@ -206,10 +205,12 @@
  		case 'd':
  			dodir = 1;
  			break;
@@ -8015,9 +7557,9 @@
  		case 'g':
  			haveopt_g = 1;
  			group = optarg;
-@@ -261,11 +261,13 @@
- 			mode = getmode(set, 0);
- 			free(set);
+@@ -255,11 +256,13 @@
+ 				errx(EX_USAGE, "invalid file mode: %s",
+ 				     optarg);
  			break;
 +#if 0
  		case 'N':
@@ -8029,7 +7571,7 @@
  		case 'o':
  			haveopt_o = 1;
  			owner = optarg;
-@@ -339,30 +341,38 @@
+@@ -337,30 +340,38 @@
  
  	/* get group and owner id's */
  	if (group != NULL && !dounpriv) {
@@ -8070,17 +7612,16 @@
  
  	if (metafile != NULL) {
  		if ((metafp = fopen(metafile, "a")) == NULL)
-@@ -413,8 +423,7 @@
+@@ -411,7 +422,7 @@
  		if (stat(*argv, &from_sb))
  			err(EX_OSERR, "%s", *argv);
- 		if (!S_ISREG(to_sb.st_mode)) {
--			errno = EFTYPE;
--			err(EX_OSERR, "%s", to_name);
-+			errx(EX_OSERR, "%s: not a regular file", to_name);
- 		}
+ 		if (!S_ISREG(to_sb.st_mode))
+-			errc(EX_CANTCREAT, EFTYPE, "%s", to_name);
++			errx(EX_CANTCREAT, "%s: not a regular file", to_name);
  		if (to_sb.st_dev == from_sb.st_dev &&
- 		    to_sb.st_ino == from_sb.st_ino)
-@@ -557,7 +566,7 @@
+ 		    to_sb.st_ino == from_sb.st_ino) {
+ 			errx(EX_USAGE, "%s and %s are the same file",
+@@ -554,7 +565,7 @@
  {
  	int fd;
  
@@ -8089,7 +7630,7 @@
  		return (NULL);
  	close (fd);
  	if (unlink(template) == -1)
-@@ -574,7 +583,7 @@
+@@ -571,7 +582,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
  {
@@ -8097,16 +7638,8 @@
 +	char tmpl[MAXPATHLEN + 12];
  	int ret;
  
- 	if (safecopy && target_sb != NULL) {
-@@ -759,7 +768,6 @@
- 				errx(1, "resolved pathname too long");
- 		}
- 		strcpy(to_name_copy, to_name);
--		cp = basename(to_name_copy);
- 		if (strlcat(dst, cp, sizeof(dst)) > sizeof(dst))
- 			errx(1, "resolved pathname too long");
- 		free(to_name_copy);
-@@ -808,7 +816,7 @@
+ 	if (target_sb != NULL) {
+@@ -811,7 +822,7 @@
   *	build a path name and install the file
   */
  static void
@@ -8115,32 +7648,31 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -828,8 +836,7 @@
+@@ -831,7 +842,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
- 			if (!S_ISREG(from_sb.st_mode)) {
--				errno = EFTYPE;
--				err(EX_OSERR, "%s", from_name);
+ 			if (!S_ISREG(from_sb.st_mode))
+-				errc(EX_OSERR, EFTYPE, "%s", from_name);
 +				errx(EX_OSERR, "%s: not a regular file", from_name);
- 			}
  		}
  		/* Build the target path. */
-@@ -863,8 +870,7 @@
+ 		if (flags & DIRECTORY) {
+@@ -856,7 +867,7 @@
  	}
  
- 	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode)) {
--		errno = EFTYPE;
--		warn("%s", to_name);
-+		warnx("%s: not a regular file or a symlink", to_name);
- 		return;
- 	}
+ 	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode))
+-		errc(EX_CANTCREAT, EFTYPE, "%s", to_name);
++		errx(EX_CANTCREAT, "%s: not a regular file or symlink", to_name);
  
-@@ -1195,13 +1201,13 @@
- 			lseek(to_fd, 0, SEEK_SET);
- 		}
- 	} else
+ 	if (!devnull && (from_fd = open(from_name, O_RDONLY, 0)) < 0)
+ 		err(EX_OSERR, "%s", from_name);
+@@ -1149,14 +1160,14 @@
+ 		lseek(from_fd, 0, SEEK_SET);
+ 		lseek(to_fd, 0, SEEK_SET);
+ 	} else {
 -		rv = 1;	/* don't bother in this case */
 +		return 1;	/* don't bother in this case */
+ 	}
  
  	if (do_digest) {
  		if (rv == 0)
@@ -8151,7 +7683,7 @@
  	}
  
  	return rv;
-@@ -1224,7 +1230,7 @@
+@@ -1179,7 +1190,7 @@
  		p = temp;
  	(void)strncpy(p, "INS@XXXXXX", &temp[tsize - 1] - p);
  	temp[tsize - 1] = '\0';
@@ -8160,19 +7692,10 @@
  }
  
  /*
-@@ -1232,7 +1238,7 @@
-  *	create a new file, overwriting an existing one if necessary
-  */
- static int
--create_newfile(const char *path, int target, struct stat *sbp)
-+create_newfile(const char *path, int target, struct stat *sbp __unused)
- {
- 	char backup[MAXPATHLEN];
- 	int saved_errno = 0;
-@@ -1323,11 +1329,17 @@
- 			/* DIGEST_NONE always returns NULL */
- 			return (NULL);
- 		}
+@@ -1214,11 +1225,17 @@
+ 		} while (ret > 0);
+ 		if (ret == 0)
+ 			goto done;
 -		if (errno != EINVAL) {
 +		switch (errno) {
 +		case EINVAL:
@@ -8188,7 +7711,7 @@
  		}
  		/* Fall back */
  	}
-@@ -1447,7 +1459,7 @@
+@@ -1317,7 +1334,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
@@ -8199,15 +7722,16 @@
  	free(prefixed_from_name);
 --- src.orig/dbcompat/btree/bt_close.c
 +++ src.freebsd/dbcompat/btree/bt_close.c
-@@ -36,7 +36,6 @@
+@@ -35,7 +35,7 @@
+ #if defined(LIBC_SCCS) && !defined(lint)
  static char sccsid[] = "@(#)bt_close.c	8.7 (Berkeley) 8/17/94";
  #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
 -#include "namespace.h"
++#include <sys/cdefs.h>
  #include <sys/param.h>
  
  #include <errno.h>
-@@ -44,7 +43,6 @@
+@@ -43,7 +43,6 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -8215,7 +7739,7 @@
  
  #include <db.h>
  #include "btree.h"
-@@ -102,7 +100,7 @@
+@@ -101,7 +100,7 @@
  	fd = t->bt_fd;
  	free(t);
  	free(dbp);
@@ -8226,7 +7750,7 @@
  /*
 --- src.orig/dbcompat/btree/bt_delete.c
 +++ src.freebsd/dbcompat/btree/bt_delete.c
-@@ -142,7 +142,7 @@
+@@ -141,7 +141,7 @@
  	EPG *e;
  	EPGNO *parent;
  	PAGE *h;
@@ -8237,7 +7761,7 @@
  	int exact, level;
 --- src.orig/dbcompat/btree/bt_open.c
 +++ src.freebsd/dbcompat/btree/bt_open.c
-@@ -44,7 +44,6 @@
+@@ -43,7 +43,6 @@
   * is wholly independent of the Postgres code.
   */
  
@@ -8245,7 +7769,7 @@
  #include <sys/param.h>
  #include <sys/stat.h>
  
-@@ -56,8 +55,6 @@
+@@ -55,8 +54,6 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -8254,7 +7778,7 @@
  
  #include <db.h>
  #include "btree.h"
-@@ -197,7 +194,7 @@
+@@ -196,7 +193,7 @@
  			goto einval;
  		}
  
@@ -8263,7 +7787,7 @@
  			goto err;
  
  	} else {
-@@ -208,10 +205,10 @@
+@@ -207,10 +204,10 @@
  		F_SET(t, B_INMEM);
  	}
  
@@ -8276,7 +7800,7 @@
  			goto err;
  		if (nr != sizeof(BTMETA))
  			goto eftype;
-@@ -320,7 +317,7 @@
+@@ -319,7 +316,7 @@
  einval:	errno = EINVAL;
  	goto err;
  
@@ -8285,7 +7809,7 @@
  	goto err;
  
  err:	saved_errno = errno;
-@@ -328,7 +325,7 @@
+@@ -327,7 +324,7 @@
  		if (t->bt_dbp)
  			free(t->bt_dbp);
  		if (t->bt_fd != -1)
@@ -8294,7 +7818,7 @@
  		free(t);
  	}
  	errno = saved_errno;
-@@ -401,10 +398,10 @@
+@@ -400,10 +397,10 @@
  	}
  
  	(void)sigfillset(&set);
@@ -8310,7 +7834,7 @@
  
 --- src.orig/dbcompat/btree/bt_put.c
 +++ src.freebsd/dbcompat/btree/bt_put.c
-@@ -66,7 +66,7 @@
+@@ -65,7 +65,7 @@
  {
  	BTREE *t;
  	DBT tkey, tdata;
@@ -8321,7 +7845,7 @@
  	pgno_t pg;
 --- src.orig/dbcompat/btree/bt_seq.c
 +++ src.freebsd/dbcompat/btree/bt_seq.c
-@@ -232,7 +232,7 @@
+@@ -231,7 +231,7 @@
  {
  	CURSOR *c;
  	PAGE *h;
@@ -8332,7 +7856,7 @@
  
 --- src.orig/dbcompat/btree/bt_split.c
 +++ src.freebsd/dbcompat/btree/bt_split.c
-@@ -46,6 +46,10 @@
+@@ -45,6 +45,10 @@
  #include <db.h>
  #include "btree.h"
  
@@ -8343,7 +7867,7 @@
  static int	 bt_broot(BTREE *, PAGE *, PAGE *, PAGE *);
  static PAGE	*bt_page(BTREE *, PAGE *, PAGE **, PAGE **, indx_t *, size_t);
  static int	 bt_preserve(BTREE *, pgno_t);
-@@ -77,14 +81,14 @@
+@@ -76,14 +80,14 @@
  __bt_split(BTREE *t, PAGE *sp, const DBT *key, const DBT *data, int flags,
      size_t ilen, u_int32_t argskip)
  {
@@ -8361,7 +7885,7 @@
  	int parentsplit;
  	char *dest;
  
-@@ -598,7 +602,7 @@
+@@ -597,7 +601,7 @@
  	CURSOR *c;
  	RLEAF *rl;
  	PAGE *rval;
@@ -8372,7 +7896,7 @@
  	int bigkeycnt, isbigkey;
 --- src.orig/dbcompat/db.c
 +++ src.freebsd/dbcompat/db.c
-@@ -42,8 +42,6 @@
+@@ -41,8 +41,6 @@
  
  #include <db.h>
  
@@ -8381,7 +7905,7 @@
  #ifndef O_CLOEXEC
  #define O_CLOEXEC 0
  #endif
-@@ -69,8 +67,13 @@
+@@ -68,8 +66,13 @@
  			return (__bt_open(fname, flags & USE_OPEN_FLAGS,
  			    mode, openinfo, flags & DB_FLAGS));
  		case DB_HASH:
@@ -8395,7 +7919,7 @@
  		case DB_RECNO:
  			return (__rec_open(fname, flags & USE_OPEN_FLAGS,
  			    mode, openinfo, flags & DB_FLAGS));
-@@ -80,11 +83,59 @@
+@@ -79,11 +82,59 @@
  }
  
  static int
@@ -8456,7 +7980,7 @@
  /*
   * __DBPANIC -- Stop.
   *
-@@ -95,10 +146,10 @@
+@@ -94,10 +145,10 @@
  __dbpanic(DB *dbp)
  {
  	/* The only thing that can succeed is a close. */
@@ -8475,15 +7999,16 @@
  }
 --- src.orig/dbcompat/mpool.c
 +++ src.freebsd/dbcompat/mpool.c
-@@ -33,7 +33,6 @@
+@@ -32,7 +32,7 @@
+ #if defined(LIBC_SCCS) && !defined(lint)
  static char sccsid[] = "@(#)mpool.c	8.7 (Berkeley) 11/2/95";
  #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
 -#include "namespace.h"
++#include <sys/cdefs.h>
  #include <sys/param.h>
  #include <sys/queue.h>
  #include <sys/stat.h>
-@@ -43,7 +42,6 @@
+@@ -42,7 +42,6 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -8491,7 +8016,7 @@
  
  #include <db.h>
  
-@@ -66,13 +64,15 @@
+@@ -65,13 +64,15 @@
  	MPOOL *mp;
  	int entry;
  
@@ -8508,7 +8033,7 @@
  		return (NULL);
  	if (!S_ISREG(sb.st_mode)) {
  		errno = ESPIPE;
-@@ -276,6 +276,8 @@
+@@ -275,6 +276,8 @@
  
  #ifdef STATISTICS
  	++mp->pageput;
@@ -8517,7 +8042,7 @@
  #endif
  	bp = (BKT *)((char *)page - sizeof(BKT));
  #ifdef DEBUG
-@@ -328,7 +330,7 @@
+@@ -327,7 +330,7 @@
  			return (RET_ERROR);
  
  	/* Sync the file descriptor. */
@@ -8528,15 +8053,16 @@
  /*
 --- src.orig/dbcompat/recno/rec_close.c
 +++ src.freebsd/dbcompat/recno/rec_close.c
-@@ -33,7 +33,6 @@
+@@ -32,7 +32,7 @@
+ #if defined(LIBC_SCCS) && !defined(lint)
  static char sccsid[] = "@(#)rec_close.c	8.6 (Berkeley) 8/18/94";
  #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
 -#include "namespace.h"
++#include <sys/cdefs.h>
  #include <sys/types.h>
  #include <sys/uio.h>
  #include <sys/mman.h>
-@@ -42,7 +41,6 @@
+@@ -41,7 +41,6 @@
  #include <limits.h>
  #include <stdio.h>
  #include <unistd.h>
@@ -8544,7 +8070,7 @@
  
  #include <db.h>
  #include "recno.h"
-@@ -83,7 +81,7 @@
+@@ -82,7 +81,7 @@
  			if (fclose(t->bt_rfp))
  				status = RET_ERROR;
  		} else {
@@ -8553,7 +8079,7 @@
  				status = RET_ERROR;
  		}
  	}
-@@ -149,7 +147,7 @@
+@@ -148,7 +147,7 @@
  		 */
  		status = (dbp->seq)(dbp, &key, &data, R_FIRST);
  		while (status == RET_SUCCESS) {
@@ -8562,7 +8088,7 @@
  			    (ssize_t)data.size)
  				return (RET_ERROR);
  			status = (dbp->seq)(dbp, &key, &data, R_NEXT);
-@@ -162,7 +160,7 @@
+@@ -161,7 +160,7 @@
  		while (status == RET_SUCCESS) {
  			iov[0].iov_base = data.data;
  			iov[0].iov_len = data.size;
@@ -8573,15 +8099,16 @@
  		}
 --- src.orig/dbcompat/recno/rec_open.c
 +++ src.freebsd/dbcompat/recno/rec_open.c
-@@ -36,7 +36,6 @@
+@@ -35,7 +35,7 @@
+ #if defined(LIBC_SCCS) && !defined(lint)
  static char sccsid[] = "@(#)rec_open.c	8.10 (Berkeley) 9/1/94";
  #endif /* LIBC_SCCS and not lint */
- #include <sys/cdefs.h>
 -#include "namespace.h"
++#include <sys/cdefs.h>
  #include <sys/types.h>
  #include <sys/mman.h>
  #include <sys/stat.h>
-@@ -47,7 +46,6 @@
+@@ -46,7 +46,6 @@
  #include <stddef.h>
  #include <stdio.h>
  #include <unistd.h>
@@ -8589,7 +8116,7 @@
  
  #include <db.h>
  #include "recno.h"
-@@ -61,10 +59,10 @@
+@@ -60,10 +59,10 @@
  	DB *dbp;
  	PAGE *h;
  	struct stat sb;
@@ -8602,7 +8129,7 @@
  		return (NULL);
  
  	/* Create a btree in memory (backed by disk). */
-@@ -142,7 +140,7 @@
+@@ -141,7 +140,7 @@
  				goto einval;
  			}
  
@@ -8611,7 +8138,7 @@
  				goto err;
  			/*
  			 * Kluge -- we'd like to test to see if the file is too
-@@ -211,7 +209,7 @@
+@@ -210,7 +209,7 @@
  	if (dbp != NULL)
  		(void)__bt_close(dbp);
  	if (fname != NULL)
@@ -8742,7 +8269,7 @@
  #include <err.h>
 --- src.orig/diffutils/diff/diff.c
 +++ src.freebsd/diffutils/diff/diff.c
-@@ -487,20 +487,23 @@
+@@ -483,20 +483,23 @@
  read_excludes_file(char *file)
  {
  	FILE *fp;
@@ -8789,7 +8316,15 @@
 +#endif
 --- src.orig/diffutils/diff/diffreg.c
 +++ src.freebsd/diffutils/diff/diffreg.c
-@@ -84,6 +84,9 @@
+@@ -69,6 +69,7 @@
+ #include <sys/cdefs.h>
+ #include <sys/capsicum.h>
+ #include <sys/stat.h>
++#include <sys/param.h>
+ 
+ #include <capsicum_helpers.h>
+ #include <ctype.h>
+@@ -84,6 +85,9 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -8799,7 +8334,7 @@
  
  #include "pr.h"
  #include "diff.h"
-@@ -470,7 +473,7 @@
+@@ -492,7 +496,7 @@
  
  	(void)strlcpy(tempfile, _PATH_TMP "/diff.XXXXXXXX", sizeof(tempfile));
  
@@ -8808,7 +8343,7 @@
  		close(ifd);
  		return (NULL);
  	}
-@@ -1396,7 +1399,7 @@
+@@ -1412,7 +1416,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -8817,7 +8352,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1638,11 +1641,11 @@
+@@ -1654,11 +1658,11 @@
  		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
  		    label[0]);
  	else {
@@ -8831,7 +8366,7 @@
  			printf(".%.9d %s", nsec1, buf);
  		}
  		printf("\n");
-@@ -1651,11 +1654,11 @@
+@@ -1667,11 +1671,11 @@
  		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
  		    label[1]);
  	else {
@@ -9172,7 +8707,7 @@
  		size_t len;
 --- src.orig/diffutils/sdiff/sdiff.c
 +++ src.freebsd/diffutils/sdiff/sdiff.c
-@@ -174,7 +174,7 @@
+@@ -176,7 +176,7 @@
  	/* Not a regular file, so copy input into temporary file. */
  	if (asprintf(&target_file, "%s/sdiff.XXXXXXXXXX", tmpdir) == -1)
  		err(2, "asprintf");
@@ -9181,30 +8716,6 @@
  		warn("error opening %s", target_file);
  		goto FAIL;
  	}
-@@ -258,16 +258,19 @@
- 		case 'E':
- 		case 'i':
- 		case 't':
--		case 'W':
--			diffargv[1]  = realloc(diffargv[1], sizeof(char) * strlen(diffargv[1]) + 2);
-+		case 'W': {
-+			int alen = strlen(diffargv[1]);
-+			diffargv[1] = realloc(diffargv[1], sizeof(char) * alen + 2);
- 			/*
- 			 * In diff, the 'W' option is 'w' and the 'w' is 'W'.
- 			 */
- 			if (ch == 'W')
--				sprintf(diffargv[1], "%sw", diffargv[1]);
-+				diffargv[1][alen] = 'w';
- 			else
--				sprintf(diffargv[1], "%s%c", diffargv[1], ch);
-+				diffargv[1][alen] = ch;
-+			diffargv[1][alen + 1] = '\0';
- 			break;
-+		}
- 		case 'H':
- 			diffargv[diffargc++] = speed_lf;
- 			break;
 --- src.orig/ed/main.c
 +++ src.freebsd/ed/main.c
 @@ -210,6 +210,7 @@
@@ -9333,10 +8844,10 @@
  .It Ic -acl
  May be used in conjunction with other primaries to locate
  files with extended ACLs.
-@@ -451,50 +422,6 @@
- returns a non-zero exit status,
- .Nm
- will return a non-zero exit status.
+@@ -473,50 +444,6 @@
+ .Xr access 2
+ system call, and so can be fooled by NFS servers which do UID mapping (or root-squashing).
+ This is a GNU find extension.
 -.It Ic -flags Oo Cm - Ns | Ns Cm + Oc Ns Ar flags , Ns Ar notflags
 -The flags are specified using symbolic names (see
 -.Xr chflags 1 ) .
@@ -9384,7 +8895,7 @@
  .It Ic -fstype Ar type
  True if the file is contained in a file system of type
  .Ar type .
-@@ -502,15 +429,9 @@
+@@ -524,15 +451,9 @@
  .Xr lsvfs 1
  command can be used to find out the types of file systems
  that are available on the system.
@@ -9403,7 +8914,7 @@
  .It Ic -gid Ar gname
  The same thing as
  .Ic -group Ar gname
-@@ -1018,7 +939,6 @@
+@@ -1055,7 +976,6 @@
  .Sx STANDARDS
  section below for details.
  .Sh SEE ALSO
@@ -9411,7 +8922,7 @@
  .Xr chmod 1 ,
  .Xr locate 1 ,
  .Xr lsvfs 1 ,
-@@ -1049,9 +969,7 @@
+@@ -1086,9 +1006,7 @@
  .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
  .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
  .Ic -not , -path , -print0 , -regex , -sparse
@@ -9915,7 +9426,7 @@
  .Xr find 1 ,
 --- src.orig/findutils/locate/locate/locate.c
 +++ src.freebsd/findutils/locate/locate/locate.c
-@@ -77,6 +77,7 @@
+@@ -75,6 +75,7 @@
   */
  
  #include <sys/param.h>
@@ -9929,7 +9440,7 @@
  #SEARCHPATHS="/"
  
  # paths unwanted in output
--#PRUNEPATHS="/tmp /usr/tmp /var/tmp /var/db/portsnap /var/db/freebsd-update"
+-#PRUNEPATHS="/tmp /usr/tmp /var/tmp /var/db/freebsd-update"
 +#PRUNEPATHS="/tmp /var/tmp"
  
  # directories unwanted in output
@@ -9978,7 +9489,7 @@
  : ${mklocatedb:=locate.mklocatedb}	 # make locate database program
  : ${FCODES:=/var/db/locate.database}	 # the database
  : ${SEARCHPATHS="/"}		# directories to be put in the database
--: ${PRUNEPATHS="/tmp /usr/tmp /var/tmp /var/db/portsnap /var/db/freebsd-update"} # unwanted directories
+-: ${PRUNEPATHS="/tmp /usr/tmp /var/tmp /var/db/freebsd-update"} # unwanted directories
 +: ${PRUNEPATHS="/tmp /var/tmp"} # unwanted directories
  : ${PRUNEDIRS=".zfs"}	# unwanted directories, in any parent
 -: ${FILESYSTEMS="$(lsvfs | tail -n +3 | \
@@ -10984,7 +10495,7 @@
  extern int yylex(void);
 --- src.orig/miscutils/calendar/calendar.1
 +++ src.freebsd/miscutils/calendar/calendar.1
-@@ -264,9 +264,9 @@
+@@ -263,9 +263,9 @@
  .It Pa ~/.calendar/nomail
  do not send mail if this file exists.
  .It Pa /usr/share/calendar
@@ -10996,7 +10507,7 @@
  .El
  .Pp
  The order of precedence in searches for a calendar file is:
-@@ -274,7 +274,7 @@
+@@ -273,7 +273,7 @@
  Files of similar names are ignored in lower precedence locations.
  .Pp
  The following default calendar files are provided by the
@@ -11005,7 +10516,7 @@
  .Pp
  .Bl -tag -width calendar.southafrica -compact
  .It Pa calendar.all
-@@ -293,10 +293,6 @@
+@@ -292,10 +292,6 @@
  Calendar of events in Croatia.
  .It Pa calendar.dutch
  Calendar of events in the Netherlands.
@@ -11093,17 +10604,17 @@
  		/*
 --- src.orig/miscutils/calendar/io.c
 +++ src.freebsd/miscutils/calendar/io.c
-@@ -118,9 +118,6 @@
- 	FILE *fp;
+@@ -121,9 +121,6 @@
  	char *home = getenv("HOME");
  	unsigned int i;
+ 	int fd;
 -	struct stat sb;
 -	static bool warned = false;
 -	static char calendarhome[MAXPATHLEN];
  
  	if (home == NULL || *home == '\0') {
  		warnx("Cannot get home directory");
-@@ -133,29 +130,18 @@
+@@ -164,29 +161,18 @@
  	}
  
  	for (i = 0; i < nitems(calendarHomes); i++) {
@@ -11814,7 +11325,7 @@
  .It Fl k
  Log keys sent to the program as well as output.
  .It Fl p
-@@ -255,8 +248,7 @@
+@@ -258,8 +251,7 @@
  for the
  .Em history
  mechanism
@@ -11849,9 +11360,9 @@
 -#include <sys/endian.h>
 -#include <dev/filemon/filemon.h>
  
+ #include <assert.h>
  #include <err.h>
- #include <errno.h>
-@@ -60,6 +59,10 @@
+@@ -61,6 +60,10 @@
  #include <string.h>
  #include <termios.h>
  #include <unistd.h>
@@ -11862,7 +11373,7 @@
  
  #define DEF_BUF 65536
  
-@@ -82,7 +85,7 @@
+@@ -83,7 +86,7 @@
  static int child;
  static const char *fname;
  static char *fmfname;
@@ -11870,27 +11381,32 @@
 +static int qflg, ttyflg;
  static int usesleep, rawout, showexit;
  static TAILQ_HEAD(, buf_elm) obuf_list = TAILQ_HEAD_INITIALIZER(obuf_list);
- 
-@@ -117,17 +120,14 @@
+ static volatile sig_atomic_t doresize;
+@@ -121,14 +124,12 @@
  	ssize_t cc;
- 	int aflg, Fflg, kflg, pflg, ch, k, n, fcm;
+ 	int aflg, Fflg, kflg, pflg, wflg, ch, k, n, fcm;
  	int flushtime, readstdin;
 -	int fm_fd, fm_log;
  
- 	aflg = Fflg = kflg = pflg = 0;
+ 	aflg = Fflg = kflg = pflg = wflg = 0;
+ 	doresize = 0;
  	usesleep = 1;
  	rawout = 0;
  	flushtime = 30;
--	fm_fd = -1;	/* Shut up stupid "may be used uninitialized" GCC
--			   warning. (not needed w/clang) */
+-	fm_fd = -1;
  	showexit = 0;
  
--	while ((ch = getopt(argc, argv, "adeFfkpqrT:t:")) != -1)
-+	while ((ch = getopt(argc, argv, "adeFkpqrT:t:")) != -1)
- 		switch(ch) {
+ 	/*
+@@ -140,7 +141,7 @@
+ 	sigemptyset(&selmask);
+ 	pselmask = NULL;
+ 
+-	while ((ch = getopt(argc, argv, "adeFfkpqrT:t:w")) != -1)
++	while ((ch = getopt(argc, argv, "adeFkpqrT:t:w")) != -1)
+ 		switch (ch) {
  		case 'a':
  			aflg = 1;
-@@ -140,9 +140,6 @@
+@@ -154,9 +155,6 @@
  		case 'F':
  			Fflg = 1;
  			break;
@@ -11900,7 +11416,7 @@
  		case 'k':
  			kflg = 1;
  			break;
-@@ -182,20 +179,6 @@
+@@ -199,20 +197,6 @@
  	if ((fscript = fopen(fname, pflg ? "r" : aflg ? "a" : "w")) == NULL)
  		err(1, "%s", fname);
  
@@ -11921,7 +11437,7 @@
  	if (pflg)
  		playback(fscript);
  
-@@ -236,10 +219,6 @@
+@@ -253,10 +237,6 @@
  			}
  		}
  		fflush(fscript);
@@ -11932,7 +11448,15 @@
  	}
  	if (ttyflg) {
  		rtt = tt;
-@@ -254,14 +233,6 @@
+@@ -265,22 +245,12 @@
+ 		(void)tcsetattr(STDIN_FILENO, TCSAFLUSH, &rtt);
+ 	}
+ 
+-	assert(fflg ? fm_fd >= 0 : fm_fd < 0);
+-
+ 	child = fork();
+ 	if (child < 0) {
+ 		warn("fork");
  		done(1);
  	}
  	if (child == 0) {
@@ -11947,16 +11471,16 @@
  		doshell(argv);
  	}
  	close(slave);
-@@ -365,7 +336,7 @@
+@@ -408,7 +378,7 @@
  usage(void)
  {
  	(void)fprintf(stderr,
--	    "usage: script [-aeFfkpqr] [-t time] [file [command ...]]\n");
-+	    "usage: script [-aeFkpqr] [-t time] [file [command ...]]\n");
+-	    "usage: script [-aeFfkpqrw] [-t time] [file [command ...]]\n");
++	    "usage: script [-aeFkpqrw] [-t time] [file [command ...]]\n");
  	(void)fprintf(stderr,
  	    "       script -p [-deq] [-T fmt] [file]\n");
  	exit(1);
-@@ -430,10 +401,6 @@
+@@ -473,10 +443,6 @@
  			    ctime(&tvec));
  		}
  		(void)printf("\nScript done, output file is %s\n", fname);
@@ -11967,7 +11491,7 @@
  	}
  	(void)fclose(fscript);
  	(void)close(master);
-@@ -481,10 +448,10 @@
+@@ -523,10 +489,10 @@
  
  #define swapstamp(stamp) do { \
  	if (stamp.scr_direction > 0xff) { \
@@ -11982,7 +11506,7 @@
  	} \
  } while (0/*CONSTCOND*/)
  
-@@ -580,7 +547,7 @@
+@@ -622,7 +588,7 @@
  				if (stamp.scr_len == 0)
  					continue;
  				if (tclock - lclock > 0) {
@@ -12059,8 +11583,8 @@
  The
 --- src.orig/miscutils/time/time.c
 +++ src.freebsd/miscutils/time/time.c
-@@ -43,10 +43,9 @@
-   "$FreeBSD$";
+@@ -41,10 +41,9 @@
+ #endif
  #endif /* not lint */
  
 +#include <sys/cdefs.h>
@@ -12071,7 +11595,7 @@
  #include <sys/time.h>
  #include <sys/wait.h>
  
-@@ -61,7 +60,6 @@
+@@ -59,7 +58,6 @@
  #include <time.h>
  #include <unistd.h>
  
@@ -12079,7 +11603,7 @@
  static void humantime(FILE *, long, long);
  static void showtime(FILE *, struct timespec *, struct timespec *,
      struct rusage *);
-@@ -76,20 +74,21 @@
+@@ -74,20 +72,21 @@
  int
  main(int argc, char **argv)
  {
@@ -12104,7 +11628,7 @@
  		switch((char)ch) {
  		case 'a':
  			aflag = 1;
-@@ -97,9 +96,6 @@
+@@ -95,9 +94,6 @@
  		case 'h':
  			hflag = 1;
  			break;
@@ -12114,7 +11638,7 @@
  		case 'o':
  			ofn = optarg;
  			break;
-@@ -136,8 +132,8 @@
+@@ -134,8 +130,8 @@
  	(void)signal(SIGINT, SIG_IGN);
  	(void)signal(SIGQUIT, SIG_IGN);
  	siginfo_recvd = 0;
@@ -12125,7 +11649,7 @@
  	while (wait4(pid, &status, 0, &ru) != pid) {
  		if (siginfo_recvd) {
  			siginfo_recvd = 0;
-@@ -153,6 +149,7 @@
+@@ -151,6 +147,7 @@
  		warnx("command terminated abnormally");
  	exitonsig = WIFSIGNALED(status) ? WTERMSIG(status) : 0;
  	showtime(out, &before_ts, &after, &ru);
@@ -12133,7 +11657,7 @@
  	if (lflag) {
  		int hz = getstathz();
  		u_long ticks;
-@@ -196,6 +193,7 @@
+@@ -194,6 +191,7 @@
  		fprintf(out, "%10ld  %s\n",
  			ru.ru_nivcsw, "involuntary context switches");
  	}
@@ -12141,7 +11665,7 @@
  	/*
  	 * If the child has exited on a signal, exit on the same
  	 * signal, too, in order to reproduce the child's exit status.
-@@ -222,6 +220,7 @@
+@@ -220,6 +218,7 @@
  	exit(1);
  }
  
@@ -12149,7 +11673,7 @@
  /*
   * Return the frequency of the kernel's statistics clock.
   */
-@@ -239,6 +238,7 @@
+@@ -237,6 +236,7 @@
  		err(1, "sysctl kern.clockrate");
  	return clockrate.stathz;
  }
@@ -12159,8 +11683,8 @@
  humantime(FILE *out, long sec, long centisec)
 --- src.orig/miscutils/ul/ul.c
 +++ src.freebsd/miscutils/ul/ul.c
-@@ -43,6 +43,7 @@
-   "$FreeBSD$";
+@@ -41,6 +41,7 @@
+ #endif
  #endif /* not lint */
  
 +#include <sys/cdefs.h>
@@ -13039,19 +12563,9 @@
  static int	 v_obsolete(char *[]);
  
  /*
-@@ -419,8 +418,7 @@
-  * PUBLIC: void v_end(GS *);
-  */
- void
--v_end(gp)
--	GS *gp;
-+v_end(GS *gp)
- {
- 	MSGS *mp;
- 	SCR *sp;
 --- src.orig/nvi/common/options.c
 +++ src.freebsd/nvi/common/options.c
-@@ -313,15 +313,24 @@
+@@ -315,15 +315,24 @@
  	argv[1] = &b;
  
  	/* Set numeric and string default values. */
@@ -13080,7 +12594,7 @@
  	/*
  	 * Indirect global options to global space.  Specifically, set up
  	 * terminal, lines, columns first, they're used by other options.
-@@ -343,7 +352,7 @@
+@@ -345,7 +354,7 @@
  	/* Initialize string values. */
  	(void)SPRINTF(b2, SIZE(b2),
  	    L("cdpath=%s"), (s = getenv("CDPATH")) == NULL ? ":" : s);
@@ -13089,7 +12603,7 @@
  	OI(O_CEDIT, L("cedit=\033"));
  
  	/*
-@@ -355,30 +364,30 @@
+@@ -357,30 +366,30 @@
  	 */
  	(void)SPRINTF(b2, SIZE(b2),
  	    L("directory=%s"), (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
@@ -13126,7 +12640,7 @@
  
  	/*
  	 * XXX
-@@ -388,7 +397,7 @@
+@@ -390,7 +399,7 @@
  	if ((v = (O_VAL(sp, O_LINES) - 1) / 2) == 0)
  		v = 1;
  	(void)SPRINTF(b2, SIZE(b2), L("scroll=%ld"), v);
@@ -13135,7 +12649,7 @@
  
  	/*
  	 * The default window option values are:
-@@ -409,7 +418,7 @@
+@@ -411,7 +420,7 @@
  		v = 1;
  
  	(void)SPRINTF(b2, SIZE(b2), L("window=%lu"), v);
@@ -13290,15 +12804,15 @@
 +do_sed "$@"
 --- src.orig/nvi/vi/v_paragraph.c
 +++ src.freebsd/nvi/vi/v_paragraph.c
-@@ -45,7 +45,7 @@
+@@ -47,7 +47,7 @@
  		continue;						\
  	for (lp = VIP(sp)->ps; *lp != '\0'; lp += 2)			\
  		if (lp[0] == p[1] &&					\
--		    (lp[1] == ' ' && len == 2 || lp[1] == p[2]) &&	\
-+		    ((lp[1] == ' ' && len == 2) || lp[1] == p[2]) &&	\
- 		    !--cnt)						\
- 			goto found;					\
- } while (0)
+-		    (lp[1] == ' ' && len == 2 || lp[1] == p[2])) {	\
++		    ((lp[1] == ' ' && len == 2) || lp[1] == p[2])) {	\
+ 			if (!--cnt)					\
+ 				goto found;				\
+ 			if (pstate == P_INTEXT && !--cnt)		\
 --- src.orig/nvi/vi/vs_refresh.c
 +++ src.freebsd/nvi/vi/vs_refresh.c
 @@ -575,7 +575,7 @@
@@ -14311,7 +13825,7 @@
  				}
 --- src.orig/telnet/libtelnet/auth.c
 +++ src.freebsd/telnet/libtelnet/auth.c
-@@ -397,7 +397,7 @@
+@@ -394,7 +394,7 @@
  	if (data < _auth_send_data ||
  	    data > _auth_send_data + sizeof(_auth_send_data)) {
  		auth_send_cnt = (size_t)cnt > sizeof(_auth_send_data)
@@ -14320,7 +13834,7 @@
  					: cnt;
  		memmove((void *)_auth_send_data, (void *)data, auth_send_cnt);
  		auth_send_data = _auth_send_data;
-@@ -497,7 +497,7 @@
+@@ -494,7 +494,7 @@
  void
  auth_name(unsigned char *data, int cnt)
  {
@@ -14329,9 +13843,65 @@
  
  	if (cnt < 1) {
  		if (auth_debug_mode)
+@@ -545,7 +545,7 @@
+ 
+ /* ARGSUSED */
+ static void
+-auth_intr(int sig __unused)
++auth_intr(int sig __attribute__((unused)))
+ {
+ 	auth_finished(0, AUTH_REJECT);
+ }
+--- src.orig/telnet/libtelnet/enc_des.c
++++ src.freebsd/telnet/libtelnet/enc_des.c
+@@ -116,7 +116,7 @@
+ int fb64_keyid(int, unsigned char *, int *, struct fb *);
+ 
+ void
+-cfb64_init(int server __unused)
++cfb64_init(int server __attribute__((unused)))
+ {
+ 	fb64_init(&fb[CFB]);
+ 	fb[CFB].fb_feed[4] = ENCTYPE_DES_CFB64;
+@@ -125,7 +125,7 @@
+ }
+ 
+ void
+-ofb64_init(int server __unused)
++ofb64_init(int server __attribute__((unused)))
+ {
+ 	fb64_init(&fb[OFB]);
+ 	fb[OFB].fb_feed[4] = ENCTYPE_DES_OFB64;
+@@ -165,7 +165,7 @@
+ }
+ 
+ static int
+-fb64_start(struct fb *fbp, int dir, int server __unused)
++fb64_start(struct fb *fbp, int dir, int server __attribute__((unused)))
+ {
+ 	size_t x;
+ 	unsigned char *p;
 --- src.orig/telnet/libtelnet/encrypt.c
 +++ src.freebsd/telnet/libtelnet/encrypt.c
-@@ -751,7 +751,7 @@
+@@ -604,7 +604,7 @@
+  * Called when a ENCRYPT START command is received.
+  */
+ void
+-encrypt_start(unsigned char *data __unused, int cnt __unused)
++encrypt_start(unsigned char *data __attribute__((unused)), int cnt __attribute__((unused)))
+ {
+ 	Encryptions *ep;
+ 
+@@ -682,7 +682,7 @@
+  * can.
+  */
+ void
+-encrypt_request_start(unsigned char *data __unused, int cnt __unused)
++encrypt_request_start(unsigned char *data __attribute__((unused)), int cnt __attribute__((unused)))
+ {
+ 	if (encrypt_mode == 0)  {
+ 		if (Server)
+@@ -747,7 +747,7 @@
  		return;
  	}
  
@@ -14340,9 +13910,29 @@
  }
  
  void
+--- src.orig/telnet/libtelnet/misc.c
++++ src.freebsd/telnet/libtelnet/misc.c
+@@ -51,7 +51,7 @@
+ int ConnectedCount = 0;
+ 
+ #ifndef AUTHENTICATION
+-#define undef1 __unused
++#define undef1 __attribute__((unused))
+ #else
+ #define undef1
+ #endif
+@@ -84,7 +84,7 @@
+ 
+ /* ARGSUSED */
+ void
+-auth_encrypt_connect(int cnt __unused)
++auth_encrypt_connect(int cnt __attribute__((unused)))
+ {
+ }
+ #endif	/* ENCRYPTION */
 --- src.orig/telnet/libtelnet/pk.c
 +++ src.freebsd/telnet/libtelnet/pk.c
-@@ -44,6 +44,7 @@
+@@ -40,6 +40,7 @@
   */
  
  #include <sys/time.h>
@@ -14350,7 +13940,7 @@
  #include <openssl/des.h>
  #include <fcntl.h>
  #include <stdio.h>
-@@ -142,7 +143,15 @@
+@@ -138,7 +139,15 @@
  static void
  getseed(char *seed, int seedsize)
  {
@@ -14367,7 +13957,7 @@
  }
  
  /*
-@@ -223,7 +232,7 @@
+@@ -219,7 +228,7 @@
  	memset(buf,0,sizeof(buf));
  	deslen = ((strlen(in) + 7)/8)*8;
  	DES_key_sched(key, &k);
@@ -14376,7 +13966,7 @@
  	for (l=0,op=0;l<deslen;l++) {
  		out[op++] = hextab[(buf[l] & 0xf0) >> 4];
  		out[op++] = hextab[(buf[l] & 0x0f)];
-@@ -255,6 +264,6 @@
+@@ -251,6 +260,6 @@
  		buf[l] = n1*16 +n2;
  	}
  	DES_key_sched(key, &k);
@@ -14386,7 +13976,7 @@
  }
 --- src.orig/telnet/libtelnet/sra.c
 +++ src.freebsd/telnet/libtelnet/sra.c
-@@ -41,7 +41,6 @@
+@@ -37,7 +37,6 @@
  #include <stdlib.h>
  #include <string.h>
  #include <syslog.h>
@@ -14394,7 +13984,25 @@
  
  #ifndef NOPAM
  #include <security/pam_appl.h>
-@@ -413,6 +412,7 @@
+@@ -106,7 +105,7 @@
+ }
+ 
+ int
+-sra_init(Authenticator *ap __unused, int server)
++sra_init(Authenticator *ap __attribute__((unused)), int server)
+ {
+ 	if (server)
+ 		str_data[3] = TELQUAL_REPLY;
+@@ -336,7 +335,7 @@
+ }
+ 
+ int
+-sra_status(Authenticator *ap __unused, char *name, int level)
++sra_status(Authenticator *ap __attribute__((unused)), char *name, int level)
+ {
+ 	if (level < AUTH_USER)
+ 		return(level);
+@@ -409,6 +408,7 @@
  	}
  }
  
@@ -14402,7 +14010,7 @@
  static int
  isroot(const char *usr)
  {
-@@ -430,11 +430,14 @@
+@@ -426,11 +426,14 @@
  
  	return ((t = getttynam(ttyn)) && t->ty_status & TTY_SECURE);
  }
@@ -14417,7 +14025,7 @@
  	char *cp;
  	char *xpasswd, *salt;
  
-@@ -460,6 +463,7 @@
+@@ -456,6 +459,7 @@
  		}
  		return(1);
  	}
@@ -14427,8 +14035,8 @@
  #else
 --- src.orig/telnet/telnet/commands.c
 +++ src.freebsd/telnet/telnet/commands.c
-@@ -36,9 +36,11 @@
- __FBSDID("$FreeBSD$");
+@@ -34,9 +34,11 @@
+ #endif
  
  #include <sys/param.h>
 +#include <sys/types.h>
@@ -14439,7 +14047,7 @@
  #include <netinet/in.h>
  
  #include <assert.h>
-@@ -80,6 +82,13 @@
+@@ -78,6 +80,13 @@
  #define       MAXHOSTNAMELEN 256
  #endif
  
@@ -14453,7 +14061,7 @@
  typedef int (*intrtn_t)(int, char **);
  
  #ifdef	AUTHENTICATION
-@@ -104,11 +113,11 @@
+@@ -102,11 +111,11 @@
  #ifdef INET6
  static int switch_af(struct addrinfo **);
  #endif
@@ -14467,7 +14075,7 @@
  static int sourceroute(struct addrinfo *, char *, unsigned char **, int *, int *, int *);
  
  typedef struct {
-@@ -124,6 +133,10 @@
+@@ -122,6 +131,10 @@
  static char *margv[20];
  int quiet_mode;
  
@@ -14478,7 +14086,7 @@
  #ifdef OPIE
  #include <sys/wait.h>
  #define PATH_OPIEKEY	"/usr/bin/opiekey"
-@@ -282,15 +295,15 @@
+@@ -280,15 +293,15 @@
      const char	*help;		/* Help information (0 ==> no help) */
      int		needconnect;	/* Need to be connected */
      int		narg;		/* Number of arguments */
@@ -14497,7 +14105,7 @@
  	send_docmd(char *),
  	send_dontcmd(char *),
  	send_willcmd(char *),
-@@ -303,7 +316,7 @@
+@@ -301,7 +314,7 @@
      { "break",	NULL,				1, 0, NULL, 2, BREAK },
      { "ec",	"Send Telnet Erase Character",	1, 0, NULL, 2, EC },
      { "el",	"Send Telnet Erase Line",	1, 0, NULL, 2, EL },
@@ -14506,7 +14114,7 @@
      { "ga",	"Send Telnet 'Go Ahead' sequence", 1, 0, NULL, 2, GA },
      { "ip",	"Send Telnet Interrupt Process",1, 0, NULL, 2, IP },
      { "intp",	NULL,				1, 0, NULL, 2, IP },
-@@ -314,14 +327,14 @@
+@@ -312,14 +325,14 @@
      { "abort",	"Send Telnet 'Abort Process'",	1, 0, NULL, 2, ABORT },
      { "susp",	"Send Telnet 'Suspend Process'",1, 0, NULL, 2, SUSP },
      { "eof",	"Send Telnet End of File Character", 1, 0, NULL, 2, xEOF },
@@ -14529,7 +14137,7 @@
      { NULL,	NULL,				0, 0, NULL, 0, 0 }
  };
  
-@@ -368,7 +381,7 @@
+@@ -366,7 +379,7 @@
  	}
  	count += s->nbyte;
  	if ((void *)s->handler == (void *)send_help) {
@@ -14538,7 +14146,7 @@
  	    return 0;
  	}
  
-@@ -398,8 +411,7 @@
+@@ -396,8 +409,7 @@
  	}
  	if (s->handler) {
  	    count++;
@@ -14548,7 +14156,7 @@
  	    i += s->narg;
  	} else {
  	    NET2ADD(IAC, s->what);
-@@ -410,8 +422,9 @@
+@@ -408,8 +420,9 @@
  }
  
  static int
@@ -14559,7 +14167,7 @@
      NETADD(escape);
      return 1;
  }
-@@ -502,9 +515,10 @@
+@@ -500,9 +513,10 @@
  }
  
  static int
@@ -14571,7 +14179,7 @@
      for (s = Sendlist; s->name; s++) {
  	if (s->help)
  	    printf("%-15s %s\n", s->name, s->help);
-@@ -518,15 +532,17 @@
+@@ -516,15 +530,17 @@
   */
  
  static int
@@ -14591,7 +14199,7 @@
  #ifndef	NOT43
      if (net > 0 &&
  	(SetSockOpt(net, SOL_SOCKET, SO_DEBUG, telnet_debug)) < 0) {
-@@ -544,8 +560,9 @@
+@@ -542,8 +558,9 @@
  
  
  static int
@@ -14602,7 +14210,7 @@
      if (crlf) {
  	printf("Will send carriage returns as telnet <CR><LF>.\n");
      } else {
-@@ -721,7 +738,7 @@
+@@ -719,7 +736,7 @@
  		    0 },
      { "crlf",
  	"sending carriage returns as telnet <CR><LF>",
@@ -14611,7 +14219,7 @@
  		&crlf,
  		    0 },
      { "crmod",
-@@ -731,13 +748,13 @@
+@@ -729,13 +746,13 @@
  		    "map carriage return on output" },
      { "localchars",
  	"local recognition of certain control characters",
@@ -14627,7 +14235,7 @@
  		&telnet_debug,
  		    "turn on socket level debugging" },
      { "netdata",
-@@ -762,23 +779,24 @@
+@@ -760,23 +777,24 @@
  		    "print hexadecimal representation of terminal traffic" },
      { "?",
  	NULL,
@@ -14655,7 +14263,7 @@
      for (c = Togglelist; c->name; c++) {
  	if (c->help) {
  	    if (*c->help)
-@@ -857,7 +875,7 @@
+@@ -855,7 +873,7 @@
   */
  
  #ifdef	USE_TERMIO
@@ -14664,7 +14272,7 @@
  #endif
  
  struct setlist {
-@@ -1057,8 +1075,9 @@
+@@ -1055,8 +1073,9 @@
  extern int kludgelinemode;
  
  static int
@@ -14675,7 +14283,7 @@
      kludgelinemode = 1;
      send_wont(TELOPT_LINEMODE, 1);
      send_dont(TELOPT_SGA, 1);
-@@ -1068,8 +1087,9 @@
+@@ -1066,8 +1085,9 @@
  #endif
  
  static int
@@ -14686,7 +14294,7 @@
  #ifdef	KLUDGELINEMODE
      if (kludgelinemode)
  	send_dont(TELOPT_SGA, 1);
-@@ -1080,8 +1100,9 @@
+@@ -1078,8 +1098,9 @@
  }
  
  static int
@@ -14697,7 +14305,7 @@
  #ifdef	KLUDGELINEMODE
      if (kludgelinemode)
  	send_do(TELOPT_SGA, 1);
-@@ -1133,11 +1154,11 @@
+@@ -1131,11 +1152,11 @@
  };
  
  static struct modelist ModeList[] = {
@@ -14711,7 +14319,7 @@
  #ifdef	KLUDGELINEMODE
      { "",	"(or enable obsolete line-by-line mode)", NULL, 0, 0 },
  #endif
-@@ -1155,21 +1176,22 @@
+@@ -1153,21 +1174,22 @@
      { "litecho", "Enable literal character echo", setmod, 1, MODE_LIT_ECHO },
      { "+litecho", 0,				setmod, 1, MODE_LIT_ECHO },
      { "-litecho", "Disable literal character echo", clearmode, 1, MODE_LIT_ECHO },
@@ -14738,7 +14346,7 @@
      printf("format is:  'mode Mode', where 'Mode' is one of:\n\n");
      for (mt = ModeList; mt->name; mt++) {
  	if (mt->help) {
-@@ -1303,8 +1325,9 @@
+@@ -1301,8 +1323,9 @@
  }
  
  static int
@@ -14749,7 +14357,7 @@
      crmod = !crmod;
      printf("Deprecated usage - please use 'toggle crmod' in the future.\n");
      printf("%s map carriage return on output.\n", crmod ? "Will" : "Won't");
-@@ -1313,8 +1336,9 @@
+@@ -1311,8 +1334,9 @@
  }
  
  static int
@@ -14760,7 +14368,16 @@
  #ifdef	SIGTSTP
      setcommandmode();
      {
-@@ -1421,8 +1445,17 @@
+@@ -1340,7 +1364,7 @@
+ }
+ 
+ static int
+-shell(int argc, char *argv[] __unused)
++shell(int argc, char *argv[] __attribute__((unused)))
+ {
+     long oldrows, oldcols, newrows, newcols, err_;
+ 
+@@ -1419,8 +1443,17 @@
  }
  
  static int
@@ -14779,7 +14396,7 @@
  	send_do(TELOPT_LOGOUT, 1);
  	(void) netflush();
  	return 1;
-@@ -1440,24 +1473,30 @@
+@@ -1438,24 +1471,30 @@
  	int	arg;
  };
  
@@ -14815,7 +14432,7 @@
  
      for (c = SlcList; c->name; c++) {
  	if (c->help) {
-@@ -1509,49 +1548,54 @@
+@@ -1507,49 +1546,54 @@
  struct envlist {
  	const char	*name;
  	const char	*help;
@@ -14891,7 +14508,7 @@
  
      for (c = EnvList; c->name; c++) {
  	if (c->help) {
-@@ -1605,8 +1649,8 @@
+@@ -1603,8 +1647,8 @@
  struct env_lst {
  	struct env_lst *next;	/* pointer to next structure */
  	struct env_lst *prev;	/* pointer to previous structure */
@@ -14902,7 +14519,7 @@
  	int export;		/* 1 -> export with default list of variables */
  	int welldefined;	/* A well defined variable */
  };
-@@ -1614,7 +1658,7 @@
+@@ -1612,7 +1656,7 @@
  struct env_lst envlisthead;
  
  static struct env_lst *
@@ -14911,7 +14528,7 @@
  {
  	struct env_lst *ep;
  
-@@ -1635,8 +1679,7 @@
+@@ -1633,8 +1677,7 @@
  	for (epp = environ; *epp; epp++) {
  		if ((cp = strchr(*epp, '='))) {
  			*cp = '\0';
@@ -14921,7 +14538,7 @@
  			ep->export = 0;
  			*cp = '=';
  		}
-@@ -1657,7 +1700,7 @@
+@@ -1655,7 +1698,7 @@
  		asprintf(&cp, "%s%s", hbuf, cp2);
  		assert(cp != NULL);
  		free(ep->value);
@@ -14930,7 +14547,7 @@
  	}
  	/*
  	 * If USER is not defined, but LOGNAME is, then add
-@@ -1666,14 +1709,14 @@
+@@ -1664,14 +1707,14 @@
  	 */
  	if ((env_find("USER") == NULL) && (ep = env_find("LOGNAME"))) {
  		env_define("USER", ep->value);
@@ -14950,7 +14567,7 @@
  {
  	struct env_lst *ep;
  
-@@ -1697,10 +1740,11 @@
+@@ -1695,10 +1738,11 @@
  	return(ep);
  }
  
@@ -14964,7 +14581,7 @@
  
  	if ((ep = env_find(var))) {
  		ep->prev->next = ep->next;
-@@ -1714,28 +1758,31 @@
+@@ -1712,28 +1756,31 @@
  	}
  }
  
@@ -15002,7 +14619,7 @@
  
  	if (my_state_is_wont(TELOPT_NEW_ENVIRON)
  #ifdef	OLD_ENVIRON
-@@ -1754,14 +1801,15 @@
+@@ -1752,14 +1799,15 @@
  		return;
  	}
  	env_opt_start_info();
@@ -15021,7 +14638,7 @@
  
  	for (ep = envlisthead.next; ep; ep = ep->next) {
  		printf("%c %-20s %s\n", ep->export ? '*' : ' ',
-@@ -1781,7 +1829,7 @@
+@@ -1779,7 +1827,7 @@
  	if (nep) {
  		while ((nep = nep->next)) {
  			if (nep->export && (nep->welldefined == welldefined))
@@ -15030,7 +14647,7 @@
  		}
  	}
  	return(NULL);
-@@ -1792,22 +1840,23 @@
+@@ -1790,22 +1838,23 @@
  {
  	struct env_lst *ep;
  
@@ -15060,7 +14677,7 @@
  		if (env_auto)
  			printf("%s%s", "VAR and VALUE are/will be ",
  					"determined automatically\n");
-@@ -1815,15 +1864,15 @@
+@@ -1813,15 +1862,15 @@
  			printf("VAR and VALUE set to correct definitions\n");
  		else
  			printf("VAR and VALUE definitions are reversed\n");
@@ -15079,7 +14696,7 @@
  		env_auto = 0;
  		old_env_var = OLD_ENV_VALUE;
  		old_env_value = OLD_ENV_VAR;
-@@ -1853,15 +1902,24 @@
+@@ -1851,15 +1900,24 @@
  static int
  	auth_help(void);
  
@@ -15107,7 +14724,7 @@
      { NULL, NULL, NULL, 0 },
  };
  
-@@ -1943,6 +2001,39 @@
+@@ -1941,6 +1999,39 @@
  static int
  	EncryptHelp(void);
  
@@ -15147,7 +14764,7 @@
  struct encryptlist EncryptList[] = {
      { "enable", "Enable encryption. ('encrypt enable ?' for more)",
  						EncryptEnable, 1, 1, 2 },
-@@ -1951,22 +2042,22 @@
+@@ -1949,22 +2040,22 @@
      { "type", "Set encryption type. ('encrypt type ?' for more)",
  						EncryptType, 0, 1, 1 },
      { "start", "Start encryption. ('encrypt start ?' for more)",
@@ -15179,7 +14796,7 @@
      { NULL, NULL, NULL, 0, 0, 0 },
  };
  
-@@ -2172,7 +2263,7 @@
+@@ -2170,7 +2261,7 @@
  {
      unsigned char *srp = 0;
      int proto, opt;
@@ -15188,7 +14805,7 @@
      int srcroute = 0, result;
      char *cmd, *hostp = 0, *portp = 0, *user = 0;
      char *src_addr = NULL;
-@@ -2265,7 +2356,8 @@
+@@ -2263,7 +2354,8 @@
  	hostname = hostp;
  	memset(&su, 0, sizeof su);
  	su.sun_family = AF_UNIX;
@@ -15198,7 +14815,7 @@
  	if (!quiet_mode)
  	    printf("Trying %s...\n", hostp);
  	net = socket(PF_UNIX, SOCK_STREAM, 0);
-@@ -2327,7 +2419,7 @@
+@@ -2325,7 +2417,7 @@
          int gni_err = 1;
  
  	if (doaddrlookup)
@@ -15207,7 +14824,7 @@
  				  _hostname, sizeof(_hostname) - 1, NULL, 0,
  				  NI_NAMEREQD);
  	if (gni_err != 0)
-@@ -2447,13 +2539,16 @@
+@@ -2445,13 +2537,16 @@
  
  	if (connect(net, res->ai_addr, res->ai_addrlen) < 0) {
  	    struct addrinfo *next;
@@ -15228,7 +14845,7 @@
  	    if (next != NULL) {
  		res = next;
  		(void) NetClose(net);
-@@ -2490,7 +2585,7 @@
+@@ -2488,7 +2583,7 @@
      }
      if (user) {
  	env_define("USER", user);
@@ -15237,7 +14854,7 @@
      }
      (void) call(status, "status", "notmuch", 0);
      telnet(user); 
-@@ -2539,12 +2634,12 @@
+@@ -2537,12 +2632,12 @@
  
  static Command cmdtab[] = {
  	{ "close",	closehelp,	bye,		1 },
@@ -15252,7 +14869,7 @@
  	{ "send",	sendhelp,	sendcmd,	0 },
  	{ "set",	sethelp,	setcmd,		0 },
  	{ "unset",	unsethelp,	unsetcmd,	0 },
-@@ -2557,7 +2652,7 @@
+@@ -2555,7 +2650,7 @@
  #ifdef	ENCRYPTION
  	{ "encrypt",	encrypthelp,	encrypt_cmd,	0 },
  #endif	/* ENCRYPTION */
@@ -15261,7 +14878,7 @@
  	{ "!",		shellhelp,	shell,		1 },
  	{ "environ",	envhelp,	env_cmd,	0 },
  	{ "?",		helphelp,	help,		0 },
-@@ -2573,7 +2668,7 @@
+@@ -2571,7 +2666,7 @@
  static Command cmdtab2[] = {
  	{ "help",	0,		help,		0 },
  	{ "escape",	escapehelp,	setescape,	0 },
@@ -15270,7 +14887,7 @@
  	{ NULL, NULL, NULL, 0 }
  };
  
-@@ -2710,6 +2805,11 @@
+@@ -2708,6 +2803,11 @@
  static char *rcname = 0;
  static char rcbuf[128];
  
@@ -15282,7 +14899,7 @@
  void
  cmdrc(char *m1, char *m2)
  {
-@@ -2755,11 +2855,11 @@
+@@ -2753,11 +2853,11 @@
  	    if (isspace(line[0]))
  		continue;
  	    if (strncasecmp(line, m1, l1) == 0)
@@ -15297,7 +14914,7 @@
  	    else
  		continue;
  	    if (line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
-@@ -2854,9 +2954,11 @@
+@@ -2852,9 +2952,11 @@
  	unsigned char *cp, *cp2, *lsrp, *ep;
  	struct sockaddr_in *_sin;
  #ifdef INET6
@@ -15310,7 +14927,7 @@
  	struct addrinfo hints, *res;
  	int error;
  	char c;
-@@ -2868,7 +2970,7 @@
+@@ -2866,7 +2968,7 @@
  	if (cpp == NULL || lenp == NULL)
  		return -1;
  	if (*cpp != NULL) {
@@ -15319,7 +14936,7 @@
  		case AF_INET:
  			if (*lenp < 7)
  				return -1;
-@@ -2890,14 +2992,17 @@
+@@ -2888,14 +2990,17 @@
  		lsrp = *cpp;
  		ep = lsrp + *lenp;
  	} else {
@@ -15339,7 +14956,7 @@
  		if ((rth = inet6_rth_init((void *)*cpp, sizeof(buf),
  					  IPV6_RTHDR_TYPE_0, 0)) == NULL)
  			return -1;
-@@ -2905,6 +3010,7 @@
+@@ -2903,6 +3008,7 @@
  			return -1;
  		*protop = IPPROTO_IPV6;
  		*optp = IPV6_RTHDR;
@@ -15347,7 +14964,7 @@
  	} else
  #endif
        {
-@@ -2960,10 +3066,10 @@
+@@ -2958,10 +3064,10 @@
  			cp2 = 0;
  
  		hints.ai_flags = AI_NUMERICHOST;
@@ -15360,7 +14977,7 @@
  		}
  		if (error != 0) {
  			fprintf(stderr, "%s: %s\n", cp, gai_strerror(error));
-@@ -2975,9 +3081,13 @@
+@@ -2973,9 +3079,13 @@
  		}
  #ifdef INET6
  		if (res->ai_family == AF_INET6) {
@@ -15387,8 +15004,8 @@
  extern char *ipsec_policy_out;
 --- src.orig/telnet/telnet/main.c
 +++ src.freebsd/telnet/telnet/main.c
-@@ -36,6 +36,7 @@
- __FBSDID("$FreeBSD$");
+@@ -34,6 +34,7 @@
+ #endif
  
  #include <sys/param.h>
 +#include <sys/types.h>
@@ -15397,7 +15014,7 @@
  #include <string.h>
 --- src.orig/telnet/telnet/ring.c
 +++ src.freebsd/telnet/telnet/ring.c
-@@ -49,6 +49,7 @@
+@@ -47,6 +47,7 @@
  #include	<errno.h>
  #include	<stdio.h>
  #include	<string.h>
@@ -15405,7 +15022,7 @@
  
  #ifdef	size_t
  #undef	size_t
-@@ -179,7 +180,7 @@
+@@ -177,7 +178,7 @@
  	ring->clearto = 0;
      else if (ring->consume + count > ring->top &&
  		ring->bottom <= ring->clearto &&
@@ -15416,7 +15033,7 @@
      ring->consume = ring_increment(ring, ring->consume, count);
 --- src.orig/telnet/telnet/sys_bsd.c
 +++ src.freebsd/telnet/telnet/sys_bsd.c
-@@ -41,6 +41,7 @@
+@@ -39,6 +39,7 @@
   */
  
  #include <sys/param.h>
@@ -15424,7 +15041,7 @@
  #include <sys/socket.h>
  #include <sys/time.h>
  #include <err.h>
-@@ -73,7 +74,7 @@
+@@ -71,7 +72,7 @@
  # define old_tc ottyb
  
  #else	/* USE_TERMIO */
@@ -15433,7 +15050,7 @@
  
  # ifndef	TCSANOW
  #  ifdef TCSETS
-@@ -650,7 +651,12 @@
+@@ -648,7 +649,12 @@
  #ifdef	SIGTSTP
  	(void) signal(SIGTSTP, SIG_DFL);
  # ifndef SOLARIS
@@ -15447,7 +15064,52 @@
  # else	/* SOLARIS */
  	(void) sigrelse(SIGTSTP);
  # endif	/* SOLARIS */
-@@ -1033,7 +1039,7 @@
+@@ -740,7 +746,7 @@
+ 
+ /* ARGSUSED */
+ SIG_FUNC_RET
+-intr(int sig __unused)
++intr(int sig __attribute__((unused)))
+ {
+     if (localchars) {
+ 	intp();
+@@ -752,7 +758,7 @@
+ 
+ /* ARGSUSED */
+ SIG_FUNC_RET
+-intr2(int sig __unused)
++intr2(int sig __attribute__((unused)))
+ {
+     if (localchars) {
+ #ifdef	KLUDGELINEMODE
+@@ -768,7 +774,7 @@
+ #ifdef	SIGTSTP
+ /* ARGSUSED */
+ SIG_FUNC_RET
+-susp(int sig __unused)
++susp(int sig __attribute__((unused)))
+ {
+     if ((rlogin != _POSIX_VDISABLE) && rlogin_susp())
+ 	return;
+@@ -780,7 +786,7 @@
+ #ifdef	SIGWINCH
+ /* ARGSUSED */
+ static SIG_FUNC_RET
+-sendwin(int sig __unused)
++sendwin(int sig __attribute__((unused)))
+ {
+     if (connected) {
+ 	sendnaws();
+@@ -791,7 +797,7 @@
+ #ifdef	SIGINFO
+ /* ARGSUSED */
+ SIG_FUNC_RET
+-ayt(int sig __unused)
++ayt(int sig __attribute__((unused)))
+ {
+     if (connected)
+ 	sendayt();
+@@ -1031,7 +1037,7 @@
       */
      if (FD_ISSET(tin, ibitsp)) {
  	FD_CLR(tin, ibitsp);
@@ -15458,7 +15120,7 @@
  	if (c < 0 && errno == EWOULDBLOCK) {
 --- src.orig/telnet/telnet/telnet.c
 +++ src.freebsd/telnet/telnet/telnet.c
-@@ -42,8 +42,15 @@
+@@ -40,8 +40,15 @@
   * declared in curses.h.
   */
  
@@ -15475,16 +15137,16 @@
  #include <signal.h>
  #include <stdlib.h>
  #include <term.h>
-@@ -208,7 +215,7 @@
+@@ -206,7 +213,7 @@
  void
  DoBaudRate(char *arg)
  {
--    char *temp, temp2[10];
+-    char *temp, temp2[11];
 +    char *temp, temp2[16];
      int i;
      uint32_t baudrate;
  
-@@ -218,14 +225,14 @@
+@@ -216,14 +223,14 @@
  	ExitString("Invalid baud rate provided.\n", 1);
  
      for (i = 1; termspeeds[i].speed != -1; i++)
@@ -15502,7 +15164,7 @@
  	ExitString("No room in buffer for baud rate.\n", 1);
  	/* NOTREACHED */
      }
-@@ -235,8 +242,8 @@
+@@ -233,8 +240,8 @@
  
      baudrate = htonl(baudrate);
      memcpy(&temp2[4], &baudrate, sizeof(baudrate));
@@ -15513,7 +15175,7 @@
  }
  
  void
-@@ -386,8 +393,9 @@
+@@ -384,8 +391,9 @@
  	    case TELOPT_SGA:
  		if (!kludgelinemode)
  		    break;
@@ -15524,7 +15186,7 @@
  	    case TELOPT_ECHO:
  		settimer(modenegotiated);
  		break;
-@@ -477,7 +485,7 @@
+@@ -475,7 +483,7 @@
  #endif
  
  	    case TELOPT_XDISPLOC:	/* X Display location */
@@ -15533,7 +15195,7 @@
  		    new_state_ok = 1;
  		break;
  
-@@ -730,7 +738,7 @@
+@@ -728,7 +736,7 @@
  		resettermname = 0;
  		if (tnamep && tnamep != unknown)
  			free(tnamep);
@@ -15542,7 +15204,7 @@
  				(setupterm(tname, 1, &err) == 0)) {
  			tnamep = mklist(termbuf, tname);
  		} else {
-@@ -775,7 +783,7 @@
+@@ -773,7 +781,7 @@
  	    return;
  	} else {
  	    const char *name;
@@ -15551,7 +15213,7 @@
  	    int len;
  
  	    name = gettermname();
-@@ -783,8 +791,8 @@
+@@ -781,8 +789,8 @@
  	    if (len < NETROOM()) {
  		snprintf(temp, sizeof(temp), "%c%c%c%c%s%c%c", IAC, SB, TELOPT_TTYPE,
  				TELQUAL_IS, name, IAC, SE);
@@ -15562,7 +15224,7 @@
  	    } else {
  		ExitString("No room in buffer for terminal type.\n", 1);
  		/*NOTREACHED*/
-@@ -798,18 +806,18 @@
+@@ -796,18 +804,18 @@
  	    return;
  	if (SB_GET() == TELQUAL_SEND) {
  	    long ospeed, ispeed;
@@ -15586,7 +15248,7 @@
  	    }
  /*@*/	    else printf("lm_will: not enough room in buffer\n");
  	}
-@@ -897,10 +905,10 @@
+@@ -895,10 +903,10 @@
  	if (SB_EOF())
  	    return;
  	if (SB_GET() == TELQUAL_SEND) {
@@ -15599,7 +15261,7 @@
  		strlen(dp) > sizeof(temp) - 7) {
  		/*
  		 * Something happened, we no longer have a DISPLAY
-@@ -911,11 +919,11 @@
+@@ -909,11 +917,11 @@
  	    }
  	    snprintf(temp, sizeof(temp), "%c%c%c%c%s%c%c", IAC, SB,
  		    TELOPT_XDISPLOC, TELQUAL_IS, dp, IAC, SE);
@@ -15614,7 +15276,7 @@
  	    }
  /*@*/	    else printf("lm_will: not enough room in buffer\n");
  	}
-@@ -1584,7 +1592,7 @@
+@@ -1582,7 +1590,7 @@
  		opt_replyp = opt_reply + len - (opt_replyend - opt_replyp);
  		opt_replyend = opt_reply + len;
  	}
@@ -15623,7 +15285,7 @@
  #ifdef	OLD_ENVIRON
  		if (telopt_environ == TELOPT_OLD_ENVIRON)
  			*opt_replyp++ = old_env_var;
-@@ -1953,7 +1961,7 @@
+@@ -1951,7 +1959,7 @@
  				continue;
  			}
  			if (sc == escape) {
@@ -15632,7 +15294,16 @@
  				bol = 1;
  				count += tcc;
  				tcc = 0;
-@@ -2144,7 +2152,7 @@
+@@ -2101,7 +2109,7 @@
+ #ifdef	AUTHENTICATION
+ #define __unusedhere
+ #else
+-#define __unusedhere __unused
++#define __unusedhere __attribute__((unused))
+ #endif
+ /*
+  * Select from tty and network...
+@@ -2142,7 +2150,7 @@
  	send_will(TELOPT_LINEMODE, 1);
  	send_will(TELOPT_NEW_ENVIRON, 1);
  	send_do(TELOPT_STATUS, 1);
@@ -15641,9 +15312,27 @@
  	    send_will(TELOPT_XDISPLOC, 1);
  	if (eight)
  	    tel_enter_binary(eight);
+@@ -2271,7 +2279,7 @@
+ }
+ 
+ int
+-dosynch(char *ch __unused)
++dosynch(char *ch __attribute__((unused)))
+ {
+     netclear();			/* clear the path to the network */
+     NETADD(IAC);
+@@ -2284,7 +2292,7 @@
+ int want_status_response = 0;
+ 
+ int
+-get_status(char *ch __unused)
++get_status(char *ch __attribute__((unused)))
+ {
+     unsigned char tmp[16];
+     unsigned char *cp;
 --- src.orig/telnet/telnet/terminal.c
 +++ src.freebsd/telnet/telnet/terminal.c
-@@ -128,7 +128,7 @@
+@@ -126,7 +126,7 @@
  	    TerminalFlushOutput();
  	    /* we leave 'n' alone! */
  	} else {
@@ -15652,7 +15341,7 @@
  	}
      }
      if (n > 0) {
-@@ -143,7 +143,7 @@
+@@ -141,7 +141,7 @@
  	if (n1 == n && n0 > n) {
  		n1 = n0 - n;
  		if (!drop)
@@ -15663,7 +15352,7 @@
  	}
 --- src.orig/telnet/telnet/utilities.c
 +++ src.freebsd/telnet/telnet/utilities.c
-@@ -435,7 +435,7 @@
+@@ -433,7 +433,7 @@
  			((pointer[3] & AUTH_HOW_MASK) == AUTH_HOW_MUTUAL) ?
  			"MUTUAL" : "ONE-WAY");
  
@@ -15672,7 +15361,7 @@
  		fprintf(NetTrace, "%s", buf);
  		break;
  
-@@ -513,7 +513,7 @@
+@@ -511,7 +511,7 @@
  		else
  		    fprintf(NetTrace, " %d (unknown)", pointer[2]);
  

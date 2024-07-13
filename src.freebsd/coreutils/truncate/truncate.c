@@ -32,11 +32,6 @@
  *
  */
 
-#if 0
-static const char rcsid[] =
-    "$FreeBSD$";
-#endif
-
 #include <sys/stat.h>
 
 #include <ctype.h>

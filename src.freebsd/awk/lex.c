@@ -377,6 +377,8 @@ int yylex(void)
 	}
 }
 
+extern int runetochar(char *str, int c);
+
 int string(void)
 {
 	int c, n;
@@ -424,12 +426,16 @@ int string(void)
 				*bp++ = n;
 				break;
 
-			case 'x':	/* hex  \x0-9a-fA-F + */
+			case 'x':	/* hex  \x0-9a-fA-F (exactly two) */
 			    {
 				int i;
 
+				if (!isxdigit(peek())) {
+					unput(c);
+					break;
+				}
 				n = 0;
-				for (i = 1; i <= 2; i++) {
+				for (i = 0; i < 2; i++) {
 					c = input();
 					if (c == 0)
 						break;
@@ -440,13 +446,34 @@ int string(void)
 							n += (c - '0');
 						else
 							n += 10 + (c - 'a');
-					} else
+					} else {
+						unput(c);
 						break;
+					}
 				}
-				if (n)
+				if (i)
 					*bp++ = n;
-				else
-					unput(c);
+				break;
+			    }
+
+			case 'u':	/* utf  \u0-9a-fA-F (1..8) */
+			    {
+				int i;
+
+				n = 0;
+				for (i = 0; i < 8; i++) {
+					c = input();
+					if (!isxdigit(c) || c == 0)
+						break;
+					c = tolower(c);
+					n *= 16;
+					if (isdigit(c))
+						n += (c - '0');
+					else
+						n += 10 + (c - 'a');
+				}
+				unput(c);
+				bp += runetochar(bp, n);
 				break;
 			    }
 
@@ -563,7 +590,7 @@ int regexpr(void)
 	*bp = 0;
 	if (c == 0)
 		SYNTAX("non-terminated regular expression %.10s...", buf);
-	yylval.s = buf;
+	yylval.s = tostring(buf);
 	unput('/');
 	RET(REGEXPR);
 }

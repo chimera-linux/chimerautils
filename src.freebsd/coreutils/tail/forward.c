@@ -264,16 +264,14 @@ follow(file_info_t *files, enum STYLE style, off_t off)
 	FILE *ftmp;
 
 	/* Position each of the files */
-
-	file = files;
 	active = 0;
-	for (i = 0; i < no_files; i++, file++) {
-		if (file->fp) {
-			active = 1;
-			if (vflag || (qflag == 0 && no_files > 1))
-				printfn(file->file_name, 1);
-			forward(file->fp, file->file_name, style, off, &file->st);
-		}
+	for (i = 0, file = files; i < no_files; i++, file++) {
+		if (!file->fp)
+			continue;
+		active = 1;
+		if (vflag || (qflag == 0 && no_files > 1))
+			printfn(file->file_name, 1);
+		forward(file->fp, file->file_name, style, off, &file->st);
 	}
 	if (!Fflag && !active)
 		return;

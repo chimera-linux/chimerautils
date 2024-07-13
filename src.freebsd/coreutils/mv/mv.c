@@ -337,6 +337,12 @@ err:		if (unlink(to))
 	 */
 	preserve_fd_acls(from_fd, to_fd, from, to);
 	(void)close(from_fd);
+
+	ts[0] = sbp->st_atim;
+	ts[1] = sbp->st_mtim;
+	if (futimens(to_fd, ts))
+		warn("%s: set times", to);
+
 	/*
 	 * XXX
 	 * NFS doesn't support chflags; ignore errors unless there's reason
@@ -358,11 +364,6 @@ err:		if (unlink(to))
 	} else
 		warn("%s: cannot stat", to);
 #endif
-	ts[0] = sbp->st_atim;
-	ts[1] = sbp->st_mtim;
-	if (futimens(to_fd, ts))
-		warn("%s: set times", to);
-
 	if (close(to_fd)) {
 		warn("%s", to);
 		return (1);

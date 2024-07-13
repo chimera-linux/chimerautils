@@ -59,10 +59,6 @@
 #if defined(LIBC_SCCS) && !defined(lint)
 __RCSID("$NetBSD: vis.c,v 1.83 2023/08/12 12:48:52 riastradh Exp $");
 #endif /* LIBC_SCCS and not lint */
-#ifdef __FBSDID
-__FBSDID("$FreeBSD$");
-#define	_DIAGASSERT(x)	assert(x)
-#endif
 
 #include <sys/types.h>
 #include <sys/param.h>
@@ -85,6 +81,8 @@ __weak_alias(strvisx,_strvisx)
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
+
+#define	_DIAGASSERT(x)	assert(x)
 
 /*
  * The reason for going through the trouble to deal with character encodings

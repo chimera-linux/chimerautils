@@ -33,13 +33,12 @@ static const char	elsieid[] = "@(#)strftime.3	8.3";
 #if defined(LIBC_SCCS) && !defined(lint)
 static const char	sccsid[] = "@(#)strftime.c	5.4 (Berkeley) 3/14/89";
 #endif /* LIBC_SCCS and not lint */
-#include <sys/cdefs.h>
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <stdio.h>
 #include <time.h>
 #include <langinfo.h>
- 
+
 #define DAYSPERWEEK 7
 #define MONSPERYEAR 12
 #define HOURSPERDAY 24

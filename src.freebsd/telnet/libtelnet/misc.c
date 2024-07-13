@@ -27,10 +27,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
-
 #ifndef lint
 #if 0
 static const char sccsid[] = "@(#)misc.c	8.1 (Berkeley) 6/4/93";
@@ -55,7 +51,7 @@ char *UserNameRequested = 0;
 int ConnectedCount = 0;
 
 #ifndef AUTHENTICATION
-#define undef1 __unused
+#define undef1 __attribute__((unused))
 #else
 #define undef1
 #endif
@@ -88,7 +84,7 @@ auth_encrypt_user(char *name)
 
 /* ARGSUSED */
 void
-auth_encrypt_connect(int cnt __unused)
+auth_encrypt_connect(int cnt __attribute__((unused)))
 {
 }
 #endif	/* ENCRYPTION */

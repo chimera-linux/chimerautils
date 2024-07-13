@@ -32,8 +32,6 @@
 static const char sccsid[] = "@(#)enc_des.c	8.3 (Berkeley) 5/30/95";
 #endif /* not lint */
 #endif
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #ifdef	ENCRYPTION
 # ifdef	AUTHENTICATION
@@ -118,7 +116,7 @@ void fb64_stream_key(Block, struct stinfo *);
 int fb64_keyid(int, unsigned char *, int *, struct fb *);
 
 void
-cfb64_init(int server __unused)
+cfb64_init(int server __attribute__((unused)))
 {
 	fb64_init(&fb[CFB]);
 	fb[CFB].fb_feed[4] = ENCTYPE_DES_CFB64;
@@ -127,7 +125,7 @@ cfb64_init(int server __unused)
 }
 
 void
-ofb64_init(int server __unused)
+ofb64_init(int server __attribute__((unused)))
 {
 	fb64_init(&fb[OFB]);
 	fb[OFB].fb_feed[4] = ENCTYPE_DES_OFB64;
@@ -167,7 +165,7 @@ ofb64_start(int dir, int server)
 }
 
 static int
-fb64_start(struct fb *fbp, int dir, int server __unused)
+fb64_start(struct fb *fbp, int dir, int server __attribute__((unused)))
 {
 	size_t x;
 	unsigned char *p;

@@ -35,10 +35,6 @@
 #if defined(LIBC_SCCS) && !defined(lint)
 static char sccsid[] = "@(#)merge.c	8.2 (Berkeley) 2/14/94";
 #endif /* LIBC_SCCS and not lint */
-#include <sys/cdefs.h>
-
-#define __is_aligned(x, align) (((uintptr_t)x & ((align) - 1)) == 0)
-
 /*
  * Hybrid exponential search/linear search merge sort with hybrid
  * natural/pairwise first pass.  Requires about .3% more comparisons
@@ -53,8 +49,11 @@ static char sccsid[] = "@(#)merge.c	8.2 (Berkeley) 2/14/94";
  * (The default is pairwise merging.)
  */
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/param.h>
+
+#define __is_aligned(x, align) (((uintptr_t)x & ((align) - 1)) == 0)
 
 #include <errno.h>
 #include <stdlib.h>

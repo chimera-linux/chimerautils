@@ -674,6 +674,8 @@ grep_malloc(size_t size)
 {
 	void *ptr;
 
+	if (size == 0)
+		return (NULL);
 	if ((ptr = malloc(size)) == NULL)
 		err(2, "malloc");
 	return (ptr);
@@ -687,6 +689,8 @@ grep_calloc(size_t nmemb, size_t size)
 {
 	void *ptr;
 
+	if (nmemb == 0 || size == 0)
+		return (NULL);
 	if ((ptr = calloc(nmemb, size)) == NULL)
 		err(2, "calloc");
 	return (ptr);

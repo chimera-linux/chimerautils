@@ -32,8 +32,6 @@
 static const char sccsid[] = "@(#)telnet.c	8.4 (Berkeley) 5/30/95";
 #endif
 #endif
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 #include <sys/types.h>
 
@@ -2111,7 +2109,7 @@ Scheduler(int block)
 #ifdef	AUTHENTICATION
 #define __unusedhere
 #else
-#define __unusedhere __unused
+#define __unusedhere __attribute__((unused))
 #endif
 /*
  * Select from tty and network...
@@ -2281,7 +2279,7 @@ xmitEC(void)
 }
 
 int
-dosynch(char *ch __unused)
+dosynch(char *ch __attribute__((unused)))
 {
     netclear();			/* clear the path to the network */
     NETADD(IAC);
@@ -2294,7 +2292,7 @@ dosynch(char *ch __unused)
 int want_status_response = 0;
 
 int
-get_status(char *ch __unused)
+get_status(char *ch __attribute__((unused)))
 {
     unsigned char tmp[16];
     unsigned char *cp;

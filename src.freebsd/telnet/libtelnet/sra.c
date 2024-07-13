@@ -28,10 +28,6 @@
  * 
  */
 
-#include <sys/cdefs.h>
-
-__FBSDID("$FreeBSD$");
-
 #ifdef	SRA
 #ifdef	ENCRYPTION
 #include <sys/types.h>
@@ -109,7 +105,7 @@ Data(Authenticator *ap, int type, void *d, int c)
 }
 
 int
-sra_init(Authenticator *ap __unused, int server)
+sra_init(Authenticator *ap __attribute__((unused)), int server)
 {
 	if (server)
 		str_data[3] = TELQUAL_REPLY;
@@ -339,7 +335,7 @@ sra_reply(Authenticator *ap, unsigned char *data, int cnt)
 }
 
 int
-sra_status(Authenticator *ap __unused, char *name, int level)
+sra_status(Authenticator *ap __attribute__((unused)), char *name, int level)
 {
 	if (level < AUTH_USER)
 		return(level);

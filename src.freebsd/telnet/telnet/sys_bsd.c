@@ -32,8 +32,6 @@
 static const char sccsid[] = "@(#)sys_bsd.c	8.4 (Berkeley) 5/30/95";
 #endif
 #endif
-#include <sys/cdefs.h>
-__FBSDID("$FreeBSD$");
 
 /*
  * The following routines try to encapsulate what is system dependent
@@ -748,7 +746,7 @@ NetNonblockingIO(int fd, int onoff)
 
 /* ARGSUSED */
 SIG_FUNC_RET
-intr(int sig __unused)
+intr(int sig __attribute__((unused)))
 {
     if (localchars) {
 	intp();
@@ -760,7 +758,7 @@ intr(int sig __unused)
 
 /* ARGSUSED */
 SIG_FUNC_RET
-intr2(int sig __unused)
+intr2(int sig __attribute__((unused)))
 {
     if (localchars) {
 #ifdef	KLUDGELINEMODE
@@ -776,7 +774,7 @@ intr2(int sig __unused)
 #ifdef	SIGTSTP
 /* ARGSUSED */
 SIG_FUNC_RET
-susp(int sig __unused)
+susp(int sig __attribute__((unused)))
 {
     if ((rlogin != _POSIX_VDISABLE) && rlogin_susp())
 	return;
@@ -788,7 +786,7 @@ susp(int sig __unused)
 #ifdef	SIGWINCH
 /* ARGSUSED */
 static SIG_FUNC_RET
-sendwin(int sig __unused)
+sendwin(int sig __attribute__((unused)))
 {
     if (connected) {
 	sendnaws();
@@ -799,7 +797,7 @@ sendwin(int sig __unused)
 #ifdef	SIGINFO
 /* ARGSUSED */
 SIG_FUNC_RET
-ayt(int sig __unused)
+ayt(int sig __attribute__((unused)))
 {
     if (connected)
 	sendayt();
