@@ -271,7 +271,7 @@ rebuild_message(char *db)
 	/* only for the default locate database */
 	if (strcmp(_PATH_FCODES, db) == 0) {
 		fprintf(stderr, "\nTo create a new database, please run the following command as root:\n\n");
-		fprintf(stderr, "  /etc/periodic/weekly/310.locate\n\n");
+		fprintf(stderr, "  locate-updatedb\n\n");
 	}
 }
 
