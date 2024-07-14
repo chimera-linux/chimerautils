@@ -28,6 +28,7 @@ It also provides the following functionality:
 * telnet
 * fetch
 * gencat
+* jot
 * nc
 * vi
 * sh

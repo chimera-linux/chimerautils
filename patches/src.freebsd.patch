@@ -9857,6 +9857,30 @@
  {
  	u_int count, i;
  	struct s_zstate *zs;
+--- src.orig/jot/jot.c
++++ src.freebsd/jot/jot.c
+@@ -48,6 +48,7 @@
+  */
+ 
+ #include <sys/capsicum.h>
++#include <sys/random.h>
+ #include <capsicum_helpers.h>
+ #include <ctype.h>
+ #include <err.h>
+@@ -319,8 +320,11 @@
+ 		for (i = 1; i <= reps || infinity; i++) {
+ 			if (use_random)
+ 				y = random() / divisor;
+-			else
+-				y = arc4random() / divisor;
++			else {
++				if (getrandom(&y, sizeof(y), 0) < 0)
++					err(1, "getrandom");
++				y /= divisor;
++			}
+ 			if (putdata(y * x + begin, !(reps - i)))
+ 				errx(1, "range error in conversion");
+ 		}
 --- src.orig/libfetch/common.c
 +++ src.freebsd/libfetch/common.c
 @@ -135,10 +135,7 @@

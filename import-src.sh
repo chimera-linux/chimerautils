@@ -227,6 +227,7 @@ copy_cmd usr.bin/fetch
 copy_cmd usr.bin/gencat
 copy_cmd usr.bin/grep
 copy_cmd usr.bin/gzip
+copy_cmd usr.bin/jot
 copy_cmd usr.bin/m4
 copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
