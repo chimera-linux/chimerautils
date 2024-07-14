@@ -199,9 +199,11 @@ main(int argc, char **argv)
 		break;
 	case 0:
 		usage();
+		break;
 	default:
 		errx(1, "too many arguments.  What do you mean by %s?",
 		    argv[4]);
+		break;
 	}
 	getformat();
 
@@ -497,11 +499,12 @@ getformat(void)
 		case 'f': case 'e': case 'g': case 'E': case 'G':
 			if (!longdata)
 				break;
-			/* FALLTHROUGH */
+			goto fmt_broken;
 		default:
 fmt_broken:
 			*++p = '\0';
 			errx(1, "illegal or unsupported format '%s'", p2);
+			break;
 			/* NOTREACHED */
 		}
 		while (*++p)

@@ -9867,7 +9867,19 @@
  #include <capsicum_helpers.h>
  #include <ctype.h>
  #include <err.h>
-@@ -319,8 +320,11 @@
+@@ -198,9 +199,11 @@
+ 		break;
+ 	case 0:
+ 		usage();
++		break;
+ 	default:
+ 		errx(1, "too many arguments.  What do you mean by %s?",
+ 		    argv[4]);
++		break;
+ 	}
+ 	getformat();
+ 
+@@ -319,8 +322,11 @@
  		for (i = 1; i <= reps || infinity; i++) {
  			if (use_random)
  				y = random() / divisor;
@@ -9881,6 +9893,20 @@
  			if (putdata(y * x + begin, !(reps - i)))
  				errx(1, "range error in conversion");
  		}
+@@ -493,11 +499,12 @@
+ 		case 'f': case 'e': case 'g': case 'E': case 'G':
+ 			if (!longdata)
+ 				break;
+-			/* FALLTHROUGH */
++			goto fmt_broken;
+ 		default:
+ fmt_broken:
+ 			*++p = '\0';
+ 			errx(1, "illegal or unsupported format '%s'", p2);
++			break;
+ 			/* NOTREACHED */
+ 		}
+ 		while (*++p)
 --- src.orig/libfetch/common.c
 +++ src.freebsd/libfetch/common.c
 @@ -135,10 +135,7 @@
