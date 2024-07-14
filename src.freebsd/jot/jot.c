@@ -483,16 +483,19 @@ getformat(void)
 				intdata = true;
 				break;
 			}
+			goto fmt_broken;
 		case 'O': case 'U':
 			if (!longdata) {
 				intdata = nosign = true;
 				break;
 			}
+			goto fmt_broken;
 		case 'c':
 			if (!(intdata | longdata)) {
 				chardata = true;
 				break;
 			}
+			goto fmt_broken;
 		case 'h': case 'n': case 'p': case 'q': case 's': case 'L':
 		case '$': case '*':
 			goto fmt_broken;

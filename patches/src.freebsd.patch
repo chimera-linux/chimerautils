@@ -9893,7 +9893,26 @@
  			if (putdata(y * x + begin, !(reps - i)))
  				errx(1, "range error in conversion");
  		}
-@@ -493,11 +499,12 @@
+@@ -477,27 +483,31 @@
+ 				intdata = true;
+ 				break;
+ 			}
++			goto fmt_broken;
+ 		case 'O': case 'U':
+ 			if (!longdata) {
+ 				intdata = nosign = true;
+ 				break;
+ 			}
++			goto fmt_broken;
+ 		case 'c':
+ 			if (!(intdata | longdata)) {
+ 				chardata = true;
+ 				break;
+ 			}
++			goto fmt_broken;
+ 		case 'h': case 'n': case 'p': case 'q': case 's': case 'L':
+ 		case '$': case '*':
+ 			goto fmt_broken;
  		case 'f': case 'e': case 'g': case 'E': case 'G':
  			if (!longdata)
  				break;
