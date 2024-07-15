@@ -39,6 +39,10 @@ It also provides the following functionality:
 * portions of util-linux
 * and additional custom tools
 
+The following ports are experimental:
+
+* su
+
 In a way, `chimerautils` is also an alternative to projects like Busybox.
 
 ## bsdutils

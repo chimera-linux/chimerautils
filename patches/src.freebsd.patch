@@ -13959,6 +13959,345 @@
  				} else {
  					out1fmt(" %d\n", signo);
  				}
+--- src.orig/su/su.1
++++ src.freebsd/su/su.1
+@@ -36,8 +36,7 @@
+ .Sh SYNOPSIS
+ .Nm
+ .Op Fl
+-.Op Fl c Ar class
+-.Op Fl flms
++.Op Fl lm
+ .Op Ar login Op Ar args
+ .Sh DESCRIPTION
+ The
+@@ -50,17 +49,6 @@
+ PAM is used to set the policy
+ .Xr su 1
+ will use.
+-In particular, by default only users in the
+-.Dq Li wheel
+-group can switch to UID 0
+-.Pq Dq Li root .
+-This group requirement may be changed by modifying the
+-.Dq Li pam_group
+-section of
+-.Pa /etc/pam.d/su .
+-See
+-.Xr pam_group 8
+-for details on how to modify this setting.
+ .Pp
+ By default, the environment is unmodified with the exception of
+ .Ev USER ,
+@@ -77,24 +65,9 @@
+ The invoked shell is the one belonging to the target login.
+ This is the traditional behavior of
+ .Nm .
+-Resource limits and session priority applicable to the original user's
+-login class (see
+-.Xr login.conf 5 )
+-are also normally retained unless the target login has a user ID of 0.
+ .Pp
+ The options are as follows:
+ .Bl -tag -width Ds
+-.It Fl c Ar class
+-Use the settings of the specified login class.
+-The login class must be defined in
+-.Xr login.conf 5 .
+-Only allowed for the super-user.
+-.It Fl f
+-If the invoked shell is
+-.Xr csh 1 ,
+-this option prevents it from reading the
+-.Dq Pa .cshrc
+-file.
+ .It Fl l
+ Simulate a full login.
+ The environment is discarded except for
+@@ -115,13 +88,9 @@
+ .Dq Pa /bin:/usr/bin .
+ .Ev TERM
+ is imported from your current environment.
+-Environment variables may be set or overridden from the login class
+-capabilities database according to the class of the target login.
+ The invoked shell is the target login's, and
+ .Nm
+ will change directory to the target login's home directory.
+-Resource limits and session priority are modified to that for the
+-target account's login class.
+ .It Fl
+ (no letter) The same as
+ .Fl l .
+@@ -135,14 +104,6 @@
+ non-zero,
+ .Nm
+ will fail.
+-.It Fl s
+-Set the MAC label to the user's default label as part of the user
+-credential setup.
+-Setting the MAC label may fail if the MAC label of the invoking process
+-is not sufficient to transition to the user's default MAC label.
+-If the label cannot be set,
+-.Nm
+-will fail.
+ .El
+ .Pp
+ The
+@@ -218,15 +179,6 @@
+ (Most shells expect the argument to
+ .Fl c
+ to be a single word).
+-.It Li "su -m -c staff operator -c 'shutdown -p now'"
+-Same as above, but the target command is run with the resource limits of
+-the login class
+-.Dq staff .
+-Note: in this example, the first
+-.Fl c
+-option applies to
+-.Nm
+-while the second is an argument to the shell being invoked.
+ .It Li "su -l foo"
+ Simulate a login for user foo.
+ .It Li "su - foo"
+@@ -235,13 +187,10 @@
+ Simulate a login for root.
+ .El
+ .Sh SEE ALSO
+-.Xr csh 1 ,
+ .Xr sh 1 ,
+ .Xr group 5 ,
+-.Xr login.conf 5 ,
+ .Xr passwd 5 ,
+-.Xr environ 7 ,
+-.Xr pam_group 8
++.Xr environ 7
+ .Sh HISTORY
+ A
+ .Nm
+--- src.orig/su/su.c
++++ src.freebsd/su/su.c
+@@ -71,6 +71,8 @@
+ #endif /* not lint */
+ #endif
+ 
++#include "config-compat.h"
++
+ #include <sys/cdefs.h>
+ #include <sys/param.h>
+ #include <sys/time.h>
+@@ -85,7 +87,6 @@
+ #include <err.h>
+ #include <errno.h>
+ #include <grp.h>
+-#include <login_cap.h>
+ #include <paths.h>
+ #include <pwd.h>
+ #include <signal.h>
+@@ -97,7 +98,13 @@
+ #include <stdarg.h>
+ 
+ #include <security/pam_appl.h>
+-#include <security/openpam.h>
++#ifdef HAVE_PAM_MISC
++#  include <security/pam_misc.h>
++#  define PAM_CONV_FUNC misc_conv
++#else
++#  include <security/openpam.h>
++#  define PAM_CONV_FUNC openpam_ttyconv
++#endif
+ 
+ #define PAM_END() do {							\
+ 	int local_ret;							\
+@@ -150,18 +157,15 @@
+ {
+ 	static char	*cleanenv;
+ 	struct passwd	*pwd = NULL;
+-	struct pam_conv	conv = { openpam_ttyconv, NULL };
+-	enum tristate	iscsh;
+-	login_cap_t	*lc;
++	struct pam_conv	conv = { PAM_CONV_FUNC, NULL };
+ 	union {
+ 		const char	**a;
+ 		char		* const *b;
+ 	}		np;
+ 	uid_t		ruid;
+ 	pid_t		child_pid, child_pgrp, pid;
+-	int		asme, ch, asthem, fastlogin, prio, i, retcode,
+-			statusp, setmaclabel;
+-	u_int		setwhat;
++	int		asme, ch, asthem, prio, i, retcode,
++			statusp;
+ 	char		*username, *class, shellbuf[MAXPATHLEN];
+ 	const char	*p, *user, *shell, *mytty, **nargv;
+ 	const void	*v;
+@@ -173,17 +177,11 @@
+ #endif
+ 
+ 	p = shell = class = cleanenv = NULL;
+-	asme = asthem = fastlogin = statusp = 0;
++	asme = asthem = statusp = 0;
+ 	user = "root";
+-	iscsh = UNSET;
+-	setmaclabel = 0;
+ 
+-	while ((ch = getopt(argc, argv, "-flmsc:")) != -1)
++	while ((ch = getopt(argc, argv, "lm")) != -1)
+ 		switch ((char)ch) {
+-		case 'f':
+-			fastlogin = 1;
+-			break;
+-		case '-':
+ 		case 'l':
+ 			asme = 0;
+ 			asthem = 1;
+@@ -192,18 +190,18 @@
+ 			asme = 1;
+ 			asthem = 0;
+ 			break;
+-		case 's':
+-			setmaclabel = 1;
+-			break;
+-		case 'c':
+-			class = optarg;
+-			break;
+ 		case '?':
+ 		default:
+ 			usage();
+ 		/* NOTREACHED */
+ 		}
+ 
++	if (optind < argc && !strcmp(argv[optind], "-")) {
++		asme = 0;
++		asthem = 1;
++		++optind;
++	}
++
+ 	if (optind < argc)
+ 		user = argv[optind++];
+ 
+@@ -224,7 +222,7 @@
+ 		errx(1, "Permission denied");
+ 	}
+ #endif
+-	if (strlen(user) > MAXLOGNAME - 1) {
++	if (strlen(user) > LOGIN_NAME_MAX - 1) {
+ #ifdef USE_BSM_AUDIT
+ 		if (audit_submit(AUE_su, auid,
+ 		    EPERM, 1, "username too long: '%s'", user))
+@@ -281,7 +279,6 @@
+ 		}
+ 		else {
+ 			shell = _PATH_BSHELL;
+-			iscsh = NO;
+ 		}
+ 	}
+ 
+@@ -359,6 +356,7 @@
+ 		errx(1, "Sorry");
+ 	}
+ 
++#if 0
+ 	/* get target login information */
+ 	if (class == NULL)
+ 		lc = login_getpwclass(pwd);
+@@ -377,6 +375,7 @@
+ 		if (lc->lc_class == NULL || strcmp(class, lc->lc_class) != 0)
+ 			errx(1, "unknown class: %s", class);
+ 	}
++#endif
+ 
+ 	/* if asme and non-standard target shell, must be root */
+ 	if (asme) {
+@@ -385,13 +384,11 @@
+ 	}
+ 	else if (pwd->pw_shell && *pwd->pw_shell) {
+ 		shell = pwd->pw_shell;
+-		iscsh = UNSET;
+ 	}
+ 	else {
+ 		shell = _PATH_BSHELL;
+-		iscsh = NO;
+ 	}
+-
++#if 0
+ 	/* if we're forking a csh, we want to slightly muck the args */
+ 	if (iscsh == UNSET) {
+ 		p = strrchr(shell, '/');
+@@ -401,14 +398,17 @@
+ 			p = shell;
+ 		iscsh = strcmp(p, "csh") ? (strcmp(p, "tcsh") ? NO : YES) : YES;
+ 	}
++#endif
+ 	setpriority(PRIO_PROCESS, 0, prio);
+ 
++#if 0
+ 	/*
+ 	 * PAM modules might add supplementary groups in pam_setcred(), so
+ 	 * initialize them first.
+ 	 */
+ 	if (setusercontext(lc, pwd, pwd->pw_uid, LOGIN_SETGROUP) < 0)
+ 		err(1, "setusercontext");
++#endif
+ 
+ 	retcode = pam_setcred(pamh, PAM_ESTABLISH_CRED);
+ 	if (retcode != PAM_SUCCESS) {
+@@ -485,6 +485,7 @@
+ 		sigaction(SIGINT, &sa_int, NULL);
+ 		sigaction(SIGQUIT, &sa_quit, NULL);
+ 
++#if 0
+ 		/*
+ 		 * Set all user context except for: Environmental variables
+ 		 * Umask Login records (wtmp, etc) Path
+@@ -505,6 +506,7 @@
+ 			setwhat &= ~(LOGIN_SETPRIORITY | LOGIN_SETRESOURCES);
+ 		if (setusercontext(lc, pwd, pwd->pw_uid, setwhat) < 0)
+ 			err(1, "setusercontext");
++#endif
+ 
+ 		if (!asme) {
+ 			if (asthem) {
+@@ -525,11 +527,12 @@
+ 				environ_pam = pam_getenvlist(pamh);
+ 				if (environ_pam)
+ 					export_pam_environment();
+-
++#if 0
+ 				/* set the su'd user's environment & umask */
+ 				setusercontext(lc, pwd, pwd->pw_uid,
+ 					LOGIN_SETPATH | LOGIN_SETUMASK |
+ 					LOGIN_SETENV);
++#endif
+ 				if (p)
+ 					setenv("TERM", p, 1);
+ 
+@@ -538,6 +541,7 @@
+ 					errx(1, "no directory");
+ 			}
+ 		}
++#if 0
+ 		login_close(lc);
+ 
+ 		if (iscsh == YES) {
+@@ -547,7 +551,8 @@
+ 				*np.a-- = "-m";
+ 		}
+ 		/* csh strips the first character... */
+-		*np.a = asthem ? "-su" : iscsh == YES ? "_su" : "su";
++#endif
++		*np.a = asthem ? "-su" : "su";
+ 
+ 		if (ruid != 0)
+ 			syslog(LOG_NOTICE, "%s to %s%s", username, user,
+@@ -609,7 +614,7 @@
+ usage(void)
+ {
+ 
+-	fprintf(stderr, "usage: su [-] [-flms] [-c class] [login [args]]\n");
++	fprintf(stderr, "usage: su [-] [-lm] [login [args]]\n");
+ 	exit(1);
+ 	/* NOTREACHED */
+ }
 --- src.orig/telnet/libtelnet/auth.c
 +++ src.freebsd/telnet/libtelnet/auth.c
 @@ -394,7 +394,7 @@

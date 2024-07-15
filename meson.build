@@ -124,6 +124,11 @@ lzma = dependency('liblzma', required: get_option('lzma'))
 # gzip needs zstd
 zstd = dependency('libzstd', required: get_option('zstd'))
 
+# su needs pam
+pam = dependency('pam', required: get_option('pam'))
+# could be openpam, in which case pam_misc is not present
+pam_misc = dependency('pam_misc', required: false)
+
 # needed by a few utils; provided by glibc, but not by e.g. musl
 
 fts_dirs = []
