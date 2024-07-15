@@ -323,9 +323,10 @@ main(int argc, char **argv)
 			if (use_random)
 				y = random() / divisor;
 			else {
-				if (getrandom(&y, sizeof(y), 0) < 0)
+				uint32_t yv;
+				if (getrandom(&yv, sizeof(yv), 0) < 0)
 					err(1, "getrandom");
-				y /= divisor;
+				y = yv / divisor;
 			}
 			if (putdata(y * x + begin, !(reps - i)))
 				errx(1, "range error in conversion");

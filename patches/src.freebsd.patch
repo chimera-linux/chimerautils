@@ -9935,21 +9935,22 @@
  	}
  	getformat();
  
-@@ -319,8 +322,11 @@
+@@ -319,8 +322,12 @@
  		for (i = 1; i <= reps || infinity; i++) {
  			if (use_random)
  				y = random() / divisor;
 -			else
 -				y = arc4random() / divisor;
 +			else {
-+				if (getrandom(&y, sizeof(y), 0) < 0)
++				uint32_t yv;
++				if (getrandom(&yv, sizeof(yv), 0) < 0)
 +					err(1, "getrandom");
-+				y /= divisor;
++				y = yv / divisor;
 +			}
  			if (putdata(y * x + begin, !(reps - i)))
  				errx(1, "range error in conversion");
  		}
-@@ -477,27 +483,31 @@
+@@ -477,27 +484,31 @@
  				intdata = true;
  				break;
  			}
