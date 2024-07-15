@@ -26,13 +26,16 @@ subdir('patch')
 subdir('sed')
 subdir('sh')
 subdir('shar')
-subdir('su')
 subdir('tip')
 subdir('unvis')
 subdir('bintrans')
 subdir('vis')
 subdir('which')
 subdir('libstdbuf')
+
+if not get_option('pam').disabled() and pam.found()
+    subdir('su')
+endif
 
 if not get_option('zlib').disabled() and zlib.found()
     subdir('gzip')
