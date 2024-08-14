@@ -929,7 +929,7 @@ out_char(WINDOW *window, int character, int column)
 {
 	int i1, i2;
 	char *string;
-	char string2[8];
+	char string2[16];
 
 	if (character == TAB)
 	{

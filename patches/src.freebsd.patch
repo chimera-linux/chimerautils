@@ -8746,6 +8746,15 @@
  			if (!isatty(0)) {
 --- src.orig/ee/ee.c
 +++ src.freebsd/ee/ee.c
+@@ -929,7 +929,7 @@
+ {
+ 	int i1, i2;
+ 	char *string;
+-	char string2[8];
++	char string2[16];
+ 
+ 	if (character == TAB)
+ 	{
 @@ -2461,6 +2461,7 @@
  void 
  edit_abort(int arg)
