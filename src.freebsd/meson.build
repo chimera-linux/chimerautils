@@ -42,6 +42,7 @@ if not get_option('zlib').disabled() and zlib.found()
 endif
 
 if ncurses.found()
+    subdir('ee')
     subdir('nvi')
     subdir('telnet')
 endif

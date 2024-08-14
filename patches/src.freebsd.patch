@@ -8744,6 +8744,35 @@
  		default:
  			fputs("?\n", stderr);
  			if (!isatty(0)) {
+--- src.orig/ee/ee.c
++++ src.freebsd/ee/ee.c
+@@ -2461,6 +2461,7 @@
+ void 
+ edit_abort(int arg)
+ {
++	(void)arg;
+ 	wrefresh(com_win);
+ 	resetty();
+ 	endwin();
+@@ -3365,8 +3366,8 @@
+ 			max_width = length;
+ 	}
+ 	max_width += 3;
+-	max_width = max(max_width, strlen(menu_cancel_msg));
+-	max_width = max(max_width, max(strlen(more_above_str), strlen(more_below_str)));
++	max_width = max(max_width, (int)strlen(menu_cancel_msg));
++	max_width = max(max_width, max((int)strlen(more_above_str), (int)strlen(more_below_str)));
+ 	max_width += 6;
+ 
+ 	/*
+@@ -4431,6 +4432,7 @@
+ 	}
+ 	(void)sprintf(template, "/tmp/ee.XXXXXXXX");
+ 	fd = mkstemp(template);
++	name = template;
+ 	if (fd < 0) {
+ 		wmove(com_win, 0, 0);
+ 		wprintw(com_win, create_file_fail_msg, name);
 --- src.orig/fetch/fetch.c
 +++ src.freebsd/fetch/fetch.c
 @@ -32,6 +32,7 @@
