@@ -44,3 +44,4 @@ awk_prog = executable(
 )
 
 install_man('awk.1')
+install_symlink('nawk.1', pointing_to: 'awk.1', install_dir: man1dir)

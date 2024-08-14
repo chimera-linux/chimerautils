@@ -338,8 +338,13 @@ rm -rf ${CWD}/src.orig/telnet/telnetd
 rm -rf ${CWD}/src.freebsd/telnet/telnetd
 
 # remove our own scripts before patching
+rm -f ${CWD}/src.freebsd/findutils/locate/updatedb.sh
 rm -f ${CWD}/src.freebsd/nvi/*.sh
 rm -f ${CWD}/src.freebsd/libfetch/*.sh
+
+# awk manpage
+cp -p usr/src/usr.bin/awk/awk.1 ${CWD}/src.orig/awk
+cp -p usr/src/usr.bin/awk/awk.1 ${CWD}/src.freebsd/awk
 
 # meh
 rm -rf ${CWD}/src.orig/awk/testdir
