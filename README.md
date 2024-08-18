@@ -25,6 +25,7 @@ It replaces the following GNU projects:
 It also provides the following functionality:
 
 * ee
+* nproc
 * tip/cu
 * telnet
 * fetch

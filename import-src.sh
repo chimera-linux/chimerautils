@@ -220,6 +220,7 @@ done
 
 # equivalents of standalone projects
 copy_cmd bin/ed
+copy_cmd bin/nproc
 copy_cmd bin/sh
 copy_cmd usr.bin/bintrans
 copy_cmd usr.bin/compress
