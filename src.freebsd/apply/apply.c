@@ -141,7 +141,7 @@ main(int argc, char *argv[])
 	long arg_max;
 	int ch, debug, i, magic, n, nargs, rval;
 	size_t cmdsize;
-	char buf[4];
+	char buf[16];
 	char *cmd, *name, *p, *shell, *slashp, *tmpshell;
 
 	debug = 0;

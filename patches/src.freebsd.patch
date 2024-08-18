@@ -91,6 +91,15 @@
  int
  main(int argc, char *argv[])
  {
+@@ -66,7 +141,7 @@
+ 	long arg_max;
+ 	int ch, debug, i, magic, n, nargs, rval;
+ 	size_t cmdsize;
+-	char buf[4];
++	char buf[16];
+ 	char *cmd, *name, *p, *shell, *slashp, *tmpshell;
+ 
+ 	debug = 0;
 @@ -88,7 +163,7 @@
  			if (nargs != -1)
  				errx(1,

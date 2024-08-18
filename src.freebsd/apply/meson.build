@@ -1,6 +1,7 @@
 apply_prog = executable(
     'apply', ['apply.c'],
     include_directories: inc,
+    link_with: [libcompat],
     install: true,
 )
 
