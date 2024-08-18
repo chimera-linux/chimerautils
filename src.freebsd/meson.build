@@ -15,6 +15,7 @@ subdir('libmp')
 # standalone toplevel projects
 
 subdir('awk')
+subdir('apply')
 subdir('compress')
 subdir('ed')
 subdir('gencat')

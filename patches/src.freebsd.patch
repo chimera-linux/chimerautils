@@ -1,3 +1,158 @@
+--- src.orig/apply/apply.c
++++ src.freebsd/apply/apply.c
+@@ -40,7 +40,6 @@
+ 
+ #include <sys/cdefs.h>
+ #include <sys/types.h>
+-#include <sys/sbuf.h>
+ #include <sys/wait.h>
+ 
+ #include <ctype.h>
+@@ -59,6 +58,82 @@
+ static int	exec_shell(const char *, const char *, const char *);
+ static void	usage(void);
+ 
++struct sbuf {
++	char *buf;
++	size_t len;
++	size_t cap;
++};
++
++static struct sbuf *
++sbuf_new(int len)
++{
++	struct sbuf *ret = malloc(sizeof(struct sbuf));
++	if (!ret) return NULL;
++	ret->cap = len;
++	ret->len = 0;
++	ret->buf = malloc(len);
++	if (!ret->buf) {
++		free(ret);
++		return NULL;
++	}
++	return ret;
++}
++
++static void
++sbuf_clear(struct sbuf *sb)
++{
++	sb->len = 0;
++}
++
++static int
++sbuf_cat(struct sbuf *s, const char *str)
++{
++	size_t sl = strlen(str);
++	size_t nc = s->cap;
++	while ((nc - s->len) <= sl) nc *= 2;
++	if (nc > s->cap) {
++		void *np = realloc(s->buf, nc);
++		if (!np) return -1;
++		s->buf = np;
++	}
++	memcpy(&s->buf[s->len], str, sl);
++	s->len += sl;
++	return 0;
++}
++
++static int
++sbuf_putc(struct sbuf *s, int c)
++{
++	char cs[2] = {c, '\0'};
++	return sbuf_cat(s, cs);
++}
++
++static int
++sbuf_finish(struct sbuf *s)
++{
++	s->buf[s->len] = '\0';
++	return 0;
++}
++
++static void
++sbuf_delete(struct sbuf *s)
++{
++	free(s->buf);
++	free(s);
++}
++
++static ssize_t
++sbuf_len(struct sbuf *s)
++{
++	return s->len;
++}
++
++static char *
++sbuf_data(struct sbuf *s)
++{
++	return s->buf;
++}
++
+ int
+ main(int argc, char *argv[])
+ {
+@@ -88,7 +163,7 @@
+ 			if (nargs != -1)
+ 				errx(1,
+ 				    "only one -# argument may be specified");
+-			nargs = optopt - '0';
++			nargs = ch - '0';
+ 			break;
+ 		default:
+ 			usage();
+@@ -161,7 +236,7 @@
+ 		nargs = n;
+ 	}
+ 
+-	cmdbuf = sbuf_new(NULL, NULL, 1024, SBUF_AUTOEXTEND);
++	cmdbuf = sbuf_new(1024);
+ 	if (cmdbuf == NULL)
+ 		err(1, NULL);
+ 
+@@ -186,7 +261,7 @@
+ 					err(1, "sbuf");
+ 			}
+ 			if (sbuf_len(cmdbuf) > arg_max)
+-				errc(1, E2BIG, NULL);
++				errx(1, "argument too big");
+ 		}
+ 
+ 		/* Terminate the command string. */
+@@ -219,18 +294,22 @@
+ exec_shell(const char *command, const char *use_shell, const char *use_name)
+ {
+ 	pid_t pid;
+-	int omask, pstat;
++	int pstat;
+ 	sig_t intsave, quitsave;
++	sigset_t nset, oldset;
+ 
+ 	if (!command)		/* just checking... */
+ 		return(1);
+ 
+-	omask = sigblock(sigmask(SIGCHLD));
++	sigemptyset(&nset);
++	sigemptyset(&oldset);
++	sigaddset(&nset, SIGCHLD);
++	sigprocmask(SIG_BLOCK, &nset, &oldset);
+ 	switch(pid = vfork()) {
+ 	case -1:			/* error */
+ 		err(1, "vfork");
+ 	case 0:				/* child */
+-		(void)sigsetmask(omask);
++		sigprocmask(SIG_SETMASK, &oldset, NULL);
+ 		execl(use_shell, use_name, "-c", command, (char *)NULL);
+ 		warn("%s", use_shell);
+ 		_exit(1);
+@@ -238,7 +317,7 @@
+ 	intsave = signal(SIGINT, SIG_IGN);
+ 	quitsave = signal(SIGQUIT, SIG_IGN);
+ 	pid = waitpid(pid, &pstat, 0);
+-	(void)sigsetmask(omask);
++	sigprocmask(SIG_SETMASK, &oldset, NULL);
+ 	(void)signal(SIGINT, intsave);
+ 	(void)signal(SIGQUIT, quitsave);
+ 	return(pid == -1 ? -1 : pstat);
 --- src.orig/awk/b.c
 +++ src.freebsd/awk/b.c
 @@ -645,7 +645,7 @@

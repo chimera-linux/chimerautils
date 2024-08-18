@@ -24,6 +24,7 @@ It replaces the following GNU projects:
 
 It also provides the following functionality:
 
+* apply
 * ee
 * nproc
 * tip/cu
