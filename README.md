@@ -26,7 +26,6 @@ It also provides the following functionality:
 
 * apply
 * ee
-* nproc
 * tip/cu
 * telnet
 * fetch

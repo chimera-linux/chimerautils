@@ -4905,6 +4905,46 @@
  }
  
  static void
+--- src.orig/coreutils/nproc/nproc.c
++++ src.freebsd/coreutils/nproc/nproc.c
+@@ -14,7 +14,6 @@
+  */
+ 
+ #include <sys/param.h>
+-#include <sys/cpuset.h>
+ 
+ #include <err.h>
+ #include <errno.h>
+@@ -25,6 +24,8 @@
+ #include <stdlib.h>
+ #include <sysexits.h>
+ #include <unistd.h>
++#include <pthread.h>
++#include <sched.h>
+ 
+ #define OPT_ALL		(CHAR_MAX + 1)
+ #define OPT_IGNORE	(CHAR_MAX + 2)
+@@ -75,7 +76,7 @@
+ main(int argc, char *argv[])
+ {
+ 	const char *errstr;
+-	cpuset_t mask;
++	cpu_set_t mask;
+ 	int ch, cpus, ignore;
+ 	bool all_flag;
+ 
+@@ -115,9 +116,8 @@
+ 			err(1, "sysconf");
+ 	} else {
+ 		CPU_ZERO(&mask);
+-		if (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1,
+-		    sizeof(mask), &mask) != 0)
+-			err(1, "cpuset_getaffinity");
++		if (pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &mask) != 0)
++			err(1, "pthread_geteaffinity_np");
+ 		cpus = CPU_COUNT(&mask);
+ 	}
+ 
 --- src.orig/coreutils/pr/pr.c
 +++ src.freebsd/coreutils/pr/pr.c
 @@ -63,6 +63,7 @@
@@ -12834,46 +12874,6 @@
  			if (*buf == '\0')
  				break;
  		}
---- src.orig/nproc/nproc.c
-+++ src.freebsd/nproc/nproc.c
-@@ -14,7 +14,6 @@
-  */
- 
- #include <sys/param.h>
--#include <sys/cpuset.h>
- 
- #include <err.h>
- #include <errno.h>
-@@ -25,6 +24,8 @@
- #include <stdlib.h>
- #include <sysexits.h>
- #include <unistd.h>
-+#include <pthread.h>
-+#include <sched.h>
- 
- #define OPT_ALL		(CHAR_MAX + 1)
- #define OPT_IGNORE	(CHAR_MAX + 2)
-@@ -75,7 +76,7 @@
- main(int argc, char *argv[])
- {
- 	const char *errstr;
--	cpuset_t mask;
-+	cpu_set_t mask;
- 	int ch, cpus, ignore;
- 	bool all_flag;
- 
-@@ -115,9 +116,8 @@
- 			err(1, "sysconf");
- 	} else {
- 		CPU_ZERO(&mask);
--		if (cpuset_getaffinity(CPU_LEVEL_WHICH, CPU_WHICH_TID, -1,
--		    sizeof(mask), &mask) != 0)
--			err(1, "cpuset_getaffinity");
-+		if (pthread_getaffinity_np(pthread_self(), sizeof(cpu_set_t), &mask) != 0)
-+			err(1, "pthread_geteaffinity_np");
- 		cpus = CPU_COUNT(&mask);
- 	}
- 
 --- src.orig/nvi/cl/cl_funcs.c
 +++ src.freebsd/nvi/cl/cl_funcs.c
 @@ -146,7 +146,7 @@

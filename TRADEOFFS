@@ -20,7 +20,6 @@ The following commands are specific to GNU coreutils and have no
 alternative provided by a BSD system:
 
     COMMAND    DESCRIPTION
-    nproc      print number of processing units available
     pinky      lightweight finger
 
 

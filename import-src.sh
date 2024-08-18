@@ -83,6 +83,7 @@ bin/ln
 bin/ls
 bin/mkdir
 bin/mv
+bin/nproc
 bin/pwd
 bin/realpath
 bin/rm
@@ -220,7 +221,6 @@ done
 
 # equivalents of standalone projects
 copy_cmd bin/ed
-copy_cmd bin/nproc
 copy_cmd bin/sh
 copy_cmd usr.bin/apply
 copy_cmd usr.bin/bintrans
