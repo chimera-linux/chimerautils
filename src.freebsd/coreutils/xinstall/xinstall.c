@@ -141,13 +141,13 @@ extern char **environ;
 static gid_t gid;
 static uid_t uid;
 static int dobackup, docompare, dodir, dolink, dopreserve, dostrip, dounpriv,
-    safecopy, verbose;
+    dopdir, safecopy, verbose;
 static int haveopt_f, haveopt_g, haveopt_m, haveopt_o;
 static mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 static FILE *metafp;
 static const char *group, *owner;
 static const char *suffix = BACKUP_SUFFIX;
-static char *destdir, *digest, *fflags, *metafile, *tags;
+static char *destdir, *digest, *fflags, *metafile, *tags, *targdir;
 
 static int	compare(int, const char *, size_t, int, const char *, size_t,
 		    char **);
@@ -162,7 +162,7 @@ static int	do_link(const char *, const char *, const struct stat *);
 static void	do_symlink(const char *, const char *, const struct stat *);
 static void	makelink(const char *, const char *, const struct stat *);
 static void	install(const char *, const char *, u_long, u_int);
-static void	install_dir(char *);
+static void	install_dir(char *, mode_t);
 static void	metadata_log(const char *, const char *, struct timespec *,
 		    const char *, const char *, off_t);
 static int	parseid(const char *, id_t *);
@@ -179,13 +179,20 @@ main(int argc, char *argv[])
 	u_int iflags;
 	char *p;
 	const char *to_name;
+	const char *getopt_str;
+	int gnumode = getenv("CHIMERAUTILS_INSTALL_GNU") != NULL;
+
+	if (!strcmp(argv[0], "ginstall")) gnumode = 1;
+	if (gnumode)
+		getopt_str = "B:bCcDdg:h:l:M:m:o:pSst:T:Uv";
+	else
+		getopt_str = "B:bCcD:dg:h:l:M:m:o:pSsT:Uv";
 
 	fset = 0;
 	iflags = 0;
 	set = NULL;
 	group = owner = NULL;
-	while ((ch = getopt(argc, argv, "B:bCcD:dg:h:l:M:m:o:pSsT:Uv")) !=
-	     -1)
+	while ((ch = getopt(argc, argv, getopt_str)) != -1)
 		switch((char)ch) {
 		case 'B':
 			suffix = optarg;
@@ -200,7 +207,8 @@ main(int argc, char *argv[])
 			/* For backwards compatibility. */
 			break;
 		case 'D':
-			destdir = optarg;
+			if (gnumode) dopdir = 1;
+			else destdir = optarg;
 			break;
 		case 'd':
 			dodir = 1;
@@ -276,6 +284,9 @@ main(int argc, char *argv[])
 		case 's':
 			dostrip = 1;
 			break;
+		case 't':
+			targdir = optarg;
+			break;
 		case 'T':
 			tags = optarg;
 			break;
@@ -312,7 +323,7 @@ main(int argc, char *argv[])
 	}
 
 	/* must have at least two arguments, except when creating directories */
-	if (argc == 0 || (argc == 1 && !dodir))
+	if (argc == 0 || (argc == 1 && !dodir && !targdir))
 		usage();
 
 	if (digest != NULL) {
@@ -381,12 +392,23 @@ main(int argc, char *argv[])
 
 	if (dodir) {
 		for (; *argv != NULL; ++argv)
-			install_dir(*argv);
+			install_dir(*argv, mode);
 		exit(EX_OK);
 		/* NOTREACHED */
+	} else if (dopdir) {
+		mode_t dmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+		if (targdir) install_dir(targdir, dmode);
+		else {
+			char *bsl = strrchr(argv[argc - 1], '/');
+			if (bsl && bsl != argv[argc - 1]) {
+				*bsl = '\0';
+				install_dir(argv[argc - 1], dmode);
+				*bsl = '/';
+			}
+		}
 	}
 
-	to_name = argv[argc - 1];
+	to_name = targdir ? targdir : argv[argc - 1];
 	no_target = stat(to_name, &to_sb);
 	if (!no_target && S_ISDIR(to_sb.st_mode)) {
 		if (dolink & LN_SYMBOLIC) {
@@ -401,11 +423,12 @@ main(int argc, char *argv[])
 				exit(EX_OK);
 			}
 		}
-		for (; *argv != to_name; ++argv)
+		for (; *argv != (targdir ? NULL : to_name); ++argv)
 			install(*argv, to_name, fset, iflags | DIRECTORY);
 		exit(EX_OK);
 		/* NOTREACHED */
-	}
+	} else if (targdir)
+		err(EX_OSERR, "failed to access '%s'", targdir);
 
 	/* can't do file1 file2 directory/file */
 	if (argc != 2) {
@@ -1367,7 +1390,7 @@ strip(const char *to_name, int to_fd, const char *from_name, char **dresp)
  *	build directory hierarchy
  */
 static void
-install_dir(char *path)
+install_dir(char *path, mode_t dmode)
 {
 	char *p;
 	struct stat sb;
@@ -1402,8 +1425,8 @@ again:
 		    chown(path, uid, gid))
 			warn("chown %u:%u %s", uid, gid, path);
 		/* XXXBED: should we do the chmod in the dounpriv case? */
-		if (chmod(path, mode))
-			warn("chmod %o %s", mode, path);
+		if (chmod(path, dmode))
+			warn("chmod %o %s", dmode, path);
 	}
 	metadata_log(path, "dir", NULL, NULL, NULL, 0);
 }

@@ -7749,16 +7749,62 @@
  /*
   * Memory strategy threshold, in pages: if physmem is larger then this, use a
   * large buffer.
-@@ -185,7 +184,7 @@
+@@ -142,13 +141,13 @@
+ static gid_t gid;
+ static uid_t uid;
+ static int dobackup, docompare, dodir, dolink, dopreserve, dostrip, dounpriv,
+-    safecopy, verbose;
++    dopdir, safecopy, verbose;
+ static int haveopt_f, haveopt_g, haveopt_m, haveopt_o;
+ static mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+ static FILE *metafp;
+ static const char *group, *owner;
+ static const char *suffix = BACKUP_SUFFIX;
+-static char *destdir, *digest, *fflags, *metafile, *tags;
++static char *destdir, *digest, *fflags, *metafile, *tags, *targdir;
+ 
+ static int	compare(int, const char *, size_t, int, const char *, size_t,
+ 		    char **);
+@@ -163,7 +162,7 @@
+ static void	do_symlink(const char *, const char *, const struct stat *);
+ static void	makelink(const char *, const char *, const struct stat *);
+ static void	install(const char *, const char *, u_long, u_int);
+-static void	install_dir(char *);
++static void	install_dir(char *, mode_t);
+ static void	metadata_log(const char *, const char *, struct timespec *,
+ 		    const char *, const char *, off_t);
+ static int	parseid(const char *, id_t *);
+@@ -180,13 +179,20 @@
+ 	u_int iflags;
+ 	char *p;
+ 	const char *to_name;
++	const char *getopt_str;
++	int gnumode = getenv("CHIMERAUTILS_INSTALL_GNU") != NULL;
+ 
++	if (!strcmp(argv[0], "ginstall")) gnumode = 1;
++	if (gnumode)
++		getopt_str = "B:bCcDdg:h:l:M:m:o:pSst:T:Uv";
++	else
++		getopt_str = "B:bCcD:dg:h:l:M:m:o:pSsT:Uv";
++
+ 	fset = 0;
  	iflags = 0;
  	set = NULL;
  	group = owner = NULL;
 -	while ((ch = getopt(argc, argv, "B:bCcD:df:g:h:l:M:m:N:o:pSsT:Uv")) !=
-+	while ((ch = getopt(argc, argv, "B:bCcD:dg:h:l:M:m:o:pSsT:Uv")) !=
- 	     -1)
+-	     -1)
++	while ((ch = getopt(argc, argv, getopt_str)) != -1)
  		switch((char)ch) {
  		case 'B':
-@@ -206,10 +205,12 @@
+ 			suffix = optarg;
+@@ -201,15 +207,18 @@
+ 			/* For backwards compatibility. */
+ 			break;
+ 		case 'D':
+-			destdir = optarg;
++			if (gnumode) dopdir = 1;
++			else destdir = optarg;
+ 			break;
  		case 'd':
  			dodir = 1;
  			break;
@@ -7771,7 +7817,7 @@
  		case 'g':
  			haveopt_g = 1;
  			group = optarg;
-@@ -255,11 +256,13 @@
+@@ -255,11 +264,13 @@
  				errx(EX_USAGE, "invalid file mode: %s",
  				     optarg);
  			break;
@@ -7785,7 +7831,26 @@
  		case 'o':
  			haveopt_o = 1;
  			owner = optarg;
-@@ -337,30 +340,38 @@
+@@ -273,6 +284,9 @@
+ 		case 's':
+ 			dostrip = 1;
+ 			break;
++		case 't':
++			targdir = optarg;
++			break;
+ 		case 'T':
+ 			tags = optarg;
+ 			break;
+@@ -309,7 +323,7 @@
+ 	}
+ 
+ 	/* must have at least two arguments, except when creating directories */
+-	if (argc == 0 || (argc == 1 && !dodir))
++	if (argc == 0 || (argc == 1 && !dodir && !targdir))
+ 		usage();
+ 
+ 	if (digest != NULL) {
+@@ -337,30 +351,38 @@
  
  	/* get group and owner id's */
  	if (group != NULL && !dounpriv) {
@@ -7826,7 +7891,48 @@
  
  	if (metafile != NULL) {
  		if ((metafp = fopen(metafile, "a")) == NULL)
-@@ -411,7 +422,7 @@
+@@ -370,12 +392,23 @@
+ 
+ 	if (dodir) {
+ 		for (; *argv != NULL; ++argv)
+-			install_dir(*argv);
++			install_dir(*argv, mode);
+ 		exit(EX_OK);
+ 		/* NOTREACHED */
++	} else if (dopdir) {
++		mode_t dmode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
++		if (targdir) install_dir(targdir, dmode);
++		else {
++			char *bsl = strrchr(argv[argc - 1], '/');
++			if (bsl && bsl != argv[argc - 1]) {
++				*bsl = '\0';
++				install_dir(argv[argc - 1], dmode);
++				*bsl = '/';
++			}
++		}
+ 	}
+ 
+-	to_name = argv[argc - 1];
++	to_name = targdir ? targdir : argv[argc - 1];
+ 	no_target = stat(to_name, &to_sb);
+ 	if (!no_target && S_ISDIR(to_sb.st_mode)) {
+ 		if (dolink & LN_SYMBOLIC) {
+@@ -390,11 +423,12 @@
+ 				exit(EX_OK);
+ 			}
+ 		}
+-		for (; *argv != to_name; ++argv)
++		for (; *argv != (targdir ? NULL : to_name); ++argv)
+ 			install(*argv, to_name, fset, iflags | DIRECTORY);
+ 		exit(EX_OK);
+ 		/* NOTREACHED */
+-	}
++	} else if (targdir)
++		err(EX_OSERR, "failed to access '%s'", targdir);
+ 
+ 	/* can't do file1 file2 directory/file */
+ 	if (argc != 2) {
+@@ -411,7 +445,7 @@
  		if (stat(*argv, &from_sb))
  			err(EX_OSERR, "%s", *argv);
  		if (!S_ISREG(to_sb.st_mode))
@@ -7835,7 +7941,7 @@
  		if (to_sb.st_dev == from_sb.st_dev &&
  		    to_sb.st_ino == from_sb.st_ino) {
  			errx(EX_USAGE, "%s and %s are the same file",
-@@ -554,7 +565,7 @@
+@@ -554,7 +588,7 @@
  {
  	int fd;
  
@@ -7844,7 +7950,7 @@
  		return (NULL);
  	close (fd);
  	if (unlink(template) == -1)
-@@ -571,7 +582,7 @@
+@@ -571,7 +605,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
  {
@@ -7853,7 +7959,7 @@
  	int ret;
  
  	if (target_sb != NULL) {
-@@ -811,7 +822,7 @@
+@@ -811,7 +845,7 @@
   *	build a path name and install the file
   */
  static void
@@ -7862,7 +7968,7 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -831,7 +842,7 @@
+@@ -831,7 +865,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
  			if (!S_ISREG(from_sb.st_mode))
@@ -7871,7 +7977,7 @@
  		}
  		/* Build the target path. */
  		if (flags & DIRECTORY) {
-@@ -856,7 +867,7 @@
+@@ -856,7 +890,7 @@
  	}
  
  	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode))
@@ -7880,7 +7986,7 @@
  
  	if (!devnull && (from_fd = open(from_name, O_RDONLY, 0)) < 0)
  		err(EX_OSERR, "%s", from_name);
-@@ -1149,14 +1160,14 @@
+@@ -1149,14 +1183,14 @@
  		lseek(from_fd, 0, SEEK_SET);
  		lseek(to_fd, 0, SEEK_SET);
  	} else {
@@ -7897,7 +8003,7 @@
  	}
  
  	return rv;
-@@ -1179,7 +1190,7 @@
+@@ -1179,7 +1213,7 @@
  		p = temp;
  	(void)strncpy(p, "INS@XXXXXX", &temp[tsize - 1] - p);
  	temp[tsize - 1] = '\0';
@@ -7906,7 +8012,7 @@
  }
  
  /*
-@@ -1214,11 +1225,17 @@
+@@ -1214,11 +1248,17 @@
  		} while (ret > 0);
  		if (ret == 0)
  			goto done;
@@ -7925,7 +8031,7 @@
  		}
  		/* Fall back */
  	}
-@@ -1317,7 +1334,7 @@
+@@ -1317,7 +1357,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
@@ -7934,6 +8040,26 @@
  		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
  	}
  	free(prefixed_from_name);
+@@ -1350,7 +1390,7 @@
+  *	build directory hierarchy
+  */
+ static void
+-install_dir(char *path)
++install_dir(char *path, mode_t dmode)
+ {
+ 	char *p;
+ 	struct stat sb;
+@@ -1385,8 +1425,8 @@
+ 		    chown(path, uid, gid))
+ 			warn("chown %u:%u %s", uid, gid, path);
+ 		/* XXXBED: should we do the chmod in the dounpriv case? */
+-		if (chmod(path, mode))
+-			warn("chmod %o %s", mode, path);
++		if (chmod(path, dmode))
++			warn("chmod %o %s", dmode, path);
+ 	}
+ 	metadata_log(path, "dir", NULL, NULL, NULL, 0);
+ }
 --- src.orig/dbcompat/btree/bt_close.c
 +++ src.freebsd/dbcompat/btree/bt_close.c
 @@ -35,7 +35,7 @@
