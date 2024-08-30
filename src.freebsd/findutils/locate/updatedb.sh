@@ -10,8 +10,10 @@ echo "Rebuilding locate database..."
 . /etc/locate.rc
 : ${FCODES:="/var/db/locate.database"}
 locdb="$FCODES"
+locbase=$(dirname "$locdb")
 
-touch "$locdb" && rc=0 || rc=3
+mkdir -p "$locbase" && rc=0 || rc=3
+touch "$locdb" || rc=3
 chown nobody "$locdb" || rc=3
 chmod 644 "$locdb" || rc=3
 
