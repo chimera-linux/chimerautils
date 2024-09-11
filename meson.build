@@ -2,7 +2,12 @@ project(
     'chimerautils',
     ['c', 'cpp'],
     version: '14.1.2',
-    default_options: ['c_std=c99', 'warning_level=2', 'buildtype=debugoptimized'],
+    default_options: [
+        'c_std=c99',
+        'cpp_rtti=false',
+        'warning_level=2',
+        'buildtype=debugoptimized'
+    ],
     license: 'BSD-3-Clause',
     meson_version: '>=0.61'
 )

@@ -44,6 +44,8 @@ static char sccsid[] = "@(#)ln.c	8.2 (Berkeley) 3/31/94";
 #include <sys/param.h>
 #include <sys/stat.h>
 
+#include <filesystem>
+
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
@@ -64,6 +66,7 @@ static bool	sflag;			/* Symbolic, not hard, link. */
 static bool	vflag;			/* Verbose output. */
 static bool	wflag;			/* Warn if symlink target does not
 					 * exist, and -f is not enabled. */
+static bool	rflag;			/* make a relative symlink */
 static char	linkch;
 
 static int	linkit(const char *, const char *, bool);
@@ -99,7 +102,7 @@ main(int argc, char *argv[])
 		exit(linkit(argv[0], argv[1], false));
 	}
 
-	while ((ch = getopt(argc, argv, "FLPfhinsvw")) != -1)
+	while ((ch = getopt(argc, argv, "FLPfhinsvwr")) != -1)
 		switch (ch) {
 		case 'F':
 			Fflag = true;
@@ -122,6 +125,9 @@ main(int argc, char *argv[])
 		case 'i':
 			iflag = true;
 			fflag = false;
+			break;
+		case 'r':
+			rflag = true;
 			break;
 		case 's':
 			sflag = true;
@@ -146,6 +152,10 @@ main(int argc, char *argv[])
 	if (Fflag && !iflag) {
 		fflag = true;
 		wflag = false;		/* Implied when fflag is true */
+	}
+
+	if (rflag && !sflag) {
+		errx(1, "-r must be used with -s");
 	}
 
 	switch (argc) {
@@ -342,8 +352,23 @@ linkit(const char *source, const char *target, bool isdir)
 		}
 	}
 
+	std::filesystem::path sourcep;
+	if (rflag) {
+		std::error_code ec{};
+		try {
+			sourcep = std::filesystem::relative(source, target, ec);
+		} catch (std::bad_alloc const &) {
+			warnc(ENOMEM, "%s", source);
+			return (1);
+		}
+		if (ec) {
+			warnc(ec.value(), "%s", source);
+			return (1);
+		}
+	}
+
 	/* Attempt the link. */
-	if (sflag ? symlink(source, target) :
+	if (sflag ? symlink(rflag ? sourcep.c_str() : source, target) :
 	    linkat(AT_FDCWD, source, AT_FDCWD, target,
 	    Pflag ? 0 : AT_SYMLINK_FOLLOW)) {
 		warn("%s", target);
@@ -365,7 +390,7 @@ static void
 usage(void)
 {
 	(void)fprintf(stderr, "%s\n%s\n",
-	    "usage: ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
-	    "       ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
+	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
+	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
 	exit(1);
 }

@@ -32,12 +32,20 @@
 
 #include "config-compat.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 #ifndef HAVE_ERRC
 void errc(int eval, int code, const char *fmt, ...);
 #endif
 
 #ifndef HAVE_WARNC
 void warnc(int code, const char *fmt, ...);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif

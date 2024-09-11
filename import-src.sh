@@ -248,6 +248,10 @@ copy_cmd lib/libmp
 copy_cmd lib/libfetch
 copy_cmd lib/libstdbuf
 
+# we use c++ for ln
+mv ${CWD}/src.orig/coreutils/ln/ln.c ${CWD}/src.orig/coreutils/ln/ln.cc
+mv ${CWD}/src.freebsd/coreutils/ln/ln.c ${CWD}/src.freebsd/coreutils/ln/ln.cc
+
 # 'compat' is our static library with a subset of BSD library functions
 mkdir -p ${CWD}/src.orig/compat ${CWD}/src.orig/include
 cp -p usr/src/lib/libutil/expand_number.c ${CWD}/src.orig/compat

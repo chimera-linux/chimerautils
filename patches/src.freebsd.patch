@@ -3897,9 +3897,82 @@
  }
  
  static char *
---- src.orig/coreutils/ln/ln.c
-+++ src.freebsd/coreutils/ln/ln.c
-@@ -151,6 +151,7 @@
+--- src.orig/coreutils/ln/ln.1
++++ src.freebsd/coreutils/ln/ln.1
+@@ -40,13 +40,13 @@
+ .Nd link files
+ .Sh SYNOPSIS
+ .Nm
+-.Op Fl L | Fl P | Fl s Op Fl F
++.Op Fl L | Fl P | Fl s Op Fl Fr
+ .Op Fl f | iw
+ .Op Fl hnv
+ .Ar source_file
+ .Op Ar target_file
+ .Nm
+-.Op Fl L | Fl P | Fl s Op Fl F
++.Op Fl L | Fl P | Fl s Op Fl Fr
+ .Op Fl f | iw
+ .Op Fl hnv
+ .Ar source_file ...
+@@ -151,6 +151,11 @@
+ for compatibility with other
+ .Nm
+ implementations.
++.It Fl r
++When creating symbolic links, make the link source relative to the target.
++Must be used with the
++.Fl s
++option.
+ .It Fl s
+ Create a symbolic link.
+ .It Fl v
+--- src.orig/coreutils/ln/ln.cc
++++ src.freebsd/coreutils/ln/ln.cc
+@@ -44,6 +44,8 @@
+ #include <sys/param.h>
+ #include <sys/stat.h>
+ 
++#include <filesystem>
++
+ #include <err.h>
+ #include <errno.h>
+ #include <fcntl.h>
+@@ -64,6 +66,7 @@
+ static bool	vflag;			/* Verbose output. */
+ static bool	wflag;			/* Warn if symlink target does not
+ 					 * exist, and -f is not enabled. */
++static bool	rflag;			/* make a relative symlink */
+ static char	linkch;
+ 
+ static int	linkit(const char *, const char *, bool);
+@@ -99,7 +102,7 @@
+ 		exit(linkit(argv[0], argv[1], false));
+ 	}
+ 
+-	while ((ch = getopt(argc, argv, "FLPfhinsvw")) != -1)
++	while ((ch = getopt(argc, argv, "FLPfhinsvwr")) != -1)
+ 		switch (ch) {
+ 		case 'F':
+ 			Fflag = true;
+@@ -123,6 +126,9 @@
+ 			iflag = true;
+ 			fflag = false;
+ 			break;
++		case 'r':
++			rflag = true;
++			break;
+ 		case 's':
+ 			sflag = true;
+ 			break;
+@@ -148,9 +154,14 @@
+ 		wflag = false;		/* Implied when fflag is true */
+ 	}
+ 
++	if (rflag && !sflag) {
++		errx(1, "-r must be used with -s");
++	}
++
  	switch (argc) {
  	case 0:
  		usage();
@@ -3907,6 +3980,41 @@
  		/* NOTREACHED */
  	case 1:				/* ln source */
  		exit(linkit(argv[0], ".", true));
+@@ -341,8 +352,23 @@
+ 		}
+ 	}
+ 
++	std::filesystem::path sourcep;
++	if (rflag) {
++		std::error_code ec{};
++		try {
++			sourcep = std::filesystem::relative(source, target, ec);
++		} catch (std::bad_alloc const &) {
++			warnc(ENOMEM, "%s", source);
++			return (1);
++		}
++		if (ec) {
++			warnc(ec.value(), "%s", source);
++			return (1);
++		}
++	}
++
+ 	/* Attempt the link. */
+-	if (sflag ? symlink(source, target) :
++	if (sflag ? symlink(rflag ? sourcep.c_str() : source, target) :
+ 	    linkat(AT_FDCWD, source, AT_FDCWD, target,
+ 	    Pflag ? 0 : AT_SYMLINK_FOLLOW)) {
+ 		warn("%s", target);
+@@ -364,7 +390,7 @@
+ usage(void)
+ {
+ 	(void)fprintf(stderr, "%s\n%s\n",
+-	    "usage: ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
+-	    "       ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
++	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
++	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
+ 	exit(1);
+ }
 --- src.orig/coreutils/ls/cmp.c
 +++ src.freebsd/coreutils/ls/cmp.c
 @@ -136,7 +136,7 @@

@@ -40,13 +40,13 @@
 .Nd link files
 .Sh SYNOPSIS
 .Nm
-.Op Fl L | Fl P | Fl s Op Fl F
+.Op Fl L | Fl P | Fl s Op Fl Fr
 .Op Fl f | iw
 .Op Fl hnv
 .Ar source_file
 .Op Ar target_file
 .Nm
-.Op Fl L | Fl P | Fl s Op Fl F
+.Op Fl L | Fl P | Fl s Op Fl Fr
 .Op Fl f | iw
 .Op Fl hnv
 .Ar source_file ...
@@ -151,6 +151,11 @@ Same as
 for compatibility with other
 .Nm
 implementations.
+.It Fl r
+When creating symbolic links, make the link source relative to the target.
+Must be used with the
+.Fl s
+option.
 .It Fl s
 Create a symbolic link.
 .It Fl v
