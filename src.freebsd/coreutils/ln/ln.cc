@@ -356,7 +356,9 @@ linkit(const char *source, const char *target, bool isdir)
 	if (rflag) {
 		std::error_code ec{};
 		try {
-			sourcep = std::filesystem::relative(source, target, ec);
+			auto tgt = std::filesystem::path{target};
+			sourcep = std::filesystem::relative(source,
+			    tgt.remove_filename(), ec);
 		} catch (std::bad_alloc const &) {
 			warnc(ENOMEM, "%s", source);
 			return (1);

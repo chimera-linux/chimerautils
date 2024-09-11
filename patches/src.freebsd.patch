@@ -3980,7 +3980,7 @@
  		/* NOTREACHED */
  	case 1:				/* ln source */
  		exit(linkit(argv[0], ".", true));
-@@ -341,8 +352,23 @@
+@@ -341,8 +352,25 @@
  		}
  	}
  
@@ -3988,7 +3988,9 @@
 +	if (rflag) {
 +		std::error_code ec{};
 +		try {
-+			sourcep = std::filesystem::relative(source, target, ec);
++			auto tgt = std::filesystem::path{target};
++			sourcep = std::filesystem::relative(source,
++			    tgt.remove_filename(), ec);
 +		} catch (std::bad_alloc const &) {
 +			warnc(ENOMEM, "%s", source);
 +			return (1);
@@ -4005,7 +4007,7 @@
  	    linkat(AT_FDCWD, source, AT_FDCWD, target,
  	    Pflag ? 0 : AT_SYMLINK_FOLLOW)) {
  		warn("%s", target);
-@@ -364,7 +390,7 @@
+@@ -364,7 +392,7 @@
  usage(void)
  {
  	(void)fprintf(stderr, "%s\n%s\n",
