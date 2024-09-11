@@ -1,0 +1,58 @@
+.Dd Sep 11, 2024
+.Dt READLINK 1
+.Os
+.Sh NAME
+.Nm readlink
+.Nd print symbolic link targets or canonical file names
+.Sh SYNOPSIS
+.Nm
+.Op Ar OPTION...
+.Op Ar path...
+.Sh DESCRIPTION
+The
+.Nm
+utility by default reads and prints symbolic link names.
+It can additionally canonicalize paths, but in general
+.Nm realpath
+should be preferred for that.
+.Pp
+The options are as follows:
+.Bl -tag -width indent
+.It Fl f, e, -canonicalize, -canonicalize-existing
+Instead of reading link target, canonicalize
+.Ar path
+similarly to the
+.Nm readlink
+utility. All components must exist.
+.It Fl m, -canonicalize-missing
+Like above, but no components must exist.
+.It Fl n, no-newline
+Do not output the trailing newline. This is ignored if
+there are multiple inputs.
+.It Fl q, s, -quiet, -silent
+Most error messages are suppressed. The return failure code is still issued.
+This is the default.
+.It Fl v, -verbose
+Do not suppress error messages.
+.It Fl z, -zero
+By default, newlines are used to end each output line. With this flag,
+NUL is used instead.
+.It Fl -help
+Display a help message and exit.
+.It Fl -version
+Display version information and exit.
+.Sh EXIT STATUS
+.Ex -std
+.Sh SEE ALSO
+.Xr readlink 3 ,
+.Xr realpath 1
+.Sh HISTORY
+On
+.Fx
+this utility is a special invocation of
+.Xr stat 1
+and first appeared in
+.Fx 4.10 .
+This implementation is a part of chimerautils and is a special
+invocation of
+.Xr realpath 1 .

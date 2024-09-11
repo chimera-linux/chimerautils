@@ -1,0 +1,71 @@
+.Dd Sep 11, 2024
+.Dt REALPATH 1
+.Os
+.Sh NAME
+.Nm realpath
+.Nd print the resolved path
+.Sh SYNOPSIS
+.Nm
+.Op Ar OPTION...
+.Op Ar path...
+.Sh DESCRIPTION
+The
+.Nm
+utility resolve all symbolic links, extra
+.Ql /
+characters and references to
+.Pa /./
+and
+.Pa /../
+in
+.Ar path .
+If
+.Ar path
+is absent, the current working directory
+.Pq Sq Pa .\&
+is assumed.
+.Pp
+By default, all components of
+.Ar path
+must exist.
+.Pp
+The options are as follows:
+.Bl -tag -width indent
+.It Fl f, -canonicalize-existing
+All components must exist. This is the default behavior.
+.It Fl m, -canonicalize-missing
+No component of the
+.Ar path
+must exist. It is resolved up until the first component that exists
+and a normalized path is printed.
+.It Fl s, -strip, -no-symlinks
+The
+.Ar path
+is normalized logically, without resolving any symlinks.
+.It Fl q, -quiet
+Most error messages are suppressed. The return failure code is still issued.
+.It Fl z, -zero
+By default, newlines are used to end each output line. With this flag,
+NUL is used instead.
+.It Fl -help
+Display a help message and exit.
+.It Fl -version
+Display version information and exit.
+.Sh EXIT STATUS
+.Ex -std
+.Sh EXAMPLES
+Show the physical path of the
+.Pa /dev/log
+directory silencing warnings if any:
+.Bd -literal -offset indent
+$ realpath -q /dev/log
+/var/run/log
+.Ed
+.Sh SEE ALSO
+.Xr realpath 3
+.Sh HISTORY
+The
+.Nm
+utility first appeared in
+.Fx 4.3 .
+This implementation is a part of chimerautils and was written from scratch.
