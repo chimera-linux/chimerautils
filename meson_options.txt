@@ -67,3 +67,8 @@ option('tiny',
     type: 'feature', value: 'disabled',
     description: 'Also build tiny versions of some of the tools'
 )
+
+option('chimera_realpath',
+    type: 'feature', value: 'auto',
+    description: 'Use custom implementation of realpath/readlink'
+)

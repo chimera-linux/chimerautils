@@ -94,6 +94,9 @@ elif cc.has_header('ncurses.h', dependencies: ncurses)
     curses_incdefs += ['-DHAVE_NCURSES_H']
 endif
 
+# whether to use our own realpath
+chimera_realpath = get_option('chimera_realpath')
+
 # libacl is needed in several tools
 libacl = dependency('libacl', required: true)
 

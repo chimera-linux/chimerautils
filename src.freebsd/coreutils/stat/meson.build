@@ -8,5 +8,7 @@ stat_prog = executable(
 
 install_man('stat.1')
 
-install_symlink('readlink', pointing_to: 'stat', install_dir: bindir)
-install_symlink('readlink.1', pointing_to: 'stat.1', install_dir: man1dir)
+if not chimera_realpath.enabled()
+    install_symlink('readlink', pointing_to: 'stat', install_dir: bindir)
+    install_symlink('readlink.1', pointing_to: 'stat.1', install_dir: man1dir)
+endif

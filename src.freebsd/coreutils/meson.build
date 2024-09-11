@@ -43,7 +43,6 @@ subdir('pr')
 subdir('printenv')
 subdir('printf')
 subdir('pwd')
-subdir('realpath')
 subdir('rm')
 subdir('rmdir')
 subdir('seq')
@@ -71,6 +70,10 @@ subdir('users')
 subdir('wc')
 subdir('who')
 subdir('yes')
+
+if not chimera_realpath.enabled()
+    subdir('realpath')
+endif
 
 if libcrypto.found()
     subdir('md5')
