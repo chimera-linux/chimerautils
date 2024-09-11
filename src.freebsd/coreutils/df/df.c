@@ -73,7 +73,7 @@ static char sccsid[] = "@(#)df.c	8.9 (Berkeley) 5/8/95";
  * list should be made in to something we can generate at runtime or
  * just expand the list.
  */
-#define NETVFSLIST "nonfs,nfs4,smb,cifs"
+static char NETVFSLIST[] = "nonfs,nfs4,smb,cifs";
 
 /* combining data from getmntent() and statvfs() on Linux */
 struct mntinfo {
