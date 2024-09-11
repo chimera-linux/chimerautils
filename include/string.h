@@ -34,12 +34,20 @@
 
 #include "config-compat.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 void strmode(mode_t, char *);
 #ifndef HAVE_STRLCPY
 size_t strlcpy(char *d, const char *s, size_t n);
 #endif
 #ifndef HAVE_STRLCAT
 size_t strlcat(char *d, const char *s, size_t n);
+#endif
+
+#ifdef __cplusplus
+}
 #endif
 
 #endif
