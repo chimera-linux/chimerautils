@@ -141,7 +141,7 @@ extern char **environ;
 static gid_t gid;
 static uid_t uid;
 static int dobackup, docompare, dodir, dolink, dopreserve, dostrip, dounpriv,
-    dopdir, safecopy, verbose;
+    dopdir, safecopy, verbose, gnumode;
 static int haveopt_f, haveopt_g, haveopt_m, haveopt_o;
 static mode_t mode = S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
 static FILE *metafp;
@@ -180,12 +180,11 @@ main(int argc, char *argv[])
 	char *p;
 	const char *to_name;
 	const char *getopt_str;
-	int gnumode = getenv("CHIMERAUTILS_INSTALL_GNU") != NULL;
 	int notarg = 0;
 
-	if (!strcmp(getprogname(), "ginstall")) gnumode = 1;
+	gnumode = !!strcmp(getprogname(), "binstall");
 	if (gnumode)
-		getopt_str = "B:bCcDdg:h:l:M:m:o:pSst:TUv";
+		getopt_str = "B:bCcDdg:l:m:o:pSst:Tv";
 	else
 		getopt_str = "B:bCcD:dg:h:l:M:m:o:pSsT:Uv";
 
@@ -312,6 +311,14 @@ main(int argc, char *argv[])
 	/* some options make no sense when creating directories */
 	if (dostrip && dodir) {
 		warnx("-d and -s may not be specified together");
+		usage();
+	}
+	if (dopdir && dodir) {
+		warnx("-d and -D may not be specified together");
+		usage();
+	}
+	if (targdir && dodir) {
+		warnx("-d and -t may not be specified together");
 		usage();
 	}
 
@@ -1078,9 +1085,11 @@ install(const char *from_name, const char *to_name, u_long fset __unused, u_int 
 	    (uid != (uid_t)-1 && uid != to_sb.st_uid))) {
 		if (fchown(to_fd, uid, gid) == -1) {
 			serrno = errno;
-			(void)unlink(to_name);
-			errno = serrno;
-			err(EX_OSERR,"%s: chown/chgrp", to_name);
+			if (!gnumode) {
+				(void)unlink(to_name);
+				errno = serrno;
+				err(EX_OSERR,"%s: chown/chgrp", to_name);
+			} else warn("%s: chown/chgrp", to_name);
 		}
 	}
 	if (mode != (to_sb.st_mode & ALLPERMS)) {
