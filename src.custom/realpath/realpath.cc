@@ -89,7 +89,7 @@ static void usage_realpath(bool help) {
         "  -e, --canonicalize-existing  all components must exist (default)\n"
         "  -m, --canonicalize-missing   no component must exist\n"
         "  -s, --strip, --no-symlinks   don't expand symlinks, only normalize\n"
-        "      --relative-to=DIR        print result reslative to DIR\n"
+        "      --relative-to=DIR        print result relative to DIR\n"
         "  -q, --quiet                  suppress most error messages\n"
         "  -z, --zero                   delimit with NUL instead of newline\n"
         "      --help                   print this help message\n"
