@@ -183,7 +183,7 @@ main(int argc, char *argv[])
 	int gnumode = getenv("CHIMERAUTILS_INSTALL_GNU") != NULL;
 	int notarg = 0;
 
-	if (!strcmp(argv[0], "ginstall")) gnumode = 1;
+	if (!strcmp(getprogname(), "ginstall")) gnumode = 1;
 	if (gnumode)
 		getopt_str = "B:bCcDdg:h:l:M:m:o:pSst:TUv";
 	else
