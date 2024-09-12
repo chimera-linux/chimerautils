@@ -38,6 +38,7 @@
 #include <err.h>
 
 enum {
+    ARG_RELATIVE_TO = 127,
     ARG_HELP,
     ARG_VERSION,
 };
@@ -48,6 +49,8 @@ static bool canonical_missing = false;
 static bool quiet = false;
 static bool strip = false;
 static bool zero = false;
+static bool isrel = false;
+static fs::path relpath{};
 
 extern char const *__progname;
 
@@ -86,6 +89,7 @@ static void usage_realpath(bool help) {
         "  -e, --canonicalize-existing  all components must exist (default)\n"
         "  -m, --canonicalize-missing   no component must exist\n"
         "  -s, --strip, --no-symlinks   don't expand symlinks, only normalize\n"
+        "      --relative-to=DIR        print result reslative to DIR\n"
         "  -q, --quiet                  suppress most error messages\n"
         "  -z, --zero                   delimit with NUL instead of newline\n"
         "      --help                   print this help message\n"
@@ -119,6 +123,9 @@ static bool do_realpath(fs::path sp, bool newl) {
         return false;
     }
     /* process */
+    if (isrel) {
+        np = np.lexically_relative(relpath);
+    }
     auto cstr = np.c_str();
     write(STDOUT_FILENO, cstr, std::strlen(cstr));
     if (!newl) {
@@ -243,12 +250,15 @@ static int realpath_main(int argc, char **argv) {
         {"canonicalize-missing", no_argument, 0, 'm'},
         {"strip", no_argument, 0, 's'},
         {"no-symlinks", no_argument, 0, 's'},
+        {"relative-to", required_argument, 0, ARG_RELATIVE_TO},
         {"quiet", no_argument, 0, 'q'},
         {"zero", no_argument, 0, 'z'},
         {"help", no_argument, 0, ARG_HELP},
         {"version", no_argument, 0, ARG_VERSION},
         {nullptr, 0, 0, 0},
     };
+
+    char const *relstr = nullptr;
 
     for (;;) {
         int oind = 0;
@@ -270,6 +280,11 @@ static int realpath_main(int argc, char **argv) {
             case 'z':
                 zero = true;
                 break;
+            case ARG_RELATIVE_TO:
+                isrel = true;
+                relstr = optarg;
+                relpath = relstr;
+                break;
             case ARG_HELP:
                 usage_realpath(true);
                 return 0;
@@ -279,6 +294,24 @@ static int realpath_main(int argc, char **argv) {
             default:
                 usage_realpath(false);
                 return 1;
+        }
+    }
+
+    if (isrel) {
+        std::error_code ec{};
+        /* make absolute according to current rules */
+        if (strip && relpath.is_relative()) {
+            relpath = (fs::current_path(ec) / relpath).lexically_normal();
+        } else if (strip) {
+            relpath = relpath.lexically_normal();
+        } else if (canonical_missing) {
+            relpath = fs::weakly_canonical(relpath, ec);
+        } else {
+            relpath = fs::canonical(relpath, ec);
+        }
+        if (ec) {
+            errno = ec.value();
+            err(1, "%s", relstr);
         }
     }
 
