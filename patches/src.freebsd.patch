@@ -8705,6 +8705,29 @@
  	}
  	metadata_log(path, "dir", NULL, NULL, NULL, 0);
  }
+@@ -1483,16 +1539,16 @@
+ usage(void)
+ {
+ 	(void)fprintf(stderr,
+-"usage: install [-bCcpSsUv] [-f flags] [-g group] [-m mode] [-o owner]\n"
+-"               [-M log] [-D dest] [-h hash] [-T tags]\n"
++"usage: install [-bCcDpSsTv] [-f flags] [-g group] [-m mode] [-o owner]\n"
+ "               [-B suffix] [-l linkflags] [-N dbdir]\n"
+ "               file1 file2\n"
+-"       install [-bCcpSsUv] [-f flags] [-g group] [-m mode] [-o owner]\n"
+-"               [-M log] [-D dest] [-h hash] [-T tags]\n"
++"       install [-bCcDpSsv] [-f flags] [-g group] [-m mode] [-o owner]\n"
+ "               [-B suffix] [-l linkflags] [-N dbdir]\n"
+ "               file1 ... fileN directory\n"
+-"       install -dU [-vU] [-g group] [-m mode] [-N dbdir] [-o owner]\n"
+-"               [-M log] [-D dest] [-h hash] [-T tags]\n"
++"       install [-bCcDpSsv] [-f flags] [-g group] [-m mode] [-o owner]\n"
++"               [-B suffix] [-l linkflags] [-N dbdir] -t directory\n"
++"               file1 ... fileN\n"
++"       install -d [-v] [-g group] [-m mode] [-N dbdir] [-o owner]\n"
+ "               directory ...\n");
+ 	exit(EX_USAGE);
+ 	/* NOTREACHED */
 --- src.orig/dbcompat/btree/bt_close.c
 +++ src.freebsd/dbcompat/btree/bt_close.c
 @@ -35,7 +35,7 @@
