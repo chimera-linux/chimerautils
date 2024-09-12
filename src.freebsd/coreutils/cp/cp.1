@@ -44,7 +44,7 @@
 .Op Fl H | Fl L | Fl P
 .Oc
 .Op Fl f | i | n
-.Op Fl alpsvx
+.Op Fl alpsvxT
 .Ar source_file target_file
 .Nm
 .Oo
@@ -56,12 +56,17 @@
 .Ar source_file ... target_directory
 .Nm
 .Op Fl f | i | n
-.Op Fl alPpsvx
+.Op Fl alPpsvxT
 .Ar source_file target_file
 .Nm
 .Op Fl f | i | n
 .Op Fl alPpsvx
 .Ar source_file ... target_directory
+.Nm
+.Op Fl f | i | n
+.Op Fl alPpsvx
+.Op Fl t Ar target_directory
+.Ar source_file ...
 .Sh DESCRIPTION
 In the first synopsis form, the
 .Nm
@@ -123,6 +128,10 @@ If you need to preserve hard links, consider using
 or
 .Xr pax 1
 instead.
+.It Fl T
+In modes where the target may be a file, error if the target is a directory
+instead of copying into the directory. May not be used with
+.Fl t .
 .It Fl a
 Archive mode.
 Similar to
@@ -190,6 +199,9 @@ the set-user-ID nor set-group-ID bits are preserved in the copy's
 permissions.
 .It Fl s
 Create symbolic links to regular files in a hierarchy instead of copying.
+.It Fl t Ar target_directory
+Specify the target directory as an optional argument. In this mode, it
+must be a directory, and all the positional arguments are copied into it.
 .It Fl v
 Cause
 .Nm

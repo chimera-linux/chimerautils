@@ -85,7 +85,7 @@ static char emptystring[] = "";
 PATH_T to = { to.p_path, emptystring, "" };
 
 int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
-static int Hflag, Lflag, Pflag, Rflag, rflag;
+static int Hflag, Lflag, Pflag, Rflag, rflag, Tflag;
 volatile sig_atomic_t info;
 
 enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
@@ -99,10 +99,10 @@ main(int argc, char *argv[])
 	struct stat to_stat, tmp_stat;
 	enum op type;
 	int ch, fts_options, r, have_trailing_slash;
-	char *target;
+	char *target, *targdir = NULL;
 
 	fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
-	while ((ch = getopt(argc, argv, "HLPRafilnprsvx")) != -1)
+	while ((ch = getopt(argc, argv, "HLPRTafilnprst:vx")) != -1)
 		switch (ch) {
 		case 'H':
 			Hflag = 1;
@@ -151,6 +151,12 @@ main(int argc, char *argv[])
 		case 's':
 			sflag = 1;
 			break;
+		case 't':
+			targdir = optarg;
+			break;
+		case 'T':
+			Tflag = 1;
+			break;
 		case 'v':
 			vflag = 1;
 			break;
@@ -164,9 +170,11 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 2)
+	if (argc < (!targdir + 1))
 		usage();
 
+	if (Tflag && targdir)
+		errx(1, "the -T and -t options may not be specified together");
 	if (Rflag && rflag)
 		errx(1, "the -R and -r options may not be specified together");
 	if (lflag && sflag)
@@ -187,7 +195,7 @@ main(int argc, char *argv[])
 	(void)signal(SIGINFO, siginfo);
 
 	/* Save the target base in "to". */
-	target = argv[--argc];
+	target = targdir ? targdir : argv[--argc];
 	if (strlcpy(to.p_path, target, sizeof(to.p_path)) >= sizeof(to.p_path))
 		errx(1, "%s: name too long", target);
 	to.p_end = to.p_path + strlen(to.p_path);
@@ -224,8 +232,10 @@ main(int argc, char *argv[])
 		/*
 		 * Case (1).  Target is not a directory.
 		 */
-		if (argc > 1)
+		if (argc > 1 || targdir) {
+			if (Tflag) errx(1, "extra operand '%s'", to.p_path);
 			errx(1, "%s is not a directory", to.p_path);
+		}
 
 		/*
 		 * Need to detect the case:
@@ -254,11 +264,16 @@ main(int argc, char *argv[])
 			} else
 				errx(1, "%s is not a directory", to.p_path);
 		}
-	} else
+	} else {
 		/*
 		 * Case (2).  Target is a directory.
 		 */
+		if (Tflag) {
+			if (argc > 1) errx(1, "extra operand '%s'", to.p_path);
+			errx(1, "cannot overwrite directory '%s' with non-directory", to.p_path);
+		}
 		type = FILE_TO_DIR;
+	}
 
 	/*
 	 * For DIR_TO_DNE, we could provide copy() with the to_stat we've

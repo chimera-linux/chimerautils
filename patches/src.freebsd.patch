@@ -1934,11 +1934,11 @@
  .Oc
  .Op Fl f | i | n
 -.Op Fl alNpsvx
-+.Op Fl alpsvx
++.Op Fl alpsvxT
  .Ar source_file target_file
  .Nm
  .Oo
-@@ -52,15 +52,15 @@
+@@ -52,16 +52,21 @@
  .Op Fl H | Fl L | Fl P
  .Oc
  .Op Fl f | i | n
@@ -1948,17 +1948,29 @@
  .Nm
  .Op Fl f | i | n
 -.Op Fl alNPpsvx
-+.Op Fl alPpsvx
++.Op Fl alPpsvxT
  .Ar source_file target_file
  .Nm
  .Op Fl f | i | n
 -.Op Fl alNPpsvx
 +.Op Fl alPpsvx
  .Ar source_file ... target_directory
++.Nm
++.Op Fl f | i | n
++.Op Fl alPpsvx
++.Op Fl t Ar target_directory
++.Ar source_file ...
  .Sh DESCRIPTION
  In the first synopsis form, the
-@@ -125,8 +125,9 @@
+ .Nm
+@@ -123,10 +128,15 @@
+ or
+ .Xr pax 1
  instead.
++.It Fl T
++In modes where the target may be a file, error if the target is a directory
++instead of copying into the directory. May not be used with
++.Fl t .
  .It Fl a
  Archive mode.
 -Same as
@@ -1969,7 +1981,7 @@
  .It Fl f
  For each existing destination pathname, remove it and
  create a new file, without prompting for confirmation
-@@ -157,10 +158,6 @@
+@@ -157,10 +167,6 @@
  options.)
  .It Fl l
  Create hard links to regular files in a hierarchy instead of copying.
@@ -1980,7 +1992,7 @@
  .It Fl n
  Do not overwrite an existing file.
  (The
-@@ -175,7 +172,8 @@
+@@ -175,7 +181,8 @@
  .Nm
  to preserve the following attributes of each source
  file in the copy: modification time, access time,
@@ -1990,7 +2002,17 @@
  .Pp
  If the user ID and group ID cannot be preserved, no error message
  is displayed and the exit value is not altered.
-@@ -255,7 +253,7 @@
+@@ -192,6 +199,9 @@
+ permissions.
+ .It Fl s
+ Create symbolic links to regular files in a hierarchy instead of copying.
++.It Fl t Ar target_directory
++Specify the target directory as an optional argument. In this mode, it
++must be a directory, and all the positional arguments are copied into it.
+ .It Fl v
+ Cause
+ .Nm
+@@ -255,7 +265,7 @@
  If
  .Nm
  receives a
@@ -2001,21 +2023,27 @@
  argument for
 --- src.orig/coreutils/cp/cp.c
 +++ src.freebsd/coreutils/cp/cp.c
-@@ -84,7 +84,7 @@
+@@ -84,8 +84,8 @@
  
  PATH_T to = { to.p_path, emptystring, "" };
  
 -int Nflag, fflag, iflag, lflag, nflag, pflag, sflag, vflag;
+-static int Hflag, Lflag, Pflag, Rflag, rflag;
 +int fflag, iflag, lflag, nflag, pflag, sflag, vflag, aflag;
- static int Hflag, Lflag, Pflag, Rflag, rflag;
++static int Hflag, Lflag, Pflag, Rflag, rflag, Tflag;
  volatile sig_atomic_t info;
  
-@@ -102,7 +102,7 @@
- 	char *target;
+ enum op { FILE_TO_FILE, FILE_TO_DIR, DIR_TO_DNE };
+@@ -99,10 +99,10 @@
+ 	struct stat to_stat, tmp_stat;
+ 	enum op type;
+ 	int ch, fts_options, r, have_trailing_slash;
+-	char *target;
++	char *target, *targdir = NULL;
  
  	fts_options = FTS_NOCHDIR | FTS_PHYSICAL;
 -	while ((ch = getopt(argc, argv, "HLPRafilNnprsvx")) != -1)
-+	while ((ch = getopt(argc, argv, "HLPRafilnprsvx")) != -1)
++	while ((ch = getopt(argc, argv, "HLPRTafilnprst:vx")) != -1)
  		switch (ch) {
  		case 'H':
  			Hflag = 1;
@@ -2037,7 +2065,72 @@
  		case 'n':
  			nflag = 1;
  			fflag = iflag = 0;
-@@ -451,6 +449,7 @@
+@@ -153,6 +151,12 @@
+ 		case 's':
+ 			sflag = 1;
+ 			break;
++		case 't':
++			targdir = optarg;
++			break;
++		case 'T':
++			Tflag = 1;
++			break;
+ 		case 'v':
+ 			vflag = 1;
+ 			break;
+@@ -166,9 +170,11 @@
+ 	argc -= optind;
+ 	argv += optind;
+ 
+-	if (argc < 2)
++	if (argc < (!targdir + 1))
+ 		usage();
+ 
++	if (Tflag && targdir)
++		errx(1, "the -T and -t options may not be specified together");
+ 	if (Rflag && rflag)
+ 		errx(1, "the -R and -r options may not be specified together");
+ 	if (lflag && sflag)
+@@ -189,7 +195,7 @@
+ 	(void)signal(SIGINFO, siginfo);
+ 
+ 	/* Save the target base in "to". */
+-	target = argv[--argc];
++	target = targdir ? targdir : argv[--argc];
+ 	if (strlcpy(to.p_path, target, sizeof(to.p_path)) >= sizeof(to.p_path))
+ 		errx(1, "%s: name too long", target);
+ 	to.p_end = to.p_path + strlen(to.p_path);
+@@ -226,8 +232,10 @@
+ 		/*
+ 		 * Case (1).  Target is not a directory.
+ 		 */
+-		if (argc > 1)
++		if (argc > 1 || targdir) {
++			if (Tflag) errx(1, "extra operand '%s'", to.p_path);
+ 			errx(1, "%s is not a directory", to.p_path);
++		}
+ 
+ 		/*
+ 		 * Need to detect the case:
+@@ -256,11 +264,16 @@
+ 			} else
+ 				errx(1, "%s is not a directory", to.p_path);
+ 		}
+-	} else
++	} else {
+ 		/*
+ 		 * Case (2).  Target is a directory.
+ 		 */
++		if (Tflag) {
++			if (argc > 1) errx(1, "extra operand '%s'", to.p_path);
++			errx(1, "cannot overwrite directory '%s' with non-directory", to.p_path);
++		}
+ 		type = FILE_TO_DIR;
++	}
+ 
+ 	/*
+ 	 * For DIR_TO_DNE, we could provide copy() with the to_stat we've
+@@ -451,6 +464,7 @@
  				if (preserve_dir_acls(curr->fts_statp,
  				    curr->fts_accpath, to.p_path) != 0)
  					rval = 1;
@@ -2271,12 +2364,10 @@
  	if (aclsetf(dest_dir, acl_type, acl) < 0) {
  		warn("failed to set acl entries on %s", dest_dir);
  		acl_free(acl);
-@@ -526,6 +513,138 @@
- 	}
- 	acl_free(acl);
+@@ -528,15 +515,150 @@
  	return (0);
-+}
-+
+ }
+ 
 +/* for now we don't really care about warnings or result,
 + * we only support the quiet case for archive mode
 + */
@@ -2407,9 +2498,26 @@
 +        errno = rerrno;
 +    }
 +    return retval;
- }
- 
++}
++
  void
+ usage(void)
+ {
+ 
+-	(void)fprintf(stderr, "%s\n%s\n",
+-	    "usage: cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
++	(void)fprintf(stderr, "%s\n%s\n%s\n",
++	    "usage: cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvxT] "
+ 	    "source_file target_file",
+ 	    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
+ 	    "source_file ... "
+-	    "target_directory");
++	    "target_directory",
++	    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
++	    "[-t target_directory] "
++	    "source_file ... ");
+ 	exit(EX_USAGE);
+ }
 --- src.orig/coreutils/cut/cut.c
 +++ src.freebsd/coreutils/cut/cut.c
 @@ -275,14 +275,15 @@

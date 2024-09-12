@@ -651,11 +651,14 @@ void
 usage(void)
 {
 
-	(void)fprintf(stderr, "%s\n%s\n",
-	    "usage: cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
+	(void)fprintf(stderr, "%s\n%s\n%s\n",
+	    "usage: cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvxT] "
 	    "source_file target_file",
 	    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
 	    "source_file ... "
-	    "target_directory");
+	    "target_directory",
+	    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
+	    "[-t target_directory] "
+	    "source_file ... ");
 	exit(EX_USAGE);
 }
