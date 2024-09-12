@@ -67,6 +67,7 @@ static bool	vflag;			/* Verbose output. */
 static bool	wflag;			/* Warn if symlink target does not
 					 * exist, and -f is not enabled. */
 static bool	rflag;			/* make a relative symlink */
+static bool	Tflag;			/* target must be a file */
 static char	linkch;
 
 static int	linkit(const char *, const char *, bool);
@@ -77,7 +78,7 @@ int
 main(int argc, char *argv[])
 {
 	struct stat sb;
-	char *targetdir;
+	char *targetdir, *targdir = NULL;
 	int ch, exitval;
 
 	/*
@@ -102,7 +103,7 @@ main(int argc, char *argv[])
 		exit(linkit(argv[0], argv[1], false));
 	}
 
-	while ((ch = getopt(argc, argv, "FLPfhinsvwr")) != -1)
+	while ((ch = getopt(argc, argv, "FLPTfhinst:vwr")) != -1)
 		switch (ch) {
 		case 'F':
 			Fflag = true;
@@ -132,6 +133,12 @@ main(int argc, char *argv[])
 		case 's':
 			sflag = true;
 			break;
+		case 't':
+			targdir = optarg;
+			break;
+		case 'T':
+			Tflag = true;
+			break;
 		case 'v':
 			vflag = true;
 			break;
@@ -154,6 +161,9 @@ main(int argc, char *argv[])
 		wflag = false;		/* Implied when fflag is true */
 	}
 
+	if (Tflag && targdir) {
+		errx(1, "-T and -t may not be used together");
+	}
 	if (rflag && !sflag) {
 		errx(1, "-r must be used with -s");
 	}
@@ -164,14 +174,18 @@ main(int argc, char *argv[])
 		break;
 		/* NOTREACHED */
 	case 1:				/* ln source */
+		if (targdir) break; /* take the path below */
+		if (Tflag) usage();
 		exit(linkit(argv[0], ".", true));
 	case 2:				/* ln source target */
+		if (targdir) break; /* take the path below */
 		exit(linkit(argv[0], argv[1], false));
 	default:
 		;
 	}
+	if (Tflag) usage();
 					/* ln source1 source2 directory */
-	targetdir = argv[argc - 1];
+	targetdir = targdir ? targdir : argv[argc - 1];
 	if (hflag && lstat(targetdir, &sb) == 0 && S_ISLNK(sb.st_mode)) {
 		/*
 		 * We were asked not to follow symlinks, but found one at
@@ -182,9 +196,11 @@ main(int argc, char *argv[])
 	}
 	if (stat(targetdir, &sb))
 		err(1, "%s", targetdir);
-	if (!S_ISDIR(sb.st_mode))
-		usage();
-	for (exitval = 0; *argv != targetdir; ++argv)
+	if (!S_ISDIR(sb.st_mode)) {
+		errno = ENOTDIR;
+		err(1, "%s", targetdir);
+	}
+	for (exitval = 0; *argv != (targdir ? NULL : targetdir); ++argv)
 		exitval |= linkit(*argv, targetdir, true);
 	exit(exitval);
 }
@@ -264,9 +280,14 @@ linkit(const char *source, const char *target, bool isdir)
 	 * If the target is a directory (and not a symlink if hflag),
 	 * append the source's name, unless Fflag is set.
 	 */
-	if (!Fflag && (isdir ||
+	if ((!Fflag || Tflag) && (isdir ||
 	    (lstat(target, &sb) == 0 && S_ISDIR(sb.st_mode)) ||
 	    (!hflag && stat(target, &sb) == 0 && S_ISDIR(sb.st_mode)))) {
+		if (Tflag) {
+			errno = EEXIST;
+			warn("%s", target);
+			return (1);
+		}
 		if (strlcpy(bbuf, source, sizeof(bbuf)) >= sizeof(bbuf) ||
 		    (p = basename(bbuf)) == NULL ||
 		    snprintf(path, sizeof(path), "%s/%s", target, p) >=
@@ -391,8 +412,9 @@ link_usage(void)
 static void
 usage(void)
 {
-	(void)fprintf(stderr, "%s\n%s\n",
-	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
-	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
+	(void)fprintf(stderr, "%s\n%s\n%s\n",
+	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnvT] source_file [target_file]",
+	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir",
+	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] [-t target_dir] source_file ...");
 	exit(1);
 }

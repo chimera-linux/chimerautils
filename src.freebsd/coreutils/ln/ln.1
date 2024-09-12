@@ -49,8 +49,21 @@
 .Op Fl L | Fl P | Fl s Op Fl Fr
 .Op Fl f | iw
 .Op Fl hnv
+.Fl T
+.Ar source_file
+.Ar target_file
+.Nm
+.Op Fl L | Fl P | Fl s Op Fl Fr
+.Op Fl f | iw
+.Op Fl hnv
 .Ar source_file ...
 .Ar target_dir
+.Nm
+.Op Fl L | Fl P | Fl s Op Fl Fr
+.Op Fl f | iw
+.Op Fl hnv
+.Fl t Ar target_dir
+.Ar source_file ...
 .Nm link
 .Ar source_file Ar target_file
 .Sh DESCRIPTION
@@ -111,6 +124,11 @@ create a hard link to the symbolic link itself.
 This option cancels the
 .Fl L
 option.
+.It Fl T
+In modes where the target may be a file, error if
+the target is a directory instead of linking into
+the directory. May not be used with
+.Fl t .
 .It Fl f
 If the target file already exists,
 then unlink it so that the link may occur.
@@ -158,6 +176,10 @@ Must be used with the
 option.
 .It Fl s
 Create a symbolic link.
+.It Fl t Ar target_directory
+Specify the target directory as an optional argument. In this
+mode, it must be a directory, and all the positional arguments
+are linked into it.
 .It Fl v
 Cause
 .Nm

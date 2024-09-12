@@ -4007,7 +4007,7 @@
  static char *
 --- src.orig/coreutils/ln/ln.1
 +++ src.freebsd/coreutils/ln/ln.1
-@@ -40,13 +40,13 @@
+@@ -40,17 +40,30 @@
  .Nd link files
  .Sh SYNOPSIS
  .Nm
@@ -4022,8 +4022,37 @@
 +.Op Fl L | Fl P | Fl s Op Fl Fr
  .Op Fl f | iw
  .Op Fl hnv
++.Fl T
++.Ar source_file
++.Ar target_file
++.Nm
++.Op Fl L | Fl P | Fl s Op Fl Fr
++.Op Fl f | iw
++.Op Fl hnv
  .Ar source_file ...
-@@ -151,6 +151,11 @@
+ .Ar target_dir
++.Nm
++.Op Fl L | Fl P | Fl s Op Fl Fr
++.Op Fl f | iw
++.Op Fl hnv
++.Fl t Ar target_dir
++.Ar source_file ...
+ .Nm link
+ .Ar source_file Ar target_file
+ .Sh DESCRIPTION
+@@ -111,6 +124,11 @@
+ This option cancels the
+ .Fl L
+ option.
++.It Fl T
++In modes where the target may be a file, error if
++the target is a directory instead of linking into
++the directory. May not be used with
++.Fl t .
+ .It Fl f
+ If the target file already exists,
+ then unlink it so that the link may occur.
+@@ -151,8 +169,17 @@
  for compatibility with other
  .Nm
  implementations.
@@ -4034,7 +4063,13 @@
 +option.
  .It Fl s
  Create a symbolic link.
++.It Fl t Ar target_directory
++Specify the target directory as an optional argument. In this
++mode, it must be a directory, and all the positional arguments
++are linked into it.
  .It Fl v
+ Cause
+ .Nm
 --- src.orig/coreutils/ln/ln.cc
 +++ src.freebsd/coreutils/ln/ln.cc
 @@ -44,6 +44,8 @@
@@ -4046,24 +4081,34 @@
  #include <err.h>
  #include <errno.h>
  #include <fcntl.h>
-@@ -64,6 +66,7 @@
+@@ -64,6 +66,8 @@
  static bool	vflag;			/* Verbose output. */
  static bool	wflag;			/* Warn if symlink target does not
  					 * exist, and -f is not enabled. */
 +static bool	rflag;			/* make a relative symlink */
++static bool	Tflag;			/* target must be a file */
  static char	linkch;
  
  static int	linkit(const char *, const char *, bool);
-@@ -99,7 +102,7 @@
+@@ -74,7 +78,7 @@
+ main(int argc, char *argv[])
+ {
+ 	struct stat sb;
+-	char *targetdir;
++	char *targetdir, *targdir = NULL;
+ 	int ch, exitval;
+ 
+ 	/*
+@@ -99,7 +103,7 @@
  		exit(linkit(argv[0], argv[1], false));
  	}
  
 -	while ((ch = getopt(argc, argv, "FLPfhinsvw")) != -1)
-+	while ((ch = getopt(argc, argv, "FLPfhinsvwr")) != -1)
++	while ((ch = getopt(argc, argv, "FLPTfhinst:vwr")) != -1)
  		switch (ch) {
  		case 'F':
  			Fflag = true;
-@@ -123,6 +126,9 @@
+@@ -123,9 +127,18 @@
  			iflag = true;
  			fflag = false;
  			break;
@@ -4073,10 +4118,22 @@
  		case 's':
  			sflag = true;
  			break;
-@@ -148,9 +154,14 @@
++		case 't':
++			targdir = optarg;
++			break;
++		case 'T':
++			Tflag = true;
++			break;
+ 		case 'v':
+ 			vflag = true;
+ 			break;
+@@ -148,19 +161,31 @@
  		wflag = false;		/* Implied when fflag is true */
  	}
  
++	if (Tflag && targdir) {
++		errx(1, "-T and -t may not be used together");
++	}
 +	if (rflag && !sflag) {
 +		errx(1, "-r must be used with -s");
 +	}
@@ -4087,8 +4144,54 @@
 +		break;
  		/* NOTREACHED */
  	case 1:				/* ln source */
++		if (targdir) break; /* take the path below */
++		if (Tflag) usage();
  		exit(linkit(argv[0], ".", true));
-@@ -341,8 +352,25 @@
+ 	case 2:				/* ln source target */
++		if (targdir) break; /* take the path below */
+ 		exit(linkit(argv[0], argv[1], false));
+ 	default:
+ 		;
+ 	}
++	if (Tflag) usage();
+ 					/* ln source1 source2 directory */
+-	targetdir = argv[argc - 1];
++	targetdir = targdir ? targdir : argv[argc - 1];
+ 	if (hflag && lstat(targetdir, &sb) == 0 && S_ISLNK(sb.st_mode)) {
+ 		/*
+ 		 * We were asked not to follow symlinks, but found one at
+@@ -171,9 +196,11 @@
+ 	}
+ 	if (stat(targetdir, &sb))
+ 		err(1, "%s", targetdir);
+-	if (!S_ISDIR(sb.st_mode))
+-		usage();
+-	for (exitval = 0; *argv != targetdir; ++argv)
++	if (!S_ISDIR(sb.st_mode)) {
++		errno = ENOTDIR;
++		err(1, "%s", targetdir);
++	}
++	for (exitval = 0; *argv != (targdir ? NULL : targetdir); ++argv)
+ 		exitval |= linkit(*argv, targetdir, true);
+ 	exit(exitval);
+ }
+@@ -253,9 +280,14 @@
+ 	 * If the target is a directory (and not a symlink if hflag),
+ 	 * append the source's name, unless Fflag is set.
+ 	 */
+-	if (!Fflag && (isdir ||
++	if ((!Fflag || Tflag) && (isdir ||
+ 	    (lstat(target, &sb) == 0 && S_ISDIR(sb.st_mode)) ||
+ 	    (!hflag && stat(target, &sb) == 0 && S_ISDIR(sb.st_mode)))) {
++		if (Tflag) {
++			errno = EEXIST;
++			warn("%s", target);
++			return (1);
++		}
+ 		if (strlcpy(bbuf, source, sizeof(bbuf)) >= sizeof(bbuf) ||
+ 		    (p = basename(bbuf)) == NULL ||
+ 		    snprintf(path, sizeof(path), "%s/%s", target, p) >=
+@@ -341,8 +373,25 @@
  		}
  	}
  
@@ -4115,14 +4218,17 @@
  	    linkat(AT_FDCWD, source, AT_FDCWD, target,
  	    Pflag ? 0 : AT_SYMLINK_FOLLOW)) {
  		warn("%s", target);
-@@ -364,7 +392,7 @@
+@@ -363,8 +412,9 @@
+ static void
  usage(void)
  {
- 	(void)fprintf(stderr, "%s\n%s\n",
+-	(void)fprintf(stderr, "%s\n%s\n",
 -	    "usage: ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
 -	    "       ln [-s [-F] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
-+	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file [target_file]",
-+	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir");
++	(void)fprintf(stderr, "%s\n%s\n%s\n",
++	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnvT] source_file [target_file]",
++	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir",
++	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] [-t target_dir] source_file ...");
  	exit(1);
  }
 --- src.orig/coreutils/ls/cmp.c
