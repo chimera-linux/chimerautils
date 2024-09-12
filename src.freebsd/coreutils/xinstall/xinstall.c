@@ -181,10 +181,11 @@ main(int argc, char *argv[])
 	const char *to_name;
 	const char *getopt_str;
 	int gnumode = getenv("CHIMERAUTILS_INSTALL_GNU") != NULL;
+	int notarg = 0;
 
 	if (!strcmp(argv[0], "ginstall")) gnumode = 1;
 	if (gnumode)
-		getopt_str = "B:bCcDdg:h:l:M:m:o:pSst:T:Uv";
+		getopt_str = "B:bCcDdg:h:l:M:m:o:pSst:TUv";
 	else
 		getopt_str = "B:bCcD:dg:h:l:M:m:o:pSsT:Uv";
 
@@ -286,9 +287,14 @@ main(int argc, char *argv[])
 			break;
 		case 't':
 			targdir = optarg;
+			if (notarg) errx(EX_USAGE, "cannot combine -T and -t");
 			break;
 		case 'T':
-			tags = optarg;
+			if (gnumode) {
+				notarg = 1;
+				if (targdir) errx(EX_USAGE, "cannot combine -T and -t");
+			}
+			else tags = optarg;
 			break;
 		case 'U':
 			dounpriv = 1;
@@ -411,6 +417,7 @@ main(int argc, char *argv[])
 	to_name = targdir ? targdir : argv[argc - 1];
 	no_target = stat(to_name, &to_sb);
 	if (!no_target && S_ISDIR(to_sb.st_mode)) {
+		if (notarg) errx(EX_OSERR, "cannot overwrite directory '%s' with non-directory", to_name);
 		if (dolink & LN_SYMBOLIC) {
 			if (lstat(to_name, &to_sb) != 0)
 				err(EX_OSERR, "%s vanished", to_name);
