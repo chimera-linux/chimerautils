@@ -1938,7 +1938,7 @@
  .Ar source_file target_file
  .Nm
  .Oo
-@@ -52,16 +52,21 @@
+@@ -52,16 +52,30 @@
  .Op Fl H | Fl L | Fl P
  .Oc
  .Op Fl f | i | n
@@ -1946,8 +1946,17 @@
 +.Op Fl alpsvx
  .Ar source_file ... target_directory
  .Nm
++.Oo
++.Fl R
++.Op Fl H | Fl L | Fl P
++.Oc
  .Op Fl f | i | n
 -.Op Fl alNPpsvx
++.Op Fl alpsvx
++.Fl t Ar target_directory
++.Ar source_file ...
++.Nm
++.Op Fl f | i | n
 +.Op Fl alPpsvxT
  .Ar source_file target_file
  .Nm
@@ -1958,12 +1967,12 @@
 +.Nm
 +.Op Fl f | i | n
 +.Op Fl alPpsvx
-+.Op Fl t Ar target_directory
++.Fl t Ar target_directory
 +.Ar source_file ...
  .Sh DESCRIPTION
  In the first synopsis form, the
  .Nm
-@@ -123,10 +128,15 @@
+@@ -123,10 +137,15 @@
  or
  .Xr pax 1
  instead.
@@ -1981,7 +1990,7 @@
  .It Fl f
  For each existing destination pathname, remove it and
  create a new file, without prompting for confirmation
-@@ -157,10 +167,6 @@
+@@ -157,10 +176,6 @@
  options.)
  .It Fl l
  Create hard links to regular files in a hierarchy instead of copying.
@@ -1992,7 +2001,7 @@
  .It Fl n
  Do not overwrite an existing file.
  (The
-@@ -175,7 +181,8 @@
+@@ -175,7 +190,8 @@
  .Nm
  to preserve the following attributes of each source
  file in the copy: modification time, access time,
@@ -2002,7 +2011,7 @@
  .Pp
  If the user ID and group ID cannot be preserved, no error message
  is displayed and the exit value is not altered.
-@@ -192,6 +199,9 @@
+@@ -192,6 +208,9 @@
  permissions.
  .It Fl s
  Create symbolic links to regular files in a hierarchy instead of copying.
@@ -2012,7 +2021,7 @@
  .It Fl v
  Cause
  .Nm
-@@ -255,7 +265,7 @@
+@@ -255,7 +274,7 @@
  If
  .Nm
  receives a
@@ -2514,7 +2523,7 @@
 -	    "target_directory");
 +	    "target_directory",
 +	    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
-+	    "[-t target_directory] "
++	    "-t target_directory "
 +	    "source_file ... ");
  	exit(EX_USAGE);
  }
@@ -4228,7 +4237,7 @@
 +	(void)fprintf(stderr, "%s\n%s\n%s\n",
 +	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnvT] source_file [target_file]",
 +	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir",
-+	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] [-t target_dir] source_file ...");
++	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] -t target_dir source_file ...");
  	exit(1);
  }
 --- src.orig/coreutils/ls/cmp.c
@@ -5005,6 +5014,46 @@
  			if (fd < 0) {
  				ret = 1;
  				if (!qflag)
+--- src.orig/coreutils/mv/mv.1
++++ src.freebsd/coreutils/mv/mv.1
+@@ -40,12 +40,17 @@
+ .Sh SYNOPSIS
+ .Nm
+ .Op Fl f | i | n
+-.Op Fl hv
++.Op Fl hvT
+ .Ar source target
+ .Nm
+ .Op Fl f | i | n
+ .Op Fl v
+ .Ar source ... directory
++.Nm
++.Op Fl f | i | n
++.Op Fl v
++.Fl t Ar directory
++.Ar source ...
+ .Sh DESCRIPTION
+ In its first form, the
+ .Nm
+@@ -70,6 +75,9 @@
+ .Pp
+ The following options are available:
+ .Bl -tag -width indent
++.It Fl T
++Ensure that the target is a file. May not be used with
++.Fl t .
+ .It Fl f
+ Do not prompt for confirmation before overwriting the destination
+ path.
+@@ -121,6 +129,8 @@
+ or
+ .Fl i
+ options.)
++.It Fl t Ar directory
++Specify the target directory to move other arguments into.
+ .It Fl v
+ Cause
+ .Nm
 --- src.orig/coreutils/mv/mv.c
 +++ src.freebsd/coreutils/mv/mv.c
 @@ -50,7 +50,10 @@
@@ -5018,7 +5067,16 @@
  
  #include <err.h>
  #include <errno.h>
-@@ -76,6 +79,8 @@
+@@ -68,7 +71,7 @@
+ /* Exit code for a failed exec. */
+ #define EXEC_FAILED 127
+ 
+-static int	fflg, hflg, iflg, nflg, vflg;
++static int	fflg, hflg, iflg, nflg, vflg, Tflg;
+ 
+ static int	copy(const char *, const char *);
+ static int	do_move(const char *, const char *);
+@@ -76,18 +79,21 @@
  static void	usage(void);
  static void	preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
  		    const char *dest_path);
@@ -5027,7 +5085,88 @@
  
  int
  main(int argc, char *argv[])
-@@ -176,6 +181,8 @@
+ {
+ 	size_t baselen, len;
+ 	int rval;
+-	char *p, *endp;
++	char *p, *endp, *targdir = NULL;
+ 	struct stat sb;
+ 	int ch;
+ 	char path[PATH_MAX];
++	const char *target;
+ 
+-	while ((ch = getopt(argc, argv, "fhinv")) != -1)
++	while ((ch = getopt(argc, argv, "Tfhint:v")) != -1)
+ 		switch (ch) {
+ 		case 'h':
+ 			hflg = 1;
+@@ -104,6 +110,12 @@
+ 			nflg = 1;
+ 			fflg = iflg = 0;
+ 			break;
++		case 't':
++			targdir = optarg;
++			break;
++		case 'T':
++			Tflg = 1;
++			break;
+ 		case 'v':
+ 			vflg = 1;
+ 			break;
+@@ -113,18 +125,28 @@
+ 	argc -= optind;
+ 	argv += optind;
+ 
+-	if (argc < 2)
++	if (argc < (!targdir + 1) || (Tflg && argc > 2))
+ 		usage();
+ 
++	if (Tflg && targdir)
++		errx(1, "the -T and -t options may not be used together");
++	if (hflg && targdir)
++		errx(1, "the -h and -t options may not be used together");
++
++	target = targdir ? targdir : argv[argc - 1];
++
+ 	/*
+ 	 * If the stat on the target fails or the target isn't a directory,
+ 	 * try the move.  More than 2 arguments is an error in this case.
+ 	 */
+-	if (stat(argv[argc - 1], &sb) || !S_ISDIR(sb.st_mode)) {
+-		if (argc > 2)
+-			errx(1, "%s is not a directory", argv[argc - 1]);
++	if (stat(target, &sb) || !S_ISDIR(sb.st_mode)) {
++		if (argc > 2 || targdir)
++			errx(1, "%s is not a directory", target);
+ 		exit(do_move(argv[0], argv[1]));
+ 	}
++	/* when -T is specified and target is a directory, error */
++	if (Tflg)
++		errx(1, "%s is a directory", target);
+ 
+ 	/*
+ 	 * If -h was specified, treat the target as a symlink instead of
+@@ -138,16 +160,16 @@
+ 	}
+ 
+ 	/* It's a directory, move each file into it. */
+-	if (strlen(argv[argc - 1]) > sizeof(path) - 1)
++	if (strlen(target) > sizeof(path) - 1)
+ 		errx(1, "%s: destination pathname too long", *argv);
+-	(void)strcpy(path, argv[argc - 1]);
++	(void)strcpy(path, target);
+ 	baselen = strlen(path);
+ 	endp = &path[baselen];
+ 	if (!baselen || *(endp - 1) != '/') {
+ 		*endp++ = '/';
+ 		++baselen;
+ 	}
+-	for (rval = 0; --argc; ++argv) {
++	for (rval = 0; targdir ? argc-- : --argc; ++argv) {
+ 		/*
+ 		 * Find the last component of the source pathname.  It
+ 		 * may have trailing slashes.
+@@ -176,6 +198,8 @@
  	struct stat sb;
  	int ask, ch, first;
  	char modep[15];
@@ -5036,7 +5175,7 @@
  
  	/*
  	 * Check access.  If interactive and file exists, ask user if it
-@@ -201,10 +208,15 @@
+@@ -201,10 +225,15 @@
  			ask = 1;
  		} else if (access(to, W_OK) && !stat(to, &sb) && isatty(STDIN_FILENO)) {
  			strmode(sb.st_mode, modep);
@@ -5054,7 +5193,7 @@
  			ask = 1;
  		}
  		if (ask) {
-@@ -229,7 +241,6 @@
+@@ -229,7 +258,6 @@
  	}
  
  	if (errno == EXDEV) {
@@ -5062,7 +5201,7 @@
  		char path[PATH_MAX];
  
  		/*
-@@ -246,11 +257,6 @@
+@@ -246,11 +274,6 @@
  				warn("cannot resolve %s: %s", from, path);
  				return (1);
  			}
@@ -5074,7 +5213,7 @@
  		}
  	} else {
  		warn("rename %s to %s", from, to);
-@@ -278,7 +284,6 @@
+@@ -278,7 +301,6 @@
  	static char *bp = NULL;
  	mode_t oldmode;
  	int nread, from_fd, to_fd;
@@ -5082,7 +5221,7 @@
  
  	if ((from_fd = open(from, O_RDONLY, 0)) < 0) {
  		warn("fastcopy: open() failed (from): %s", from);
-@@ -324,6 +329,7 @@
+@@ -324,6 +346,7 @@
  	}
  	if (fchmod(to_fd, sbp->st_mode))
  		warn("%s: set mode (was: 0%03o)", to, oldmode);
@@ -5090,7 +5229,7 @@
  	/*
  	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
  	 * for dest_file, then its ACLs shall reflect the ACLs of the
-@@ -344,6 +350,7 @@
+@@ -344,6 +367,7 @@
  	 * if the server supports flags and we were trying to *remove* flags
  	 * on a file that we copied, i.e., that we didn't create.)
  	 */
@@ -5098,7 +5237,7 @@
  	if (fstat(to_fd, &tsb) == 0) {
  		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
  		    (tsb.st_flags & ~UF_ARCHIVE)) {
-@@ -356,7 +363,7 @@
+@@ -356,7 +380,7 @@
  		}
  	} else
  		warn("%s: cannot stat", to);
@@ -5107,7 +5246,7 @@
  	if (close(to_fd)) {
  		warn("%s", to);
  		return (1);
-@@ -454,9 +461,9 @@
+@@ -454,9 +478,9 @@
      const char *dest_path)
  {
  	acl_t acl;
@@ -5119,7 +5258,7 @@
  	ret = fpathconf(source_fd, _PC_ACL_NFS4);
  	if (ret > 0 ) {
  		acl_supported = 1;
-@@ -466,13 +473,13 @@
+@@ -466,13 +490,13 @@
  		    source_path);
  		return;
  	}
@@ -5137,7 +5276,7 @@
  			    source_path);
  			return;
  		}
-@@ -480,26 +487,80 @@
+@@ -480,21 +504,12 @@
  	if (acl_supported == 0)
  		return;
  
@@ -5161,11 +5300,10 @@
  		warn("failed to set acl entries for %s", dest_path);
  		acl_free(acl);
  		return;
- 	}
- 	acl_free(acl);
-+}
-+
-+static void
+@@ -503,11 +518,75 @@
+ }
+ 
+ static void
 +preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
 +    const char *dest_path)
 +{
@@ -5226,9 +5364,21 @@
 +
 +    if (names != buf) free(names);
 +    if (value != vbuf) free(value);
- }
++}
++
++static void
+ usage(void)
+ {
  
- static void
+-	(void)fprintf(stderr, "%s\n%s\n",
+-		      "usage: mv [-f | -i | -n] [-hv] source target",
+-		      "       mv [-f | -i | -n] [-v] source ... directory");
++	(void)fprintf(stderr, "%s\n%s\n%s\n",
++		      "usage: mv [-f | -i | -n] [-hvT] source target",
++		      "       mv [-f | -i | -n] [-v] source ... directory",
++		      "       mv [-f | -i | -n] [-v] -t directory source ...");
+ 	exit(EX_USAGE);
+ }
 --- src.orig/coreutils/nproc/nproc.c
 +++ src.freebsd/coreutils/nproc/nproc.c
 @@ -14,7 +14,6 @@

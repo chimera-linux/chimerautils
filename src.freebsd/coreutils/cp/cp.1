@@ -55,6 +55,15 @@
 .Op Fl alpsvx
 .Ar source_file ... target_directory
 .Nm
+.Oo
+.Fl R
+.Op Fl H | Fl L | Fl P
+.Oc
+.Op Fl f | i | n
+.Op Fl alpsvx
+.Fl t Ar target_directory
+.Ar source_file ...
+.Nm
 .Op Fl f | i | n
 .Op Fl alPpsvxT
 .Ar source_file target_file
@@ -65,7 +74,7 @@
 .Nm
 .Op Fl f | i | n
 .Op Fl alPpsvx
-.Op Fl t Ar target_directory
+.Fl t Ar target_directory
 .Ar source_file ...
 .Sh DESCRIPTION
 In the first synopsis form, the

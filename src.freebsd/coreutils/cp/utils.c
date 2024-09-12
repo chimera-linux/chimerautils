@@ -658,7 +658,7 @@ usage(void)
 	    "source_file ... "
 	    "target_directory",
 	    "       cp [-R [-H | -L | -P]] [-f | -i | -n] [-alpsvx] "
-	    "[-t target_directory] "
+	    "-t target_directory "
 	    "source_file ... ");
 	exit(EX_USAGE);
 }

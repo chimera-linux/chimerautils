@@ -415,6 +415,6 @@ usage(void)
 	(void)fprintf(stderr, "%s\n%s\n%s\n",
 	    "usage: ln [-s [-Fr] | -L | -P] [-f | -i] [-hnvT] source_file [target_file]",
 	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] source_file ... target_dir",
-	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] [-t target_dir] source_file ...");
+	    "       ln [-s [-Fr] | -L | -P] [-f | -i] [-hnv] -t target_dir source_file ...");
 	exit(1);
 }

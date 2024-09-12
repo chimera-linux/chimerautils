@@ -71,7 +71,7 @@ static char sccsid[] = "@(#)mv.c	8.2 (Berkeley) 4/2/94";
 /* Exit code for a failed exec. */
 #define EXEC_FAILED 127
 
-static int	fflg, hflg, iflg, nflg, vflg;
+static int	fflg, hflg, iflg, nflg, vflg, Tflg;
 
 static int	copy(const char *, const char *);
 static int	do_move(const char *, const char *);
@@ -87,12 +87,13 @@ main(int argc, char *argv[])
 {
 	size_t baselen, len;
 	int rval;
-	char *p, *endp;
+	char *p, *endp, *targdir = NULL;
 	struct stat sb;
 	int ch;
 	char path[PATH_MAX];
+	const char *target;
 
-	while ((ch = getopt(argc, argv, "fhinv")) != -1)
+	while ((ch = getopt(argc, argv, "Tfhint:v")) != -1)
 		switch (ch) {
 		case 'h':
 			hflg = 1;
@@ -109,6 +110,12 @@ main(int argc, char *argv[])
 			nflg = 1;
 			fflg = iflg = 0;
 			break;
+		case 't':
+			targdir = optarg;
+			break;
+		case 'T':
+			Tflg = 1;
+			break;
 		case 'v':
 			vflg = 1;
 			break;
@@ -118,18 +125,28 @@ main(int argc, char *argv[])
 	argc -= optind;
 	argv += optind;
 
-	if (argc < 2)
+	if (argc < (!targdir + 1) || (Tflg && argc > 2))
 		usage();
+
+	if (Tflg && targdir)
+		errx(1, "the -T and -t options may not be used together");
+	if (hflg && targdir)
+		errx(1, "the -h and -t options may not be used together");
+
+	target = targdir ? targdir : argv[argc - 1];
 
 	/*
 	 * If the stat on the target fails or the target isn't a directory,
 	 * try the move.  More than 2 arguments is an error in this case.
 	 */
-	if (stat(argv[argc - 1], &sb) || !S_ISDIR(sb.st_mode)) {
-		if (argc > 2)
-			errx(1, "%s is not a directory", argv[argc - 1]);
+	if (stat(target, &sb) || !S_ISDIR(sb.st_mode)) {
+		if (argc > 2 || targdir)
+			errx(1, "%s is not a directory", target);
 		exit(do_move(argv[0], argv[1]));
 	}
+	/* when -T is specified and target is a directory, error */
+	if (Tflg)
+		errx(1, "%s is a directory", target);
 
 	/*
 	 * If -h was specified, treat the target as a symlink instead of
@@ -143,16 +160,16 @@ main(int argc, char *argv[])
 	}
 
 	/* It's a directory, move each file into it. */
-	if (strlen(argv[argc - 1]) > sizeof(path) - 1)
+	if (strlen(target) > sizeof(path) - 1)
 		errx(1, "%s: destination pathname too long", *argv);
-	(void)strcpy(path, argv[argc - 1]);
+	(void)strcpy(path, target);
 	baselen = strlen(path);
 	endp = &path[baselen];
 	if (!baselen || *(endp - 1) != '/') {
 		*endp++ = '/';
 		++baselen;
 	}
-	for (rval = 0; --argc; ++argv) {
+	for (rval = 0; targdir ? argc-- : --argc; ++argv) {
 		/*
 		 * Find the last component of the source pathname.  It
 		 * may have trailing slashes.
@@ -567,8 +584,9 @@ static void
 usage(void)
 {
 
-	(void)fprintf(stderr, "%s\n%s\n",
-		      "usage: mv [-f | -i | -n] [-hv] source target",
-		      "       mv [-f | -i | -n] [-v] source ... directory");
+	(void)fprintf(stderr, "%s\n%s\n%s\n",
+		      "usage: mv [-f | -i | -n] [-hvT] source target",
+		      "       mv [-f | -i | -n] [-v] source ... directory",
+		      "       mv [-f | -i | -n] [-v] -t directory source ...");
 	exit(EX_USAGE);
 }

@@ -40,12 +40,17 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl f | i | n
-.Op Fl hv
+.Op Fl hvT
 .Ar source target
 .Nm
 .Op Fl f | i | n
 .Op Fl v
 .Ar source ... directory
+.Nm
+.Op Fl f | i | n
+.Op Fl v
+.Fl t Ar directory
+.Ar source ...
 .Sh DESCRIPTION
 In its first form, the
 .Nm
@@ -70,6 +75,9 @@ component of the named file.
 .Pp
 The following options are available:
 .Bl -tag -width indent
+.It Fl T
+Ensure that the target is a file. May not be used with
+.Fl t .
 .It Fl f
 Do not prompt for confirmation before overwriting the destination
 path.
@@ -121,6 +129,8 @@ option overrides any previous
 or
 .Fl i
 options.)
+.It Fl t Ar directory
+Specify the target directory to move other arguments into.
 .It Fl v
 Cause
 .Nm
