@@ -8344,16 +8344,18 @@
  #include <sys/stat.h>
  #include <sys/time.h>
  #include <sys/wait.h>
-@@ -71,8 +72,6 @@
+@@ -70,9 +71,8 @@
+ #include <sysexits.h>
  #include <unistd.h>
  #include <vis.h>
++#include <getopt.h>
  
 -#include "mtree.h"
 -
  /*
   * Memory strategy threshold, in pages: if physmem is larger then this, use a
   * large buffer.
-@@ -142,13 +141,13 @@
+@@ -142,13 +142,13 @@
  static gid_t gid;
  static uid_t uid;
  static int dobackup, docompare, dodir, dolink, dopreserve, dostrip, dounpriv,
@@ -8369,7 +8371,7 @@
  
  static int	compare(int, const char *, size_t, int, const char *, size_t,
  		    char **);
-@@ -163,7 +162,7 @@
+@@ -163,13 +163,22 @@
  static void	do_symlink(const char *, const char *, const struct stat *);
  static void	makelink(const char *, const char *, const struct stat *);
  static void	install(const char *, const char *, u_long, u_int);
@@ -8378,30 +8380,39 @@
  static void	metadata_log(const char *, const char *, struct timespec *,
  		    const char *, const char *, off_t);
  static int	parseid(const char *, id_t *);
-@@ -180,13 +179,20 @@
+ static int	strip(const char *, int, const char *, char **);
+ static void	usage(void);
+ 
++static int
++do_getopt(int argc, char **argv)
++{
++	if (!gnumode)
++		return getopt(argc, argv, "B:bCcD:dg:h:l:M:m:o:pSsT:Uv");
++	/* use getopt_long to get argument interposition */
++	return getopt_long(argc, argv, "B:bCcDdg:l:m:o:pSst:Tv", NULL, NULL);
++}
++
+ int
+ main(int argc, char *argv[])
+ {
+@@ -180,13 +189,14 @@
  	u_int iflags;
  	char *p;
  	const char *to_name;
-+	const char *getopt_str;
 +	int notarg = 0;
  
 +	gnumode = !!strcmp(getprogname(), "binstall");
-+	if (gnumode)
-+		getopt_str = "B:bCcDdg:l:m:o:pSst:Tv";
-+	else
-+		getopt_str = "B:bCcD:dg:h:l:M:m:o:pSsT:Uv";
-+
  	fset = 0;
  	iflags = 0;
  	set = NULL;
  	group = owner = NULL;
 -	while ((ch = getopt(argc, argv, "B:bCcD:df:g:h:l:M:m:N:o:pSsT:Uv")) !=
 -	     -1)
-+	while ((ch = getopt(argc, argv, getopt_str)) != -1)
++	while ((ch = do_getopt(argc, argv)) != -1)
  		switch((char)ch) {
  		case 'B':
  			suffix = optarg;
-@@ -201,15 +207,18 @@
+@@ -201,15 +211,18 @@
  			/* For backwards compatibility. */
  			break;
  		case 'D':
@@ -8421,7 +8432,7 @@
  		case 'g':
  			haveopt_g = 1;
  			group = optarg;
-@@ -255,11 +264,13 @@
+@@ -255,11 +268,13 @@
  				errx(EX_USAGE, "invalid file mode: %s",
  				     optarg);
  			break;
@@ -8435,7 +8446,7 @@
  		case 'o':
  			haveopt_o = 1;
  			owner = optarg;
-@@ -273,8 +284,16 @@
+@@ -273,8 +288,16 @@
  		case 's':
  			dostrip = 1;
  			break;
@@ -8453,7 +8464,7 @@
  			break;
  		case 'U':
  			dounpriv = 1;
-@@ -294,6 +313,14 @@
+@@ -294,6 +317,14 @@
  		warnx("-d and -s may not be specified together");
  		usage();
  	}
@@ -8468,7 +8479,7 @@
  
  	/*
  	 * Default permissions based on whether we're a directory or not, since
-@@ -309,7 +336,7 @@
+@@ -309,7 +340,7 @@
  	}
  
  	/* must have at least two arguments, except when creating directories */
@@ -8477,7 +8488,7 @@
  		usage();
  
  	if (digest != NULL) {
-@@ -337,30 +364,38 @@
+@@ -337,30 +368,38 @@
  
  	/* get group and owner id's */
  	if (group != NULL && !dounpriv) {
@@ -8518,7 +8529,7 @@
  
  	if (metafile != NULL) {
  		if ((metafp = fopen(metafile, "a")) == NULL)
-@@ -370,14 +405,26 @@
+@@ -370,14 +409,26 @@
  
  	if (dodir) {
  		for (; *argv != NULL; ++argv)
@@ -8547,7 +8558,7 @@
  		if (dolink & LN_SYMBOLIC) {
  			if (lstat(to_name, &to_sb) != 0)
  				err(EX_OSERR, "%s vanished", to_name);
-@@ -390,11 +437,12 @@
+@@ -390,11 +441,12 @@
  				exit(EX_OK);
  			}
  		}
@@ -8562,7 +8573,7 @@
  
  	/* can't do file1 file2 directory/file */
  	if (argc != 2) {
-@@ -411,7 +459,7 @@
+@@ -411,7 +463,7 @@
  		if (stat(*argv, &from_sb))
  			err(EX_OSERR, "%s", *argv);
  		if (!S_ISREG(to_sb.st_mode))
@@ -8571,7 +8582,7 @@
  		if (to_sb.st_dev == from_sb.st_dev &&
  		    to_sb.st_ino == from_sb.st_ino) {
  			errx(EX_USAGE, "%s and %s are the same file",
-@@ -554,7 +602,7 @@
+@@ -554,7 +606,7 @@
  {
  	int fd;
  
@@ -8580,7 +8591,7 @@
  		return (NULL);
  	close (fd);
  	if (unlink(template) == -1)
-@@ -571,7 +619,7 @@
+@@ -571,7 +623,7 @@
  do_link(const char *from_name, const char *to_name,
      const struct stat *target_sb)
  {
@@ -8589,7 +8600,7 @@
  	int ret;
  
  	if (target_sb != NULL) {
-@@ -811,7 +859,7 @@
+@@ -811,7 +863,7 @@
   *	build a path name and install the file
   */
  static void
@@ -8598,7 +8609,7 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -831,7 +879,7 @@
+@@ -831,7 +883,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
  			if (!S_ISREG(from_sb.st_mode))
@@ -8607,7 +8618,7 @@
  		}
  		/* Build the target path. */
  		if (flags & DIRECTORY) {
-@@ -856,7 +904,7 @@
+@@ -856,7 +908,7 @@
  	}
  
  	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode))
@@ -8616,7 +8627,7 @@
  
  	if (!devnull && (from_fd = open(from_name, O_RDONLY, 0)) < 0)
  		err(EX_OSERR, "%s", from_name);
-@@ -1037,9 +1085,11 @@
+@@ -1037,9 +1089,11 @@
  	    (uid != (uid_t)-1 && uid != to_sb.st_uid))) {
  		if (fchown(to_fd, uid, gid) == -1) {
  			serrno = errno;
@@ -8631,7 +8642,7 @@
  		}
  	}
  	if (mode != (to_sb.st_mode & ALLPERMS)) {
-@@ -1149,14 +1199,14 @@
+@@ -1149,14 +1203,14 @@
  		lseek(from_fd, 0, SEEK_SET);
  		lseek(to_fd, 0, SEEK_SET);
  	} else {
@@ -8648,7 +8659,7 @@
  	}
  
  	return rv;
-@@ -1179,7 +1229,7 @@
+@@ -1179,7 +1233,7 @@
  		p = temp;
  	(void)strncpy(p, "INS@XXXXXX", &temp[tsize - 1] - p);
  	temp[tsize - 1] = '\0';
@@ -8657,7 +8668,7 @@
  }
  
  /*
-@@ -1214,11 +1264,17 @@
+@@ -1214,11 +1268,17 @@
  		} while (ret > 0);
  		if (ret == 0)
  			goto done;
@@ -8676,7 +8687,7 @@
  		}
  		/* Fall back */
  	}
-@@ -1317,7 +1373,7 @@
+@@ -1317,7 +1377,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
@@ -8685,7 +8696,7 @@
  		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
  	}
  	free(prefixed_from_name);
-@@ -1350,7 +1406,7 @@
+@@ -1350,7 +1410,7 @@
   *	build directory hierarchy
   */
  static void
@@ -8694,7 +8705,7 @@
  {
  	char *p;
  	struct stat sb;
-@@ -1385,8 +1441,8 @@
+@@ -1385,8 +1445,8 @@
  		    chown(path, uid, gid))
  			warn("chown %u:%u %s", uid, gid, path);
  		/* XXXBED: should we do the chmod in the dounpriv case? */
@@ -8705,23 +8716,23 @@
  	}
  	metadata_log(path, "dir", NULL, NULL, NULL, 0);
  }
-@@ -1483,16 +1539,16 @@
+@@ -1483,16 +1543,16 @@
  usage(void)
  {
  	(void)fprintf(stderr,
 -"usage: install [-bCcpSsUv] [-f flags] [-g group] [-m mode] [-o owner]\n"
 -"               [-M log] [-D dest] [-h hash] [-T tags]\n"
-+"usage: install [-bCcDpSsTv] [-f flags] [-g group] [-m mode] [-o owner]\n"
++"usage: install [-bCcDpSsTv] [-g group] [-m mode] [-o owner]\n"
  "               [-B suffix] [-l linkflags] [-N dbdir]\n"
  "               file1 file2\n"
 -"       install [-bCcpSsUv] [-f flags] [-g group] [-m mode] [-o owner]\n"
 -"               [-M log] [-D dest] [-h hash] [-T tags]\n"
-+"       install [-bCcDpSsv] [-f flags] [-g group] [-m mode] [-o owner]\n"
++"       install [-bCcDpSsv] [-g group] [-m mode] [-o owner]\n"
  "               [-B suffix] [-l linkflags] [-N dbdir]\n"
  "               file1 ... fileN directory\n"
 -"       install -dU [-vU] [-g group] [-m mode] [-N dbdir] [-o owner]\n"
 -"               [-M log] [-D dest] [-h hash] [-T tags]\n"
-+"       install [-bCcDpSsv] [-f flags] [-g group] [-m mode] [-o owner]\n"
++"       install [-bCcDpSsv] [-g group] [-m mode] [-o owner]\n"
 +"               [-B suffix] [-l linkflags] [-N dbdir] -t directory\n"
 +"               file1 ... fileN\n"
 +"       install -d [-v] [-g group] [-m mode] [-N dbdir] [-o owner]\n"
