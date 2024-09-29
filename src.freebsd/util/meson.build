@@ -18,6 +18,11 @@ if cc.has_argument('-flto')
     endif
 endif
 
+# make sure the symbols really are public
+if cc.has_argument('-fvisibility=default')
+     util_cargs += ['-fvisibility=default']
+endif
+
 libutil_static = static_library(
     'util_static',
     libutil_sources,
