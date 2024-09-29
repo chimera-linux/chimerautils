@@ -103,6 +103,17 @@ static const char *ufslike_filesystems[] = {
 };
 #endif
 
+/* so we don't have to expose this symbol in libchimera-util */
+static void *_reallocf(void *ptr, size_t size) {
+    void *nptr = realloc(ptr, size);
+    if (!nptr && ptr && size) {
+        free(ptr);
+    }
+    return nptr;
+}
+
+#define reallocf _reallocf
+
 FTS *
 fts_open(char * const *argv, int options,
     int (*compar)(const FTSENT **, const FTSENT **))

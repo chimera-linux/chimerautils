@@ -52,3 +52,8 @@ option('chimera_realpath',
     type: 'feature', value: 'auto',
     description: 'Use custom implementation of realpath/readlink'
 )
+
+option('install-lib',
+    type: 'boolean', value: 'true',
+    description: 'Whether to install chimerautils library'
+)
