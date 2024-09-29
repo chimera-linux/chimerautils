@@ -146,6 +146,8 @@ int	 fts_set(FTS *, FTSENT *, int);
 void	 fts_set_clientptr(FTS *, void *);
 __END_DECLS
 
+#else
+#  include_next <fts.h>
 #endif
 
 #endif /* !_FTS_H_ */

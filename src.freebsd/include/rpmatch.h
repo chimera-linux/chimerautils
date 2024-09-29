@@ -9,6 +9,8 @@
 
 extern int rpmatch(const char *response);
 
+#else
+#  include <stdlib.h>
 #endif
 
 #endif
