@@ -33,12 +33,27 @@ libutil = library(
     install: get_option('install-lib'),
 )
 
+lopt = get_option('default_library')
+ldir = get_option('libdir')
+
 if not cc.has_function('rpmatch') and get_option('install-lib')
     install_headers('../include/rpmatch.h')
     install_man('rpmatch.3')
+    if lopt == 'shared' or lopt == 'both'
+        install_symlink('librpmatch.so', pointing_to: 'libchimerautils.so', install_dir: ldir)
+    endif
+    if opt == 'static' or lopt == 'both'
+        install_symlink('librpmatch.a', pointing_to: 'libchimerautils.a', install_dir: ldir)
+    endif
 endif
 
 if not cc.has_function('fts_open') and get_option('install-lib')
     install_headers('../include/fts.h')
     install_man('fts.3')
+    if lopt == 'shared' or lopt == 'both'
+        install_symlink('libfts.so', pointing_to: 'libchimerautils.so', install_dir: ldir)
+    endif
+    if opt == 'static' or lopt == 'both'
+        install_symlink('libfts.a', pointing_to: 'libchimerautils.a', install_dir: ldir)
+    endif
 endif
