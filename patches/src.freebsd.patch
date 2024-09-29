@@ -11075,7 +11075,7 @@
  #endif /* !_FTS_H_ */
 --- src.orig/include/rpmatch.h
 +++ src.freebsd/include/rpmatch.h
-@@ -0,0 +1,16 @@
+@@ -0,0 +1,24 @@
 +#ifndef _RPMATCH_H_
 +#define _RPMATCH_H_
 +
@@ -11085,7 +11085,15 @@
 +
 +#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_RPMATCH)
 +
++#ifdef __cplusplus
++extern "C" {
++#endif
++
 +extern int rpmatch(const char *response);
++
++#ifdef __cplusplus
++}
++#endif
 +
 +#else
 +#  include <stdlib.h>
