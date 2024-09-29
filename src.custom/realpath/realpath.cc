@@ -102,7 +102,14 @@ static bool do_realpath(fs::path sp, bool newl) {
     fs::path np;
     std::error_code ec{};
     /* then do the actual resolution */
-    if (strip && sp.is_relative()) {
+    if (sp.empty()) {
+        /* empty paths should issue ENOENT regardless of strip, like gnu */
+        errno = ENOENT;
+        if (!quiet) {
+            warn("''");
+        }
+        return false;
+    } if (strip && sp.is_relative()) {
         /* no symlinks are expanded + relative input */
         np = (fs::current_path(ec) / sp).lexically_normal();
     } else if (strip) {
