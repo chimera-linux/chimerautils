@@ -26,17 +26,19 @@ libutil_static = static_library(
     link_args: util_cargs,
 )
 
+instlib = get_option('install-lib')
+
 libutil = library(
     'chimerautils',
     version: '0',
     link_whole: [libutil_static],
-    install: get_option('install-lib'),
+    install: instlib,
 )
 
 lopt = get_option('default_library')
 ldir = get_option('libdir')
 
-if not cc.has_function('rpmatch') and get_option('install-lib')
+if not cc.has_function('rpmatch') and instlib
     install_headers('../include/rpmatch.h')
     install_man('rpmatch.3')
     if lopt == 'shared' or lopt == 'both'
@@ -47,7 +49,7 @@ if not cc.has_function('rpmatch') and get_option('install-lib')
     endif
 endif
 
-if not cc.has_function('fts_open') and get_option('install-lib')
+if not cc.has_function('fts_open') and instlib
     install_headers('../include/fts.h')
     install_man('fts.3')
     if lopt == 'shared' or lopt == 'both'
@@ -56,4 +58,12 @@ if not cc.has_function('fts_open') and get_option('install-lib')
     if opt == 'static' or lopt == 'both'
         install_symlink('libfts.a', pointing_to: 'libchimerautils.a', install_dir: ldir)
     endif
+endif
+
+if instlib
+    pkg = import('pkgconfig')
+    pkg.generate(
+        libutil,
+        description: 'chimerautils utility library',
+    )
 endif
