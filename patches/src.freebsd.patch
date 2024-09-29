@@ -10962,6 +10962,115 @@
  {
  	u_int count, i;
  	struct s_zstate *zs;
+--- src.orig/include/fts.h
++++ src.freebsd/include/fts.h
+@@ -34,19 +34,25 @@
+ #ifndef	_FTS_H_
+ #define	_FTS_H_
+ 
+-#include <sys/_types.h>
++#ifdef _CHIMERAUTILS_BUILD
++#include "config-compat.h"
++#endif
+ 
++#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
++
++#include <sys/types.h>
++
+ typedef struct {
+ 	struct _ftsent *fts_cur;	/* current node */
+ 	struct _ftsent *fts_child;	/* linked list of children */
+ 	struct _ftsent **fts_array;	/* sort array */
+-	__dev_t fts_dev;		/* starting device # */
++	dev_t fts_dev;		/* starting device # */
+ 	char *fts_path;			/* path for this descent */
+ 	int fts_rfd;			/* fd for root */
+-	__size_t fts_pathlen;		/* sizeof(path) */
+-	__size_t fts_nitems;		/* elements in the sort array */
++	size_t fts_pathlen;		/* sizeof(path) */
++	size_t fts_nitems;		/* elements in the sort array */
+ 	int (*fts_compar)		/* compare function */
+-	    (const struct _ftsent * const *, const struct _ftsent * const *);
++	    (const struct _ftsent **, const struct _ftsent **);
+ 
+ #define	FTS_COMFOLLOW	0x001		/* follow command line symlinks */
+ #define	FTS_LOGICAL	0x002		/* logical walk */
+@@ -55,7 +61,9 @@
+ #define	FTS_PHYSICAL	0x010		/* physical walk */
+ #define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
+ #define	FTS_XDEV	0x040		/* don't cross devices */
++#if 0
+ #define	FTS_WHITEOUT	0x080		/* return whiteout information */
++#endif
+ #define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */
+ 
+ #define	FTS_NAMEONLY	0x100		/* (private) child names only */
+@@ -75,12 +83,12 @@
+ 	char *fts_path;			/* root path */
+ 	int fts_errno;			/* errno for this node */
+ 	int fts_symfd;			/* fd for symlink */
+-	__size_t fts_pathlen;		/* strlen(fts_path) */
+-	__size_t fts_namelen;		/* strlen(fts_name) */
++	size_t fts_pathlen;		/* strlen(fts_path) */
++	size_t fts_namelen;		/* strlen(fts_name) */
+ 
+-	__ino_t fts_ino;		/* inode */
+-	__dev_t fts_dev;		/* device */
+-	__nlink_t fts_nlink;		/* link count */
++	ino_t fts_ino;		/* inode */
++	dev_t fts_dev;		/* device */
++	nlink_t fts_nlink;		/* link count */
+ 
+ #define	FTS_ROOTPARENTLEVEL	-1
+ #define	FTS_ROOTLEVEL		 0
+@@ -99,12 +107,16 @@
+ #define	FTS_NSOK	11		/* no stat(2) requested */
+ #define	FTS_SL		12		/* symbolic link */
+ #define	FTS_SLNONE	13		/* symbolic link without target */
++#if 0
+ #define	FTS_W		14		/* whiteout object */
++#endif
+ 	int fts_info;			/* user status for FTSENT structure */
+ 
+ #define	FTS_DONTCHDIR	 0x01		/* don't chdir .. to the parent */
+ #define	FTS_SYMFOLLOW	 0x02		/* followed a symlink to get here */
++#if 0
+ #define	FTS_ISW		 0x04		/* this is a whiteout object */
++#endif
+ 	unsigned fts_flags;		/* private flags for FTSENT structure */
+ 
+ #define	FTS_AGAIN	 1		/* read node again */
+@@ -128,10 +140,12 @@
+ FTS	*fts_get_stream(FTSENT *);
+ #define	 fts_get_stream(ftsent)	((ftsent)->fts_fts)
+ FTS	*fts_open(char * const *, int,
+-	    int (*)(const FTSENT * const *, const FTSENT * const *));
++	    int (*)(const FTSENT **, const FTSENT **));
+ FTSENT	*fts_read(FTS *);
+ int	 fts_set(FTS *, FTSENT *, int);
+ void	 fts_set_clientptr(FTS *, void *);
+ __END_DECLS
++
++#endif
+ 
+ #endif /* !_FTS_H_ */
+--- src.orig/include/rpmatch.h
++++ src.freebsd/include/rpmatch.h
+@@ -0,0 +1,14 @@
++#ifndef _RPMATCH_H_
++#define _RPMATCH_H_
++
++#ifdef _CHIMERAUTILS_BUILD
++#include "config-compat.h"
++#endif
++
++#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_RPMATCH)
++
++extern int rpmatch(const char *response);
++
++#endif
++
++#endif
 --- src.orig/jot/jot.c
 +++ src.freebsd/jot/jot.c
 @@ -48,6 +48,7 @@
@@ -17648,3 +17757,270 @@
  	while ((ch = getopt(argc, argv, "eHhm")) != -1)
  		switch((char)ch) {
  		case 'e':
+--- src.orig/util/fts.3
++++ src.freebsd/util/fts.3
+@@ -38,7 +38,7 @@
+ .Sh SYNOPSIS
+ .In fts.h
+ .Ft FTS *
+-.Fn fts_open "char * const *path_argv" "int options" "int (*compar)(const FTSENT * const *, const FTSENT * const *)"
++.Fn fts_open "char * const *path_argv" "int options" "int (*compar)(const FTSENT **, const FTSENT **)"
+ .Ft FTSENT *
+ .Fn fts_read "FTS *ftsp"
+ .Ft FTSENT *
+--- src.orig/util/fts.c
++++ src.freebsd/util/fts.c
+@@ -33,10 +33,10 @@
+ 
+ #include <sys/cdefs.h>
+ __SCCSID("@(#)fts.c	8.6 (Berkeley) 8/14/94");
+-#include "namespace.h"
+ #include <sys/param.h>
+ #include <sys/mount.h>
+ #include <sys/stat.h>
++#include <sys/vfs.h>
+ 
+ #include <dirent.h>
+ #include <errno.h>
+@@ -45,9 +45,8 @@
+ #include <stdlib.h>
+ #include <string.h>
+ #include <unistd.h>
+-#include "un-namespace.h"
+ 
+-#include "gen-private.h"
++#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
+ 
+ static FTSENT	*fts_alloc(FTS *, char *, size_t);
+ static FTSENT	*fts_build(FTS *, int);
+@@ -59,7 +58,6 @@
+ static FTSENT	*fts_sort(FTS *, FTSENT *, size_t);
+ static int	 fts_stat(FTS *, FTSENT *, int, int);
+ static int	 fts_safe_changedir(FTS *, FTSENT *, int, char *);
+-static int	 fts_ufslinks(FTS *, const FTSENT *);
+ 
+ #define	ISDOT(a)	(a[0] == '.' && (!a[1] || (a[1] == '.' && !a[2])))
+ 
+@@ -95,6 +93,7 @@
+  * links and directories this way, so we must punt for others.
+  */
+ 
++#if 0
+ static const char *ufslike_filesystems[] = {
+ 	"ufs",
+ 	"zfs",
+@@ -102,10 +101,11 @@
+ 	"ext2fs",
+ 	0
+ };
++#endif
+ 
+ FTS *
+ fts_open(char * const *argv, int options,
+-    int (*compar)(const FTSENT * const *, const FTSENT * const *))
++    int (*compar)(const FTSENT **, const FTSENT **))
+ {
+ 	struct _fts_private *priv;
+ 	FTS *sp;
+@@ -203,7 +203,7 @@
+ 	 * descriptor we run anyway, just more slowly.
+ 	 */
+ 	if (!ISSET(FTS_NOCHDIR) &&
+-	    (sp->fts_rfd = _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
++	    (sp->fts_rfd = open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
+ 		SET(FTS_NOCHDIR);
+ 
+ 	return (sp);
+@@ -269,7 +269,7 @@
+ 	/* Return to original directory, save errno if necessary. */
+ 	if (!ISSET(FTS_NOCHDIR)) {
+ 		saved_errno = fchdir(sp->fts_rfd) ? errno : 0;
+-		(void)_close(sp->fts_rfd);
++		(void)close(sp->fts_rfd);
+ 
+ 		/* Set errno and return. */
+ 		if (saved_errno != 0) {
+@@ -328,7 +328,7 @@
+ 	    (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
+ 		p->fts_info = fts_stat(sp, p, 1, -1);
+ 		if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
+-			if ((p->fts_symfd = _open(".", O_RDONLY | O_CLOEXEC,
++			if ((p->fts_symfd = open(".", O_RDONLY | O_CLOEXEC,
+ 			    0)) < 0) {
+ 				p->fts_errno = errno;
+ 				p->fts_info = FTS_ERR;
+@@ -344,7 +344,7 @@
+ 		if (instr == FTS_SKIP ||
+ 		    (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
+ 			if (p->fts_flags & FTS_SYMFOLLOW)
+-				(void)_close(p->fts_symfd);
++				(void)close(p->fts_symfd);
+ 			if (sp->fts_child) {
+ 				fts_lfree(sp->fts_child);
+ 				sp->fts_child = NULL;
+@@ -421,7 +421,7 @@
+ 			p->fts_info = fts_stat(sp, p, 1, -1);
+ 			if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
+ 				if ((p->fts_symfd =
+-				    _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0) {
++				    open(".", O_RDONLY | O_CLOEXEC, 0)) < 0) {
+ 					p->fts_errno = errno;
+ 					p->fts_info = FTS_ERR;
+ 				} else
+@@ -468,12 +468,12 @@
+ 	} else if (p->fts_flags & FTS_SYMFOLLOW) {
+ 		if (FCHDIR(sp, p->fts_symfd)) {
+ 			saved_errno = errno;
+-			(void)_close(p->fts_symfd);
++			(void)close(p->fts_symfd);
+ 			errno = saved_errno;
+ 			SET(FTS_STOP);
+ 			return (NULL);
+ 		}
+-		(void)_close(p->fts_symfd);
++		(void)close(p->fts_symfd);
+ 	} else if (!(p->fts_flags & FTS_DONTCHDIR) &&
+ 	    fts_safe_changedir(sp, p->fts_parent, -1, "..")) {
+ 		SET(FTS_STOP);
+@@ -494,6 +494,7 @@
+ int
+ fts_set(FTS *sp, FTSENT *p, int instr)
+ {
++	(void)sp;
+ 	if (instr != 0 && instr != FTS_AGAIN && instr != FTS_FOLLOW &&
+ 	    instr != FTS_NOINSTR && instr != FTS_SKIP) {
+ 		errno = EINVAL;
+@@ -560,14 +561,14 @@
+ 	    ISSET(FTS_NOCHDIR))
+ 		return (sp->fts_child = fts_build(sp, instr));
+ 
+-	if ((fd = _open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
++	if ((fd = open(".", O_RDONLY | O_CLOEXEC, 0)) < 0)
+ 		return (NULL);
+ 	sp->fts_child = fts_build(sp, instr);
+ 	serrno = (sp->fts_child == NULL) ? errno : 0;
+ 	rc = fchdir(fd);
+ 	if (rc < 0 && serrno == 0)
+ 		serrno = errno;
+-	(void)_close(fd);
++	(void)close(fd);
+ 	errno = serrno;
+ 	if (rc < 0)
+ 		return (NULL);
+@@ -638,8 +639,10 @@
+ 	DIR *dirp;
+ 	void *oldaddr;
+ 	char *cp;
+-	int cderrno, descend, oflag, saved_errno, nostat, doadjust,
+-	    readdir_errno;
++	int cderrno, descend, saved_errno, nostat, doadjust, readdir_errno;
++#ifdef FTS_WHITEOUT
++	int oflag;
++#endif
+ 	long level;
+ 	long nlinks;	/* has to be signed because -1 is a magic value */
+ 	size_t dnamlen, len, maxlen, nitems;
+@@ -677,10 +680,7 @@
+ 		/* Be quiet about nostat, GCC. */
+ 		nostat = 0;
+ 	} else if (ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL)) {
+-		if (fts_ufslinks(sp, cur))
+-			nlinks = cur->fts_nlink - (ISSET(FTS_SEEDOT) ? 0 : 2);
+-		else
+-			nlinks = -1;
++		nlinks = cur->fts_nlink - (ISSET(FTS_SEEDOT) ? 0 : 2);
+ 		nostat = 1;
+ 	} else {
+ 		nlinks = -1;
+@@ -709,7 +709,7 @@
+ 	 */
+ 	cderrno = 0;
+ 	if (nlinks || type == BREAD) {
+-		if (fts_safe_changedir(sp, cur, _dirfd(dirp), NULL)) {
++		if (fts_safe_changedir(sp, cur, dirfd(dirp), NULL)) {
+ 			if (nlinks && type == BREAD)
+ 				cur->fts_errno = errno;
+ 			cur->fts_flags |= FTS_DONTCHDIR;
+@@ -748,7 +748,11 @@
+ 	readdir_errno = 0;
+ 	for (head = tail = NULL, nitems = 0;
+ 	    (dp = fts_safe_readdir(dirp, &readdir_errno));) {
++#if 0
+ 		dnamlen = dp->d_namlen;
++#else
++		dnamlen = strlen(dp->d_name);
++#endif
+ 		if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
+ 			continue;
+ 
+@@ -811,7 +815,7 @@
+ 			if (ISSET(FTS_NOCHDIR)) {
+ 				p->fts_accpath = p->fts_path;
+ 				memmove(cp, p->fts_name, p->fts_namelen + 1);
+-				p->fts_info = fts_stat(sp, p, 0, _dirfd(dirp));
++				p->fts_info = fts_stat(sp, p, 0, dirfd(dirp));
+ 			} else {
+ 				p->fts_accpath = p->fts_name;
+ 				p->fts_info = fts_stat(sp, p, 0, -1);
+@@ -990,7 +994,7 @@
+ 	FTS *parent;
+ 
+ 	parent = (*(const FTSENT * const *)a)->fts_fts;
+-	return (*parent->fts_compar)(a, b);
++	return (*parent->fts_compar)((const FTSENT **)a, (const FTSENT **)b);
+ }
+ 
+ static FTSENT *
+@@ -1149,10 +1153,10 @@
+ 	newfd = fd;
+ 	if (ISSET(FTS_NOCHDIR))
+ 		return (0);
+-	if (fd < 0 && (newfd = _open(path, O_RDONLY | O_DIRECTORY |
++	if (fd < 0 && (newfd = open(path, O_RDONLY | O_DIRECTORY |
+ 	    O_CLOEXEC, 0)) < 0)
+ 		return (-1);
+-	if (_fstat(newfd, &sb)) {
++	if (fstat(newfd, &sb)) {
+ 		ret = -1;
+ 		goto bail;
+ 	}
+@@ -1165,11 +1169,12 @@
+ bail:
+ 	oerrno = errno;
+ 	if (fd < 0)
+-		(void)_close(newfd);
++		(void)close(newfd);
+ 	errno = oerrno;
+ 	return (ret);
+ }
+ 
++#if 0
+ /*
+  * Check if the filesystem for "ent" has UFS-style links.
+  */
+@@ -1203,3 +1208,6 @@
+ 	}
+ 	return (priv->ftsp_linksreliable);
+ }
++#endif
++
++#endif
+--- src.orig/util/rpmatch.c
++++ src.freebsd/util/rpmatch.c
+@@ -29,7 +29,10 @@
+ #include <langinfo.h>
+ #include <regex.h>
+ #include <stdlib.h>
++#include <rpmatch.h>
+ 
++#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
++
+ int
+ rpmatch(const char *response)
+ {
+@@ -52,3 +55,5 @@
+ 	regfree(&no);
+ 	return (ret);
+ }
++
++#endif

@@ -1,5 +1,5 @@
 ls_cargs = []
-ls_deps = [libfts, libacl]
+ls_deps = [libacl]
 
 if get_option('color_ls')
     ls_cargs += ['-DCOLORLS']
@@ -12,8 +12,8 @@ endif
 ls_prog = executable(
     'ls', ['cmp.c', 'ls.c', 'print.c', 'util.c'],
     c_args: ls_cargs,
-    include_directories: [inc],
-    link_with: [libcompat],
+    include_directories: [inc, cinc],
+    link_with: [libcompat, libutil_static],
     dependencies: ls_deps,
     install: true,
 )
@@ -21,9 +21,9 @@ ls_prog = executable(
 if tiny.enabled() and get_option('color_ls')
     lstiny_prog = executable(
         'ls.tiny', ['cmp.c', 'ls.c', 'print.c', 'util.c'],
-        include_directories: [inc],
-        link_with: [libcompat],
-        dependencies: [libfts, libacl],
+        include_directories: [inc, cinc],
+        link_with: [libcompat, libutil_static],
+        dependencies: [libacl],
         install: true
     )
 endif

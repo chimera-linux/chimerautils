@@ -1,9 +1,8 @@
 rm_prog = executable(
     'rm',
     [ 'rm.c' ],
-    include_directories : [ inc, ],
-    dependencies : [ libfts, ],
-    link_with : [ libcompat, ],
+    include_directories : [ inc, cinc ],
+    link_with : [ libcompat, libutil_static ],
     install : true,
 )
 

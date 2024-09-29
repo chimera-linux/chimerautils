@@ -1,8 +1,8 @@
 grep_prog = executable(
     'grep',
     [ 'grep.c', 'file.c', 'queue.c', 'util.c' ],
-    include_directories : [ inc, ],
-    dependencies : [ libfts, ],
+    include_directories : [inc, cinc],
+    link_with : [libcompat, libutil_static],
     install : true,
 )
 

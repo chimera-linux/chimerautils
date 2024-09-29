@@ -67,6 +67,9 @@ add_project_arguments('-D_GNU_SOURCE', language: ['c', 'cpp'])
 # Always use 64-bit file offsets on glibc
 add_project_arguments('-D_FILE_OFFSET_BITS=64', language: ['c', 'cpp'])
 
+# Determine whether we can include config-compat.h from public compat code
+add_project_arguments('-D_CHIMERAUTILS_BUILD', language: ['c', 'cpp'])
+
 # Get rid of unused metadata variables
 add_project_arguments('-Dlint', language: ['c'])
 
@@ -136,30 +139,6 @@ zstd = dependency('libzstd', required: get_option('zstd'))
 pam = dependency('pam', required: get_option('pam'))
 # could be openpam, in which case pam_misc is not present
 pam_misc = dependency('pam_misc', required: false)
-
-# needed by a few utils; provided by glibc, but not by e.g. musl
-
-fts_dirs = []
-rpmatch_dirs = []
-
-if get_option('fts_path') != ''
-    fts_dirs += get_option('fts_path')
-endif
-
-if get_option('rpmatch_path') != ''
-    rpmatch_dirs += get_option('rpmatch_path')
-endif
-
-libfts = cc.find_library('fts',
-    required: not cc.has_function('fts_open'),
-    static: get_option('static_fts'),
-    dirs: fts_dirs
-)
-librpmatch = cc.find_library('rpmatch',
-    required: not cc.has_function('rpmatch'),
-    static: get_option('static_rpmatch'),
-    dirs: rpmatch_dirs
-)
 
 # sort needs pthreads
 libpthread = dependency('threads')

@@ -2,8 +2,8 @@ chown_prog = executable(
     'chown',
     [ 'chown.c' ],
     c_args : [ '-DUID_MAX=INT_MAX', '-DGID_MAX=INT_MAX' ],
-    include_directories : inc,
-    dependencies : [ libfts, ],
+    include_directories : [inc, cinc],
+    link_with : [libcompat, libutil_static],
     install : true,
     install_dir : sbindir,
 )

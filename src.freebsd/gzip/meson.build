@@ -20,9 +20,9 @@ endif
 gzip_prog = executable(
     'gzip',
     [ 'gzip.c', ],
-    include_directories : [ inc, ],
-    link_with : [ libcompat ],
-    dependencies : [ zlib, bzip2, lzma, zstd, libfts, ],
+    include_directories : [ inc, cinc ],
+    link_with : [ libcompat, libutil_static ],
+    dependencies : [ zlib, bzip2, lzma, zstd, ],
     c_args : extra_defs,
     install : true,
 )

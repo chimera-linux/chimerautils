@@ -3,6 +3,9 @@
 cinc = include_directories('include')
 subdir('compat')
 
+# public util library
+subdir('util')
+
 # dbcompat library
 
 dbinc = include_directories('dbinclude')

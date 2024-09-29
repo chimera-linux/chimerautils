@@ -272,9 +272,18 @@ cp -p usr/src/include/stringlist.h ${CWD}/src.orig/include
 cp -p usr/src/contrib/libc-vis/vis.h ${CWD}/src.orig/include
 cp -p usr/src/lib/libopenbsd/ohash.h ${CWD}/src.orig/include
 
-mkdir -p ${CWD}/src.freebsd/compat ${CWD}/src.freebsd/include
+# 'util' is our public library with stuff that may be missing in libc
+mkdir -p ${CWD}/src.orig/util
+cp -p usr/src/lib/libc/locale/rpmatch.c ${CWD}/src.orig/util
+cp -p usr/src/lib/libc/locale/rpmatch.3 ${CWD}/src.orig/util
+cp -p usr/src/lib/libc/gen/fts.c ${CWD}/src.orig/util
+cp -p usr/src/lib/libc/gen/fts.3 ${CWD}/src.orig/util
+cp -p usr/src/include/fts.h ${CWD}/src.orig/include
+
+mkdir -p ${CWD}/src.freebsd/compat ${CWD}/src.freebsd/include ${CWD}/src.freebsd/util
 cp -p ${CWD}/src.orig/compat/* ${CWD}/src.freebsd/compat
 cp -p ${CWD}/src.orig/include/* ${CWD}/src.freebsd/include
+cp -p ${CWD}/src.orig/util/* ${CWD}/src.freebsd/util
 
 # 'dbcompat' is our subset of berkeley db 1.85
 mkdir -p ${CWD}/src.orig/dbcompat/btree ${CWD}/src.orig/dbcompat/recno ${CWD}/src.orig/dbinclude
@@ -348,6 +357,9 @@ rm -rf ${CWD}/src.freebsd/telnet/telnetd
 rm -f ${CWD}/src.freebsd/findutils/locate/updatedb.sh
 rm -f ${CWD}/src.freebsd/nvi/*.sh
 rm -f ${CWD}/src.freebsd/libfetch/*.sh
+
+# remove rpmatch header which is our own and applied by patch
+rm -f ${CWD}/src.freebsd/include/rpmatch.h
 
 # awk manpage
 cp -p usr/src/usr.bin/awk/awk.1 ${CWD}/src.orig/awk
