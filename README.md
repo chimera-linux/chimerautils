@@ -70,11 +70,6 @@ Optionally, these are also needed:
 * `libedit` (for `bc` and line editing in `sh`)
 * `libcrypto` from OpenSSL or LibreSSL (for `dc`, `install` and optionally `sort`)
 
-If your C library does not provide them, you will need these:
-
-* `libfts`
-* `librpmatch`
-
 To build:
 
 ```

@@ -55,7 +55,7 @@ jobs:
         steps:
             - name: dependencies
               run: |
-                  apk add curl git libtool autoconf automake make patch gcc musl-dev linux-headers g++ meson flex bison libedit-dev openssl-dev musl-fts-dev acl-dev zlib-dev bzip2-dev xz-dev zstd-dev bsd-compat-headers
+                  apk add curl git libtool autoconf automake make patch gcc musl-dev linux-headers g++ meson flex bison libedit-dev openssl-dev acl-dev zlib-dev bzip2-dev xz-dev zstd-dev bsd-compat-headers
 
             - name: libxo
               run: |
@@ -68,19 +68,10 @@ jobs:
                   make
                   make install
 
-            - name: rpmatch for musl
-              run: |
-                  git clone https://github.com/pullmoll/musl-rpmatch
-                  cd musl-rpmatch
-                  ./bootstrap.sh
-                  ./configure --prefix=/usr/local
-                  make
-                  make install
-
             - uses: actions/checkout@v2
 
             - name: build and check
               run: |
-                  meson setup build --werror -Dbuildtype=debug -Drpmatch_path=/usr/local/lib
+                  meson setup build --werror -Dbuildtype=debug
                   ninja -C build -v
                   meson test -C build -v
