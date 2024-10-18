@@ -275,7 +275,7 @@ main(int argc, char *argv[])
 		colorflag = COLORFLAG_AUTO;
 #endif
 	while ((ch = getopt_long(argc, argv,
-	    "+1ABCD:FGHILPRSTXabcdfghiklmnpqrstuvwxy,", long_opts,
+	    "+1ABCD:FGHILPRSTXZabcdfghiklmnpqrstuvwxy,", long_opts,
 	    NULL)) != -1) {
 		switch (ch) {
 		/*
@@ -732,6 +732,7 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 	struct passwd *pwentry = NULL;
 	struct group *grentry = NULL;
 	const char *user, *group;
+	char *labelstr = NULL;
 	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
 	char nuser[STRBUF_SIZEOF(gid_t) + 1];
 	u_long width[9];
@@ -740,7 +741,6 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 	needstats = f_inode || f_longform || f_size;
 	flen = 0;
 	btotal = 0;
-	labelstrlen = 0;
 
 #define LS_COLWIDTHS_FIELDS	9
 	initmax = getenv("LS_COLWIDTHS");
@@ -883,8 +883,10 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 						maxflags = flen;
 				} else
 					flen = 0;
+#endif
 				labelstr = NULL;
 				if (f_label) {
+#if 0
 					char name[PATH_MAX + 1];
 					mac_t label;
 					int error;
@@ -930,6 +932,7 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 					}
 					mac_free(label);
 label_out:
+#endif
 					if (labelstr == NULL)
 						labelstr = strdup("-");
 					labelstrlen = strlen(labelstr);
@@ -937,7 +940,6 @@ label_out:
 						maxlabelstr = labelstrlen;
 				} else
 					labelstrlen = 0;
-#endif
 				if ((np = malloc(sizeof(NAMES) + labelstrlen +
 				    ulen + glen + flen + 4)) == NULL)
 					err(1, "malloc");
@@ -955,6 +957,12 @@ label_out:
 						d.s_size = sizelen;
 				}
 
+				if (f_label) {
+					np->label = &np->data[ulen + glen + 2
+					    + (f_flags ? flen + 1 : 0)];
+					(void)strcpy(np->label, labelstr);
+					free(labelstr);
+				}
 				cur->fts_pointer = np;
 			}
 		}

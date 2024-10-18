@@ -39,7 +39,7 @@
 .Nd list directory contents
 .Sh SYNOPSIS
 .Nm
-.Op Fl ABCFGHILPRSTWabcdfghiklmnpqrstuvwxy1\&,
+.Op Fl ABCFGHILPRSTWZabcdfghiklmnpqrstuvwxy1\&,
 .Op Fl -color Ns = Ns Ar when
 .Op Fl D Ar format
 .Op Ar
@@ -179,6 +179,10 @@ month, day, hour, minute, second, and year.
 The
 .Fl D
 option gives even more control over the output format.
+This option is not defined in
+.St -p1003.1-2008 .
+.It Fl Z
+Display each file's MAC label; this requires support in the build (e.g. SELinux).
 This option is not defined in
 .St -p1003.1-2008 .
 .It Fl a
@@ -479,6 +483,7 @@ option is given, the following information
 is displayed for each file:
 file mode,
 number of links, owner name, group name,
+MAC label,
 number of bytes in the file, abbreviated
 month, day-of-month file was last modified,
 hour file last modified, minute file last
@@ -878,7 +883,7 @@ utility conforms to
 and
 .St -p1003.1-2008 .
 The options
-.Fl B , D , G , I , T , b , h , v , w , y
+.Fl B , D , G , I , T , Z , b , h , v , w , y
 and
 .Fl ,
 are non-standard extensions.

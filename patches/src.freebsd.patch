@@ -3730,7 +3730,7 @@
  static void
 --- src.orig/coreutils/id/id.1
 +++ src.freebsd/coreutils/id/id.1
-@@ -40,18 +40,12 @@
+@@ -40,8 +40,6 @@
  .Nm
  .Op Ar user
  .Nm
@@ -3739,8 +3739,7 @@
  .Fl G Op Fl n
  .Op Ar user
  .Nm
--.Fl M
--.Nm
+@@ -50,8 +48,6 @@
  .Fl P
  .Op Ar user
  .Nm
@@ -3749,7 +3748,7 @@
  .Fl g Op Fl nr
  .Op Ar user
  .Nm
-@@ -76,22 +70,15 @@
+@@ -76,9 +72,6 @@
  .Pp
  The options are as follows:
  .Bl -tag -width indent
@@ -3759,11 +3758,7 @@
  .It Fl G
  Display the different group IDs (effective, real and supplementary)
  as white-space separated numbers, in no particular order.
--.It Fl M
--Display the MAC label of the current process.
- .It Fl P
- Display the id as a password file entry.
- .It Fl a
+@@ -90,8 +83,6 @@
  Ignored for compatibility with other
  .Nm
  implementations.
@@ -3789,37 +3784,26 @@
  #include <err.h>
  #include <errno.h>
  #include <grp.h>
-@@ -65,7 +61,6 @@
- static void	auditid(void);
- #endif
- static void	group(struct passwd *, int);
--static void	maclabel(void);
- static void	usage(void);
- static struct passwd *who(char *);
- 
-@@ -76,14 +71,10 @@
- {
+@@ -77,13 +73,9 @@
  	struct group *gr;
  	struct passwd *pw;
--	int Gflag, Mflag, Pflag, ch, gflag, id, nflag, pflag, rflag, uflag;
+ 	int Gflag, Mflag, Pflag, ch, gflag, id, nflag, pflag, rflag, uflag;
 -	int Aflag, cflag;
 -	int error;
-+	int Gflag, Pflag, ch, gflag, id, nflag, pflag, rflag, uflag;
  	const char *myname;
 -	char loginclass[MAXLOGNAME];
  
--	Gflag = Mflag = Pflag = gflag = nflag = pflag = rflag = uflag = 0;
+ 	Gflag = Mflag = Pflag = gflag = nflag = pflag = rflag = uflag = 0;
 -	Aflag = cflag = 0;
-+	Gflag = Pflag = gflag = nflag = pflag = rflag = uflag = 0;
  
  	myname = strrchr(argv[0], '/');
  	myname = (myname != NULL) ? myname + 1 : argv[0];
-@@ -97,27 +88,16 @@
+@@ -97,13 +89,8 @@
  	}
  
  	while ((ch = getopt(argc, argv,
 -	    (isgroups || iswhoami) ? "" : "APGMacgnpru")) != -1)
-+	    (isgroups || iswhoami) ? "" : "PGagnpru")) != -1)
++	    (isgroups || iswhoami) ? "" : "PGMagnpru")) != -1)
  		switch(ch) {
 -#ifdef USE_BSM_AUDIT
 -		case 'A':
@@ -3829,11 +3813,7 @@
  		case 'G':
  			Gflag = 1;
  			break;
--		case 'M':
--			Mflag = 1;
--			break;
- 		case 'P':
- 			Pflag = 1;
+@@ -115,9 +102,6 @@
  			break;
  		case 'a':
  			break;
@@ -3843,25 +3823,23 @@
  		case 'g':
  			gflag = 1;
  			break;
-@@ -142,10 +122,8 @@
+@@ -142,10 +126,10 @@
  
  	if (iswhoami && argc > 0)
  		usage();
 -	if ((cflag || Aflag || Mflag) && argc > 0)
--		usage();
++	if (Mflag && argc > 0)
+ 		usage();
  
 -	switch(Aflag + Gflag + Mflag + Pflag + gflag + pflag + uflag) {
-+	switch(Gflag + Pflag + gflag + pflag + uflag) {
++	switch(Gflag + Pflag + Mflag + gflag + pflag + uflag) {
  	case 1:
  		break;
  	case 0:
-@@ -158,24 +136,6 @@
+@@ -161,21 +145,6 @@
+ 	if (Mflag && pw != NULL)
+ 		usage();
  
- 	pw = *argv ? who(*argv) : NULL;
- 
--	if (Mflag && pw != NULL)
--		usage();
--
 -#ifdef USE_BSM_AUDIT
 -	if (Aflag) {
 -		auditid();
@@ -3880,50 +3858,25 @@
  	if (gflag) {
  		id = pw ? pw->pw_gid : rflag ? getgid() : getegid();
  		if (nflag && (gr = getgrgid(id)))
-@@ -199,11 +159,6 @@
- 		exit(0);
- 	}
- 
--	if (Mflag) {
--		maclabel();
--		exit(0);
--	}
--
- 	if (Pflag) {
- 		pline(pw);
- 		exit(0);
-@@ -416,30 +371,6 @@
- 	free(groups);
+@@ -419,6 +388,7 @@
+ static void
+ maclabel(void)
+ {
++#if 0
+ 	char *string;
+ 	mac_t label;
+ 	int error;
+@@ -438,6 +408,9 @@
+ 	(void)printf("%s\n", string);
+ 	mac_free(label);
+ 	free(string);
++#else
++	errx(1, "-M requires a MAC-enabled build");
++#endif
  }
  
--static void
--maclabel(void)
--{
--	char *string;
--	mac_t label;
--	int error;
--
--	error = mac_prepare_process_label(&label);
--	if (error == -1)
--		errx(1, "mac_prepare_type: %s", strerror(errno));
--
--	error = mac_get_proc(label);
--	if (error == -1)
--		errx(1, "mac_get_proc: %s", strerror(errno));
--
--	error = mac_to_text(label, &string);
--	if (error == -1)
--		errx(1, "mac_to_text: %s", strerror(errno));
--
--	(void)printf("%s\n", string);
--	mac_free(label);
--	free(string);
--}
--
  static struct passwd *
- who(char *u)
- {
-@@ -469,9 +400,9 @@
+@@ -469,9 +442,9 @@
  			err(1, "getpwuid");
  	}
  
@@ -3936,20 +3889,18 @@
  			pw->pw_dir, pw->pw_shell);
  }
  
-@@ -485,7 +416,7 @@
+@@ -485,7 +458,7 @@
  	else if (iswhoami)
  		(void)fprintf(stderr, "usage: whoami\n");
  	else
 -		(void)fprintf(stderr, "%s\n%s%s\n%s\n%s\n%s\n%s\n%s\n%s\n",
-+		(void)fprintf(stderr, "%s\n%s%s\n%s\n%s\n%s\n%s\n",
++		(void)fprintf(stderr, "%s\n%s%s\n%s\n%s\n%s\n%s\n%s\n",
  		    "usage: id [user]",
  #ifdef USE_BSM_AUDIT
  		    "       id -A\n",
-@@ -493,9 +424,7 @@
- 		    "",
- #endif
+@@ -495,7 +468,6 @@
  		    "       id -G [-n] [user]",
--		    "       id -M",
+ 		    "       id -M",
  		    "       id -P [user]",
 -		    "       id -c",
  		    "       id -g [-nr] [user]",
@@ -4266,7 +4217,7 @@
  .Sh SYNOPSIS
  .Nm
 -.Op Fl ABCFGHILPRSTUWZabcdfghiklmnopqrstuvwxy1\&,
-+.Op Fl ABCFGHILPRSTWabcdfghiklmnpqrstuvwxy1\&,
++.Op Fl ABCFGHILPRSTWZabcdfghiklmnpqrstuvwxy1\&,
  .Op Fl -color Ns = Ns Ar when
  .Op Fl D Ar format
  .Op Ar
@@ -4289,7 +4240,7 @@
  and a vertical bar
  .Pq Ql \&|
  after each that is a
-@@ -184,19 +181,6 @@
+@@ -184,17 +181,8 @@
  option gives even more control over the output format.
  This option is not defined in
  .St -p1003.1-2008 .
@@ -4301,15 +4252,14 @@
 -Display whiteouts when scanning directories.
 -This option is not defined in
 -.St -p1003.1-2008 .
--.It Fl Z
+ .It Fl Z
 -Display each file's MAC label; see
 -.Xr maclabel 7 .
--This option is not defined in
--.St -p1003.1-2008 .
++Display each file's MAC label; this requires support in the build (e.g. SELinux).
+ This option is not defined in
+ .St -p1003.1-2008 .
  .It Fl a
- Include directory entries whose names begin with a
- dot
-@@ -334,15 +318,6 @@
+@@ -334,15 +322,6 @@
  or group name in a long
  .Pq Fl l
  output.
@@ -4325,15 +4275,7 @@
  .It Fl p
  Write a slash
  .Pq Ql /
-@@ -504,7 +479,6 @@
- is displayed for each file:
- file mode,
- number of links, owner name, group name,
--MAC label,
- number of bytes in the file, abbreviated
- month, day-of-month file was last modified,
- hour file last modified, minute file last
-@@ -571,8 +545,6 @@
+@@ -571,8 +550,6 @@
  .Tn FIFO .
  .It Sy s
  Socket.
@@ -4342,7 +4284,7 @@
  .El
  .Pp
  The next three fields
-@@ -864,11 +836,10 @@
+@@ -864,11 +841,10 @@
  .Dl $ ls -l
  .Pp
  In addition to listing the contents of the current working directory in
@@ -4356,7 +4298,7 @@
  .Pp
  List the files in
  .Pa /var/log ,
-@@ -882,7 +853,6 @@
+@@ -882,7 +858,6 @@
  .St -p1003.2
  specification.
  .Sh SEE ALSO
@@ -4364,7 +4306,7 @@
  .Xr chmod 1 ,
  .Xr getfacl 1 ,
  .Xr sort 1 ,
-@@ -893,15 +863,14 @@
+@@ -893,15 +868,14 @@
  .Xr strmode 3 ,
  .Xr strverscmp 3 ,
  .Xr termcap 5 ,
@@ -4382,12 +4324,12 @@
  the
  .Nm
  utility conforms to
-@@ -909,7 +878,7 @@
+@@ -909,7 +883,7 @@
  and
  .St -p1003.1-2008 .
  The options
 -.Fl B , D , G , I , T , U , W , Z , b , h , v , w , y
-+.Fl B , D , G , I , T , b , h , v , w , y
++.Fl B , D , G , I , T , Z , b , h , v , w , y
  and
  .Fl ,
  are non-standard extensions.
@@ -4416,7 +4358,7 @@
  #endif
  	while ((ch = getopt_long(argc, argv,
 -	    "+1ABCD:FGHILPRSTUWXZabcdfghiklmnopqrstuvwxy,", long_opts,
-+	    "+1ABCD:FGHILPRSTXabcdfghiklmnpqrstuvwxy,", long_opts,
++	    "+1ABCD:FGHILPRSTXZabcdfghiklmnpqrstuvwxy,", long_opts,
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
@@ -4438,7 +4380,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -731,8 +729,9 @@
+@@ -731,8 +729,10 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -4446,17 +4388,10 @@
 +	struct group *grentry = NULL;
  	const char *user, *group;
 -	char *flags, *labelstr = NULL;
++	char *labelstr = NULL;
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -741,6 +740,7 @@
- 	needstats = f_inode || f_longform || f_size;
- 	flen = 0;
- 	btotal = 0;
-+	labelstrlen = 0;
- 
- #define LS_COLWIDTHS_FIELDS	9
- 	initmax = getenv("LS_COLWIDTHS");
 @@ -789,7 +789,6 @@
  
  	d.s_size = 0;
@@ -4512,16 +4447,34 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -932,7 +937,7 @@
+@@ -878,8 +883,10 @@
+ 						maxflags = flen;
+ 				} else
+ 					flen = 0;
++#endif
+ 				labelstr = NULL;
+ 				if (f_label) {
++#if 0
+ 					char name[PATH_MAX + 1];
+ 					mac_t label;
+ 					int error;
+@@ -925,6 +932,7 @@
+ 					}
+ 					mac_free(label);
+ label_out:
++#endif
+ 					if (labelstr == NULL)
+ 						labelstr = strdup("-");
+ 					labelstrlen = strlen(labelstr);
+@@ -932,7 +940,6 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
 -
-+#endif
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -950,17 +955,6 @@
+@@ -950,11 +957,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4530,16 +4483,10 @@
 -					(void)strcpy(np->flags, flags);
 -					free(flags);
 -				}
--				if (f_label) {
--					np->label = &np->data[ulen + glen + 2
--					    + (f_flags ? flen + 1 : 0)];
--					(void)strcpy(np->label, labelstr);
--					free(labelstr);
--				}
- 				cur->fts_pointer = np;
- 			}
- 		}
-@@ -1010,7 +1004,7 @@
+ 				if (f_label) {
+ 					np->label = &np->data[ulen + glen + 2
+ 					    + (f_flags ? flen + 1 : 0)];
+@@ -1010,7 +1012,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -4687,10 +4634,10 @@
  	(void)fprintf(stderr,
  #ifdef COLORLS
 -	"usage: ls [-ABCFGHILPRSTUWZabcdfghiklmnopqrstuvwxy1,] [--color=when] [-D format]"
-+	"usage: ls [-ABCFGHILPRSTabcdfghiklmnpqrstuvwxy1,] [--color=when] [-D format]"
++	"usage: ls [-ABCFGHILPRSTZabcdfghiklmnpqrstuvwxy1,] [--color=when] [-D format]"
  #else
 -	"usage: ls [-ABCFHILPRSTUWZabcdfghiklmnopqrstuvwxy1,] [-D format]"
-+	"usage: ls [-ABCFHILPRSTabcdfghiklmnpqrstuvwxy1,] [-D format]"
++	"usage: ls [-ABCFHILPRSTZabcdfghiklmnpqrstuvwxy1,] [-D format]"
  #endif
  		      " [file ...]\n");
  	exit(1);
