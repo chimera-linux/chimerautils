@@ -69,6 +69,9 @@ static char sccsid[] = "@(#)ls.c	8.5 (Berkeley) 4/2/94";
 #include <termcap.h>
 #include <signal.h>
 #endif
+#ifdef HAVE_SELINUX
+#include <selinux/selinux.h>
+#endif
 
 #include "ls.h"
 #include "extern.h"
@@ -932,6 +935,26 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 					}
 					mac_free(label);
 label_out:
+#elif defined(HAVE_SELINUX)
+					char *context = NULL;
+					int error;
+
+					char name[PATH_MAX + 1];
+					if (cur->fts_level == FTS_ROOTLEVEL)
+						snprintf(name, sizeof(name), "%s", cur->fts_name);
+					else
+						snprintf(name, sizeof(name), "%s/%s", cur->fts_parent->fts_accpath, cur->fts_name);
+
+					if (options & FTS_LOGICAL)
+						error = getfilecon(name, &context);
+					else
+						error = lgetfilecon(name, &context);
+
+					if (error == -1) {
+						warn("SELinux context for %s/%s", cur->fts_parent->fts_path, cur->fts_name);
+						labelstr = strdup("?");
+					} else
+						labelstr = context;
 #endif
 					if (labelstr == NULL)
 						labelstr = strdup("-");
@@ -948,6 +971,11 @@ label_out:
 				(void)strcpy(np->user, user);
 				np->group = &np->data[ulen + 1];
 				(void)strcpy(np->group, group);
+
+				if (labelstr != NULL) {
+					np->label = &np->data[ulen + glen + 2];
+					(void)strcpy(np->label, labelstr);
+				}
 
 				if (S_ISCHR(sp->st_mode) ||
 				    S_ISBLK(sp->st_mode)) {
