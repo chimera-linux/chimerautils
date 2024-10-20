@@ -54,6 +54,10 @@ static char sccsid[] = "@(#)id.c	8.2 (Berkeley) 2/16/94";
 #include <string.h>
 #include <unistd.h>
 
+#ifdef HAVE_SELINUX
+#include <selinux/selinux.h>
+#endif
+
 static void	id_print(struct passwd *, int, int, int);
 static void	pline(struct passwd *);
 static void	pretty(struct passwd *);
@@ -408,6 +412,16 @@ maclabel(void)
 	(void)printf("%s\n", string);
 	mac_free(label);
 	free(string);
+#elif defined(HAVE_SELINUX)
+	char *context;
+	if (is_selinux_enabled() > 0) {
+		if (getcon(&context) == 0) {
+			(void)printf("%s\n", context);
+			freecon(context);
+		} else
+			errx(1, "getcon failed: %s", strerror(errno));
+	} else
+		errx(1, "-M works only on an SELinux-enabled kernel");
 #else
 	errx(1, "-M requires a MAC-enabled build");
 #endif
