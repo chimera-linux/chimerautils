@@ -9,6 +9,10 @@ if get_option('color_ls')
     endif
 endif
 
+if libselinux.found()
+    ls_deps += [libselinux]
+endif
+
 ls_prog = executable(
     'ls', ['cmp.c', 'ls.c', 'print.c', 'util.c'],
     c_args: ls_cargs,
