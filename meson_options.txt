@@ -57,3 +57,8 @@ option('install-lib',
     type: 'boolean', value: 'true',
     description: 'Whether to install chimerautils library'
 )
+
+option('selinux',
+    type: 'feature', value: 'auto',
+    description: 'Whether to enable SELinux awareness'
+)

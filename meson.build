@@ -146,6 +146,11 @@ libpthread = dependency('threads')
 # meson at the moment provides no way to rename installed executables
 install_as = files('install-as.sh')
 
+libselinux = dependency('libselinux', required: get_option('selinux'))
+if libselinux.found()
+  add_project_arguments('-DHAVE_SELINUX', language: 'c')
+endif
+
 # Include all of the relevant subdirectories
 subdir('include')
 subdir('src.freebsd')

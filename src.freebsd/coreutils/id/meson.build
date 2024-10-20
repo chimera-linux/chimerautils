@@ -1,7 +1,14 @@
+id_deps = []
+
+if libselinux.found()
+    id_deps += [libselinux]
+endif
+
 id_prog = executable(
     'id',
     [ 'id.c' ],
     include_directories : inc,
+    dependencies : id_deps,
     install : true,
 )
 
