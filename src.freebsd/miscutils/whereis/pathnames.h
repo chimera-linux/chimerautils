@@ -25,8 +25,10 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include "config-compat.h"
+
 /* Where to look for libexec */
-#define PATH_LIBEXEC "/usr/libexec"
+#define PATH_LIBEXEC LIBEXECDIR
 
 /* Where to look for sources. */
 #if 0

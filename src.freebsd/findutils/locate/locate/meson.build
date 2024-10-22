@@ -13,23 +13,29 @@ install_symlink(
     'updatedb.8', pointing_to: 'locate.updatedb.8', install_dir: man8dir
 )
 
-install_data(
-    'updatedb.sh',
-    rename: 'locate.updatedb',
+configure_file(
+    input: 'updatedb.sh.in',
+    output: 'locate.updatedb',
+    configuration: confd,
+    format: 'cmake@',
     install_dir: get_option('libexecdir'),
     install_mode: 'rwxr-xr-x'
 )
 
-install_data(
-    'mklocatedb.sh',
-    rename: 'locate.mklocatedb',
+configure_file(
+    input: 'mklocatedb.sh.in',
+    output: 'locate.mklocatedb',
+    configuration: confd,
+    format: 'cmake@',
     install_dir: get_option('libexecdir'),
     install_mode: 'rwxr-xr-x'
 )
 
-install_data(
-    'concatdb.sh',
-    rename: 'locate.concatdb',
+configure_file(
+    input: 'concatdb.sh.in',
+    output: 'locate.concatdb',
+    configuration: confd,
+    format: 'cmake@',
     install_dir: get_option('libexecdir'),
     install_mode: 'rwxr-xr-x'
 )

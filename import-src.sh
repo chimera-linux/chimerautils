@@ -354,9 +354,17 @@ rm -rf ${CWD}/src.orig/telnet/telnetd
 rm -rf ${CWD}/src.freebsd/telnet/telnetd
 
 # remove our own scripts before patching
-rm -f ${CWD}/src.freebsd/findutils/locate/updatedb.sh
+rm -f ${CWD}/src.freebsd/findutils/locate/updatedb.sh.in
 rm -f ${CWD}/src.freebsd/nvi/*.sh
 rm -f ${CWD}/src.freebsd/libfetch/*.sh
+
+# make the locate scripts possible to process
+for sc in ${CWD}/src.orig/findutils/locate/locate/*.sh; do
+    mv "$sc" "$sc.in"
+done
+for sc in ${CWD}/src.freebsd/findutils/locate/locate/*.sh; do
+    mv "$sc" "$sc.in"
+done
 
 # remove rpmatch header which is our own and applied by patch
 rm -f ${CWD}/src.freebsd/include/rpmatch.h

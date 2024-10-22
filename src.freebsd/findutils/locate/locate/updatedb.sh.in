@@ -40,7 +40,7 @@ if [ -f "$LOCATE_CONFIG" -a -r "$LOCATE_CONFIG" ]; then
 fi
 
 # The directory containing locate subprograms
-: ${LIBEXECDIR:=/usr/libexec}; export LIBEXECDIR
+: ${LIBEXECDIR:=@LIBEXECDIR@}; export LIBEXECDIR
 : ${TMPDIR:=/tmp}; export TMPDIR
 if ! TMPDIR=`mktemp -d $TMPDIR/locateXXXXXXXXXX`; then
 	exit 1

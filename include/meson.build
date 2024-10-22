@@ -3,6 +3,8 @@ confd = configuration_data()
 confd.set('PROJECT_NAME', '"' + meson.project_name() + '"')
 confd.set('PROJECT_VERSION', '"' + meson.project_version() + '"')
 
+confd.set_quoted('LIBEXECDIR', join_paths(get_option('prefix'), get_option('libexecdir')))
+
 confd.set('HAVE_STRTOQ', cc.has_function('strtoq'))
 confd.set('HAVE_STRLCPY', cc.has_function('strlcpy'))
 confd.set('HAVE_STRLCAT', cc.has_function('strlcat'))

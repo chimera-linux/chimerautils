@@ -10348,6 +10348,17 @@
  
  		/* skip empty lines */
  		if (*path == '\n')
+--- src.orig/findutils/locate/locate/concatdb.sh.in
++++ src.freebsd/findutils/locate/locate/concatdb.sh.in
+@@ -38,7 +38,7 @@
+ set -o pipefail
+ 
+ # The directory containing locate subprograms
+-: ${LIBEXECDIR:=/usr/libexec}; export LIBEXECDIR
++: ${LIBEXECDIR:=@LIBEXECDIR@}; export LIBEXECDIR
+ 
+ PATH=$LIBEXECDIR:/bin:/usr/bin:$PATH; export PATH
+ : ${TMPDIR:=/var/tmp}; export TMPDIR;
 --- src.orig/findutils/locate/locate/fastfind.c
 +++ src.freebsd/findutils/locate/locate/fastfind.c
 @@ -152,7 +152,7 @@
@@ -10427,10 +10438,11 @@
  .El
  .Sh FILES
 -.Bl -tag -width /etc/periodic/weekly/310.locate -compact
-+.Bl -tag -width /usr/libexec/locate.updatedb -compact
++.Bl -tag -width /var/db/locate.database -compact
  .It Pa /var/db/locate.database
  locate database
- .It Pa /usr/libexec/locate.updatedb
+-.It Pa /usr/libexec/locate.updatedb
++.It Pa locate-updatedb
  Script to update the locate database
 -.It Pa /etc/periodic/weekly/310.locate
 -Script that starts the database rebuild
@@ -10489,9 +10501,17 @@
 +#FILESYSTEMS="ext2 ext3 ext4 xfs vfat exfat ntfs ntfs3 f2fs zfs btrfs reiserfs reiser4 jfs"
 --- src.orig/findutils/locate/locate/locate.updatedb.8
 +++ src.freebsd/findutils/locate/locate/locate.updatedb.8
-@@ -41,9 +41,6 @@
+@@ -34,16 +34,11 @@
+ .Sh NAME
+ .Nm locate.updatedb
+ .Nd update locate database
+-.Sh SYNOPSIS
+-.Nm /usr/libexec/locate.updatedb
+ .Sh DESCRIPTION
+ The
  .Nm
- utility updates the database used by
+-utility updates the database used by
++utility, located in the configured libexec directory, updates the database used by
  .Xr locate 1 .
 -It is typically run once a week by the
 -.Pa /etc/periodic/weekly/310.locate
@@ -10499,7 +10519,7 @@
  .Pp
  The contents of the newly built database can be controlled by the
  .Pa /etc/locate.rc
-@@ -61,8 +58,7 @@
+@@ -61,8 +56,7 @@
  the configuration file
  .El
  .Sh SEE ALSO
@@ -10509,8 +10529,28 @@
  .Rs
  .%A Woods, James A.
  .%D 1983
---- src.orig/findutils/locate/locate/updatedb.sh
-+++ src.freebsd/findutils/locate/locate/updatedb.sh
+--- src.orig/findutils/locate/locate/mklocatedb.sh.in
++++ src.freebsd/findutils/locate/locate/mklocatedb.sh.in
+@@ -36,7 +36,7 @@
+ set -o pipefail
+ 
+ # The directory containing locate subprograms
+-: ${LIBEXECDIR:=/usr/libexec}; export LIBEXECDIR
++: ${LIBEXECDIR:=@LIBEXECDIR@}; export LIBEXECDIR
+ : ${TMPDIR:=/var/tmp}; export TMPDIR
+ 
+ PATH=$LIBEXECDIR:/bin:/usr/bin:$PATH; export PATH
+--- src.orig/findutils/locate/locate/updatedb.sh.in
++++ src.freebsd/findutils/locate/locate/updatedb.sh.in
+@@ -40,7 +40,7 @@
+ fi
+ 
+ # The directory containing locate subprograms
+-: ${LIBEXECDIR:=/usr/libexec}; export LIBEXECDIR
++: ${LIBEXECDIR:=@LIBEXECDIR@}; export LIBEXECDIR
+ : ${TMPDIR:=/tmp}; export TMPDIR
+ if ! TMPDIR=`mktemp -d $TMPDIR/locateXXXXXXXXXX`; then
+ 	exit 1
 @@ -52,11 +52,10 @@
  : ${mklocatedb:=locate.mklocatedb}	 # make locate database program
  : ${FCODES:=/var/db/locate.database}	 # the database
@@ -10545,8 +10585,8 @@
  	}
  }
  
---- src.orig/findutils/locate/updatedb.sh
-+++ src.freebsd/findutils/locate/updatedb.sh
+--- src.orig/findutils/locate/updatedb.sh.in
++++ src.freebsd/findutils/locate/updatedb.sh.in
 @@ -0,0 +1,24 @@
 +#!/bin/sh
 +#
@@ -10568,7 +10608,7 @@
 +chmod 644 "$locdb" || rc=3
 +
 +cd /
-+echo /usr/libexec/locate.updatedb | nice -n 5 su -m nobody || rc=3
++printf "%s/locate.updatedb\n" @LIBEXECDIR@ | nice -n 5 su -m nobody || rc=3
 +chmod 444 $locdb || rc=3
 +
 +exit $rc
@@ -13012,15 +13052,22 @@
  						}
 --- src.orig/miscutils/whereis/pathnames.h
 +++ src.freebsd/miscutils/whereis/pathnames.h
-@@ -29,6 +29,7 @@
- #define PATH_LIBEXEC "/usr/libexec"
+@@ -25,10 +25,13 @@
+  * POSSIBILITY OF SUCH DAMAGE.
+  */
+ 
++#include "config-compat.h"
++
+ /* Where to look for libexec */
+-#define PATH_LIBEXEC "/usr/libexec"
++#define PATH_LIBEXEC LIBEXECDIR
  
  /* Where to look for sources. */
 +#if 0
  #define PATH_SOURCES					\
  "/usr/src/bin:/usr/src/usr.bin:/usr/src/sbin:"		\
  "/usr/src/usr.sbin:/usr/src/libexec:"			\
-@@ -39,12 +40,15 @@
+@@ -39,12 +42,15 @@
  "/usr/src/secure/sbin:/usr/src/secure/usr.sbin:"	\
  "/usr/src/secure/libexec:/usr/src/crypto:"		\
  "/usr/src/games"
@@ -13039,7 +13086,7 @@
  #define MANWHEREISCMD "man -S1:8:6 -w %s 2>/dev/null"
 --- src.orig/miscutils/whereis/whereis.1
 +++ src.freebsd/miscutils/whereis/whereis.1
-@@ -58,11 +58,7 @@
+@@ -58,22 +58,15 @@
  .Ql ,v
  from a source code control system.
  .Pp
@@ -13048,11 +13095,13 @@
 -utility for the
 -.Dq user.cs_path
 -string, with
+-.Pa /usr/libexec
+-and the current user's
 +The default path searched is the standard utilities path, with
- .Pa /usr/libexec
- and the current user's
++the configured libexec directory and the current user's
  .Ev $PATH
-@@ -71,9 +67,7 @@
+ appended.
+ Manual pages are searched by default along the
  .Ev $MANPATH .
  Program sources are located in a list of known standard places,
  including all the subdirectories of
@@ -13063,7 +13112,7 @@
  .Pp
  The following options are available:
  .Bl -tag -width indent
-@@ -151,8 +145,7 @@
+@@ -151,8 +144,7 @@
  .Xr find 1 ,
  .Xr locate 1 ,
  .Xr man 1 ,

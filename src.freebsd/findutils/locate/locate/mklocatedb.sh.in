@@ -36,7 +36,7 @@ set -e
 set -o pipefail
 
 # The directory containing locate subprograms
-: ${LIBEXECDIR:=/usr/libexec}; export LIBEXECDIR
+: ${LIBEXECDIR:=@LIBEXECDIR@}; export LIBEXECDIR
 : ${TMPDIR:=/var/tmp}; export TMPDIR
 
 PATH=$LIBEXECDIR:/bin:/usr/bin:$PATH; export PATH
