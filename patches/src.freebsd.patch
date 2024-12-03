@@ -3795,7 +3795,18 @@
  #include <err.h>
  #include <errno.h>
  #include <grp.h>
-@@ -77,13 +73,9 @@
+@@ -58,6 +54,10 @@
+ #include <string.h>
+ #include <unistd.h>
+ 
++#ifdef HAVE_SELINUX
++#include <selinux/selinux.h>
++#endif
++
+ static void	id_print(struct passwd *, int, int, int);
+ static void	pline(struct passwd *);
+ static void	pretty(struct passwd *);
+@@ -77,13 +77,9 @@
  	struct group *gr;
  	struct passwd *pw;
  	int Gflag, Mflag, Pflag, ch, gflag, id, nflag, pflag, rflag, uflag;
@@ -3809,7 +3820,7 @@
  
  	myname = strrchr(argv[0], '/');
  	myname = (myname != NULL) ? myname + 1 : argv[0];
-@@ -97,13 +89,8 @@
+@@ -97,13 +93,8 @@
  	}
  
  	while ((ch = getopt(argc, argv,
@@ -3824,7 +3835,7 @@
  		case 'G':
  			Gflag = 1;
  			break;
-@@ -115,9 +102,6 @@
+@@ -115,9 +106,6 @@
  			break;
  		case 'a':
  			break;
@@ -3834,7 +3845,7 @@
  		case 'g':
  			gflag = 1;
  			break;
-@@ -142,10 +126,10 @@
+@@ -142,10 +130,10 @@
  
  	if (iswhoami && argc > 0)
  		usage();
@@ -3847,7 +3858,7 @@
  	case 1:
  		break;
  	case 0:
-@@ -161,21 +145,6 @@
+@@ -161,21 +149,6 @@
  	if (Mflag && pw != NULL)
  		usage();
  
@@ -3869,7 +3880,7 @@
  	if (gflag) {
  		id = pw ? pw->pw_gid : rflag ? getgid() : getegid();
  		if (nflag && (gr = getgrgid(id)))
-@@ -419,6 +388,7 @@
+@@ -419,6 +392,7 @@
  static void
  maclabel(void)
  {
@@ -3877,17 +3888,27 @@
  	char *string;
  	mac_t label;
  	int error;
-@@ -438,6 +408,9 @@
+@@ -438,6 +412,19 @@
  	(void)printf("%s\n", string);
  	mac_free(label);
  	free(string);
++#elif defined(HAVE_SELINUX)
++	char *context;
++	if (is_selinux_enabled() > 0) {
++		if (getcon(&context) == 0) {
++			(void)printf("%s\n", context);
++			freecon(context);
++		} else
++			errx(1, "getcon failed: %s", strerror(errno));
++	} else
++		errx(1, "-M works only on an SELinux-enabled kernel");
 +#else
 +	errx(1, "-M requires a MAC-enabled build");
 +#endif
  }
  
  static struct passwd *
-@@ -469,9 +442,9 @@
+@@ -469,9 +456,9 @@
  			err(1, "getpwuid");
  	}
  
@@ -3900,7 +3921,7 @@
  			pw->pw_dir, pw->pw_shell);
  }
  
-@@ -485,7 +458,7 @@
+@@ -485,7 +472,7 @@
  	else if (iswhoami)
  		(void)fprintf(stderr, "usage: whoami\n");
  	else
@@ -3909,7 +3930,7 @@
  		    "usage: id [user]",
  #ifdef USE_BSM_AUDIT
  		    "       id -A\n",
-@@ -495,7 +468,6 @@
+@@ -495,7 +482,6 @@
  		    "       id -G [-n] [user]",
  		    "       id -M",
  		    "       id -P [user]",
@@ -4355,7 +4376,17 @@
  
  #include <ctype.h>
  #include <dirent.h>
-@@ -96,7 +96,7 @@
+@@ -69,6 +69,9 @@
+ #include <termcap.h>
+ #include <signal.h>
+ #endif
++#ifdef HAVE_SELINUX
++#include <selinux/selinux.h>
++#endif
+ 
+ #include "ls.h"
+ #include "extern.h"
+@@ -96,7 +99,7 @@
  	} while(0)
  
  static void	 display(const FTSENT *, FTSENT *, int);
@@ -4364,7 +4395,7 @@
  static void	 traverse(int, char **, int);
  
  #define	COLOR_OPT	(CHAR_MAX + 1)
-@@ -275,7 +275,7 @@
+@@ -275,7 +278,7 @@
  		colorflag = COLORFLAG_AUTO;
  #endif
  	while ((ch = getopt_long(argc, argv,
@@ -4373,7 +4404,7 @@
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
-@@ -473,8 +473,6 @@
+@@ -473,8 +476,6 @@
  				errx(2, "unsupported --color value '%s' (must be always, auto, or never)",
  				    optarg);
  			break;
@@ -4382,7 +4413,7 @@
  #endif
  		default:
  		case '?':
-@@ -713,7 +711,7 @@
+@@ -713,7 +714,7 @@
   * points to the parent directory of the display list.
   */
  static void
@@ -4391,7 +4422,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -731,8 +729,10 @@
+@@ -731,8 +732,10 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -4403,7 +4434,7 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -789,7 +789,6 @@
+@@ -789,7 +792,6 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -4411,7 +4442,7 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -844,27 +843,33 @@
+@@ -844,27 +846,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -4458,7 +4489,7 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -878,8 +883,10 @@
+@@ -878,8 +886,10 @@
  						maxflags = flen;
  				} else
  					flen = 0;
@@ -4469,15 +4500,35 @@
  					char name[PATH_MAX + 1];
  					mac_t label;
  					int error;
-@@ -925,6 +932,7 @@
+@@ -925,6 +935,27 @@
  					}
  					mac_free(label);
  label_out:
++#elif defined(HAVE_SELINUX)
++					char *context = NULL;
++					int error;
++
++					char name[PATH_MAX + 1];
++					if (cur->fts_level == FTS_ROOTLEVEL)
++						snprintf(name, sizeof(name), "%s", cur->fts_name);
++					else
++						snprintf(name, sizeof(name), "%s/%s", cur->fts_parent->fts_accpath, cur->fts_name);
++
++					if (options & FTS_LOGICAL)
++						error = getfilecon(name, &context);
++					else
++						error = lgetfilecon(name, &context);
++
++					if (error == -1) {
++						warn("SELinux context for %s/%s", cur->fts_parent->fts_path, cur->fts_name);
++						labelstr = strdup("?");
++					} else
++						labelstr = context;
 +#endif
  					if (labelstr == NULL)
  						labelstr = strdup("-");
  					labelstrlen = strlen(labelstr);
-@@ -932,7 +940,6 @@
+@@ -932,7 +963,6 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -4485,7 +4536,19 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -950,11 +957,6 @@
+@@ -942,6 +972,11 @@
+ 				np->group = &np->data[ulen + 1];
+ 				(void)strcpy(np->group, group);
+ 
++				if (labelstr != NULL) {
++					np->label = &np->data[ulen + glen + 2];
++					(void)strcpy(np->label, labelstr);
++				}
++
+ 				if (S_ISCHR(sp->st_mode) ||
+ 				    S_ISBLK(sp->st_mode)) {
+ 					sizelen = snprintf(NULL, 0,
+@@ -950,11 +985,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4497,7 +4560,7 @@
  				if (f_label) {
  					np->label = &np->data[ulen + glen + 2
  					    + (f_flags ? flen + 1 : 0)];
-@@ -1011,7 +1013,7 @@
+@@ -1011,7 +1041,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
