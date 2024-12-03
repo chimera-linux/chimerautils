@@ -515,6 +515,9 @@ static const struct limits limits[] = {
 	{ "rt priority",		(char *)0,	RLIMIT_RTPRIO,	   1, 'r' },
 #endif
 #endif
+#ifdef RLIMIT_PIPEBUF
+	{ "pipebuf",		(char *)0,	RLIMIT_PIPEBUF, 1024, 'y' },
+#endif
 	{ (char *) 0,		(char *)0,	0,		   0, '\0' }
 };
 
@@ -550,7 +553,7 @@ ulimitcmd(int argc __unused, char **argv __unused)
 	struct rlimit	limit;
 
 	what = 'f';
-	while ((optc = nextopt("HSatfdsmcnuvlbpwkoreiq")) != '\0')
+	while ((optc = nextopt("HSatfdsmcnuvlbpwkoreiqy")) != '\0')
 		switch (optc) {
 		case 'H':
 			how = HARD;

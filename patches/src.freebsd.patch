@@ -173,7 +173,16 @@
  		// not seen yet, insert and return
  		gtt *tab = & f->gototab[state];
  		if (tab->inuse + 1 >= tab->allocated)
-@@ -1017,6 +1017,7 @@
+@@ -869,7 +869,7 @@
+ 		 * Call u8_rune with at least awk_mb_cur_max ahead in
+ 		 * the buffer until EOF interferes.
+ 		 */
+-		if (k - j < awk_mb_cur_max) {
++		if ((k - j) < 0 || (size_t)(k - j) < awk_mb_cur_max) {
+ 			if (k + awk_mb_cur_max > buf + bufsize) {
+ 				char *obuf = buf;
+ 				adjbuf((char **) &buf, &bufsize,
+@@ -1023,6 +1023,7 @@
  		}
  		else
  			FATAL("syntax error in regular expression %s at %s", lastre, prestr);
@@ -1571,7 +1580,7 @@
  {
  	u_int count;
  	struct s_zstate *zs;
-@@ -693,6 +698,7 @@
+@@ -694,6 +699,7 @@
  zopen(const char *fname, const char *mode, int bits)
  {
  	struct s_zstate *zs;
@@ -1579,7 +1588,7 @@
  
  	if ((mode[0] != 'r' && mode[0] != 'w') || mode[1] != '\0' ||
  	    bits < 0 || bits > BITS) {
-@@ -728,10 +734,18 @@
+@@ -729,10 +735,18 @@
  	switch (*mode) {
  	case 'r':
  		zmode = 'r';
@@ -1625,7 +1634,7 @@
   * smaller than MAXPHYS.
 @@ -282,7 +289,8 @@
  #ifndef BOOTSTRAP_CAT
- 			if (in_kernel_copy(fd) == -1) {
+ 			if (in_kernel_copy(fd) != 0) {
  				if (errno == EINVAL || errno == EBADF ||
 -				    errno == EISDIR)
 +				    errno == EISDIR || errno == EXDEV ||
@@ -3466,7 +3475,7 @@
  			return 1;
 --- src.orig/coreutils/env/env.1
 +++ src.freebsd/coreutils/env/env.1
-@@ -39,12 +39,10 @@
+@@ -39,13 +39,11 @@
  .Sh SYNOPSIS
  .Nm
  .Op Fl 0iv
@@ -3475,14 +3484,15 @@
  .Op Ar name Ns = Ns Ar value ...
  .Nm
  .Op Fl iv
+ .Op Fl C Ar altwd
 -.Op Fl L Ns | Ns Fl U Ar user Ns Op / Ns Ar class
  .Op Fl P Ar altpath
  .Op Fl S Ar string
  .Op Fl u Ar name
-@@ -81,34 +79,6 @@
- by
- .Nm
- is ignored completely.
+@@ -88,34 +86,6 @@
+ the specified
+ .Ar utility
+ program.
 -.\"	-L | -U
 -.It Fl L | Fl U Ar user Ns Op / Ns Ar class
 -Add the environment variable definitions from
@@ -3524,9 +3534,9 @@
  #include <pwd.h>
  #include <stdbool.h>
  #include <stdio.h>
-@@ -74,23 +73,18 @@
+@@ -74,24 +73,19 @@
  {
- 	char *altpath, **ep, *p, **parg, term;
+ 	char *altpath, *altwd, **ep, *p, **parg, term;
  	char *cleanenv[1];
 -	char *login_class, *login_name;
 +	char *login_name;
@@ -3538,6 +3548,7 @@
  	int rtrn;
  
  	altpath = NULL;
+ 	altwd = NULL;
 -	login_class = NULL;
  	login_name = NULL;
  	pw = NULL;
@@ -3545,14 +3556,14 @@
 -	login_as_user = false;
  	want_clear = 0;
  	term = '\n';
--	while ((ch = getopt(argc, argv, "-0iL:P:S:U:u:v")) != -1)
-+	while ((ch = getopt(argc, argv, "0iP:S:u:v")) != -1)
+-	while ((ch = getopt(argc, argv, "-0C:iL:P:S:U:u:v")) != -1)
++	while ((ch = getopt(argc, argv, "0C:iP:S:u:v")) != -1)
  		switch(ch) {
  		case '-':
  		case 'i':
-@@ -99,12 +93,6 @@
- 		case '0':
- 			term = '\0';
+@@ -103,12 +97,6 @@
+ 		case 'C':
+ 			altwd = optarg;
  			break;
 -		case 'U':
 -			login_as_user = true;
@@ -3561,9 +3572,9 @@
 -			login_name = optarg;
 -			break;
  		case 'P':
- 			altpath = strdup(optarg);
+ 			altpath = optarg;
  			break;
-@@ -132,6 +120,10 @@
+@@ -136,6 +124,10 @@
  		default:
  			usage();
  		}
@@ -3574,7 +3585,7 @@
  	if (want_clear) {
  		environ = cleanenv;
  		cleanenv[0] = NULL;
-@@ -139,9 +131,6 @@
+@@ -143,9 +135,6 @@
  			fprintf(stderr, "#env clearing environ\n");
  	}
  	if (login_name != NULL) {
@@ -3584,7 +3595,7 @@
  		if (*login_name != '\0' && strcmp(login_name, "-") != 0) {
  			pw = getpwnam(login_name);
  			if (pw == NULL) {
-@@ -154,38 +143,8 @@
+@@ -158,38 +147,8 @@
  			if (pw == NULL)
  				errx(EXIT_FAILURE, "no such user: %s", login_name);
  		}
@@ -4275,7 +4286,7 @@
  .It Fl p
  Write a slash
  .Pq Ql /
-@@ -571,8 +550,6 @@
+@@ -573,8 +552,6 @@
  .Tn FIFO .
  .It Sy s
  Socket.
@@ -4284,7 +4295,7 @@
  .El
  .Pp
  The next three fields
-@@ -864,11 +841,10 @@
+@@ -866,11 +843,10 @@
  .Dl $ ls -l
  .Pp
  In addition to listing the contents of the current working directory in
@@ -4298,7 +4309,7 @@
  .Pp
  List the files in
  .Pa /var/log ,
-@@ -882,7 +858,6 @@
+@@ -884,7 +860,6 @@
  .St -p1003.2
  specification.
  .Sh SEE ALSO
@@ -4306,7 +4317,7 @@
  .Xr chmod 1 ,
  .Xr getfacl 1 ,
  .Xr sort 1 ,
-@@ -893,15 +868,14 @@
+@@ -895,15 +870,14 @@
  .Xr strmode 3 ,
  .Xr strverscmp 3 ,
  .Xr termcap 5 ,
@@ -4324,7 +4335,7 @@
  the
  .Nm
  utility conforms to
-@@ -909,7 +883,7 @@
+@@ -911,7 +885,7 @@
  and
  .St -p1003.1-2008 .
  The options
@@ -4486,7 +4497,7 @@
  				if (f_label) {
  					np->label = &np->data[ulen + glen + 2
  					    + (f_flags ? flen + 1 : 0)];
-@@ -1010,7 +1012,7 @@
+@@ -1011,7 +1013,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -4556,7 +4567,7 @@
  	default:
  		break;
  	}
-@@ -775,18 +776,12 @@
+@@ -773,18 +774,12 @@
  aclmode(char *buf, const FTSENT *p)
  {
  	char name[MAXPATHLEN + 1];
@@ -4578,7 +4589,7 @@
  		return;
  
  	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
-@@ -801,7 +796,7 @@
+@@ -799,7 +794,7 @@
  	if (previous_dev != p->fts_statp->st_dev) {
  		previous_dev = p->fts_statp->st_dev;
  		supports_acls = 0;
@@ -4587,7 +4598,7 @@
  		ret = lpathconf(name, _PC_ACL_NFS4);
  		if (ret > 0) {
  			type = ACL_TYPE_NFS4;
-@@ -810,30 +805,24 @@
+@@ -808,30 +803,24 @@
  			warn("%s", name);
  			return;
  		}
@@ -7208,7 +7219,7 @@
  					continue;
  				}
  
-@@ -386,7 +319,6 @@
+@@ -387,7 +320,6 @@
  					file->fp = ftmp;
  					memcpy(&file->st, &sb2,
  					    sizeof(struct stat));
@@ -7216,7 +7227,7 @@
  				} else {
  					fclose(ftmp);
  				}
-@@ -394,42 +326,8 @@
+@@ -395,42 +327,8 @@
  		}
  
  		for (i = 0, file = files; i < no_files; i++, file++)
@@ -9135,7 +9146,7 @@
  DB	*__bt_open(const char *, int, int, const BTREEINFO *, int);
 --- src.orig/diffutils/cmp/cmp.c
 +++ src.freebsd/diffutils/cmp/cmp.c
-@@ -55,6 +55,7 @@
+@@ -56,6 +56,7 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -9169,7 +9180,7 @@
  
  	*skip2 = *skip1;
  	return (true);
-@@ -110,11 +117,13 @@
+@@ -110,12 +117,14 @@
  {
  	struct stat sb1, sb2;
  	off_t skip1, skip2, limit;
@@ -9177,13 +9188,14 @@
  	int ch, fd1, fd2, oflag;
  	bool special;
  	const char *file1, *file2;
+ 	int ret;
  
- 	limit = skip1 = skip2 = 0;
+ 	limit = skip1 = skip2 = ret = 0;
 +	ulimit = uskip1 = uskip2 = 0;
  	oflag = O_RDONLY;
  	while ((ch = getopt_long(argc, argv, "+bhi:ln:sxz", long_opts, NULL)) != -1)
  		switch (ch) {
-@@ -136,7 +145,7 @@
+@@ -137,7 +146,7 @@
  			lflag = true;
  			break;
  		case 'n':		/* Limit */
@@ -9192,7 +9204,7 @@
  				fprintf(stderr, "Invalid --bytes: %s\n",
  				    optarg);
  				usage();
-@@ -197,15 +206,17 @@
+@@ -198,15 +207,17 @@
  			exit(ERR_EXIT);
  	}
  
@@ -9235,7 +9247,7 @@
  #include <err.h>
 --- src.orig/diffutils/diff/diff.c
 +++ src.freebsd/diffutils/diff/diff.c
-@@ -483,20 +483,23 @@
+@@ -482,20 +482,23 @@
  read_excludes_file(char *file)
  {
  	FILE *fp;
@@ -9300,7 +9312,7 @@
  
  #include "pr.h"
  #include "diff.h"
-@@ -492,7 +496,7 @@
+@@ -497,7 +501,7 @@
  
  	(void)strlcpy(tempfile, _PATH_TMP "/diff.XXXXXXXX", sizeof(tempfile));
  
@@ -9309,7 +9321,7 @@
  		close(ifd);
  		return (NULL);
  	}
-@@ -1412,7 +1416,7 @@
+@@ -1416,7 +1420,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -9318,7 +9330,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1654,11 +1658,11 @@
+@@ -1658,11 +1662,11 @@
  		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
  		    label[0]);
  	else {
@@ -9332,7 +9344,7 @@
  			printf(".%.9d %s", nsec1, buf);
  		}
  		printf("\n");
-@@ -1667,11 +1671,11 @@
+@@ -1671,11 +1675,11 @@
  		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
  		    label[1]);
  	else {
@@ -9730,14 +9742,6 @@
  	max_width += 6;
  
  	/*
-@@ -4431,6 +4432,7 @@
- 	}
- 	(void)sprintf(template, "/tmp/ee.XXXXXXXX");
- 	fd = mkstemp(template);
-+	name = template;
- 	if (fd < 0) {
- 		wmove(com_win, 0, 0);
- 		wprintw(com_win, create_file_fail_msg, name);
 --- src.orig/fetch/fetch.c
 +++ src.freebsd/fetch/fetch.c
 @@ -32,6 +32,7 @@
@@ -9784,7 +9788,7 @@
  	unsigned timeout;
  	char *ptr;
  
-@@ -637,6 +644,7 @@
+@@ -638,6 +645,7 @@
  		if (!F_flag && us.mtime && sb.st_mtime != us.mtime && tries == 1) {
  			/* no match! have to refetch */
  			fclose(f);
@@ -9794,15 +9798,16 @@
  				warnx("%s: local modification time "
 --- src.orig/findutils/find/extern.h
 +++ src.freebsd/findutils/find/extern.h
-@@ -32,6 +32,7 @@
+@@ -32,6 +32,8 @@
   */
  
  #include <sys/cdefs.h>
 +#include <sys/types.h>
++#include <signal.h>
  
  void	 brace_subst(char *, char **, char *, size_t);
  PLAN	*find_create(char ***);
-@@ -46,6 +47,7 @@
+@@ -46,6 +48,7 @@
  int	 queryuser(char **);
  OPTION	*lookup_option(const char *);
  void	 finish_execplus(void);
@@ -9957,7 +9962,7 @@
  {
  
  	return (strcoll((*s1)->fts_name, (*s2)->fts_name));
-@@ -235,5 +235,6 @@
+@@ -244,5 +244,6 @@
  	finish_execplus();
  	if (e && (!ignore_readdir_race || e != ENOENT))
  		errc(1, e, "fts_read");
@@ -10549,9 +10554,9 @@
 -: ${LIBEXECDIR:=/usr/libexec}; export LIBEXECDIR
 +: ${LIBEXECDIR:=@LIBEXECDIR@}; export LIBEXECDIR
  : ${TMPDIR:=/tmp}; export TMPDIR
- if ! TMPDIR=`mktemp -d $TMPDIR/locateXXXXXXXXXX`; then
+ if ! TMPDIR=$(mktemp -d $TMPDIR/locateXXXXXXXXXX); then
  	exit 1
-@@ -52,11 +52,10 @@
+@@ -53,11 +53,10 @@
  : ${mklocatedb:=locate.mklocatedb}	 # make locate database program
  : ${FCODES:=/var/db/locate.database}	 # the database
  : ${SEARCHPATHS="/"}		# directories to be put in the database
@@ -11855,7 +11860,7 @@
 -
 -				lc = login_getpwclass(pw);
 -				if (setusercontext(lc, pw, pw->pw_uid,
--				    LOGIN_SETALL) != 0)
+-				    LOGIN_SETALL & ~LOGIN_SETLOGIN) != 0)
 -					errx(1, "setusercontext");
  				setenv("HOME", pw->pw_dir, 1);
  				cal();
@@ -12395,16 +12400,16 @@
  	size_t len2;
 --- src.orig/miscutils/ncal/ncal.c
 +++ src.freebsd/miscutils/ncal/ncal.c
-@@ -37,7 +37,7 @@
- #include <stdlib.h>
+@@ -38,7 +38,7 @@
  #include <string.h>
+ #include <stdbool.h>
  #include <sysexits.h>
 -#include <time.h>
 +#include <time_bsd.h>
  #include <unistd.h>
  #include <wchar.h>
  #include <wctype.h>
-@@ -545,8 +545,11 @@
+@@ -551,8 +551,11 @@
  	char    buf[MAX_WIDTH];
  	static int d_first = -1;
  
@@ -12418,7 +12423,7 @@
  	/* force orthodox easter for years before 1583 */
  	if (y < 1583)
  		orthodox = 1;
-@@ -563,7 +566,7 @@
+@@ -569,7 +572,7 @@
  	tm.tm_year = dt.y - 1900;
  	tm.tm_mon  = dt.m - 1;
  	tm.tm_mday = dt.d;
@@ -12427,7 +12432,7 @@
  	printf("%s\n", buf);
  }
  
-@@ -628,12 +631,12 @@
+@@ -634,12 +637,12 @@
  
  		/* Empty line between two rows of months */
  		if (m != m1)
@@ -12442,7 +12447,7 @@
  			prevyear = M2Y(m);
  		}
  
-@@ -647,7 +650,7 @@
+@@ -653,7 +656,7 @@
  				    L"%-ls %d", year[i].name, M2Y(m + i));
  				wprintf(L"%-*ls  ", mw, wcenter(ws1, ws, mw));
  			}
@@ -12451,9 +12456,9 @@
  
  		/* Day of the week names. */
  		for (i = 0; i < count; i++) {
-@@ -657,15 +660,15 @@
- 				wdss, wds.names[3], wdss, wds.names[4],
- 				wdss, wds.names[5]);
+@@ -666,15 +669,15 @@
+ 				wdss, wds.names[flag_monday ? 5 : 4],
+ 				wdss, wds.names[flag_monday ? 6 : 5]);
  		}
 -		printf("\n");
 +		wprintf(L"\n");
@@ -12470,7 +12475,7 @@
  		}
  
  		m += mpl;
-@@ -715,12 +718,12 @@
+@@ -724,12 +727,12 @@
  
  		/* Empty line between two rows of months. */
  		if (m != m1)
@@ -12485,7 +12490,7 @@
  			prevyear = M2Y(m);
  		}
  
-@@ -732,7 +735,7 @@
+@@ -741,7 +744,7 @@
  			else
  				wprintf(L"%-ls %-*d", year[i].name,
  				    mw - wcslen(year[i].name) - 1, M2Y(m + i));
@@ -12494,7 +12499,7 @@
  
  		/* And the days of the month. */
  		for (i = 0; i != 7; i++) {
-@@ -741,18 +744,18 @@
+@@ -750,18 +753,18 @@
  
  			/* Full months */
  			for (j = 0; j < count; j++)
@@ -12518,7 +12523,7 @@
  		}
  
  		m += mpl;
-@@ -1055,9 +1058,12 @@
+@@ -1067,9 +1070,12 @@
  center(char *s, char *t, int w)
  {
  	char blanks[MAX_WIDTH];
@@ -12532,7 +12537,7 @@
  	return (s);
  }
  
-@@ -1098,7 +1104,7 @@
+@@ -1110,7 +1116,7 @@
  		*y = ny;
  		return (0);
  	}
@@ -14595,19 +14600,19 @@
 +	{ "rt priority",		(char *)0,	RLIMIT_RTPRIO,	   1, 'r' },
 +#endif
 +#endif
- 	{ (char *) 0,		(char *)0,	0,		   0, '\0' }
- };
- 
-@@ -525,7 +550,7 @@
+ #ifdef RLIMIT_PIPEBUF
+ 	{ "pipebuf",		(char *)0,	RLIMIT_PIPEBUF, 1024, 'y' },
+ #endif
+@@ -528,7 +553,7 @@
  	struct rlimit	limit;
  
  	what = 'f';
--	while ((optc = nextopt("HSatfdsmcnuvlbpwko")) != '\0')
-+	while ((optc = nextopt("HSatfdsmcnuvlbpwkoreiq")) != '\0')
+-	while ((optc = nextopt("HSatfdsmcnuvlbpwkoy")) != '\0')
++	while ((optc = nextopt("HSatfdsmcnuvlbpwkoreiqy")) != '\0')
  		switch (optc) {
  		case 'H':
  			how = HARD;
-@@ -567,7 +592,8 @@
+@@ -570,7 +595,8 @@
  				error("bad number");
  			uval *= l->factor;
  			val = (rlim_t)uval;

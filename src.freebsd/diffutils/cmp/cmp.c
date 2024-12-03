@@ -51,6 +51,7 @@ static char sccsid[] = "@(#)cmp.c	8.3 (Berkeley) 4/2/94";
 #include <fcntl.h>
 #include <getopt.h>
 #include <nl_types.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -80,7 +81,6 @@ volatile sig_atomic_t info;
 static void
 siginfo(int signo)
 {
-
 	info = signo;
 }
 #endif
@@ -121,8 +121,9 @@ main(int argc, char *argv[])
 	int ch, fd1, fd2, oflag;
 	bool special;
 	const char *file1, *file2;
+	int ret;
 
-	limit = skip1 = skip2 = 0;
+	limit = skip1 = skip2 = ret = 0;
 	ulimit = uskip1 = uskip2 = 0;
 	oflag = O_RDONLY;
 	while ((ch = getopt_long(argc, argv, "+bhi:ln:sxz", long_opts, NULL)) != -1)
@@ -223,8 +224,8 @@ main(int argc, char *argv[])
 
 	if (fd1 == -1) {
 		if (fd2 == -1) {
-			c_link(file1, skip1, file2, skip2, limit);
-			exit(0);
+			ret = c_link(file1, skip1, file2, skip2, limit);
+			goto end;
 		} else if (!sflag)
 			errx(ERR_EXIT, "%s: Not a symbolic link", file2);
 		else
@@ -263,19 +264,23 @@ main(int argc, char *argv[])
 #ifdef SIGINFO
 	(void)signal(SIGINFO, siginfo);
 #endif
-	if (special)
-		c_special(fd1, file1, skip1, fd2, file2, skip2, limit);
-	else {
+	if (special) {
+		ret = c_special(fd1, file1, skip1, fd2, file2, skip2, limit);
+	} else {
 		if (zflag && sb1.st_size != sb2.st_size) {
 			if (!sflag)
-				(void) printf("%s %s differ: size\n",
+				(void)printf("%s %s differ: size\n",
 				    file1, file2);
-			exit(DIFF_EXIT);
+			ret = DIFF_EXIT;
+		} else {
+			ret = c_regular(fd1, file1, skip1, sb1.st_size,
+			    fd2, file2, skip2, sb2.st_size, limit);
 		}
-		c_regular(fd1, file1, skip1, sb1.st_size,
-		    fd2, file2, skip2, sb2.st_size, limit);
 	}
-	exit(0);
+end:
+	if (!sflag && fflush(stdout) != 0)
+		err(ERR_EXIT, "stdout");
+	exit(ret);
 }
 
 static void

@@ -33,6 +33,7 @@
 
 #include <sys/cdefs.h>
 #include <sys/types.h>
+#include <signal.h>
 
 void	 brace_subst(char *, char **, char *, size_t);
 PLAN	*find_create(char ***);
@@ -128,3 +129,4 @@ extern int exitstatus;
 extern time_t now;
 extern int dotfd;
 extern FTS *tree;
+extern volatile sig_atomic_t showinfo;

@@ -146,7 +146,7 @@ init_casper_net(cap_channel_t *casper)
 	familylimit = AF_LOCAL;
 	cap_net_limit_name2addr_family(limit, &familylimit, 1);
 
-	if (cap_net_limit(limit) < 0)
+	if (cap_net_limit(limit) != 0)
 		err(EXIT_FAILURE, "unable to apply limits");
 }
 #endif
@@ -219,7 +219,7 @@ main(int argc, char *argv[])
 		stdout_lock.l_start = 0;
 		stdout_lock.l_type = F_WRLCK;
 		stdout_lock.l_whence = SEEK_SET;
-		if (fcntl(STDOUT_FILENO, F_SETLKW, &stdout_lock) == -1)
+		if (fcntl(STDOUT_FILENO, F_SETLKW, &stdout_lock) != 0)
 			err(EXIT_FAILURE, "stdout");
 	}
 
@@ -227,7 +227,7 @@ main(int argc, char *argv[])
 
 	caph_cache_catpages();
 
-	if (caph_enter_casper() < 0)
+	if (caph_enter_casper() != 0)
 		err(EXIT_FAILURE, "capsicum");
 
 	if (bflag || eflag || nflag || sflag || tflag || vflag)
@@ -287,7 +287,7 @@ scanfiles(char *argv[], int cooked __unused)
 #endif
 		} else {
 #ifndef BOOTSTRAP_CAT
-			if (in_kernel_copy(fd) == -1) {
+			if (in_kernel_copy(fd) != 0) {
 				if (errno == EINVAL || errno == EBADF ||
 				    errno == EISDIR || errno == EXDEV ||
 				    errno == ESPIPE || errno == ENOSYS)
@@ -516,7 +516,7 @@ udom_open(const char *path, int flags)
 			errno = serrno;
 			return (-1);
 		}
-		if (caph_rights_limit(fd, &rights) < 0) {
+		if (caph_rights_limit(fd, &rights) != 0) {
 			serrno = errno;
 			close(fd);
 			freeaddrinfo(res0);
@@ -545,12 +545,12 @@ udom_open(const char *path, int flags)
 	switch (flags & O_ACCMODE) {
 	case O_RDONLY:
 		cap_rights_clear(&rights, CAP_WRITE);
-		if (shutdown(fd, SHUT_WR) == -1)
+		if (shutdown(fd, SHUT_WR) != 0)
 			warn(NULL);
 		break;
 	case O_WRONLY:
 		cap_rights_clear(&rights, CAP_READ);
-		if (shutdown(fd, SHUT_RD) == -1)
+		if (shutdown(fd, SHUT_RD) != 0)
 			warn(NULL);
 		break;
 	default:
@@ -558,7 +558,7 @@ udom_open(const char *path, int flags)
 	}
 
 	cap_rights_clear(&rights, CAP_CONNECT, CAP_SHUTDOWN);
-	if (caph_rights_limit(fd, &rights) < 0) {
+	if (caph_rights_limit(fd, &rights) != 0) {
 		serrno = errno;
 		close(fd);
 		errno = serrno;
