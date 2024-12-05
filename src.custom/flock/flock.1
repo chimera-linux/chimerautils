@@ -1,0 +1,116 @@
+.Dd Dec 4, 2024
+.Dt FLOCK 1
+.Os
+.Sh NAME
+.Nm flock
+.Nd manage file locks from shell scripts
+.Sh SYNOPSIS
+.Nm
+.Op Fl FhnsuVx
+.Op Fl w Ar timeout
+.Ar file Ns \^|\^ Ns Ar directory
+.Ar command
+.Op Ar arguments No ...
+.Nm
+.Op Fl FhnsuVx
+.Op Fl w Ar timeout
+.Ar file Ns \^|\^ Ns Ar directory
+.Fl c Ar command
+.Nm
+.Op Fl FhnsuVx
+.Op Fl w Ar timeout
+.Ar number
+.Sh DESCRIPTION
+The
+.Nm
+utility manages file locks. In the first form
+.Ar command
+is spawned with
+.Ar arguments .
+In the second form
+.Ar command
+is run by the shell by passing it via
+.Fl c .
+In the final form a file descriptor
+.Ar number
+is supplied instead of a path.
+.Pp
+The following options are available:
+.Bl -tag -width indent
+.It Fl c, -command
+Pass 
+.Ar command
+to the shell via
+.Fl c .
+.It Fl F, -no-fork
+Execute
+.Ar command
+without forking.
+.It Fl n, -nonblocking
+Fail rather than wait.
+.It Fl s, -shared
+Obtain a shared lock.
+.It Fl u, -unlock
+Unlock an existing lock.
+.It Fl w, -timeout Ar WAIT
+Wait to acquire the lock for up to
+.Ar WAIT
+seconds.
+.It Fl x, -exclusive
+Obtain an exclusive lock. This is the default.
+.It Fl h, -help
+Display a help message and exit.
+.It Fl V, -version
+Display version information and exit.
+.El
+.Pp
+.Sy Note :
+The
+.Fl -shared ,
+.Fl -exclusive ,
+.Fl -nonblocking ,
+and
+.Fl -unlock
+options are mutually exclusive.
+.Sh ENVIRONMENT
+.Bl -tag -width indent
+.It Ev SHELL
+When
+.Fl c
+is supplied the string specified by
+.Ev SHELL
+is interpreted as the name of
+the shell to exec.
+If the variable
+.Ev SHELL
+is not set,
+.Pa /bin/sh
+is used.
+.El
+.Sh EXIT STATUS
+.Ex -std
+When
+.Fl -timeout
+or
+.Fl -nonblocking
+are used
+.Nm
+will exit with status 1 if the timeout is reached before acquiring the lock.
+.Sh EXAMPLES
+Acquire an exclusive lock, waiting indefinitely to acquire it:
+.Bd -literal -offset indent
+$ flock /var/run/lock/example.lock echo locked
+.Ed
+.Pp
+Acquire an exclusive lock, waiting up to one minute to acquire it:
+.Bd -literal -offset indent
+$ flock -w 60 /var/run/lock/example.lock echo locked
+.Ed
+.Sh SEE ALSO
+.Xr flock 2
+.Sh HISTORY
+The
+.Nm
+utility first appeared in util-linux 2.12j.
+This implementation is a part of chimerautils and was written from scratch.
+
