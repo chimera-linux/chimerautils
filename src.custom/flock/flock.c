@@ -162,6 +162,7 @@ int main(int argc, char **argv) {
 "\n"
 "Manage file locks from shell scripts.\n"
 "\n"
+"      -c, --command      pass a command to the shell with -c\n"
 "      -s, --shared       get a shared lock\n"
 "      -x, --exclusive    get an exclusive lock (default)\n"
 "      -u, --unlock       remove a lock\n"
