@@ -246,6 +246,17 @@
  	{ 'e',	print_err	},
  	{ 'f',	print_stack	},
  	{ 'i',	set_ibase	},
+@@ -242,8 +242,8 @@
+ 		stack_init(&bmachine.reg[i]);
+ 
+ 	bmachine.readstack_sz = READSTACK_SIZE;
+-	bmachine.readstack = calloc(sizeof(struct source),
+-	    bmachine.readstack_sz);
++	bmachine.readstack = calloc(bmachine.readstack_sz,
++	    sizeof(struct source));
+ 	if (bmachine.readstack == NULL)
+ 		err(1, NULL);
+ 	bmachine.obase = bmachine.ibase = 10;
 @@ -549,7 +549,7 @@
  }
  
@@ -3674,6 +3685,15 @@
  #include <ctype.h>
  #include <err.h>
  #include <errno.h>
+@@ -98,7 +99,7 @@
+ 
+ #define BN_CTX			int
+ #define BN_CTX_new()		NULL
+-#define BN_new()		((BIGNUM *)calloc(sizeof(BIGNUM), 1))
++#define BN_new()		((BIGNUM *)calloc(1, sizeof(BIGNUM)))
+ #define BN_is_zero(v)		(*(v) == 0)
+ #define BN_is_one(v)		(*(v) == 1)
+ #define BN_mod_word(a, b)	(*(a) % (b))
 --- src.orig/coreutils/fmt/fmt.c
 +++ src.freebsd/coreutils/fmt/fmt.c
 @@ -183,6 +183,7 @@
