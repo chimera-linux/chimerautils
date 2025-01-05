@@ -691,7 +691,7 @@ getmntinfo(struct mntinfo **mntbuf)
 
 	    /* get stat(vfs) fields and copy those over */
 	    if (statvfs(ent->mnt_dir, &svfsbuf) == -1 || stat(ent->mnt_dir, &stmnt) == -1) {
-	        if ((errno == EACCES) || (errno == EPERM)) continue;
+	        if ((errno == EACCES) || (errno == EPERM) || (errno == ENOTCONN)) continue;
 	        xo_err(1, "statvfs");
 	    }
 
