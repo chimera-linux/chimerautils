@@ -4982,8 +4982,14 @@
  	const char *digestname;
  	size_t digestnamelen;
  	size_t hashstrlen;
-@@ -593,7 +600,7 @@
- 		while (argc--)
+@@ -589,11 +596,11 @@
+ 		 * with an array of the filenames from that list.
+ 		 */
+ 		if (argc < 1)
+-			usage(&Algorithm[digest]);
+-		while (argc--)
++			gnu_check("-");
++		else while (argc--)
  			gnu_check(*argv++);
  		argc = 0;
 -		argv = calloc(sizeof(char *), numrecs + 1);

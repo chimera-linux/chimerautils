@@ -596,8 +596,8 @@ main(int argc, char *argv[])
 		 * with an array of the filenames from that list.
 		 */
 		if (argc < 1)
-			usage(&Algorithm[digest]);
-		while (argc--)
+			gnu_check("-");
+		else while (argc--)
 			gnu_check(*argv++);
 		argc = 0;
 		argv = calloc(numrecs + 1, sizeof(char *));
