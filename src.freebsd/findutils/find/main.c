@@ -90,7 +90,7 @@ main(int argc, char *argv[])
 	p = start = argv;
 	Hflag = Lflag = 0;
 	ftsoptions = FTS_NOSTAT | FTS_PHYSICAL;
-	while ((ch = getopt(argc, argv, "EHLPXdf:sx")) != -1)
+	while ((ch = getopt(argc, argv, "+EHLPXdf:sx")) != -1)
 		switch (ch) {
 		case 'E':
 			regexp_flags |= REG_EXTENDED;
