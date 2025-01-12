@@ -881,9 +881,45 @@ c_follow(OPTION *option, char ***argvp __unused)
 
 #if HAVE_STRUCT_STATFS_F_FSTYPENAME
 struct mntinfo {
-    dev_t devn;
-    char fstype[64];
+	dev_t devn;
+	char fstype[64];
 };
+
+static char *unesc_mnt(char *beg) {
+	char *dest = beg;
+	char const *src = beg;
+	while (*src) {
+		char const *val;
+		unsigned char cv = '\0';
+		/* not escape */
+		if (*src != '\\') {
+			*dest++ = *src++;
+			continue;
+		}
+		/* double slash */
+		if (src[1] == '\\') {
+			++src;
+			*dest++ = *src++;
+			continue;
+		}
+		/* else unscape */
+		val = src + 1;
+		for (int i = 0; i < 3; ++i) {
+			if (*val >= '0' && *val <= '7') {
+				cv <<= 3;
+				cv += *val++ - '0';
+			} else
+				break;
+		}
+		if (cv) {
+			*dest++ = cv;
+			src = val;
+		} else
+			*dest++ = *src++;
+	}
+	*dest = '\0';
+	return beg;
+}
 
 const char *
 f_fstypename(dev_t curdev)
@@ -909,12 +945,34 @@ f_fstypename(dev_t curdev)
 			err(1, "malloc");
 		const char *rfs = NULL;
 		while (getline(&lbuf, &lsize, f) > 0) {
-			unsigned int maj, min;
+			struct stat mst;
+			char *mntpt;
 			memset(curfstype, 0, sizeof(curfstype));
+			/* extract fstype first; we cannot use the device
+			 * as that refers to a real block device always, and
+			 * e.g. btrfs/zfs will report "fake" st_dev so we need
+			 * to stat each mountpoint later for that "fake" st_dev
+			 */
 			if (sscanf(
-			    lbuf, "%*d %*d %u:%u %*s %*s %*[^-]- %63s %*s %*s",
-			    &maj, &min, curfstype
+			    lbuf, "%*d %*d %*u:%*u / %*s %*[^-]- %63s %*s %*s",
+			    curfstype
 			) <= 0)
+				continue;
+			/* now get the mountpoint root... */
+			mntpt = strchr(lbuf, '/');
+			/* submounts are ignored */
+			if (mntpt[1] != ' ')
+				continue;
+			/* skip to the actual mountpoint */
+			mntpt += 2;
+			/* the path is escaped, terminate at space */
+			*strchr(mntpt, ' ') = '\0';
+			/* now unscape spaces and whatever */
+			mntpt = unesc_mnt(mntpt);
+			/* if this fails it's probably because no access or
+			 * whatever, so ignore that, not worth handling
+			 */
+			if (lstat(mntpt, &mst) != 0)
 				continue;
 			if (ninfos == ncap) {
 				ncap *= 2;
@@ -922,7 +980,7 @@ f_fstypename(dev_t curdev)
 				if (!minfo)
 					err(1, "realloc");
 			}
-			minfo[ninfos].devn = makedev(maj, min);
+			minfo[ninfos].devn = mst.st_dev;
 			memcpy(minfo[ninfos].fstype, curfstype, sizeof(curfstype));
 			if (minfo[ninfos].devn == curdev)
 				rfs = minfo[ninfos].fstype;

@@ -56,7 +56,7 @@ PATH=$LIBEXECDIR:/bin:/usr/bin:$PATH; export PATH
 : ${PRUNEPATHS="/tmp /var/tmp"} # unwanted directories
 : ${PRUNEDIRS=".zfs"}	# unwanted directories, in any parent
 # allowed filesystems
-: ${FILESYSTEMS="ext2 ext3 ext4 xfs vfat exfat ntfs ntfs3 f2fs zfs btrfs reiserfs reiser4 jfs"}
+: ${FILESYSTEMS="ext2 ext3 ext4 xfs vfat exfat ntfs ntfs3 f2fs zfs btrfs reiserfs reiser4 jfs nilfs2 bcachefs"}
 : ${find:=find}
 
 if [ -z "$SEARCHPATHS" ]; then
