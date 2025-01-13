@@ -954,17 +954,14 @@ f_fstypename(dev_t curdev)
 			 * to stat each mountpoint later for that "fake" st_dev
 			 */
 			if (sscanf(
-			    lbuf, "%*d %*d %*u:%*u / %*s %*[^-]- %63s %*s %*s",
+			    lbuf, "%*d %*d %*u:%*u %*s %*s %*[^-]- %63s %*s %*s",
 			    curfstype
 			) <= 0)
 				continue;
 			/* now get the mountpoint root... */
 			mntpt = strchr(lbuf, '/');
-			/* submounts are ignored */
-			if (mntpt[1] != ' ')
-				continue;
-			/* skip to the actual mountpoint */
-			mntpt += 2;
+			/* skip over it to get the real mountpoint */
+			mntpt = strchr(mntpt + 1, '/');
 			/* the path is escaped, terminate at space */
 			*strchr(mntpt, ' ') = '\0';
 			/* now unscape spaces and whatever */

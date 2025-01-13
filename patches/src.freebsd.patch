@@ -10155,7 +10155,7 @@
  }
  #endif
  
-@@ -872,6 +880,123 @@
+@@ -872,6 +880,120 @@
  }
  
  #if HAVE_STRUCT_STATFS_F_FSTYPENAME
@@ -10233,17 +10233,14 @@
 +			 * to stat each mountpoint later for that "fake" st_dev
 +			 */
 +			if (sscanf(
-+			    lbuf, "%*d %*d %*u:%*u / %*s %*[^-]- %63s %*s %*s",
++			    lbuf, "%*d %*d %*u:%*u %*s %*s %*[^-]- %63s %*s %*s",
 +			    curfstype
 +			) <= 0)
 +				continue;
 +			/* now get the mountpoint root... */
 +			mntpt = strchr(lbuf, '/');
-+			/* submounts are ignored */
-+			if (mntpt[1] != ' ')
-+				continue;
-+			/* skip to the actual mountpoint */
-+			mntpt += 2;
++			/* skip over it to get the real mountpoint */
++			mntpt = strchr(mntpt + 1, '/');
 +			/* the path is escaped, terminate at space */
 +			*strchr(mntpt, ' ') = '\0';
 +			/* now unscape spaces and whatever */
@@ -10279,7 +10276,7 @@
  /*
   * -fstype functions --
   *
-@@ -882,9 +1007,9 @@
+@@ -882,9 +1004,9 @@
  {
  	static dev_t curdev;	/* need a guaranteed illegal dev value */
  	static int first = 1;
@@ -10292,7 +10289,7 @@
  	char *p, save[2] = {0,0};
  
  	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
-@@ -895,7 +1020,7 @@
+@@ -895,7 +1017,7 @@
  		curdev = entry->fts_statp->st_dev;
  
  		/*
@@ -10301,7 +10298,7 @@
  		 * not where it points.
  		 */
  		if (entry->fts_info == FTS_SL ||
-@@ -911,7 +1036,7 @@
+@@ -911,7 +1033,7 @@
  		} else
  			p = NULL;
  
@@ -10310,7 +10307,7 @@
  			if (!ignore_readdir_race || errno != ENOENT) {
  				warn("statfs: %s", entry->fts_accpath);
  				exitstatus = 1;
-@@ -930,14 +1055,14 @@
+@@ -930,14 +1052,14 @@
  		 * Further tests may need both of these values, so
  		 * always copy both of them.
  		 */
@@ -10328,7 +10325,7 @@
  	default:
  		abort();
  	}
-@@ -954,17 +1079,10 @@
+@@ -954,17 +1076,10 @@
  
  	new = palloc(option);
  	switch (*fsname) {
@@ -10347,7 +10344,7 @@
  			return new;
  		}
  		break;
-@@ -1259,7 +1377,9 @@
+@@ -1259,7 +1374,9 @@
  int
  f_nogroup(PLAN *plan __unused, FTSENT *entry)
  {
@@ -10358,7 +10355,7 @@
  }
  
  PLAN *
-@@ -1279,7 +1399,9 @@
+@@ -1279,7 +1396,9 @@
  int
  f_nouser(PLAN *plan __unused, FTSENT *entry)
  {
