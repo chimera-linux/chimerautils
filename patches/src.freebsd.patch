@@ -1710,17 +1710,16 @@
  			if (!iswascii(wch) && !iswprint(wch)) {
  ilseq:
  				if (putchar('M') == EOF || putchar('-') == EOF)
-@@ -391,6 +407,18 @@
+@@ -391,6 +407,17 @@
  }
  
  static ssize_t
 +spliced_copy(int rfd, int wfd)
 +{
 +	ssize_t ret = 1;
-+	off_t off = 0;
 +
 +	while (ret > 0)
-+		ret = sendfile(wfd, rfd, &off, SPLICEBUF_MAX);
++		ret = sendfile(wfd, rfd, NULL, SPLICEBUF_MAX);
 +
 +	return (ret);
 +}
@@ -1729,7 +1728,7 @@
  in_kernel_copy(int rfd)
  {
  	int wfd;
-@@ -401,6 +429,9 @@
+@@ -401,6 +428,9 @@
  
  	while (ret > 0)
  		ret = copy_file_range(rfd, NULL, wfd, NULL, SSIZE_MAX, 0);

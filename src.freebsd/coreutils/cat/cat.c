@@ -410,10 +410,9 @@ static ssize_t
 spliced_copy(int rfd, int wfd)
 {
 	ssize_t ret = 1;
-	off_t off = 0;
 
 	while (ret > 0)
-		ret = sendfile(wfd, rfd, &off, SPLICEBUF_MAX);
+		ret = sendfile(wfd, rfd, NULL, SPLICEBUF_MAX);
 
 	return (ret);
 }
