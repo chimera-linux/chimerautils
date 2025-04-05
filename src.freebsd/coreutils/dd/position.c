@@ -52,6 +52,10 @@ static char sccsid[] = "@(#)position.c	8.3 (Berkeley) 4/2/94";
 #include "dd.h"
 #include "extern.h"
 
+#ifndef OFF_MAX
+#define OFF_MAX ((off_t)(((1ULL << (sizeof(off_t) * CHAR_BIT - 2)) - 1) * 2 + 1))
+#endif
+
 static off_t
 seek_offset(IO *io)
 {
@@ -70,9 +74,9 @@ seek_offset(IO *io)
 	 *
 	 * Bail out if the calculation of a file offset would overflow.
 	 */
-	if ((io->flags & ISCHR) == 0 && (n < 0 || n > LONG_MAX / (ssize_t)sz))
+	if ((io->flags & ISCHR) == 0 && (n < 0 || n > OFF_MAX / (ssize_t)sz))
 		errx(1, "seek offsets cannot be larger than %jd",
-		    (intmax_t)LONG_MAX);
+		    (intmax_t)OFF_MAX);
 	else if ((io->flags & ISCHR) != 0 && (uint64_t)n > UINT64_MAX / sz)
 		errx(1, "seek offsets cannot be larger than %ju",
 		    (uintmax_t)UINT64_MAX);
