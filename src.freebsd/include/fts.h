@@ -37,7 +37,7 @@
 #ifdef _CHIMERAUTILS_BUILD
 #include "config-compat.h"
 #endif
-
+ 
 #if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
 
 #include <sys/types.h>
@@ -54,20 +54,24 @@ typedef struct {
 	int (*fts_compar)		/* compare function */
 	    (const struct _ftsent **, const struct _ftsent **);
 
-#define	FTS_COMFOLLOW	0x001		/* follow command line symlinks */
-#define	FTS_LOGICAL	0x002		/* logical walk */
-#define	FTS_NOCHDIR	0x004		/* don't change directories */
-#define	FTS_NOSTAT	0x008		/* don't get stat info */
-#define	FTS_PHYSICAL	0x010		/* physical walk */
-#define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
-#define	FTS_XDEV	0x040		/* don't cross devices */
+/* valid for fts_open() */
+#define	FTS_COMFOLLOW	0x000001	/* follow command line symlinks */
+#define	FTS_LOGICAL	0x000002	/* logical walk */
+#define	FTS_NOCHDIR	0x000004	/* don't change directories */
+#define	FTS_NOSTAT	0x000008	/* don't get stat info */
+#define	FTS_PHYSICAL	0x000010	/* physical walk */
+#define	FTS_SEEDOT	0x000020	/* return dot and dot-dot */
+#define	FTS_XDEV	0x000040	/* don't cross devices */
 #if 0
-#define	FTS_WHITEOUT	0x080		/* return whiteout information */
+#define	FTS_WHITEOUT	0x000080	/* return whiteout information */
 #endif
-#define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */
+#define	FTS_OPTIONMASK	0x0000ff	/* valid user option mask */
 
-#define	FTS_NAMEONLY	0x100		/* (private) child names only */
-#define	FTS_STOP	0x200		/* (private) unrecoverable error */
+/* valid only for fts_children() */
+#define	FTS_NAMEONLY	0x000100	/* child names only */
+
+/* internal use only */
+#define	FTS_STOP	0x010000	/* unrecoverable error */
 	int fts_options;		/* fts_open options, global flags */
 	void *fts_clientptr;		/* thunk for sort function */
 } FTS;

@@ -72,7 +72,7 @@ static int litexec(const struct pat *pat, const char *string,
     size_t nmatch, regmatch_t pmatch[]);
 #endif
 static bool procline(struct parsec *pc);
-static void printline(struct parsec *pc, int sep);
+static bool printline(struct parsec *pc, int sep, size_t *last_out);
 static void printline_metadata(struct str *line, int sep);
 
 bool
@@ -136,16 +136,16 @@ grep_tree(char **argv)
 	/* This switch effectively initializes 'fts_flags' */
 	switch(linkbehave) {
 	case LINK_EXPLICIT:
-		fts_flags = FTS_COMFOLLOW;
+		fts_flags = FTS_COMFOLLOW | FTS_PHYSICAL;
 		break;
 	case LINK_SKIP:
 		fts_flags = FTS_PHYSICAL;
 		break;
 	default:
-		fts_flags = FTS_LOGICAL;
+		fts_flags = FTS_LOGICAL | FTS_NOSTAT;
 	}
 
-	fts_flags |= FTS_NOSTAT | FTS_NOCHDIR;
+	fts_flags |= FTS_NOCHDIR;
 
 	fts = fts_open((argv[0] == NULL) ?
 	    __DECONST(char * const *, wd) : argv, fts_flags, NULL);
@@ -154,15 +154,13 @@ grep_tree(char **argv)
 	while (errno = 0, (p = fts_read(fts)) != NULL) {
 		switch (p->fts_info) {
 		case FTS_DNR:
-			/* FALLTHROUGH */
 		case FTS_ERR:
+		case FTS_NS:
 			file_err = true;
 			if(!sflag)
-				warnx("%s: %s", p->fts_path, strerror(p->fts_errno));
+				warnc(p->fts_errno, "%s", p->fts_path);
 			break;
 		case FTS_D:
-			/* FALLTHROUGH */
-		case FTS_DP:
 			if (dexclude || dinclude)
 				if (!dir_matching(p->fts_name) ||
 				    !dir_matching(p->fts_path))
@@ -172,6 +170,17 @@ grep_tree(char **argv)
 			/* Print a warning for recursive directory loop */
 			warnx("warning: %s: recursive directory loop",
 			    p->fts_path);
+			break;
+		case FTS_DP:
+			break;
+		case FTS_SL:
+			/*
+			 * Skip symlinks for LINK_EXPLICIT and
+			 * LINK_SKIP.  Note that due to FTS_COMFOLLOW,
+			 * symlinks on the command line are followed
+			 * for LINK_EXPLICIT and not reported as
+			 * symlinks.
+			 */
 			break;
 		default:
 			/* Check for file exclusion/inclusion */
@@ -205,15 +214,29 @@ procmatch_match(struct mprintc *mc, struct parsec *pc)
 
 	/* Print the matching line, but only if not quiet/binary */
 	if (mc->printmatch) {
-		printline(pc, ':');
+		size_t last_out;
+		bool terminated;
+
+		last_out = 0;
+		terminated = printline(pc, ':', &last_out);
 		while (pc->matchidx >= MAX_MATCHES) {
 			/* Reset matchidx and try again */
 			pc->matchidx = 0;
 			if (procline(pc) == !vflag)
-				printline(pc, ':');
+				terminated = printline(pc, ':', &last_out);
 			else
 				break;
 		}
+
+		/*
+		 * The above loop processes the entire line as long as we keep
+		 * hitting the maximum match count.  At this point, we know
+		 * that there's nothing left to be printed and can terminate the
+		 * line.
+		 */
+		if (!terminated)
+			printline(pc, ':', &last_out);
+
 		first_match = false;
 		mc->same_file = true;
 		mc->last_outed = 0;
@@ -763,26 +786,39 @@ printline_metadata(struct str *line, int sep)
 }
 
 /*
- * Prints a matching line according to the command line options.
+ * Prints a matching line according to the command line options.  We need
+ * *last_out to be populated on entry in case this is just a continuation of
+ * matches within the same line.
+ *
+ * Returns true if the line was terminated, false if it was not.
  */
-static void
-printline(struct parsec *pc, int sep)
+static bool
+printline(struct parsec *pc, int sep, size_t *last_out)
 {
-	size_t a = 0;
+	size_t a = *last_out;
 	size_t i, matchidx;
 	regmatch_t match;
+	bool terminated;
+
+	/*
+	 * Nearly all paths below will terminate the line by default, but it is
+	 * avoided in some circumstances in case we don't have the full context
+	 * available here.
+	 */
+	terminated = true;
 
 	/* If matchall, everything matches but don't actually print for -o */
 	if (oflag && matchall)
-		return;
+		return (terminated);
 
 	matchidx = pc->matchidx;
 
 	/* --color and -o */
-	if ((oflag || color) && matchidx > 0) {
+	if ((oflag || color) && (pc->printed > 0 || matchidx > 0)) {
 		/* Only print metadata once per line if --color */
-		if (!oflag && pc->printed == 0)
+		if (!oflag && pc->printed == 0) {
 			printline_metadata(&pc->ln, sep);
+		}
 		for (i = 0; i < matchidx; i++) {
 			match = pc->matches[i];
 			/* Don't output zero length matches */
@@ -795,9 +831,10 @@ printline(struct parsec *pc, int sep)
 			if (oflag) {
 				pc->ln.boff = match.rm_so;
 				printline_metadata(&pc->ln, sep);
-			} else
+			} else {
 				fwrite(pc->ln.dat + a, match.rm_so - a, 1,
 				    stdout);
+			}
 			if (color)
 				fprintf(stdout, "\33[%sm\33[K", color);
 			fwrite(pc->ln.dat + match.rm_so,
@@ -808,13 +845,31 @@ printline(struct parsec *pc, int sep)
 			if (oflag)
 				putchar('\n');
 		}
-		if (!oflag) {
-			if (pc->ln.len - a > 0)
+
+		/*
+		 * Don't terminate if we reached the match limit; we may have
+		 * other matches on this line to process.
+		 */
+		*last_out = a;
+		if (!oflag && matchidx != MAX_MATCHES) {
+			if (pc->ln.len - a > 0) {
 				fwrite(pc->ln.dat + a, pc->ln.len - a, 1,
 				    stdout);
+				*last_out = pc->ln.len;
+			}
 			putchar('\n');
+		} else if (!oflag) {
+			/*
+			 * -o is terminated on every match output, so this
+			 * branch is only designed to capture MAX_MATCHES in a
+			 * line which may be a signal to us for a lack of
+			 * context.  The caller will know more and call us again
+			 * to terminate if it needs to.
+			 */
+			terminated = false;
 		}
 	} else
 		grep_printline(&pc->ln, sep);
 	pc->printed++;
+	return (terminated);
 }

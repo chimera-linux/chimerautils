@@ -1,4 +1,6 @@
 .\"-
+.\" SPDX-License-Identifier: BSD-3-Clause
+.\"
 .\" Copyright (c) 1991, 1993
 .\"	The Regents of the University of California.  All rights reserved.
 .\"
@@ -31,7 +33,7 @@
 .\"
 .\"	from: @(#)sh.1	8.6 (Berkeley) 5/4/95
 .\"
-.Dd December 14, 2022
+.Dd March 8, 2025
 .Dt SH 1
 .Os
 .Sh NAME
@@ -39,14 +41,14 @@
 .Nd command interpreter (shell)
 .Sh SYNOPSIS
 .Nm
-.Op Fl /+abCEefhIimnPpTuVvx
+.Op Fl /+abCEefhIilmnPpTuVvx
 .Op Fl /+o Ar longname
 .Oo
 .Ar script
 .Op Ar arg ...
 .Oc
 .Nm
-.Op Fl /+abCEefhIimnPpTuVvx
+.Op Fl /+abCEefhIilmnPpTuVvx
 .Op Fl /+o Ar longname
 .Fl c Ar string
 .Oo
@@ -54,7 +56,7 @@
 .Op Ar arg ...
 .Oc
 .Nm
-.Op Fl /+abCEefhIimnPpTuVvx
+.Op Fl /+abCEefhIilmnPpTuVvx
 .Op Fl /+o Ar longname
 .Fl s
 .Op Ar arg ...
@@ -238,11 +240,9 @@ If a shell function is executed and its exit status is explicitly
 tested, all commands of the function are considered to be tested as
 well.
 .Pp
-It is recommended to check for failures explicitly
-instead of relying on
-.Fl e
-because it tends to behave in unexpected ways,
-particularly in larger scripts.
+Note that many commands return non-zero values to convey information other
+than errors, which can cause unexpected program termination with
+.Fl e .
 .It Fl f Li noglob
 Disable pathname expansion.
 .It Fl h Li trackall
@@ -253,6 +253,8 @@ Ignore
 from input when in interactive mode.
 .It Fl i Li interactive
 Force the shell to behave interactively.
+.It Fl l
+Force the shell to act as if it has been invoked as a login shell.
 .It Fl m Li monitor
 Turn on job control (set automatically when interactive).
 A new process group is created for each pipeline (called a job).
@@ -1058,15 +1060,14 @@ or the end of the
 command.
 .Ss Grouping Commands Together
 Commands may be grouped by writing either
-.Pp
 .Sm off
-.Bd -literal -offset -ident
+.Bd -literal -offset indent
 .Po Ar list Pc
 .Ed
 .Sm on
 .Pp
 or
-.Bd -literal -offset -ident
+.Bd -literal -offset indent
 .No { Ar list ; }
 .Ed
 .Pp
@@ -1918,8 +1919,9 @@ make it the first or last character listed.
 .Ss Built-in Commands
 This section lists the built-in commands.
 .Bl -tag -width indent
-.It Ic \&:
+.It Ic \&: Op Ar arg Ar ...
 A null command that returns a 0 (true) exit value.
+Any arguments are discarded.
 .It Ic \&. Ar file
 The commands in the specified file are read and executed by the shell.
 The
@@ -1941,7 +1943,7 @@ it is sought in the current working directory.
 .It Ic \&[
 A built-in equivalent of
 .Xr test 1 .
-.It Ic alias Oo Ar name Ns Oo = Ns Ar string Oc ... Oc
+.It Ic alias Oo Ar name Ns Oo = Ns Ar string Oc Ar ... Oc
 If
 .Ar name Ns = Ns Ar string
 is specified, the shell defines the alias
@@ -2894,7 +2896,9 @@ This version of
 was rewritten in 1989 under the
 .Bx
 license after the Bourne shell from
-.At V.4 .
+.At V.4
+and first appeared in
+.Bx 4.3 Net/2 .
 .Sh AUTHORS
 This version of
 .Nm

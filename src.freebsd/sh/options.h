@@ -70,11 +70,9 @@ struct shparam {
 #define NSHORTOPTS	18
 #define NOPTS		20
 
-extern char lflag;
 extern char optval[NOPTS];
 extern const char optletter[NSHORTOPTS];
 #ifdef DEFINE_OPTIONS
-char lflag;
 char optval[NOPTS];
 const char optletter[NSHORTOPTS] = "efIimnsxvVECabuTPh";
 static const unsigned char optname[] =
@@ -109,7 +107,7 @@ extern char **argptr;		/* argument list for builtin commands */
 extern char *shoptarg;		/* set by nextopt */
 extern char *nextopt_optptr;	/* used by nextopt */
 
-void procargs(int, char **);
+int procargs(int, char **);
 void optschanged(void);
 void freeparam(struct shparam *);
 int nextopt(const char *);

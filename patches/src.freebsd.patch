@@ -164,25 +164,7 @@
  	return(pid == -1 ? -1 : pstat);
 --- src.orig/awk/b.c
 +++ src.freebsd/awk/b.c
-@@ -645,7 +645,7 @@
- 		f->gototab[state].entries[0].state = val;
- 		f->gototab[state].inuse++;
- 		return val;
--	} else if (ch > f->gototab[state].entries[f->gototab[state].inuse-1].ch) {
-+	} else if (ch > (int)f->gototab[state].entries[f->gototab[state].inuse-1].ch) {
- 		// not seen yet, insert and return
- 		gtt *tab = & f->gototab[state];
- 		if (tab->inuse + 1 >= tab->allocated)
-@@ -869,7 +869,7 @@
- 		 * Call u8_rune with at least awk_mb_cur_max ahead in
- 		 * the buffer until EOF interferes.
- 		 */
--		if (k - j < awk_mb_cur_max) {
-+		if ((k - j) < 0 || (size_t)(k - j) < awk_mb_cur_max) {
- 			if (k + awk_mb_cur_max > buf + bufsize) {
- 				char *obuf = buf;
- 				adjbuf((char **) &buf, &bufsize,
-@@ -1023,6 +1023,7 @@
+@@ -1036,6 +1036,7 @@
  		}
  		else
  			FATAL("syntax error in regular expression %s at %s", lastre, prestr);
@@ -192,7 +174,7 @@
  	}
 --- src.orig/awk/run.c
 +++ src.freebsd/awk/run.c
-@@ -1982,7 +1982,6 @@
+@@ -1979,7 +1979,6 @@
  	size_t n       = 0;
  	wchar_t wc;
  	const size_t sz = awk_mb_cur_max;
@@ -200,7 +182,7 @@
  
  	if (sz == 1) {
  		buf = tostring(s);
-@@ -1996,14 +1995,8 @@
+@@ -1993,14 +1992,8 @@
  		buf = tostringN(s, strlen(s) * sz + 1);
  
  		(void) mbtowc(NULL, NULL, 0);	/* reset internal state */
@@ -217,15 +199,6 @@
  
  		ps   = s;
  		pbuf = buf;
-@@ -2061,7 +2054,7 @@
- Cell *bltin(Node **a, int n)	/* builtin functions. a[0] is type, a[1] is arg list */
- {
- 	Cell *x, *y;
--	Awkfloat u;
-+	Awkfloat u = 0;
- 	int t, sz;
- 	Awkfloat tmp;
- 	char *buf, *fmt;
 --- src.orig/bc/dc/bcode.c
 +++ src.freebsd/bc/dc/bcode.c
 @@ -70,7 +70,7 @@
@@ -1039,7 +1012,7 @@
  #define	asizeof(a)	(sizeof(a) / sizeof((a)[0]))
  
  #define	FLAG_NONE	(1 << 0)
-@@ -84,18 +87,16 @@
+@@ -83,18 +86,16 @@
  }
  
  static char *
@@ -1060,7 +1033,7 @@
  	static int start_of_month[2][13] = {
  		{0, 31, 59, 90, 120, 151, 181, 212, 243, 273, 304, 334, 365},
  		{0, 31, 60, 91, 121, 152, 182, 213, 244, 274, 305, 335, 366}
-@@ -110,9 +111,9 @@
+@@ -109,9 +110,9 @@
  		c = *ptr++;
  
  		if (c != '%') {
@@ -1072,7 +1045,7 @@
  					buf++;
  			else if (c != *buf++)
  				return (NULL);
-@@ -130,20 +131,24 @@
+@@ -129,20 +130,24 @@
  			break;
  
  		case '+':
@@ -1100,7 +1073,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -155,14 +160,14 @@
+@@ -154,14 +159,14 @@
  			break;
  
  		case 'c':
@@ -1117,7 +1090,7 @@
  			if (buf == NULL)
  				return (NULL);
  			flags |= FLAG_MONTH | FLAG_MDAY | FLAG_YEAR;
-@@ -181,50 +186,50 @@
+@@ -180,50 +185,50 @@
  			goto label;
  
  		case 'F':
@@ -1176,7 +1149,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -240,15 +245,15 @@
+@@ -239,15 +244,15 @@
  		case 'M':
  		case 'S':
  			if (*buf == 0 ||
@@ -1195,7 +1168,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -281,16 +286,16 @@
+@@ -280,16 +285,16 @@
  
  			len = 2;
  			if ((c == 'k' || c == 'l') &&
@@ -1215,7 +1188,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -313,16 +318,18 @@
+@@ -312,16 +317,18 @@
  			if (tm->tm_hour > 12)
  				return (NULL);
  
@@ -1238,7 +1211,7 @@
  				if (tm->tm_hour != 12)
  					tm->tm_hour += 12;
  				buf += len;
-@@ -333,17 +340,17 @@
+@@ -332,17 +339,17 @@
  
  		case 'A':
  		case 'a':
@@ -1264,7 +1237,7 @@
  				return (NULL);
  
  			buf += len;
-@@ -359,12 +366,12 @@
+@@ -358,12 +365,12 @@
  			 * point to calculate a real value, so just check the
  			 * range for now.
  			 */
@@ -1279,7 +1252,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -384,7 +391,7 @@
+@@ -383,7 +390,7 @@
  
  		case 'u':
  		case 'w':
@@ -1288,7 +1261,7 @@
  				return (NULL);
  
  			i = *buf++ - '0';
-@@ -403,7 +410,7 @@
+@@ -402,7 +409,7 @@
  			 * before single digits.
  			 */
  			if (*buf != 0 &&
@@ -1297,7 +1270,7 @@
  			       buf++;
  			/* FALLTHROUGH */
  		case 'd':
-@@ -416,12 +423,12 @@
+@@ -415,12 +422,12 @@
  			 * XXX The %e specifier may gobble one too many
  			 * digits if used incorrectly.
  			 */
@@ -1312,7 +1285,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -437,19 +444,18 @@
+@@ -436,19 +443,18 @@
  		case 'B':
  		case 'b':
  		case 'h':
@@ -1339,7 +1312,7 @@
  						break;
  				}
  			}
-@@ -457,15 +463,15 @@
+@@ -456,15 +462,15 @@
  			 * Try the abbreviated month name if the full name
  			 * wasn't found and Oalternative was not requested.
  			 */
@@ -1361,7 +1334,7 @@
  				return (NULL);
  
  			tm->tm_mon = i;
-@@ -475,12 +481,12 @@
+@@ -474,12 +480,12 @@
  			break;
  
  		case 'm':
@@ -1376,7 +1349,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -502,7 +508,7 @@
+@@ -501,7 +507,7 @@
  
  			sverrno = errno;
  			errno = 0;
@@ -1385,7 +1358,7 @@
  			if (errno == ERANGE || (long)(t = n) != n) {
  				errno = sverrno;
  				return (NULL);
-@@ -520,15 +526,15 @@
+@@ -519,15 +525,15 @@
  		case 'Y':
  		case 'y':
  			if (*buf == 0 ||
@@ -1404,7 +1377,7 @@
  				i *= 10;
  				i += *buf - '0';
  				len--;
-@@ -547,7 +553,7 @@
+@@ -546,7 +552,7 @@
  			char *zonestr;
  
  			for (cp = buf; *cp &&
@@ -1413,7 +1386,7 @@
  				/*empty*/}
  			if (cp - buf) {
  				zonestr = alloca(cp - buf + 1);
-@@ -583,7 +589,7 @@
+@@ -582,7 +588,7 @@
  			buf++;
  			i = 0;
  			for (len = 4; len > 0; len--) {
@@ -1422,7 +1395,7 @@
  					i *= 10;
  					i += *buf - '0';
  					buf++;
-@@ -605,7 +611,7 @@
+@@ -604,7 +610,7 @@
  
  		case 'n':
  		case 't':
@@ -1431,7 +1404,7 @@
  				buf++;
  			break;
  
-@@ -697,15 +703,14 @@
+@@ -691,15 +697,14 @@
  }
  
  char *
@@ -1450,7 +1423,7 @@
  	if (ret && gmt) {
  		time_t t = timegm(tm);
  
-@@ -713,11 +718,4 @@
+@@ -707,11 +712,4 @@
  	}
  
  	return (ret);
@@ -2135,17 +2108,12 @@
 -		if (argc > 1)
 +		if (argc > 1 || targdir) {
 +			if (Tflag) errx(1, "extra operand '%s'", to.p_path);
- 			errx(1, "%s is not a directory", to.p_path);
+ 			errc(1, ENOTDIR, "%s", to.p_path);
 +		}
  
  		/*
  		 * Need to detect the case:
-@@ -256,11 +264,16 @@
- 			} else
- 				errx(1, "%s is not a directory", to.p_path);
- 		}
--	} else
-+	} else {
+@@ -259,6 +267,10 @@
  		/*
  		 * Case (2).  Target is a directory.
  		 */
@@ -2154,11 +2122,9 @@
 +			errx(1, "cannot overwrite directory '%s' with non-directory", to.p_path);
 +		}
  		type = FILE_TO_DIR;
-+	}
+ 	}
  
- 	/*
- 	 * For DIR_TO_DNE, we could provide copy() with the to_stat we've
-@@ -451,6 +464,7 @@
+@@ -451,6 +463,7 @@
  				if (preserve_dir_acls(curr->fts_statp,
  				    curr->fts_accpath, to.p_path) != 0)
  					rval = 1;
@@ -4431,7 +4397,7 @@
  #endif
  		default:
  		case '?':
-@@ -713,7 +714,7 @@
+@@ -716,7 +717,7 @@
   * points to the parent directory of the display list.
   */
  static void
@@ -4440,7 +4406,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -731,8 +732,10 @@
+@@ -734,8 +735,10 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -4452,7 +4418,7 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -789,7 +792,6 @@
+@@ -792,7 +795,6 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -4460,7 +4426,7 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -844,27 +846,33 @@
+@@ -847,27 +849,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -4507,7 +4473,7 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -878,8 +886,10 @@
+@@ -881,8 +889,10 @@
  						maxflags = flen;
  				} else
  					flen = 0;
@@ -4518,7 +4484,7 @@
  					char name[PATH_MAX + 1];
  					mac_t label;
  					int error;
-@@ -925,6 +935,27 @@
+@@ -928,6 +938,27 @@
  					}
  					mac_free(label);
  label_out:
@@ -4546,7 +4512,7 @@
  					if (labelstr == NULL)
  						labelstr = strdup("-");
  					labelstrlen = strlen(labelstr);
-@@ -932,7 +963,6 @@
+@@ -935,7 +966,6 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -4554,7 +4520,7 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -942,6 +972,11 @@
+@@ -945,6 +975,11 @@
  				np->group = &np->data[ulen + 1];
  				(void)strcpy(np->group, group);
  
@@ -4566,7 +4532,7 @@
  				if (S_ISCHR(sp->st_mode) ||
  				    S_ISBLK(sp->st_mode)) {
  					sizelen = snprintf(NULL, 0,
-@@ -950,11 +985,6 @@
+@@ -953,11 +988,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4578,7 +4544,7 @@
  				if (f_label) {
  					np->label = &np->data[ulen + glen + 2
  					    + (f_flags ? flen + 1 : 0)];
-@@ -1011,7 +1041,7 @@
+@@ -1014,7 +1044,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -4980,7 +4946,7 @@
  	const char *digestname;
  	size_t digestnamelen;
  	size_t hashstrlen;
-@@ -589,11 +596,11 @@
+@@ -589,8 +596,8 @@
  		 * with an array of the filenames from that list.
  		 */
  		if (argc < 1)
@@ -4990,11 +4956,7 @@
 +		else while (argc--)
  			gnu_check(*argv++);
  		argc = 0;
--		argv = calloc(sizeof(char *), numrecs + 1);
-+		argv = calloc(numrecs + 1, sizeof(char *));
- 		for (rec = head; rec != NULL; rec = rec->next) {
- 			argv[argc] = rec->filename;
- 			argc++;
+ 		argv = calloc(numrecs + 1, sizeof(char *));
 @@ -687,7 +694,7 @@
  	DIGEST_CTX context;
  	char *end, *p, *q;
@@ -7404,9 +7366,20 @@
  #endif /* not lint */
  
 +#include <sys/cdefs.h>
+ #include <sys/types.h>
  #include <sys/capsicum.h>
  #include <sys/queue.h>
- #include <sys/stat.h>
+@@ -192,9 +193,8 @@
+ 		goto failed;
+ 
+ 	(void)strlcpy(&sun.sun_path[0], path, sizeof(sun.sun_path));
+-	sun.sun_len = SUN_LEN(&sun);
+ 
+-	if (connect(fd, (const struct sockaddr *)&sun, sun.sun_len) == 0)
++	if (connect(fd, (const struct sockaddr *)&sun, sizeof(sun)) == 0)
+ 		return (fd);
+ 
+ failed:
 --- src.orig/coreutils/timeout/timeout.c
 +++ src.freebsd/coreutils/timeout/timeout.c
 @@ -26,10 +26,11 @@
@@ -7422,7 +7395,7 @@
  #include <err.h>
  #include <errno.h>
  #include <getopt.h>
-@@ -101,16 +102,19 @@
+@@ -107,8 +108,9 @@
  {
  	int sig, i;
  	const char *errstr;
@@ -7433,7 +7406,7 @@
  
  	if (errstr == NULL)
  		return (sig);
-+
+@@ -116,8 +118,9 @@
  	if (strncasecmp(str, "SIG", 3) == 0)
  		str += 3;
  
@@ -7445,7 +7418,16 @@
  			return (i);
  	}
  
-@@ -171,8 +175,6 @@
+@@ -154,7 +157,7 @@
+ {
+ 	if (verbose) {
+ 		warnx("sending signal %s(%d) to command '%s'",
+-		sys_signame[signo], signo, command);
++		signum_to_signame(signo), signo, command);
+ 	}
+ 	kill(pid, signo);
+ }
+@@ -188,8 +191,6 @@
  	bool do_second_kill = false;
  	bool child_done = false;
  	struct sigaction signals;
@@ -7454,7 +7436,7 @@
  	int signums[] = {
  		-1,
  		SIGTERM,
-@@ -225,8 +227,8 @@
+@@ -247,8 +248,8 @@
  
  	if (!foreground) {
  		/* Acquire a reaper */
@@ -7465,18 +7447,18 @@
  	}
  
  	memset(&signals, 0, sizeof(signals));
-@@ -294,9 +296,7 @@
+@@ -318,9 +319,7 @@
  				if (foreground) {
  					break;
  				} else {
 -					procctl(P_PID, getpid(),
--					    PROC_REAP_STATUS, &info);
+-					    	PROC_REAP_STATUS, &info);
 -					if (info.rs_children == 0)
 +					if (waitpid(-1, NULL, WNOHANG) < 0)
  						break;
  				}
  			}
-@@ -305,10 +305,8 @@
+@@ -329,10 +328,8 @@
  
  			timedout = true;
  			if (!foreground) {
@@ -7487,9 +7469,9 @@
 +				if (kill(getpid(), SIGKILL) == -1)
 +					err(EXIT_FAILURE, "kill");
  			} else
- 				kill(pid, killsig);
+ 				send_sig(pid, killsig);
  
-@@ -322,10 +320,8 @@
+@@ -346,10 +343,8 @@
  
  		} else if (sig_term) {
  			if (!foreground) {
@@ -7500,9 +7482,9 @@
 +				if (kill(getpid(), SIGTERM) == -1)
 +					err(EXIT_FAILURE, "kill");
  			} else
- 				kill(pid, sig_term);
+ 				send_sig(pid, sig_term);
  
-@@ -345,7 +341,7 @@
+@@ -369,7 +364,7 @@
  	}
  
  	if (!foreground)
@@ -7676,7 +7658,7 @@
  			/*
 --- src.orig/coreutils/truncate/truncate.1
 +++ src.freebsd/coreutils/truncate/truncate.1
-@@ -225,7 +225,7 @@
+@@ -235,7 +235,7 @@
  .Sh SEE ALSO
  .Xr dd 1 ,
  .Xr touch 1 ,
@@ -8770,7 +8752,7 @@
  	}
  	metadata_log(path, "dir", NULL, NULL, NULL, 0);
  }
-@@ -1483,16 +1543,16 @@
+@@ -1495,16 +1555,16 @@
  usage(void)
  {
  	(void)fprintf(stderr,
@@ -10950,7 +10932,7 @@
  
 --- src.orig/grep/util.c
 +++ src.freebsd/grep/util.c
-@@ -466,6 +466,30 @@
+@@ -489,6 +489,30 @@
  
  #define iswword(x)	(iswalnum((x)) || (x) == L'_')
  
@@ -10981,7 +10963,7 @@
  /*
   * Processes a line comparing it with the specified patterns.  Each pattern
   * is looped to be compared along with the full string, saving each and every
-@@ -533,7 +557,7 @@
+@@ -556,7 +580,7 @@
  				r = litexec(&pattern[i], pc->ln.dat, 1, &pmatch);
  			else
  #endif
@@ -11124,9 +11106,9 @@
 +#ifdef _CHIMERAUTILS_BUILD
 +#include "config-compat.h"
 +#endif
- 
++ 
 +#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
-+
+ 
 +#include <sys/types.h>
 +
  typedef struct {
@@ -11145,19 +11127,19 @@
 -	    (const struct _ftsent * const *, const struct _ftsent * const *);
 +	    (const struct _ftsent **, const struct _ftsent **);
  
- #define	FTS_COMFOLLOW	0x001		/* follow command line symlinks */
- #define	FTS_LOGICAL	0x002		/* logical walk */
-@@ -55,7 +61,9 @@
- #define	FTS_PHYSICAL	0x010		/* physical walk */
- #define	FTS_SEEDOT	0x020		/* return dot and dot-dot */
- #define	FTS_XDEV	0x040		/* don't cross devices */
+ /* valid for fts_open() */
+ #define	FTS_COMFOLLOW	0x000001	/* follow command line symlinks */
+@@ -56,7 +62,9 @@
+ #define	FTS_PHYSICAL	0x000010	/* physical walk */
+ #define	FTS_SEEDOT	0x000020	/* return dot and dot-dot */
+ #define	FTS_XDEV	0x000040	/* don't cross devices */
 +#if 0
- #define	FTS_WHITEOUT	0x080		/* return whiteout information */
+ #define	FTS_WHITEOUT	0x000080	/* return whiteout information */
 +#endif
- #define	FTS_OPTIONMASK	0x0ff		/* valid user option mask */
+ #define	FTS_OPTIONMASK	0x0000ff	/* valid user option mask */
  
- #define	FTS_NAMEONLY	0x100		/* (private) child names only */
-@@ -75,12 +83,12 @@
+ /* valid only for fts_children() */
+@@ -79,12 +87,12 @@
  	char *fts_path;			/* root path */
  	int fts_errno;			/* errno for this node */
  	int fts_symfd;			/* fd for symlink */
@@ -11175,7 +11157,7 @@
  
  #define	FTS_ROOTPARENTLEVEL	-1
  #define	FTS_ROOTLEVEL		 0
-@@ -99,12 +107,16 @@
+@@ -103,12 +111,16 @@
  #define	FTS_NSOK	11		/* no stat(2) requested */
  #define	FTS_SL		12		/* symbolic link */
  #define	FTS_SLNONE	13		/* symbolic link without target */
@@ -11192,7 +11174,7 @@
  	unsigned fts_flags;		/* private flags for FTSENT structure */
  
  #define	FTS_AGAIN	 1		/* read node again */
-@@ -118,9 +130,10 @@
+@@ -122,9 +134,10 @@
  	FTS *fts_fts;			/* back pointer to main FTS */
  } FTSENT;
  
@@ -11205,7 +11187,7 @@
  FTSENT	*fts_children(FTS *, int);
  int	 fts_close(FTS *);
  void	*fts_get_clientptr(FTS *);
-@@ -128,10 +141,17 @@
+@@ -132,10 +145,17 @@
  FTS	*fts_get_stream(FTSENT *);
  #define	 fts_get_stream(ftsent)	((ftsent)->fts_fts)
  FTS	*fts_open(char * const *, int,
@@ -12274,7 +12256,7 @@
  	struct stat sb;
  
  	if (statok) {
-@@ -408,16 +407,8 @@
+@@ -409,16 +408,8 @@
  		return;
  	}
  	if (S_ISCHR(sb.st_mode) || S_ISBLK(sb.st_mode)) {
@@ -13070,7 +13052,7 @@
  #include <sys/time.h>
  #include <sys/wait.h>
  
-@@ -59,7 +58,6 @@
+@@ -61,7 +60,6 @@
  #include <time.h>
  #include <unistd.h>
  
@@ -13078,7 +13060,7 @@
  static void humantime(FILE *, long, long);
  static void showtime(FILE *, struct timespec *, struct timespec *,
      struct rusage *);
-@@ -74,20 +72,21 @@
+@@ -76,20 +74,21 @@
  int
  main(int argc, char **argv)
  {
@@ -13103,7 +13085,7 @@
  		switch((char)ch) {
  		case 'a':
  			aflag = 1;
-@@ -95,9 +94,6 @@
+@@ -97,9 +96,6 @@
  		case 'h':
  			hflag = 1;
  			break;
@@ -13113,7 +13095,7 @@
  		case 'o':
  			ofn = optarg;
  			break;
-@@ -134,8 +130,8 @@
+@@ -136,8 +132,8 @@
  	(void)signal(SIGINT, SIG_IGN);
  	(void)signal(SIGQUIT, SIG_IGN);
  	siginfo_recvd = 0;
@@ -13122,9 +13104,9 @@
 +	sa.sa_handler = siginfo;
 +	(void)sigaction(SIGINFO, &sa, NULL);
  	while (wait4(pid, &status, 0, &ru) != pid) {
- 		if (siginfo_recvd) {
- 			siginfo_recvd = 0;
-@@ -151,6 +147,7 @@
+ 		bool do_siginfo = siginfo_recvd != 0;
+ 
+@@ -156,6 +152,7 @@
  		warnx("command terminated abnormally");
  	exitonsig = WIFSIGNALED(status) ? WTERMSIG(status) : 0;
  	showtime(out, &before_ts, &after, &ru);
@@ -13132,7 +13114,7 @@
  	if (lflag) {
  		int hz = getstathz();
  		u_long ticks;
-@@ -194,6 +191,7 @@
+@@ -199,6 +196,7 @@
  		fprintf(out, "%10ld  %s\n",
  			ru.ru_nivcsw, "involuntary context switches");
  	}
@@ -13140,7 +13122,7 @@
  	/*
  	 * If the child has exited on a signal, exit on the same
  	 * signal, too, in order to reproduce the child's exit status.
-@@ -220,6 +218,7 @@
+@@ -225,6 +223,7 @@
  	exit(1);
  }
  
@@ -13148,7 +13130,7 @@
  /*
   * Return the frequency of the kernel's statistics clock.
   */
-@@ -237,6 +236,7 @@
+@@ -242,6 +241,7 @@
  		err(1, "sysctl kern.clockrate");
  	return clockrate.stathz;
  }
@@ -14012,7 +13994,7 @@
  			    "237|Unable to create temporary file");
 --- src.orig/nvi/common/log.c
 +++ src.freebsd/nvi/common/log.c
-@@ -22,6 +22,7 @@
+@@ -21,6 +21,7 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -14020,7 +14002,7 @@
  
  #include "common.h"
  
-@@ -81,7 +82,7 @@
+@@ -80,7 +81,7 @@
  	char    data[sizeof(u_char) /* type */ + sizeof(recno_t)];
  	CHAR_T  str[1];
  } log_t;
@@ -14029,7 +14011,7 @@
  
  /*
   * log_init --
-@@ -520,6 +521,7 @@
+@@ -519,6 +520,7 @@
  				sp->rptlchange = lno;
  				++sp->rptlines[L_CHANGED];
  			}
@@ -14049,13 +14031,13 @@
  /*
 --- src.orig/nvi/common/options.c
 +++ src.freebsd/nvi/common/options.c
-@@ -315,15 +315,24 @@
+@@ -317,15 +317,24 @@
  	argv[1] = &b;
  
  	/* Set numeric and string default values. */
 -#define	OI(indx, str) do {						\
 -	a.len = STRLEN(str);						\
--	if ((CHAR_T*)str != b2)	  /* GCC puts strings in text-space. */	\
+-	if (STRCMP((CHAR_T*)str, b2) != 0)					\
 -		(void)MEMCPY(b2, str, a.len+1);				\
 +#define	OI_BASE(indx) do {						\
  	if (opts_set(sp, argv, NULL)) {					\
@@ -14078,7 +14060,7 @@
  	/*
  	 * Indirect global options to global space.  Specifically, set up
  	 * terminal, lines, columns first, they're used by other options.
-@@ -345,7 +354,7 @@
+@@ -347,7 +356,7 @@
  	/* Initialize string values. */
  	(void)SPRINTF(b2, SIZE(b2),
  	    L("cdpath=%s"), (s = getenv("CDPATH")) == NULL ? ":" : s);
@@ -14087,7 +14069,7 @@
  	OI(O_CEDIT, L("cedit=\033"));
  
  	/*
-@@ -357,30 +366,30 @@
+@@ -359,30 +368,30 @@
  	 */
  	(void)SPRINTF(b2, SIZE(b2),
  	    L("directory=%s"), (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
@@ -14124,7 +14106,7 @@
  
  	/*
  	 * XXX
-@@ -390,7 +399,7 @@
+@@ -392,7 +401,7 @@
  	if ((v = (O_VAL(sp, O_LINES) - 1) / 2) == 0)
  		v = 1;
  	(void)SPRINTF(b2, SIZE(b2), L("scroll=%ld"), v);
@@ -14133,7 +14115,7 @@
  
  	/*
  	 * The default window option values are:
-@@ -411,7 +420,7 @@
+@@ -413,7 +422,7 @@
  		v = 1;
  
  	(void)SPRINTF(b2, SIZE(b2), L("window=%lu"), v);
@@ -14474,7 +14456,7 @@
  			     size_t);
  static void		 regsub(SPACE *, char *, char *);
  static int		 substitute(struct s_command *);
-@@ -663,7 +663,7 @@
+@@ -661,7 +661,7 @@
  }
  
  static int
@@ -14483,7 +14465,7 @@
  	size_t start, size_t stop)
  {
  	int eval;
-@@ -675,11 +675,23 @@
+@@ -673,11 +673,23 @@
  		defpreg = preg;
  
  	/* Set anchors */
@@ -14662,13 +14644,7 @@
  	if ((fd = open(fname, oflags)) < 0) {
 --- src.orig/sh/main.c
 +++ src.freebsd/sh/main.c
-@@ -146,19 +146,16 @@
- 	INTON;
- 	if (iflag)
- 		chkmail(1);
--	if (argv[0] && argv[0][0] == '-') {
-+	if (lflag) {
- 		state = 1;
+@@ -152,14 +152,11 @@
  		read_profile("/etc/profile");
  state1:
  		state = 2;
@@ -14685,7 +14661,7 @@
  		if ((shinit = lookupvar("ENV")) != NULL && *shinit != '\0') {
  			state = 3;
  			read_profile(shinit);
-@@ -259,9 +256,6 @@
+@@ -260,9 +257,6 @@
  	const char *expandedname;
  	int oflags = O_RDONLY | O_CLOEXEC;
  
@@ -14695,7 +14671,7 @@
  	expandedname = expandstr(name);
  	if (expandedname == NULL)
  		return;
-@@ -356,4 +350,5 @@
+@@ -357,4 +351,5 @@
  		exitshell(number(argv[1]));
  	else
  		exitshell_savedstatus();
@@ -14938,29 +14914,15 @@
  void sethistsize(const char *);
 --- src.orig/sh/options.c
 +++ src.freebsd/sh/options.c
-@@ -89,11 +89,11 @@
- 	char *scriptname;
- 
- 	argptr = argv;
-+	lflag = argptr[0] && argptr[0][0] == '-';
- 	if (argc > 0)
+@@ -94,7 +94,6 @@
  		argptr++;
  	for (i = 0; i < NOPTS; i++)
  		optval[i] = 2;
 -	privileged = (getuid() != geteuid() || getgid() != getegid());
- 	options(1);
+ 	login |= options(1);
  	if (*argptr == NULL && minusc == NULL)
  		sflag = 1;
-@@ -196,6 +196,8 @@
- 				if (q == NULL || minusc != NULL)
- 					error("Bad -c option");
- 				minusc = q;
-+			} else if (c == 'l' && cmdline) {
-+				lflag |= 1;
- 			} else if (c == 'o') {
- 				minus_o(*argptr, val);
- 				if (*argptr)
-@@ -282,12 +284,6 @@
+@@ -290,12 +289,6 @@
  static void
  setoptionbyindex(int idx, int val)
  {
@@ -14975,7 +14937,7 @@
  		/* #%$ hack for ksh semantics */
 --- src.orig/sh/options.h
 +++ src.freebsd/sh/options.h
-@@ -61,22 +61,22 @@
+@@ -61,22 +61,20 @@
  #define	aflag optval[12]
  #define	bflag optval[13]
  #define	uflag optval[14]
@@ -14997,18 +14959,16 @@
 +#define NSHORTOPTS	18
 +#define NOPTS		20
  
-+extern char lflag;
  extern char optval[NOPTS];
  extern const char optletter[NSHORTOPTS];
  #ifdef DEFINE_OPTIONS
-+char lflag;
  char optval[NOPTS];
 -const char optletter[NSHORTOPTS] = "efIimnsxvVECabupTPh";
 +const char optletter[NSHORTOPTS] = "efIimnsxvVECabuTPh";
  static const unsigned char optname[] =
  	"\007errexit"
  	"\006noglob"
-@@ -93,13 +93,11 @@
+@@ -93,13 +91,11 @@
  	"\011allexport"
  	"\006notify"
  	"\007nounset"
@@ -15155,7 +15115,7 @@
  	memory[fd] = 0;
 --- src.orig/sh/sh.1
 +++ src.freebsd/sh/sh.1
-@@ -277,22 +277,6 @@
+@@ -279,22 +279,6 @@
  to
  .Fl P
  (physical directory layout).
@@ -15178,7 +15138,7 @@
  .It Fl s Li stdin
  Read commands from standard input (set automatically
  if no file arguments are present).
-@@ -2662,7 +2646,7 @@
+@@ -2664,7 +2648,7 @@
  For aliases the alias expansion is printed;
  for commands and tracked aliases
  the complete pathname of the command is printed.
@@ -15187,7 +15147,7 @@
  Set or display resource limits (see
  .Xr getrlimit 2 ) .
  If
-@@ -2701,8 +2685,6 @@
+@@ -2703,8 +2687,6 @@
  displayed or modified.
  They are mutually exclusive.
  .Bl -tag -width indent
@@ -15196,7 +15156,7 @@
  .It Fl c Ar coredumpsize
  The maximal size of core dump files, in 512-byte blocks.
  Setting
-@@ -2710,13 +2692,12 @@
+@@ -2712,13 +2694,12 @@
  to 0 prevents core dump files from being created.
  .It Fl d Ar datasize
  The maximal size of the data segment of a process, in kilobytes.
@@ -15214,7 +15174,7 @@
  .It Fl l Ar lockedmem
  The maximal size of memory that can be locked by a process, in
  kilobytes.
-@@ -2724,13 +2705,10 @@
+@@ -2726,13 +2707,10 @@
  The maximal resident set size of a process, in kilobytes.
  .It Fl n Ar nofiles
  The maximal number of descriptors that could be opened by a process.
@@ -15232,7 +15192,7 @@
  .It Fl s Ar stacksize
  The maximal size of the stack segment, in kilobytes.
  .It Fl t Ar time
-@@ -2739,9 +2717,12 @@
+@@ -2741,9 +2719,12 @@
  The maximal number of simultaneous processes for this user ID.
  .It Fl v Ar virtualmem
  The maximal virtual size of a process, in kilobytes.
@@ -15816,7 +15776,7 @@
  {
  	if (server)
  		str_data[3] = TELQUAL_REPLY;
-@@ -336,7 +335,7 @@
+@@ -344,7 +343,7 @@
  }
  
  int
@@ -15825,7 +15785,7 @@
  {
  	if (level < AUTH_USER)
  		return(level);
-@@ -409,6 +408,7 @@
+@@ -417,6 +416,7 @@
  	}
  }
  
@@ -15833,7 +15793,7 @@
  static int
  isroot(const char *usr)
  {
-@@ -426,11 +426,14 @@
+@@ -434,11 +434,14 @@
  
  	return ((t = getttynam(ttyn)) && t->ty_status & TTY_SECURE);
  }
@@ -15848,7 +15808,7 @@
  	char *cp;
  	char *xpasswd, *salt;
  
-@@ -456,6 +459,7 @@
+@@ -464,6 +467,7 @@
  		}
  		return(1);
  	}
@@ -17649,7 +17609,7 @@
  		fprintf(stderr, "\"Echo\" failed\n");
 --- src.orig/tip/tip/cu.1
 +++ src.freebsd/tip/tip/cu.1
-@@ -68,9 +68,9 @@
+@@ -71,9 +71,9 @@
  .It Fl l Ar line
  Specify the line to use.
  Either of the forms like
@@ -17661,7 +17621,7 @@
  are permitted.
  .It Fl o
  Use odd parity.
-@@ -486,17 +486,17 @@
+@@ -489,17 +489,17 @@
  .Dq Li /bin/sh .
  .El
  .Sh FILES
@@ -18163,7 +18123,7 @@
  			} else {
  				p->fts_accpath = p->fts_name;
  				p->fts_info = fts_stat(sp, p, 0, -1);
-@@ -990,7 +1005,7 @@
+@@ -992,7 +1007,7 @@
  	FTS *parent;
  
  	parent = (*(const FTSENT * const *)a)->fts_fts;
@@ -18172,7 +18132,12 @@
  }
  
  static FTSENT *
-@@ -1149,10 +1164,10 @@
+@@ -1147,38 +1162,32 @@
+ {
+ 	int ret, oerrno, newfd;
+ 	struct stat sb;
+-	struct statfs sf;
+ 
  	newfd = fd;
  	if (ISSET(FTS_NOCHDIR))
  		return (0);
@@ -18185,7 +18150,21 @@
  		ret = -1;
  		goto bail;
  	}
-@@ -1165,11 +1180,12 @@
+ 	if (p->fts_dev != sb.st_dev || p->fts_ino != sb.st_ino) {
+-		if (_fstatfs(newfd, &sf) != 0 ||
+-		    (sf.f_flags & MNT_AUTOMOUNTED) == 0) {
+-			errno = ENOENT;		/* disinformation */
+-			ret = -1;
+-			goto bail;
+-		}
+-		/* autofs might did the mount under us, accept. */
+-		p->fts_dev = sb.st_dev;
+-		p->fts_ino = sb.st_ino;
++		errno = ENOENT;		/* disinformation */
++		ret = -1;
++		goto bail;
+ 	}
+ 	ret = fchdir(newfd);
  bail:
  	oerrno = errno;
  	if (fd < 0)
@@ -18199,7 +18178,7 @@
  /*
   * Check if the filesystem for "ent" has UFS-style links.
   */
-@@ -1203,3 +1219,6 @@
+@@ -1212,3 +1221,6 @@
  	}
  	return (priv->ftsp_linksreliable);
  }
