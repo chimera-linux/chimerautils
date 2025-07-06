@@ -60,6 +60,8 @@ static inline void HashUpdate(EVP_MD_CTX **ctx, const void *data, size_t len) {
 static inline void HashFinal(unsigned char *digest, EVP_MD_CTX **ctx) {
     if (!EVP_DigestFinal(*ctx, digest, NULL))
         errx(1, "could not finalize digest");
+
+    EVP_MD_CTX_free(*ctx);
 }
 
 static inline char *HashEnd(EVP_MD_CTX **ctx, char *buf) {
@@ -68,6 +70,8 @@ static inline char *HashEnd(EVP_MD_CTX **ctx, char *buf) {
 
     if (!EVP_DigestFinal(*ctx, digbuf, &mdlen))
         errx(1, "failed to finalize digest");
+
+    EVP_MD_CTX_free(*ctx);
 
     if (!buf) {
         buf = malloc(mdlen * 2 + 1);
