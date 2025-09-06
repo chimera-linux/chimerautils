@@ -85,7 +85,7 @@ main(int argc, char **argv)
 	pw = NULL;
 	want_clear = 0;
 	term = '\n';
-	while ((ch = getopt(argc, argv, "0C:iP:S:u:v")) != -1)
+	while ((ch = getopt(argc, argv, "+0C:iP:S:u:v")) != -1)
 		switch(ch) {
 		case '-':
 		case 'i':
