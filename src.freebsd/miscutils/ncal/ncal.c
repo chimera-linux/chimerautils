@@ -158,7 +158,7 @@ static char jdaystr[] = "       1   2   3   4   5   6   7   8   9"
 			" 350 351 352 353 354 355 356 357 358 359"
 			" 360 361 362 363 364 365 366";
 
-static int flag_nohighlight;	/* user doesn't want a highlighted today */
+static int flag_highlight;	/* highlighted today */
 static int flag_weeks;		/* user wants number of week */
 static int nswitch;		/* user defined switch date */
 static int nswitchb;		/* switch date for backward compatibility */
@@ -216,7 +216,7 @@ main(int argc, char *argv[])
 	int	before, after;
 	const char    *locale;		/* locale to get country code */
 
-	flag_nohighlight = 0;
+	flag_highlight = isatty(STDOUT_FILENO);
 	flag_weeks = 0;
 	flag_monday = false;
 
@@ -274,7 +274,7 @@ main(int argc, char *argv[])
 			break;
 		case 'B':
 			if (flag_before > 0)
-				errx(EX_USAGE, "Double -A specified");
+				errx(EX_USAGE, "Double -B specified");
 			flag_before = strtol(optarg, NULL, 10);
 			if (flag_before <= 0)
 				errx(EX_USAGE,
@@ -299,7 +299,7 @@ main(int argc, char *argv[])
 			flag_highlightdate = optarg;
 			break;
 		case 'h':
-			flag_nohighlight = 1;
+			flag_highlight = !flag_highlight;
 			break;
 		case 'e':
 			if (flag_backward)
@@ -837,8 +837,7 @@ mkmonthr(int y, int m, int jd_flag, struct monthlines *mlines)
 					dt.d = j - jan1 + 1;
 				else
 					sdater(j, &dt);
-				if (j == highlightdate && !flag_nohighlight
-				 && isatty(STDOUT_FILENO))
+				if (j == highlightdate && flag_highlight)
 					highlight(mlines->lines[i] + k,
 					    ds + dt.d * dw, dw, &l);
 				else
@@ -945,8 +944,7 @@ mkmonthb(int y, int m, int jd_flag, struct monthlines *mlines)
 					dt.d = j - jan1 + 1;
 				else
 					sdateb(j, &dt);
-				if (j == highlightdate && !flag_nohighlight
-				 && isatty(STDOUT_FILENO))
+				if (j == highlightdate && flag_highlight)
 					highlight(mlines->lines[i] + k,
 					    ds + dt.d * dw, dw, &l);
 				else
@@ -1149,7 +1147,7 @@ highlight(char *dst, char *src, int len, int *extralen)
 	 * This check is not necessary, should have been handled before calling
 	 * this function.
 	 */
-	if (flag_nohighlight) {
+	if (!flag_highlight) {
 		memcpy(dst, src, len);
 		return;
 	}

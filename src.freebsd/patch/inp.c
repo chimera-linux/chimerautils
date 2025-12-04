@@ -284,9 +284,9 @@ static void
 plan_b(const char *filename)
 {
 	FILE	*ifp;
-	size_t	i, j, blen = 0, maxlen;
+	size_t i = 0, j, blen = 0, maxlen = 1;
 	ssize_t len;
-	char	*p = NULL;
+	char *p = NULL;
 	bool	found_revision = (revision == NULL);
 
 	using_plan_a = false;

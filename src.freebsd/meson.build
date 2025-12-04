@@ -29,7 +29,6 @@ subdir('netcat')
 subdir('patch')
 subdir('sed')
 subdir('sh')
-subdir('shar')
 subdir('tip')
 subdir('unvis')
 subdir('bintrans')
@@ -57,10 +56,6 @@ if libcrypto.found() and libssl.found()
 endif
 
 # tool collections
-
-if get_option('bc')
-    subdir('bc')
-endif
 
 subdir('coreutils')
 subdir('diffutils')

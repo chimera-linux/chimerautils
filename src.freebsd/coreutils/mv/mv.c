@@ -32,26 +32,13 @@
  * SUCH DAMAGE.
  */
 
-#if 0
-#ifndef lint
-static char const copyright[] =
-"@(#) Copyright (c) 1989, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-static char sccsid[] = "@(#)mv.c	8.2 (Berkeley) 4/2/94";
-#endif /* not lint */
-#endif
-#include <sys/cdefs.h>
-#include <sys/types.h>
-#include <sys/acl.h>
 #include <sys/param.h>
-#include <sys/time.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <sys/xattr.h>
+#include <sys/acl.h>
 #include <sys/mount.h>
+#include <sys/stat.h>
+#include <sys/time.h>
+#include <sys/xattr.h>
+#include <sys/wait.h>
 #include <sys/statvfs.h>
 #include <acl/libacl.h>
 
@@ -77,20 +64,17 @@ static int	copy(const char *, const char *);
 static int	do_move(const char *, const char *);
 static int	fastcopy(const char *, const char *, struct stat *);
 static void	usage(void);
-static void	preserve_fd_acls(int source_fd, int dest_fd, const char *source_path,
-		    const char *dest_path);
-static void	preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
-		    const char *dest_path);
+static void	preserve_fd_acls(int, int, const char *, const char *);
+static void	preserve_fd_xattrs(int, int, const char *, const char *);
 
 int
 main(int argc, char *argv[])
 {
-	size_t baselen, len;
-	int rval;
-	char *p, *endp, *targdir = NULL;
-	struct stat sb;
-	int ch;
 	char path[PATH_MAX];
+	struct stat sb;
+	char *p, *endp, *targdir = NULL;
+	size_t baselen, len;
+	int ch, rval;
 	const char *target;
 
 	while ((ch = getopt(argc, argv, "Tfhint:v")) != -1)
@@ -195,9 +179,9 @@ main(int argc, char *argv[])
 static int
 do_move(const char *from, const char *to)
 {
+	char path[PATH_MAX], modep[15];
 	struct stat sb;
 	int ask, ch, first;
-	char modep[15];
 	struct passwd *pw = NULL;
 	struct group *gr = NULL;
 
@@ -207,9 +191,8 @@ do_move(const char *from, const char *to)
 	 * make sure the user wants to clobber it.
 	 */
 	if (!fflg && !access(to, F_OK)) {
-
-		/* prompt only if source exist */
-	        if (lstat(from, &sb) == -1) {
+		/* prompt only if source exists */
+		if (lstat(from, &sb) == -1) {
 			warn("%s", from);
 			return (1);
 		}
@@ -258,8 +241,6 @@ do_move(const char *from, const char *to)
 	}
 
 	if (errno == EXDEV) {
-		char path[PATH_MAX];
-
 		/*
 		 * If the source is a symbolic link and is on another
 		 * filesystem, it can be recreated at the destination.
@@ -297,17 +278,18 @@ static int
 fastcopy(const char *from, const char *to, struct stat *sbp)
 {
 	struct timespec ts[2];
-	static u_int blen = MAXPHYS;
 	static char *bp = NULL;
+	static size_t blen = MAXPHYS;
+	ssize_t nread;
+	int from_fd, to_fd;
 	mode_t oldmode;
-	int nread, from_fd, to_fd;
 
 	if ((from_fd = open(from, O_RDONLY, 0)) < 0) {
 		warn("fastcopy: open() failed (from): %s", from);
 		return (1);
 	}
-	if (bp == NULL && (bp = malloc((size_t)blen)) == NULL) {
-		warnx("malloc(%u) failed", blen);
+	if (bp == NULL && (bp = malloc(blen)) == NULL) {
+		warnx("malloc(%zu) failed", blen);
 		(void)close(from_fd);
 		return (1);
 	}
@@ -319,7 +301,7 @@ fastcopy(const char *from, const char *to, struct stat *sbp)
 		(void)close(from_fd);
 		return (1);
 	}
-	while ((nread = read(from_fd, bp, (size_t)blen)) > 0)
+	while ((nread = read(from_fd, bp, blen)) > 0)
 		if (write(to_fd, bp, (size_t)nread) != nread) {
 			warn("fastcopy: write() failed: %s", to);
 			goto err;
@@ -338,8 +320,8 @@ err:		if (unlink(to))
 		warn("%s: set owner/group (was: %lu/%lu)", to,
 		    (u_long)sbp->st_uid, (u_long)sbp->st_gid);
 		if (oldmode & (S_ISUID | S_ISGID)) {
-			warnx(
-"%s: owner/group changed; clearing suid/sgid (mode was 0%03o)",
+			warnx("%s: owner/group changed; "
+			    "clearing suid/sgid (mode was 0%03o)",
 			    to, oldmode);
 			sbp->st_mode &= ~(S_ISUID | S_ISGID);
 		}
@@ -583,10 +565,9 @@ preserve_fd_xattrs(int source_fd, int dest_fd, const char *source_path,
 static void
 usage(void)
 {
-
 	(void)fprintf(stderr, "%s\n%s\n%s\n",
-		      "usage: mv [-f | -i | -n] [-hvT] source target",
-		      "       mv [-f | -i | -n] [-v] source ... directory",
-		      "       mv [-f | -i | -n] [-v] -t directory source ...");
+	    "usage: mv [-f | -i | -n] [-hvT] source target",
+	    "       mv [-f | -i | -n] [-v] source ... directory",
+	    "       mv [-f | -i | -n] [-v] -t directory source ...");
 	exit(EX_USAGE);
 }

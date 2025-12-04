@@ -30,12 +30,6 @@
  *
  */
 
-#include <sys/cdefs.h>
-#ifndef lint
-__COPYRIGHT("@(#) Copyright (c) 1997, 1998, 2003, 2004, 2006, 2008,\
- 2009, 2010, 2011, 2015, 2017 Matthew R. Green.  All rights reserved.");
-#endif /* not lint */
-
 /*
  * gzip.c -- GPL free gzip using zlib.
  *
@@ -55,6 +49,7 @@ static inline unsigned le32dec(const void *s) {
 
 #define nitems(x) (sizeof((x)) / sizeof((x)[0]))
 
+#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>

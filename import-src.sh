@@ -166,12 +166,6 @@ usr.bin/locate/code
 usr.bin/locate/locate
 "
 
-# bc
-CMDS_BC="
-usr.bin/bc
-usr.bin/dc
-"
-
 # mostly util-linux
 CMDS_MISC="
 bin/kill
@@ -211,10 +205,6 @@ for p in ${CMDS_FIND_LOCATE}; do
     copy_cmd "$p" findutils/locate
 done
 
-for p in ${CMDS_BC}; do
-    copy_cmd "$p" bc
-done
-
 for p in ${CMDS_MISC}; do
     copy_cmd "$p" miscutils
 done
@@ -233,7 +223,6 @@ copy_cmd usr.bin/jot
 copy_cmd usr.bin/m4
 copy_cmd usr.bin/patch
 copy_cmd usr.bin/sed
-copy_cmd usr.bin/shar
 copy_cmd usr.bin/su
 copy_cmd usr.bin/tip
 copy_cmd usr.bin/which

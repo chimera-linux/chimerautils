@@ -28,9 +28,9 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)exec.h	8.3 (Berkeley) 6/8/95
  */
+
+#include <sys/cdefs.h>
 
 /* values of cmdtype */
 #define CMDUNKNOWN -1		/* no entry in table for command */
@@ -53,6 +53,7 @@ struct cmdentry {
 		struct funcdef *func;
 	} u;
 	int special;
+	const char *cmdname;
 };
 
 
@@ -71,3 +72,4 @@ int unsetfunc(const char *);
 int isfunc(const char *);
 int typecmd_impl(int, char **, int, const char *);
 void clearcmdentry(void);
+const void *itercmd(const void *, struct cmdentry *);

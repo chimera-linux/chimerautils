@@ -32,12 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#if 0
-#ifndef lint
-static char sccsid[] = "@(#)print.c	8.4 (Berkeley) 4/17/94";
-#endif /* not lint */
-#endif
-#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/acl.h>
@@ -217,7 +211,14 @@ printlong(const DISPLAY *dp)
 
 	if ((dp->list == NULL || dp->list->fts_level != FTS_ROOTLEVEL) &&
 	    (f_longform || f_size)) {
-		(void)printf("total %lu\n", howmany(dp->btotal, blocksize));
+		if (!f_humanval)
+			(void)printf("total %lu\n", howmany(dp->btotal, blocksize));
+		else {
+			(void)humanize_number(buf, 7 /* "1024 KB" */,
+			    dp->btotal * 512, "B", HN_AUTOSCALE, HN_DECIMAL);
+
+			(void)printf("total %s\n", buf);
+		}
 	}
 
 	for (p = dp->list; p; p = p->fts_link) {

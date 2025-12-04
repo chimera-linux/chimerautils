@@ -13,6 +13,7 @@
  * probably should patch cpuset(1) instead.
  */
 
+#include <sys/cdefs.h>
 #include <sys/param.h>
 
 #include <err.h>
@@ -95,7 +96,7 @@ main(int argc, char *argv[])
 			break;
 		case OPT_VERSION:
 			version();
-			__builtin_unreachable();
+			__unreachable();
 		case OPT_HELP:
 			help();
 			exit(EXIT_SUCCESS);

@@ -29,18 +29,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static const char copyright[] =
-"@(#) Copyright (c) 1987, 1990, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif
-
-#if 0
-#ifndef lint
-static char sccsid[] = "@(#)cmp.c	8.3 (Berkeley) 4/2/94";
-#endif
-#endif
-
 #include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -91,22 +79,16 @@ static bool
 parse_iskipspec(char *spec, off_t *skip1, off_t *skip2)
 {
 	char *colon;
-	uint64_t uskip1, uskip2;
 
 	colon = strchr(spec, ':');
 	if (colon != NULL)
 		*colon++ = '\0';
 
-	if (expand_number(spec, &uskip1) < 0)
+	if (expand_number(spec, skip1) < 0)
 		return (false);
-	*skip1 = uskip1;
 
-	if (colon != NULL) {
-		if (expand_number(colon, &uskip2) < 0)
-			return false;
-		*skip2 = uskip2;
-		return true;
-	}
+	if (colon != NULL)
+		return (expand_number(colon, skip2) == 0);
 
 	*skip2 = *skip1;
 	return (true);
@@ -117,14 +99,12 @@ main(int argc, char *argv[])
 {
 	struct stat sb1, sb2;
 	off_t skip1, skip2, limit;
-	uint64_t uskip1, uskip2, ulimit;
 	int ch, fd1, fd2, oflag;
 	bool special;
 	const char *file1, *file2;
 	int ret;
 
 	limit = skip1 = skip2 = ret = 0;
-	ulimit = uskip1 = uskip2 = 0;
 	oflag = O_RDONLY;
 	while ((ch = getopt_long(argc, argv, "+bhi:ln:sxz", long_opts, NULL)) != -1)
 		switch (ch) {
@@ -146,7 +126,7 @@ main(int argc, char *argv[])
 			lflag = true;
 			break;
 		case 'n':		/* Limit */
-			if (expand_number(optarg, &ulimit) < 0 || ((limit = ulimit) < 0)) {
+			if (expand_number(optarg, &limit) < 0 || limit < 0) {
 				fprintf(stderr, "Invalid --bytes: %s\n",
 				    optarg);
 				usage();
@@ -207,17 +187,15 @@ main(int argc, char *argv[])
 			exit(ERR_EXIT);
 	}
 
-	if (argc > 2 && expand_number(argv[2], &uskip1) < 0) {
+	if (argc > 2 && expand_number(argv[2], &skip1) < 0) {
 		fprintf(stderr, "Invalid skip1: %s\n", argv[2]);
 		usage();
 	}
-	skip1 = uskip1;
 
-	if (argc == 4 && expand_number(argv[3], &uskip2) < 0) {
+	if (argc == 4 && expand_number(argv[3], &skip2) < 0) {
 		fprintf(stderr, "Invalid skip2: %s\n", argv[3]);
 		usage();
 	}
-	skip2 = uskip2;
 
 	if (sflag && skip1 == 0 && skip2 == 0)
 		zflag = true;

@@ -53,7 +53,7 @@ main(int argc, char **argv)
 	struct stat sb;
 	mode_t omode;
 	off_t oflow, rsize, sz, tsize, round, off, len;
-	uint64_t usz;
+	int64_t usz;
 	int ch, error, fd, oflags, r;
 	int do_dealloc;
 	int do_truncate;
@@ -93,7 +93,7 @@ main(int argc, char **argv)
 			}
 			if (expand_number(do_relative || do_round ?
 			    optarg + 1 : optarg,
-			    &usz) == -1 || (off_t)usz < 0)
+			    &usz) == -1 || usz < 0)
 				errx(EXIT_FAILURE,
 				    "invalid size argument `%s'", optarg);
 
@@ -103,7 +103,7 @@ main(int argc, char **argv)
 			break;
 		case 'o':
 			if (expand_number(optarg, &usz) == -1 ||
-			    (off_t)usz < 0)
+			    usz < 0)
 				errx(EXIT_FAILURE,
 				    "invalid offset argument `%s'", optarg);
 
@@ -111,7 +111,7 @@ main(int argc, char **argv)
 			break;
 		case 'l':
 			if (expand_number(optarg, &usz) == -1 ||
-			    (off_t)usz <= 0)
+			    usz <= 0)
 				errx(EXIT_FAILURE,
 				    "invalid length argument `%s'", optarg);
 

@@ -26,9 +26,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\"     @(#)df.1	8.3 (Berkeley) 5/8/95
-.\"
-.Dd March 29, 2023
+.Dd July 16, 2025
 .Dt DF 1
 .Os
 .Sh NAME
@@ -67,7 +65,7 @@ Generate output via
 .Xr libxo 3
 in a selection of different human and machine readable formats.
 See
-.Xr xo_parse_args 3
+.Xr xo_options 7
 for details on command line arguments.
 .It Fl a
 Show all mount points, including those that were mounted with the
@@ -119,10 +117,10 @@ option and any
 .Ev BLOCKSIZE
 specification from the environment.
 .It Fl l
-Select locally-mounted file system for display.
+Select a locally-mounted file system for display.
 If used in combination with the
 .Fl t Ar type
-option, file system types will be added or excluded acccording to the
+option, file system types will be added or excluded according to the
 parameters of that option.
 .It Fl m
 Use 1048576 byte (1 Mebibyte) blocks rather than the default.
@@ -257,7 +255,7 @@ each file or directory name or disk label
 .Xr getmntinfo 3 ,
 .Xr libxo 3 ,
 .Xr localeconv 3 ,
-.Xr xo_parse_args 3 ,
+.Xr xo_options 7 ,
 .Xr fstab 5 ,
 .Xr mount 8 ,
 .Xr pstat 8 ,

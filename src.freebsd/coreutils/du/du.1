@@ -25,9 +25,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\"	@(#)du.1	8.2 (Berkeley) 4/1/94
-.\"
-.Dd August 1, 2019
+.Dd July 16, 2025
 .Dt DU 1
 .Os
 .Sh NAME
@@ -35,6 +33,7 @@
 .Nd display disk usage statistics
 .Sh SYNOPSIS
 .Nm
+.Op Fl -libxo
 .Op Fl Aclnx
 .Op Fl H | L | P
 .Op Fl g | h | k | m
@@ -54,6 +53,13 @@ the current directory is displayed.
 .Pp
 The options are as follows:
 .Bl -tag -width indent
+.It Fl -libxo
+Generate output via
+.Xr libxo 3
+in a selection of different human and machine readable formats.
+See
+.Xr xo_options 7
+for details on command line arguments.
 .It Fl A
 Display the apparent size instead of the disk usage.
 This can be helpful when operating on compressed volumes or sparse files.
@@ -212,6 +218,8 @@ Also display a grand total at the end:
 .Xr df 1 ,
 .Xr chflags 2 ,
 .Xr fts 3 ,
+.Xr libxo 3 ,
+.Xr xo_options 7 ,
 .Xr symlink 7 ,
 .Xr quot 8
 .Sh STANDARDS
@@ -222,7 +230,9 @@ utility is compliant with the
 specification.
 .Pp
 The flags
-.Op Fl cdhP ,
+.Op Fl ABIPcdghlmnt ,
+.Op Fl -libxo ,
+.Op Fl -si ,
 as well as the
 .Ev BLOCKSIZE
 environment variable,

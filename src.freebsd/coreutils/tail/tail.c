@@ -32,17 +32,6 @@
  * SUCH DAMAGE.
  */
 
-
-#ifndef lint
-static const char copyright[] =
-"@(#) Copyright (c) 1991, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif
-
-#ifndef lint
-static const char sccsid[] = "@(#)tail.c	8.1 (Berkeley) 6/6/93";
-#endif
-
 #include <sys/cdefs.h>
 #include <sys/capsicum.h>
 #include <sys/types.h>
@@ -88,7 +77,6 @@ main(int argc, char *argv[])
 	const char *fn;
 	FILE *fp;
 	off_t off;
-	uint64_t uoff;
 	enum STYLE style;
 	int ch, first;
 	file_info_t file, *filep, *files;
@@ -107,16 +95,17 @@ main(int argc, char *argv[])
 	 * -r is the entire file, not 10 lines.
 	 */
 #define	ARG(units, forward, backward) {					\
+	int64_t num;							\
 	if (style)							\
 		usage();						\
-	if (expand_number(optarg, &uoff))				\
+	if (expand_number(optarg, &num))				\
 		err(1, "illegal offset -- %s", optarg);			\
-	off = uoff;							\
-	if (off > INT64_MAX / units || off < INT64_MIN / units )	\
+	if (num > INT64_MAX / units || num < INT64_MIN / units)		\
 		errx(1, "illegal offset -- %s", optarg);		\
-	switch(optarg[0]) {						\
+	off = num * units;						\
+	switch (optarg[0]) {						\
 	case '+':							\
-		if (off)						\
+		if (off != 0)						\
 			off -= (units);					\
 		style = (forward);					\
 		break;							\
@@ -134,7 +123,7 @@ main(int argc, char *argv[])
 	off = 0;
 	while ((ch = getopt_long(argc, argv, "+Fb:c:fn:qrv", long_opts, NULL)) !=
 	    -1)
-		switch(ch) {
+		switch (ch) {
 		case 'F':	/* -F is superset of (and implies) -f */
 			Fflag = fflag = 1;
 			break;

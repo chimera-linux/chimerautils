@@ -12,7 +12,6 @@ It replaces the following GNU projects:
 * coreutils
 * findutils
 * diffutils
-* sharutils
 * grep
 * sed
 * ed
@@ -20,7 +19,6 @@ It replaces the following GNU projects:
 * patch
 * gzip
 * gawk
-* bc (optional, bc-gh is recommended now)
 
 It also provides the following functionality:
 
@@ -67,8 +65,8 @@ You will also need the following:
 Optionally, these are also needed:
 
 * `ncurses` or another provider of `terminfo` (for color `ls(1)` and others)
-* `libedit` (for `bc` and line editing in `sh`)
-* `libcrypto` from OpenSSL or LibreSSL (for `dc`, `install` and optionally `sort`)
+* `libedit` (for line editing in `sh`)
+* `libcrypto` from OpenSSL or LibreSSL (for `install` and optionally `sort`)
 
 To build:
 

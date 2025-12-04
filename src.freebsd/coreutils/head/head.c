@@ -29,17 +29,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static const char copyright[] =
-"@(#) Copyright (c) 1980, 1987, 1992, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)head.c	8.2 (Berkeley) 5/4/95";
-#endif
-#endif /* not lint */
 #include <sys/cdefs.h>
 #include <sys/capsicum.h>
 #include <sys/types.h>
@@ -87,7 +76,6 @@ main(int argc, char *argv[])
 	FILE *fp;
 	off_t bytecnt;
 	intmax_t linecnt;
-	uint64_t ucnt;
 	int ch, first, eval;
 	fileargs_t *fa;
 	cap_rights_t rights;
@@ -102,11 +90,11 @@ main(int argc, char *argv[])
 	while ((ch = getopt_long(argc, argv, "+n:c:qv", long_opts, NULL)) != -1) {
 		switch(ch) {
 		case 'c':
-			if (expand_number(optarg, &ucnt) || ((bytecnt = ucnt) <= 0))
+			if (expand_number(optarg, &bytecnt) || bytecnt <= 0)
 				errx(1, "illegal byte count -- %s", optarg);
 			break;
 		case 'n':
-			if (expand_number(optarg, &ucnt) || ((linecnt = ucnt) <= 0))
+			if (expand_number(optarg, &linecnt) || linecnt <= 0)
 				errx(1, "illegal line count -- %s", optarg);
 			break;
 		case 'q':
@@ -179,7 +167,6 @@ head(FILE *fp, intmax_t cnt)
 			err(1, "stdout");
 		cnt--;
 	}
-	free(cp);
 }
 
 static void

@@ -32,19 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#if 0
-#ifndef lint
-static char const copyright[] =
-"@(#) Copyright (c) 1989, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-#endif
-
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)cat.c	8.2 (Berkeley) 4/27/95";
-#endif
-#endif /* not lint */
 #include <sys/cdefs.h>
 #include <sys/capsicum.h>
 #include <sys/param.h>
@@ -293,7 +280,7 @@ scanfiles(char *argv[], int cooked __unused)
 				    errno == ESPIPE || errno == ENOSYS)
 					raw_cat(fd);
 				else
-					err(1, "stdout");
+					err(1, "%s", filename);
 			}
 #else
 			raw_cat(fd);

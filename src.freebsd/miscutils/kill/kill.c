@@ -33,17 +33,6 @@
  * as a builtin for /bin/sh (#define SHELL).
  */
 
-#if 0
-#ifndef lint
-static char const copyright[] =
-"@(#) Copyright (c) 1988, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-static char sccsid[] = "@(#)kill.c	8.4 (Berkeley) 4/28/95";
-#endif /* not lint */
-#endif
 #include <sys/cdefs.h>
 #include <ctype.h>
 #include <err.h>
@@ -86,7 +75,7 @@ main(int argc, char *argv[])
 				usage();
 			numsig = strtol(*argv, &ep, 10);
 			if (!**argv || *ep)
-				errx(2, "illegal signal number: %s", *argv);
+				errx(2, "invalid signal number: %s", *argv);
 			if (numsig >= 128)
 				numsig -= 128;
 			if (numsig <= 0 || numsig >= NSIG)

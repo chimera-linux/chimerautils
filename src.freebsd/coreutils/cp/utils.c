@@ -29,16 +29,11 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)utils.c	8.3 (Berkeley) 4/1/94";
-#endif
-#endif /* not lint */
-#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/acl.h>
 #include <sys/stat.h>
 #include <sys/xattr.h>
+#include <sys/syscall.h>
 #include <acl/libacl.h>
 
 #include <err.h>
@@ -46,7 +41,9 @@ static char sccsid[] = "@(#)utils.c	8.3 (Berkeley) 4/1/94";
 #include <fcntl.h>
 #include <fts.h>
 #include <limits.h>
+#include <stdbool.h>
 #include <stdio.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
@@ -54,6 +51,91 @@ static char sccsid[] = "@(#)utils.c	8.3 (Berkeley) 4/1/94";
 #include <unistd.h>
 
 #include "extern.h"
+
+struct open_how {
+	uint64_t flags;
+	uint64_t mode;
+	uint64_t resolve;
+};
+
+#define RESOLVE_NO_MAGICLINKS 0x02
+#define RESOLVE_BENEATH 0x08
+
+int openat_beneath(int dfd, const char *path, int flags, bool beneath, mode_t mode) {
+	if (!beneath)
+		return openat(dfd, path, flags, mode);
+	struct open_how how;
+	how.flags = flags;
+	if (flags & (O_CREAT | O_TMPFILE))
+		how.mode = mode & 07777; /* EINVAL if it contains more stuff */
+	else
+		how.mode = 0; /* EINVAL if nonzero */
+	how.resolve = RESOLVE_BENEATH | RESOLVE_NO_MAGICLINKS;
+	long fd;
+	for (;;) {
+		fd = syscall(SYS_openat2, dfd, path, &how, sizeof(how));
+		if (fd < 0) {
+			/* the documentation specifies RESOLVE_BENEATH may
+			 * trigger EAGAIN as a temporary condition, try again
+			 *
+			 * EXDEV is the errno for RESOLVE_BENEATH violations
+			 * on Linux, we want to translate for better error
+			 * messages
+			 *
+			 * could we handle ENOSYS? probably just let it fail
+			 * as we don't support older kernels anyway, we could
+			 * do manual path resolution but meh
+			 */
+			switch (errno) {
+				case EAGAIN: continue;
+				case EXDEV: errno = EACCES; break;
+			}
+			return -1;
+		}
+		break;
+	}
+	return (int)fd;
+}
+
+static int unlinkat_beneath(int dfd, const char *path, bool beneath) {
+	if (!beneath)
+		return unlinkat(dfd, path, 0);
+	/* code crimes because linux lol; anyway resolve to an fd first
+	 * always use O_NOFOLLOW because unlinkat will delete links
+	 */
+	int fd = openat_beneath(dfd, path, O_PATH | O_NOFOLLOW, true, 0);
+	if (fd < 0) {
+		return -1;
+	}
+	/* fetch the file descriptor from procfs...
+	 *
+	 * this should resolve to an absolute path to the file for as
+	 * long as the file descriptor is present and the file has not
+	 * been deleted; we only use this for unlink which never follows
+	 * links so this should be safe to do
+	 */
+	char pdesc[128], llink[PATH_MAX];
+	ssize_t len;
+	snprintf(pdesc, sizeof(pdesc), "/proc/self/fd/%d", fd);
+	len = readlink(pdesc, llink, sizeof(llink) - 1);
+	if (len < 0) {
+		/* could not resolve */
+		close(fd);
+		return -1;
+	} else if (len == 0) {
+		/* file does not seem to exist anymore at that path */
+		close(fd);
+		return 0;
+	}
+	llink[len] = '\0';
+	int ret = unlink(llink);
+	if (ret < 0) {
+		close(fd);
+		return -1;
+	}
+	close(fd);
+	return 0;
+}
 
 #define	cp_pct(x, y)	((y == 0) ? 0 : (int)(100.0 * (x) / (y)))
 
@@ -108,13 +190,13 @@ copy_fallback(int from_fd, int to_fd)
 }
 
 int
-copy_file(const FTSENT *entp, int dne)
+copy_file(const FTSENT *entp, bool dne, bool beneath)
 {
 	struct stat sb, *fs;
 	ssize_t wcount;
 	off_t wtotal;
 	int ch, checkch, from_fd, rval, to_fd;
-	int use_copy_file_range = 1;
+	bool use_copy_file_range = true;
 
 	fs = entp->fts_statp;
 	from_fd = to_fd = -1;
@@ -122,6 +204,8 @@ copy_file(const FTSENT *entp, int dne)
 		if ((from_fd = open(entp->fts_path, O_RDONLY, 0)) < 0 ||
 		    fstat(from_fd, &sb) != 0) {
 			warn("%s", entp->fts_path);
+			if (from_fd >= 0)
+				(void)close(from_fd);
 			return (1);
 		}
 		/*
@@ -134,6 +218,7 @@ copy_file(const FTSENT *entp, int dne)
 		 */
 		if ((sb.st_mode & S_IFMT) != (fs->st_mode & S_IFMT)) {
 			warnx("%s: File changed", entp->fts_path);
+			(void)close(from_fd);
 			return (1);
 		}
 	}
@@ -149,12 +234,13 @@ copy_file(const FTSENT *entp, int dne)
 	if (!dne) {
 		if (nflag) {
 			if (vflag)
-				printf("%s not overwritten\n", to.p_path);
+				printf("%s%s not overwritten\n",
+				    to.base, to.path);
 			rval = 1;
 			goto done;
 		} else if (iflag) {
-			(void)fprintf(stderr, "overwrite %s? %s", 
-			    to.p_path, YESNO);
+			(void)fprintf(stderr, "overwrite %s%s? %s",
+			    to.base, to.path, YESNO);
 			checkch = ch = getchar();
 			while (ch != '\n' && ch != EOF)
 				ch = getchar();
@@ -167,7 +253,7 @@ copy_file(const FTSENT *entp, int dne)
 
 		if (fflag) {
 			/* remove existing destination file */
-			(void)unlink(to.p_path);
+			(void)unlinkat_beneath(to.dir, to.path, beneath);
 			dne = 1;
 		}
 	}
@@ -175,16 +261,16 @@ copy_file(const FTSENT *entp, int dne)
 	rval = 0;
 
 	if (lflag) {
-		if (link(entp->fts_path, to.p_path) != 0) {
-			warn("%s", to.p_path);
+		if (linkat(AT_FDCWD, entp->fts_path, to.dir, to.path, 0) != 0) {
+			warn("%s%s", to.base, to.path);
 			rval = 1;
 		}
 		goto done;
 	}
 
 	if (sflag) {
-		if (symlink(entp->fts_path, to.p_path) != 0) {
-			warn("%s", to.p_path);
+		if (symlinkat(entp->fts_path, to.dir, to.path) != 0) {
+			warn("%s%s", to.base, to.path);
 			rval = 1;
 		}
 		goto done;
@@ -192,14 +278,14 @@ copy_file(const FTSENT *entp, int dne)
 
 	if (!dne) {
 		/* overwrite existing destination file */
-		to_fd = open(to.p_path, O_WRONLY | O_TRUNC, 0);
+		to_fd = openat_beneath(to.dir, to.path, O_WRONLY | O_TRUNC, beneath, 0);
 	} else {
 		/* create new destination file */
-		to_fd = open(to.p_path, O_WRONLY | O_TRUNC | O_CREAT,
-		    fs->st_mode & ~(S_ISUID | S_ISGID));
+		to_fd = openat_beneath(to.dir, to.path, O_WRONLY | O_TRUNC | O_CREAT,
+		    beneath, fs->st_mode & ~(S_ISUID | S_ISGID));
 	}
 	if (to_fd == -1) {
-		warn("%s", to.p_path);
+		warn("%s%s", to.base, to.path);
 		rval = 1;
 		goto done;
 	}
@@ -213,7 +299,7 @@ copy_file(const FTSENT *entp, int dne)
 			case EINVAL: /* Prob a non-seekable FD */
 			case EXDEV: /* Cross-FS link */
 			case ENOSYS: /* Syscall not supported */
-				use_copy_file_range = 0;
+				use_copy_file_range = false;
 				break;
 			default:
 				break;
@@ -226,8 +312,8 @@ copy_file(const FTSENT *entp, int dne)
 		if (info) {
 			info = 0;
 			(void)fprintf(stderr,
-			    "%s -> %s %3d%%\n",
-			    entp->fts_path, to.p_path,
+			    "%s -> %s%s %3d%%\n",
+			    entp->fts_path, to.base, to.path,
 			    cp_pct(wtotal, fs->st_size));
 		}
 	} while (wcount > 0);
@@ -242,13 +328,13 @@ copy_file(const FTSENT *entp, int dne)
 	 * or its contents might be irreplaceable.  It would only be safe
 	 * to remove it if we created it and its length is 0.
 	 */
-	if (pflag && setfile(fs, to_fd))
+	if (pflag && setfile(fs, to_fd, beneath))
 		rval = 1;
 	if (pflag && preserve_fd_acls(from_fd, to_fd) != 0)
 		rval = 1;
 	if (aflag) preserve_fd_xattrs(from_fd, to_fd);
 	if (close(to_fd)) {
-		warn("%s", to.p_path);
+		warn("%s%s", to.base, to.path);
 		rval = 1;
 	}
 
@@ -259,14 +345,14 @@ done:
 }
 
 int
-copy_link(const FTSENT *p, int exists)
+copy_link(const FTSENT *p, bool dne, bool beneath)
 {
 	ssize_t len;
 	char llink[PATH_MAX];
 
-	if (exists && nflag) {
+	if (!dne && nflag) {
 		if (vflag)
-			printf("%s not overwritten\n", to.p_path);
+			printf("%s%s not overwritten\n", to.base, to.path);
 		return (1);
 	}
 	if ((len = readlink(p->fts_path, llink, sizeof(llink) - 1)) == -1) {
@@ -274,59 +360,57 @@ copy_link(const FTSENT *p, int exists)
 		return (1);
 	}
 	llink[len] = '\0';
-	if (exists && unlink(to.p_path)) {
-		warn("unlink: %s", to.p_path);
+	if (!dne && unlinkat_beneath(to.dir, to.path, beneath) != 0) {
+		warn("unlink: %s%s", to.base, to.path);
 		return (1);
 	}
-	if (symlink(llink, to.p_path)) {
+	if (symlinkat(llink, to.dir, to.path) != 0) {
 		warn("symlink: %s", llink);
 		return (1);
 	}
-	return (pflag ? setfile(p->fts_statp, -1) : 0);
+	return (pflag ? setfile(p->fts_statp, -1, beneath) : 0);
 }
 
 int
-copy_fifo(struct stat *from_stat, int exists)
+copy_fifo(struct stat *from_stat, bool dne, bool beneath)
 {
-
-	if (exists && nflag) {
+	if (!dne && nflag) {
 		if (vflag)
-			printf("%s not overwritten\n", to.p_path);
+			printf("%s%s not overwritten\n", to.base, to.path);
 		return (1);
 	}
-	if (exists && unlink(to.p_path)) {
-		warn("unlink: %s", to.p_path);
+	if (!dne && unlinkat_beneath(to.dir, to.path, beneath) != 0) {
+		warn("unlink: %s%s", to.base, to.path);
 		return (1);
 	}
-	if (mkfifo(to.p_path, from_stat->st_mode)) {
-		warn("mkfifo: %s", to.p_path);
+	if (mkfifoat(to.dir, to.path, from_stat->st_mode) != 0) {
+		warn("mkfifo: %s%s", to.base, to.path);
 		return (1);
 	}
-	return (pflag ? setfile(from_stat, -1) : 0);
+	return (pflag ? setfile(from_stat, -1, beneath) : 0);
 }
 
 int
-copy_special(struct stat *from_stat, int exists)
+copy_special(struct stat *from_stat, bool dne, bool beneath)
 {
-
-	if (exists && nflag) {
+	if (!dne && nflag) {
 		if (vflag)
-			printf("%s not overwritten\n", to.p_path);
+			printf("%s%s not overwritten\n", to.base, to.path);
 		return (1);
 	}
-	if (exists && unlink(to.p_path)) {
-		warn("unlink: %s", to.p_path);
+	if (!dne && unlinkat_beneath(to.dir, to.path, beneath) != 0) {
+		warn("unlink: %s%s", to.base, to.path);
 		return (1);
 	}
-	if (mknod(to.p_path, from_stat->st_mode, from_stat->st_rdev)) {
-		warn("mknod: %s", to.p_path);
+	if (mknodat(to.dir, to.path, from_stat->st_mode, from_stat->st_rdev) != 0) {
+		warn("mknod: %s%s", to.base, to.path);
 		return (1);
 	}
-	return (pflag ? setfile(from_stat, -1) : 0);
+	return (pflag ? setfile(from_stat, -1, beneath) : 0);
 }
 
 int
-setfile(struct stat *fs, int fd)
+setfile(struct stat *fs, int fd, bool beneath)
 {
 	static struct timespec tspec[2];
 	struct stat ts;
@@ -338,17 +422,24 @@ setfile(struct stat *fs, int fd)
 	fs->st_mode &= S_ISUID | S_ISGID | S_ISVTX |
 	    S_IRWXU | S_IRWXG | S_IRWXO;
 
+	if (!fdval) {
+		fd = openat_beneath(to.dir, to.path, O_RDONLY | (islink ? O_NOFOLLOW : 0), beneath, 0);
+		if (fd < 0) {
+			warn("openat2: %s%s", to.base, to.path);
+			/* any action will fail, might as well just return early */
+			return 1;
+		}
+	}
+
 	tspec[0] = fs->st_atim;
 	tspec[1] = fs->st_mtim;
-	if (fdval ? futimens(fd, tspec) : utimensat(AT_FDCWD, to.p_path, tspec,
-	    islink ? AT_SYMLINK_NOFOLLOW : 0)) {
-		warn("utimensat: %s", to.p_path);
+	if (futimens(fd, tspec)) {
+		warn("utimensat: %s%s", to.base, to.path);
 		rval = 1;
 	}
-	if (fdval ? fstat(fd, &ts) :
-	    (islink ? lstat(to.p_path, &ts) : stat(to.p_path, &ts)))
+	if (fstat(fd, &ts)) {
 		gotstat = 0;
-	else {
+	} else {
 		gotstat = 1;
 		ts.st_mode &= S_ISUID | S_ISGID | S_ISVTX |
 		    S_IRWXU | S_IRWXG | S_IRWXO;
@@ -359,31 +450,27 @@ setfile(struct stat *fs, int fd)
 	 * the mode; current BSD behavior is to remove all setuid bits on
 	 * chown.  If chown fails, lose setuid/setgid bits.
 	 */
-	if (!gotstat || fs->st_uid != ts.st_uid || fs->st_gid != ts.st_gid)
-		if (fdval ? fchown(fd, fs->st_uid, fs->st_gid) :
-		    (islink ? lchown(to.p_path, fs->st_uid, fs->st_gid) :
-		    chown(to.p_path, fs->st_uid, fs->st_gid))) {
+	if (!gotstat || fs->st_uid != ts.st_uid || fs->st_gid != ts.st_gid) {
+		if (fchown(fd, fs->st_uid, fs->st_gid)) {
 			if (errno != EPERM) {
-				warn("chown: %s", to.p_path);
+				warn("chown: %s%s", to.base, to.path);
 				rval = 1;
 			}
 			fs->st_mode &= ~(S_ISUID | S_ISGID);
 		}
+	}
 
-	if (!gotstat || fs->st_mode != ts.st_mode)
-		if (fdval ? fchmod(fd, fs->st_mode) :
-		    (islink ? 0 :
-		    chmod(to.p_path, fs->st_mode))) {
-			warn("chmod: %s", to.p_path);
+	if (!gotstat || fs->st_mode != ts.st_mode) {
+		if (islink ? 0 : fchmod(fd, fs->st_mode)) {
+			warn("chmod: %s%s", to.base, to.path);
 			rval = 1;
 		}
+	}
 
 #if 0
-	if (!Nflag && (!gotstat || fs->st_flags != ts.st_flags))
-		if (fdval ?
-		    fchflags(fd, fs->st_flags) :
-		    (islink ? lchflags(to.p_path, fs->st_flags) :
-		    chflags(to.p_path, fs->st_flags))) {
+	if (!Nflag && (!gotstat || fs->st_flags != ts.st_flags)) {
+		if (fdval ? fchflags(fd, fs->st_flags) :
+		    chflagsat(to.dir, to.path, fs->st_flags, atflags)) {
 			/*
 			 * NFS doesn't support chflags; ignore errors unless
 			 * there's reason to believe we're losing bits.  (Note,
@@ -392,11 +479,15 @@ setfile(struct stat *fs, int fd)
 			 * that we copied, i.e., that we didn't create.)
 			 */
 			if (errno != EOPNOTSUPP || fs->st_flags != 0) {
-				warn("chflags: %s", to.p_path);
+				warn("chflags: %s%s", to.base, to.path);
 				rval = 1;
 			}
 		}
+	}
 #endif
+
+	/* we opened our own descriptor here */
+	if (!fdval) close(fd);
 
 	return (rval);
 }
@@ -413,8 +504,9 @@ preserve_fd_acls(int source_fd, int dest_fd)
 		acl_supported = 1;
 		acl_type = ACL_TYPE_NFS4;
 	} else if (ret < 0 && errno != EINVAL) {
-		warn("fpathconf(..., _PC_ACL_NFS4) failed for %s", to.p_path);
-		return (1);
+		warn("fpathconf(..., _PC_ACL_NFS4) failed for %s%s",
+		    to.base, to.path); 
+		return (-1);
 	}
 #endif
 	if (acl_supported == 0) {
@@ -422,9 +514,9 @@ preserve_fd_acls(int source_fd, int dest_fd)
 		if (ret > 0 ) {
 			acl_supported = 1;
 		} else if (ret < 0 && errno != ENOTSUP) {
-			warn("acl_extended_fd() failed for %s",
-			    to.p_path);
-			return (1);
+			warn("acl_extended_fd() failed for %s%s",
+			    to.base, to.path);
+			return (-1);
 		}
 	}
 	if (acl_supported == 0)
@@ -432,87 +524,44 @@ preserve_fd_acls(int source_fd, int dest_fd)
 
 	acl = acl_get_fd(source_fd);
 	if (acl == NULL) {
-		warn("failed to get acl entries while setting %s", to.p_path);
-		return (1);
+		warn("failed to get acl entries while setting %s%s",
+		    to.base, to.path);
+		return (-1);
 	}
 	if (acl_set_fd(dest_fd, acl) < 0) {
-		warn("failed to set acl entries for %s", to.p_path);
+		warn("failed to set acl entries for %s%s",
+		    to.base, to.path);
 		acl_free(acl);
-		return (1);
+		return (-1);
 	}
 	acl_free(acl);
 	return (0);
 }
 
 int
-preserve_dir_acls(struct stat *fs, char *source_dir, char *dest_dir)
+preserve_dir_acls(const char *source_dir, const char *dest_dir)
 {
-	acl_t (*aclgetf)(const char *, acl_type_t);
-	int (*aclsetf)(const char *, acl_type_t, acl_t);
-	acl_t acl;
-	acl_type_t acl_type;
-	int acl_supported = 0, ret;
+	int source_fd = -1, dest_fd = -1, ret;
 
-#if 0
-	ret = pathconf(source_dir, _PC_ACL_NFS4);
-	if (ret > 0) {
-		acl_supported = 1;
-		acl_type = ACL_TYPE_NFS4;
-	} else if (ret < 0 && errno != EINVAL) {
-		warn("fpathconf(..., _PC_ACL_NFS4) failed for %s", source_dir);
-		return (1);
+	if ((source_fd = open(source_dir, O_DIRECTORY | O_RDONLY)) < 0) {
+		warn("%s: failed to copy ACLs", source_dir);
+		return (-1);
 	}
-#endif
-	if (!S_ISLNK(fs->st_mode) && acl_supported == 0) {
-		ret = acl_extended_file(source_dir);
-		if (ret > 0) {
-			acl_supported = 1;
-			acl_type = ACL_TYPE_ACCESS;
-		} else if (ret < 0 && errno != ENOTSUP) {
-			warn("acl_extended_file() failed for %s",
-			    source_dir);
-			return (1);
-		}
+	dest_fd = (*dest_dir == '\0') ? to.dir :
+	    openat_beneath(to.dir, dest_dir, O_DIRECTORY, true, 0);
+	if (dest_fd < 0) {
+		warn("%s: failed to copy ACLs to %s%s", source_dir,
+		    to.base, dest_dir);
+		close(source_fd);
+		return (-1);
 	}
-	if (acl_supported == 0)
-		return (0);
-
-	aclgetf = acl_get_file;
-	aclsetf = acl_set_file;
-
-	if (acl_type == ACL_TYPE_ACCESS) {
-		/*
-		 * Even if there is no ACL_TYPE_DEFAULT entry here, a zero
-		 * size ACL will be returned. So it is not safe to simply
-		 * check the pointer to see if the default ACL is present.
-		 */
-		acl = acl_get_file(source_dir, ACL_TYPE_DEFAULT);
-		if (acl == NULL) {
-			warn("failed to get default acl entries on %s",
-			    source_dir);
-			return (1);
-		}
-		if (acl_entries(acl) > 0 && aclsetf(dest_dir,
-		    ACL_TYPE_DEFAULT, acl) < 0) {
-			warn("failed to set default acl entries on %s",
-			    dest_dir);
-			acl_free(acl);
-			return (1);
-		}
-		acl_free(acl);
+	if ((ret = preserve_fd_acls(source_fd, dest_fd)) != 0) {
+		/* preserve_fd_acls() already printed a message */
 	}
-	acl = aclgetf(source_dir, acl_type);
-	if (acl == NULL) {
-		warn("failed to get acl entries on %s", source_dir);
-		return (1);
-	}
-	if (aclsetf(dest_dir, acl_type, acl) < 0) {
-		warn("failed to set acl entries on %s", dest_dir);
-		acl_free(acl);
-		return (1);
-	}
-	acl_free(acl);
-	return (0);
+	if (dest_fd != to.dir)
+		close(dest_fd);
+	close(source_fd);
+	return (ret);
 }
 
 /* for now we don't really care about warnings or result,

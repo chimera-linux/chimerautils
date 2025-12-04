@@ -30,8 +30,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)options.h	8.2 (Berkeley) 5/4/95
  */
 
 struct shparam {
@@ -71,10 +69,10 @@ struct shparam {
 #define NOPTS		20
 
 extern char optval[NOPTS];
-extern const char optletter[NSHORTOPTS];
+extern const char optletter[NSHORTOPTS + 1];
 #ifdef DEFINE_OPTIONS
 char optval[NOPTS];
-const char optletter[NSHORTOPTS] = "efIimnsxvVECabuTPh";
+const char optletter[NSHORTOPTS + 1] = "efIimnsxvVECabuTPh";
 static const unsigned char optname[] =
 	"\007errexit"
 	"\006noglob"

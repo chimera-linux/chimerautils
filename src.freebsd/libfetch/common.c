@@ -29,7 +29,6 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/socket.h>
 #include <sys/time.h>
@@ -279,11 +278,14 @@ conn_t *
 fetch_reopen(int sd)
 {
 	conn_t *conn;
+	int flags;
 
 	/* allocate and fill connection structure */
 	if ((conn = calloc(1, sizeof(*conn))) == NULL)
 		return (NULL);
-	fcntl(sd, F_SETFD, FD_CLOEXEC);
+	flags = fcntl(sd, F_GETFD);
+	if (flags != -1 && (flags & FD_CLOEXEC) == 0)
+		(void)fcntl(sd, F_SETFD, flags | FD_CLOEXEC);
 	conn->sd = sd;
 	++conn->ref;
 	return (conn);
@@ -1362,7 +1364,7 @@ fetch_read(conn_t *conn, char *buf, size_t len)
 			}
 			timersub(&timeout, &now, &delta);
 			deltams = delta.tv_sec * 1000 +
-			    delta.tv_usec / 1000;;
+			    delta.tv_usec / 1000;
 		}
 		errno = 0;
 		pfd.revents = 0;

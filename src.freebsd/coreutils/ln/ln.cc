@@ -29,17 +29,6 @@
  * SUCH DAMAGE.
  */
 
-#if 0
-#ifndef lint
-static char const copyright[] =
-"@(#) Copyright (c) 1987, 1993, 1994\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-static char sccsid[] = "@(#)ln.c	8.2 (Berkeley) 3/31/94";
-#endif /* not lint */
-#endif
 #include <sys/cdefs.h>
 #include <sys/param.h>
 #include <sys/stat.h>
@@ -251,6 +240,13 @@ samedirent(const char *path1, const char *path2)
 	return sb1.st_dev == sb2.st_dev && sb1.st_ino == sb2.st_ino;
 }
 
+/*
+ * Create a link to source.  If target is a directory (and some additional
+ * conditions apply, see comments within) the link will be created within
+ * target and have the basename of source.  Otherwise, the link will be
+ * named target.  If isdir is true, target has already been determined to
+ * be a directory; otherwise, we will check, if needed.
+ */
 static int
 linkit(const char *source, const char *target, bool isdir)
 {
@@ -260,7 +256,7 @@ linkit(const char *source, const char *target, bool isdir)
 	struct stat sb;
 	const char *p;
 	int ch, first;
-	bool exists;
+	bool append, exists;
 
 	if (!sflag) {
 		/* If source doesn't exist, quit now. */
@@ -277,19 +273,32 @@ linkit(const char *source, const char *target, bool isdir)
 	}
 
 	/*
-	 * If the target is a directory (and not a symlink if hflag),
-	 * append the source's name, unless Fflag is set.
+	 * Append a slash and the source's basename if:
+	 * - the target is "." or ends in "/" or "/.", or
+	 * - the target is a directory (and not a symlink if hflag) and
+         *   Fflag is not set
 	 */
-	if ((!Fflag || Tflag) && (isdir ||
-	    (lstat(target, &sb) == 0 && S_ISDIR(sb.st_mode)) ||
-	    (!hflag && stat(target, &sb) == 0 && S_ISDIR(sb.st_mode)))) {
+	if ((p = strrchr(target, '/')) == NULL)
+		p = target;
+	else
+		p++;
+	append = false;
+	if (p[0] == '\0' || (p[0] == '.' && p[1] == '\0')) {
+		append = true;
+	} else if (!Fflag) {
+		if (isdir || (lstat(target, &sb) == 0 && S_ISDIR(sb.st_mode)) ||
+		    (!hflag && stat(target, &sb) == 0 && S_ISDIR(sb.st_mode))) {
+			append = true;
+		}
+	}
+	if (append) {
 		if (Tflag) {
 			errno = EEXIST;
 			warn("%s", target);
 			return (1);
 		}
 		if (strlcpy(bbuf, source, sizeof(bbuf)) >= sizeof(bbuf) ||
-		    (p = basename(bbuf)) == NULL ||
+		    (p = basename(bbuf)) == NULL /* can't happen */ ||
 		    snprintf(path, sizeof(path), "%s/%s", target, p) >=
 		    (ssize_t)sizeof(path)) {
 			errno = ENAMETOOLONG;

@@ -62,11 +62,8 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)diffreg.c   8.1 (Berkeley) 6/6/93
  */
 
-#include <sys/cdefs.h>
 #include <sys/capsicum.h>
 #include <sys/stat.h>
 #include <sys/param.h>
@@ -76,6 +73,7 @@
 #include <err.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <limits.h>
 #include <math.h>
 #include <paths.h>
 #include <regex.h>
@@ -212,7 +210,7 @@ static size_t	 len[2];		/* lengths of files in lines */
 static size_t	 pref, suff;		/* lengths of prefix and suffix */
 static size_t	 slen[2];		/* lengths of files minus pref / suff */
 static int	 anychange;
-static int	 hw, lpad, rpad;	/* half width and padding */
+static int	 hw, lpad,rpad;		/* half width and padding */
 static int	 edoffset;
 static long	*ixnew;		/* will be overlaid on file[1] */
 static long	*ixold;		/* will be overlaid on klist */
@@ -737,10 +735,10 @@ check(FILE *f1, FILE *f2, int flags)
 				 * in one file for -b or -w.
 				 */
 				if (flags & (D_FOLDBLANKS | D_IGNOREBLANKS)) {
-					if (c == EOF && d == '\n') {
+					if (c == EOF && isspace(d)) {
 						ctnew++;
 						break;
-					} else if (c == '\n' && d == EOF) {
+					} else if (isspace(c) && d == EOF) {
 						ctold++;
 						break;
 					}
@@ -1230,6 +1228,7 @@ fetch(long *f, int a, int b, FILE *lb, int ch, int oldfile, int flags)
 
 	edoffset = 0;
 	nc = 0;
+	col = 0;
 	/*
 	 * When doing #ifdef's, copy down to current line
 	 * if this is the first file, so that stuff makes it to output.
@@ -1295,6 +1294,10 @@ fetch(long *f, int a, int b, FILE *lb, int ch, int oldfile, int flags)
 					printf("\n\\ No newline at end of file\n");
 				return (col);
 			}
+			/*
+			 * when using --side-by-side, col needs to be increased
+			 * in any case to keep the columns aligned
+			 */
 			if (c == '\t') {
 				/*
 				 * Calculate where the tab would bring us.

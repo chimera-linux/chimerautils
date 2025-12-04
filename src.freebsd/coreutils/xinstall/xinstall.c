@@ -30,18 +30,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static const char copyright[] =
-"@(#) Copyright (c) 1987, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#if 0
-#ifndef lint
-static char sccsid[] = "@(#)xinstall.c	8.1 (Berkeley) 7/21/93";
-#endif /* not lint */
-#endif
-
 #include <sys/param.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -74,7 +62,7 @@ static char sccsid[] = "@(#)xinstall.c	8.1 (Berkeley) 7/21/93";
 #include <getopt.h>
 
 /*
- * Memory strategy threshold, in pages: if physmem is larger then this, use a
+ * Memory strategy threshold, in pages: if physmem is larger than this, use a
  * large buffer.
  */
 #define PHYSPAGES_THRESHOLD (32*1024)
@@ -93,7 +81,7 @@ static char sccsid[] = "@(#)xinstall.c	8.1 (Berkeley) 7/21/93";
  * non-FreeBSD system. Linux does not have the st_flags and st_birthtime
  * members in struct stat so we need to omit support for changing those fields.
  */
-#ifdef UF_SETTABLE
+#ifndef __linux__
 #define HAVE_STRUCT_STAT_ST_FLAGS 1
 #else
 #define HAVE_STRUCT_STAT_ST_FLAGS 0

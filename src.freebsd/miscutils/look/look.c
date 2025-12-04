@@ -32,18 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-static const char copyright[] =
-"@(#) Copyright (c) 1991, 1993\n\
-	The Regents of the University of California.  All rights reserved.\n";
-#endif /* not lint */
-
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)look.c	8.2 (Berkeley) 5/4/95";
-#endif
-#endif /* not lint */
-#include <sys/cdefs.h>
 /*
  * look -- find lines in a sorted list.
  *
@@ -52,6 +40,7 @@ static char sccsid[] = "@(#)look.c	8.2 (Berkeley) 5/4/95";
  * the manual page.
  */
 
+#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/mman.h>
 #include <sys/stat.h>

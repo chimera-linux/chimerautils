@@ -22,15 +22,17 @@
 
 #include <sys/cdefs.h>
 #include <sys/stat.h>
+#include <sys/tree.h>
 
 #include <dirent.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <fnmatch.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <limits.h>
 #include <unistd.h>
 
 #include "diff.h"
@@ -41,6 +43,63 @@ static void diffit(struct dirent *, char *, size_t, struct dirent *,
 static void print_only(const char *, size_t, const char *);
 
 #define d_status	d_type		/* we need to store status for -l */
+
+#if 0
+struct inode {
+	dev_t dev;
+	ino_t ino;
+	RB_ENTRY(inode) entry;
+};
+
+static int
+inodecmp(struct inode *a, struct inode *b)
+{
+	return (a->dev < b->dev ? -1 : a->dev > b->dev ? 1 :
+	    a->ino < b->ino ? -1 : a->ino > b->ino ? 1 : 0);
+}
+
+RB_HEAD(inodetree, inode);
+static struct inodetree v1 = RB_INITIALIZER(&v1);
+static struct inodetree v2 = RB_INITIALIZER(&v2);
+RB_GENERATE_STATIC(inodetree, inode, entry, inodecmp);
+
+static int
+vscandir(struct inodetree *tree, const char *path, struct dirent ***dirp,
+    int (*selectf)(const struct dirent *),
+    int (*comparf)(const struct dirent **, const struct dirent **))
+{
+	struct stat sb;
+	struct inode *ino = NULL;
+	int fd = -1, ret, serrno;
+
+	if ((fd = open(path, O_DIRECTORY | O_RDONLY)) < 0 ||
+	    (ino = calloc(1, sizeof(*ino))) == NULL ||
+	    fstat(fd, &sb) != 0)
+		goto fail;
+	ino->dev = sb.st_dev;
+	ino->ino = sb.st_ino;
+	if (RB_FIND(inodetree, tree, ino)) {
+		free(ino);
+		close(fd);
+		warnx("%s: Directory loop detected", path);
+		*dirp = NULL;
+		return (0);
+	}
+	if ((ret = fdscandir(fd, dirp, selectf, comparf)) < 0)
+		goto fail;
+	RB_INSERT(inodetree, tree, ino);
+	close(fd);
+	return (ret);
+fail:
+	serrno = errno;
+	if (ino != NULL)
+		free(ino);
+	if (fd >= 0)
+		close(fd);
+	errno = serrno;
+	return (-1);
+}
+#endif
 
 /*
  * Diff directory traversal. Will be called recursively if -r was specified.

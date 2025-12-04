@@ -25,9 +25,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.\"     @(#)fts.3	8.5 (Berkeley) 4/16/94
-.\"
-.Dd January 12, 2014
+.Dd October 6, 2025
 .Dt FTS 3
 .Os
 .Sh NAME
@@ -39,6 +37,8 @@
 .In fts.h
 .Ft FTS *
 .Fn fts_open "char * const *path_argv" "int options" "int (*compar)(const FTSENT **, const FTSENT **)"
+.Ft FTS *
+.Fn fts_open_b "char * const *path_argv" "int options" "int (^compar)(const FTSENT **, const FTSENT **)"
 .Ft FTSENT *
 .Fn fts_read "FTS *ftsp"
 .Ft FTSENT *
@@ -61,20 +61,23 @@ functions are provided for traversing
 file hierarchies.
 A simple overview is that the
 .Fn fts_open
-function returns a
+and
+.Fn fts_open_b
+functions return a
 .Dq handle
 on a file hierarchy, which is then supplied to
 the other
 .Nm
 functions.
-The function
+The
 .Fn fts_read
-returns a pointer to a structure describing one of the files in the file
-hierarchy.
-The function
+function returns a pointer to a structure describing one of the files
+in the file hierarchy.
+The
 .Fn fts_children
-returns a pointer to a linked list of structures, each of which describes
-one of the files contained in a directory in the hierarchy.
+function returns a pointer to a linked list of structures, each of
+which describes one of the files contained in a directory in the
+hierarchy.
 In general, directories are visited two distinguishable times; in pre-order
 (before any of their descendants are visited) and in post-order (after all
 of their descendants have been visited).
@@ -178,6 +181,12 @@ by one of the other
 values.
 .It Dv FTS_DNR
 A directory which cannot be read.
+This immediately follows
+.Dv FTS_D ,
+in place of
+.Dv FTS_DP ,
+when the directory could not be entered, or could be entered but not
+read.
 This is an error return, and the
 .Fa fts_errno
 field will be set to indicate what caused the error.
@@ -188,6 +197,8 @@ or
 .Ql ..\&
 which was not specified as a file name to
 .Fn fts_open
+or
+.Fn fts_open_b
 (see
 .Dv FTS_SEEDOT ) .
 .It Dv FTS_DP
@@ -236,6 +247,8 @@ A path for accessing the file from the current directory.
 The path for the file relative to the root of the traversal.
 This path contains the path specified to
 .Fn fts_open
+or
+.Fn fts_open_b
 as a prefix.
 .It Fa fts_pathlen
 The length of the string referenced by
@@ -364,7 +377,44 @@ The
 .Fa fts_name
 field is always
 .Dv NUL Ns -terminated .
-.Sh FTS_OPEN
+.Ss Thread Safety
+The
+.Nm
+functions can safely be used in multi-threaded programs provided no
+two threads access the same
+.Vt FTS
+or
+.Vt FTSENT
+structure simultaneously.
+However, unless the
+.Dv FTS_NOCHDIR
+flag was passed to
+.Fn fts_open
+or
+.Fn fts_open_b ,
+calls to
+.Fn fts_read
+and
+.Fn fts_children
+may change the current working directory, which will affect all
+threads.
+Conversely, changing the current working directory either during or
+between calls to
+.Fn fts_read
+or
+.Fn fts_children
+(even in a single-thread program) may cause
+.Nm
+to malfunction unless the
+.Dv FTS_NOCHDIR
+flag was passed to
+.Fn fts_open
+or
+.Fn fts_open_b
+and all paths in
+.Va path_argv
+were absolute.
+.Ss Fn fts_open
 The
 .Fn fts_open
 function takes a pointer to an array of character pointers naming one
@@ -382,12 +432,16 @@ must be specified.
 The options are selected by
 .Em or Ns 'ing
 the following values:
-.Bl -tag -width "FTS_PHYSICAL"
+.Bl -tag -width "FTS_COMFOLLOWDIR"
 .It Dv FTS_COMFOLLOW
 This option causes any symbolic link specified as a root path to be
 followed immediately whether or not
 .Dv FTS_LOGICAL
 is also specified.
+.It Dv FTS_COMFOLLOWDIR
+This option is similar to
+.Dv FTS_COMFOLLOW ,
+but only follows symbolic links to directories.
 .It Dv FTS_LOGICAL
 This option causes the
 .Nm
@@ -443,6 +497,15 @@ field to
 and leave the contents of the
 .Fa statp
 field undefined.
+.It Dv FTS_NOSTAT_TYPE
+This option is similar to
+.Dv FTS_NOSTAT ,
+but attempts to populate
+.Fa fts_info
+based on information from the
+.Fa d_type
+field of
+.Vt struct dirent .
 .It Dv FTS_PHYSICAL
 This option causes the
 .Nm
@@ -482,10 +545,10 @@ from descending into directories that have a different device number
 than the file from which the descent began.
 .El
 .Pp
-The argument
-.Fn compar
-specifies a user-defined function which may be used to order the traversal
-of the hierarchy.
+The
+.Fa compar
+argument points to a user-defined function which may be used to order
+the traversal of the hierarchy.
 It
 takes two pointers to pointers to
 .Vt FTSENT
@@ -520,7 +583,16 @@ the directory traversal order is in the order listed in
 .Fa path_argv
 for the root paths, and in the order listed in the directory for
 everything else.
-.Sh FTS_READ
+.Ss Fn fts_open_b
+The
+.Fn fts_open_b
+function is identical to
+.Fn fts_open
+except that it takes a block pointer instead of a function pointer.
+The block is copied before
+.Fn fts_open_b
+returns, so the original can safely go out of scope or be released.
+.Ss Fn fts_read
 The
 .Fn fts_read
 function returns a pointer to an
@@ -554,6 +626,15 @@ structure is returned, and
 .Va errno
 may or may not have been set (see
 .Fa fts_info ) .
+Note that
+.Fn fts_read
+will not set
+.Va errno
+to 0 if called again with the same
+.Fa ftsp
+argument after the
+.Dv FTS_STOP
+flag has been set or the end of the stream has been reached.
 .Pp
 The
 .Vt FTSENT
@@ -568,10 +649,10 @@ directory, in which case they will not be overwritten until after a call to
 .Fn fts_read
 after the
 .Vt FTSENT
-structure has been returned by the function
+structure has been returned by the
 .Fn fts_read
-in post-order.
-.Sh FTS_CHILDREN
+function in post-order.
+.Ss Fn fts_children
 The
 .Fn fts_children
 function returns a pointer to an
@@ -595,9 +676,13 @@ As a special case, if
 has not yet been called for a hierarchy,
 .Fn fts_children
 will return a pointer to the files in the logical directory specified to
-.Fn fts_open ,
+.Fn fts_open
+or
+.Fn fts_open_b ,
 i.e., the arguments specified to
-.Fn fts_open .
+.Fn fts_open
+or
+.Fn fts_open_b .
 Otherwise, if the
 .Vt FTSENT
 structure most recently returned by
@@ -641,11 +726,11 @@ and
 .Fa fts_namelen
 fields.
 .El
-.Sh FTS_SET
-The function
+.Ss Fn fts_set
+The
 .Fn fts_set
-allows the user application to determine further processing for the
-file
+function allows the user application to determine further processing
+for the file
 .Fa f
 of the stream
 .Fa ftsp .
@@ -711,43 +796,156 @@ The file may be one of those most recently returned by either
 or
 .Fn fts_read .
 .El
-.Sh FTS_CLOSE
+.Ss Fn fts_set_clientptr , Fn fts_get_clientptr
+The
+.Fn fts_set_clientptr
+function sets the client data pointer for the stream
+.Fa ftsp
+to
+.Fa clientdata .
+The
+.Fn fts_get_clientptr
+function returns the client data pointer associated with
+.Fa ftsp .
+This can be used to pass per-stream data to the comparison function.
+.Pp
+For performance reasons,
+.Fn fts_get_clientptr
+may be shadowed by a preprocessor macro.
+.Ss Fn fts_get_stream
+The
+.Fn fts_get_stream
+function returns the
+.Nm
+stream associated with the file entry
+.Fa f .
+A typical use for this would be for a comparison function to first call
+.Fn fts_get_stream
+on one of its arguments, then call
+.Fn fts_get_clientptr
+to obtain the client data pointer, which in turn points to information
+necessary to correctly order the two entries.
+.Pp
+For performance reasons,
+.Fn fts_get_stream
+may be shadowed by a preprocessor macro.
+.Ss Fn fts_close
 The
 .Fn fts_close
 function closes a file hierarchy stream
 .Fa ftsp
 and restores the current directory to the directory from which
 .Fn fts_open
+or
+.Fn fts_open_b
 was called to open
 .Fa ftsp .
+.Sh RETURN VALUES
+The
+.Fn fts_open
+and
+.Fn fts_open_b
+functions return a pointer to the new
+.Nm
+stream on success and
+.Dv NULL
+on failure.
+.Pp
+The
+.Fn fts_read
+function returns a pointer to the next file entry on success, or if an
+error occurs that relates specifically to that file entry.
+On reaching the end of the file hierarchy, it returns
+.Dv NULL
+and sets the external variable
+.Va errno
+to 0.
+On failure, it returns
+.Dv NULL
+and sets
+.Va errno
+to an appropriate non-zero value.
+If called again after the
+.Dv FTS_STOP
+flag has been set or the end of the stream has been reached,
+.Fn fts_read
+returns
+.Dv NULL
+and leaves
+.Va errno
+untouched.
+.Pp
+The
+.Fn fts_children
+function returns a pointer to a linked list of file entries on
+success.
+On reaching the end of the file hierarchy, it returns
+.Dv NULL
+and sets the external variable
+.Va errno
+to 0.
+On failure, it returns
+.Dv NULL
+and sets
+.Va errno
+to an appropriate non-zero value.
+.Pp
+The
+.Fn fts_set
+function returns 0 on success and \-1 if its
+.Fa instr
+argument is invalid.
+.Pp
+The
+.Fn fts_get_clientptr
+function returns the client data pointer associated with its argument,
+or
+.Dv NULL
+if none has been set.
+.Pp
+The
+.Fn fts_get_stream
+function returns a pointer to the
+.Nm
+stream associated with its argument.
+.Pp
 The
 .Fn fts_close
 function
 returns 0 on success, and \-1 if an error occurs.
 .Sh ERRORS
-The function
+The
 .Fn fts_open
-may fail and set
+and
+.Fn fts_open_b
+functions may fail and set
 .Va errno
 for any of the errors specified for the library functions
 .Xr open 2
 and
 .Xr malloc 3 .
+The
+.Fn fts_open_b
+function may also fail and set
+.Va errno
+to
+.Dv ENOSYS
+if the blocks runtime is missing.
 .Pp
-The function
+The
 .Fn fts_close
-may fail and set
+function may fail and set
 .Va errno
 for any of the errors specified for the library functions
 .Xr chdir 2
 and
 .Xr close 2 .
 .Pp
-The functions
+The
 .Fn fts_read
 and
 .Fn fts_children
-may fail and set
+functions may fail and set
 .Va errno
 for any of the errors specified for the library functions
 .Xr chdir 2 ,
@@ -757,17 +955,17 @@ for any of the errors specified for the library functions
 and
 .Xr stat 2 .
 .Pp
-In addition,
+In addition, the
 .Fn fts_children ,
-.Fn fts_open
+.Fn fts_open ,
 and
 .Fn fts_set
-may fail and set
+functions may fail and set
 .Va errno
 as follows:
 .Bl -tag -width Er
 .It Bq Er EINVAL
-The options were invalid, or the list were empty.
+The options were invalid, or the list was empty.
 .El
 .Sh SEE ALSO
 .Xr find 1 ,
@@ -790,6 +988,13 @@ functions were introduced in
 principally to provide for alternative interfaces to the
 .Nm
 functionality using different data structures.
+Blocks support and the
+.Dv FTS_COMFOLLOWDIR
+and
+.Dv FTS_NOSTAT
+options were added in
+.Fx 15.0
+based on similar functionality in macOS.
 .Sh BUGS
 The
 .Fn fts_open

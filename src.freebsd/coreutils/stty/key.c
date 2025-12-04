@@ -27,12 +27,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)key.c	8.3 (Berkeley) 4/2/94";
-#endif
-#endif /* not lint */
-#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/ttydefaults.h>
 
@@ -40,8 +34,8 @@ static char sccsid[] = "@(#)key.c	8.3 (Berkeley) 4/2/94";
 #include <errno.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
 #include <termios.h>
 
 #include "stty.h"

@@ -32,12 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#if 0
-#ifndef lint
-static char sccsid[] = "@(#)util.c	8.3 (Berkeley) 4/2/94";
-#endif /* not lint */
-#endif
-#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -225,9 +219,9 @@ usage(void)
 {
 	(void)fprintf(stderr,
 #ifdef COLORLS
-	"usage: ls [-ABCFGHILPRSTZabcdfghiklmnpqrstuvwxy1,] [--color=when] [-D format]"
+	"usage: ls [-ABCFGHILPRSTZabcdfghiklmnopqrstuvwxy1,] [--color=when] [-D format] [--group-directories=]"
 #else
-	"usage: ls [-ABCFHILPRSTZabcdfghiklmnpqrstuvwxy1,] [-D format]"
+	"usage: ls [-ABCFHILPRSTZabcdfghiklmnopqrstuvwxy1,] [-D format] [--group-directories=]"
 #endif
 		      " [file ...]\n");
 	exit(1);

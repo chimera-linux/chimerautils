@@ -27,8 +27,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)fts.h	8.3 (Berkeley) 8/14/94
  */
 
 #ifndef	_FTS_H_
@@ -39,20 +37,22 @@
 #endif
  
 #if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
-
+ 
 #include <sys/types.h>
 
+typedef struct _ftsent FTSENT;
+
 typedef struct {
-	struct _ftsent *fts_cur;	/* current node */
-	struct _ftsent *fts_child;	/* linked list of children */
-	struct _ftsent **fts_array;	/* sort array */
-	dev_t fts_dev;		/* starting device # */
+	FTSENT *fts_cur;		/* current node */
+	FTSENT *fts_child;		/* linked list of children */
+	FTSENT **fts_array;		/* sort array */
+	dev_t fts_dev;			/* starting device # */
 	char *fts_path;			/* path for this descent */
 	int fts_rfd;			/* fd for root */
 	size_t fts_pathlen;		/* sizeof(path) */
 	size_t fts_nitems;		/* elements in the sort array */
 	int (*fts_compar)		/* compare function */
-	    (const struct _ftsent **, const struct _ftsent **);
+	    (const FTSENT **, const FTSENT **);
 
 /* valid for fts_open() */
 #define	FTS_COMFOLLOW	0x000001	/* follow command line symlinks */
@@ -62,10 +62,9 @@ typedef struct {
 #define	FTS_PHYSICAL	0x000010	/* physical walk */
 #define	FTS_SEEDOT	0x000020	/* return dot and dot-dot */
 #define	FTS_XDEV	0x000040	/* don't cross devices */
-#if 0
-#define	FTS_WHITEOUT	0x000080	/* return whiteout information */
-#endif
-#define	FTS_OPTIONMASK	0x0000ff	/* valid user option mask */
+#define FTS_COMFOLLOWDIR 0x00400	/* like COMFOLLOW but directories only */
+#define FTS_NOSTAT_TYPE	0x000800	/* like NOSTAT but use d_type */
+#define	FTS_OPTIONMASK	0x000cff	/* valid user option mask */
 
 /* valid only for fts_children() */
 #define	FTS_NAMEONLY	0x000100	/* child names only */
@@ -76,7 +75,7 @@ typedef struct {
 	void *fts_clientptr;		/* thunk for sort function */
 } FTS;
 
-typedef struct _ftsent {
+struct _ftsent {
 	struct _ftsent *fts_cycle;	/* cycle node */
 	struct _ftsent *fts_parent;	/* parent directory */
 	struct _ftsent *fts_link;	/* next file in directory */
@@ -132,7 +131,7 @@ typedef struct _ftsent {
 	struct stat *fts_statp;		/* stat(2) information */
 	char *fts_name;			/* file name */
 	FTS *fts_fts;			/* back pointer to main FTS */
-} FTSENT;
+};
 
 #ifdef __cplusplus
 extern "C" {

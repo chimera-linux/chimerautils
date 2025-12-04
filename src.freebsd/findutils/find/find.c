@@ -32,11 +32,6 @@
  * SUCH DAMAGE.
  */
 
-#if 0
-static char sccsid[] = "@(#)find.c	8.5 (Berkeley) 8/5/94";
-#endif
-
-#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -216,7 +211,7 @@ find_execute(PLAN *plan, char *paths[])
 		}
 
 		if (showinfo) {
-			fprintf(stderr, "Scanning: %s/%s\n", entry->fts_path, entry->fts_name);
+			fprintf(stderr, "Scanning: %s\n", entry->fts_path);
 			fprintf(stderr, "Scanned: %zu\n\n", counter);
 			showinfo = 0;
 		}

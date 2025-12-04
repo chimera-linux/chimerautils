@@ -27,20 +27,21 @@
 #include <err.h>
 #include <errno.h>
 #include <getopt.h>
-#include <stdlib.h>
+#include <limits.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
-#include <limits.h>
 
 #include "diff.h"
 #include "xmalloc.h"
 
-static const char diff_version[] = "FreeBSD diff 20220309";
+static const char diff_version[] = "FreeBSD diff 20240307";
 bool	 lflag, Nflag, Pflag, rflag, sflag, Tflag, cflag;
 bool	 ignore_file_case, suppress_common, color, noderef;
 static bool help = false;
-int	 diff_format, diff_context, status;
+int	 diff_format, diff_context, diff_algorithm, status;
+bool	 diff_algorithm_set;
 int	 tabsize = 8, width = 130;
 static int	colorflag = COLORFLAG_NEVER;
 char	*start, *ifdefname, *diffargs, *label[2];
@@ -51,7 +52,17 @@ struct stat stb1, stb2;
 struct excludes *excludes_list;
 regex_t	 ignore_re, most_recent_re;
 
-#define	OPTIONS	"0123456789aBbC:cdD:efF:HhI:iL:lnNPpqrS:sTtU:uwW:X:x:y"
+static struct algorithm {
+	const char *name;
+	int id;
+} algorithms[] = {
+	{"stone", D_DIFFSTONE},
+	{"myers", D_DIFFMYERS},
+	{"patience", D_DIFFPATIENCE},
+	{NULL, D_DIFFNONE}
+};
+
+#define	OPTIONS	"0123456789A:aBbC:cdD:efF:HhI:iL:lnNPpqrS:sTtU:uwW:X:x:y"
 enum {
 	OPT_TSIZE = CHAR_MAX + 1,
 	OPT_STRIPCR,
@@ -68,6 +79,7 @@ enum {
 };
 
 static struct option longopts[] = {
+	{ "algorithm",			required_argument,	0,	'A' },
 	{ "text",			no_argument,		0,	'a' },
 	{ "ignore-space-change",	no_argument,		0,	'b' },
 	{ "context",			optional_argument,	0,	'C' },
@@ -139,6 +151,8 @@ main(int argc, char **argv)
 	newarg = 1;
 	diff_context = 3;
 	diff_format = D_UNSET;
+	diff_algorithm = D_DIFFMYERS;
+	diff_algorithm_set = false;
 #define	FORMAT_MISMATCHED(type)	\
 	(diff_format != D_UNSET && diff_format != (type))
 	while ((ch = getopt_long(argc, argv, OPTIONS, longopts, NULL)) != -1) {
@@ -152,6 +166,21 @@ main(int argc, char **argv)
 			else if (!isdigit(lastch) || diff_context > INT_MAX / 10)
 				usage();
 			diff_context = (diff_context * 10) + (ch - '0');
+			break;
+		case 'A':
+			diff_algorithm = D_DIFFNONE;
+			for (struct algorithm *a = algorithms; a->name;a++) {
+				if(strcasecmp(optarg, a->name) == 0) {
+					diff_algorithm = a->id;
+					diff_algorithm_set = true;
+					break;
+				}
+			}
+
+			if (diff_algorithm == D_DIFFNONE) {
+				printf("unknown algorithm: %s\n", optarg);
+				usage();
+			}
 			break;
 		case 'a':
 			dflags |= D_FORCEASCII;
@@ -276,8 +305,10 @@ main(int argc, char **argv)
 			break;
 		case 'W':
 			width = (int) strtonum(optarg, 1, INT_MAX, &errstr);
-			if (errstr)
-				errx(1, "width is %s: %s", errstr, optarg);
+			if (errstr) {
+				warnx("Invalid argument for width");
+				usage();
+			}
 			break;
 		case 'X':
 			read_excludes_file(optarg);
@@ -315,8 +346,10 @@ main(int argc, char **argv)
 			break;
 		case OPT_TSIZE:
 			tabsize = (int) strtonum(optarg, 1, INT_MAX, &errstr);
-			if (errstr)
-				errx(1, "tabsize is %s: %s", errstr, optarg);
+			if (errstr) {
+				warnx("Invalid argument for tabsize");
+				usage();
+			}
 			break;
 		case OPT_STRIPCR:
 			dflags |= D_STRIPCR;
@@ -436,6 +469,8 @@ main(int argc, char **argv)
 		print_status(diffreg(argv[0], argv[1], dflags, 1), argv[0],
 		    argv[1], "");
 	}
+	if (fflush(stdout) != 0)
+		err(2, "stdout");
 	exit(status);
 }
 

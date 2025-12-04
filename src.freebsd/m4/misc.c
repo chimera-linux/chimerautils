@@ -35,7 +35,6 @@
  * SUCH DAMAGE.
  */
 
-#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <errno.h>
 #include <unistd.h>
@@ -121,8 +120,8 @@ pbnum(int n)
 void
 pbnumbase(int n, int base, int d)
 {
-	static char digits[36] = "0123456789abcdefghijklmnopqrstuvwxyz";
-	int num;
+	static char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+	unsigned int num;
 	int printed = 0;
 
 	if (base > 36)

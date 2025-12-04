@@ -30,12 +30,6 @@
  * SUCH DAMAGE.
  */
 
-#ifndef lint
-#if 0
-static char sccsid[] = "@(#)cd.c	8.2 (Berkeley) 5/4/95";
-#endif
-#endif /* not lint */
-#include <sys/cdefs.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <stdlib.h>
@@ -105,8 +99,6 @@ cdcmd(int argc __unused, char **argv __unused)
 
 	if ((dest = *argptr) == NULL && (dest = bltinlookup("HOME", 1)) == NULL)
 		error("HOME not set");
-	if (*dest == '\0')
-		dest = ".";
 	if (dest[0] == '-' && dest[1] == '\0') {
 		dest = bltinlookup("OLDPWD", 1);
 		if (dest == NULL)

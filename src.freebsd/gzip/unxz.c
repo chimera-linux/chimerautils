@@ -148,7 +148,7 @@ unxz(int i, int o, char *pre, size_t prelen, off_t *bytes_in)
 
 			default:
 				maybe_errx("Unknown error (%d)", ret);
-				break;
+				return -1; /* unreachable */
 			}
 			maybe_errx("%s", msg);
 

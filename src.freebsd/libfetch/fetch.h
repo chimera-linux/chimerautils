@@ -31,6 +31,8 @@
 #ifndef _FETCH_H_INCLUDED
 #define _FETCH_H_INCLUDED
 
+#include <sys/cdefs.h>
+
 #define _LIBFETCH_VER "libfetch/2.0"
 
 #define URL_SCHEMELEN 16

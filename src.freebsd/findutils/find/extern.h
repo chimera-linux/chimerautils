@@ -27,8 +27,6 @@
  * LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY
  * OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
  * SUCH DAMAGE.
- *
- *	@(#)extern.h	8.3 (Berkeley) 4/16/94
  */
 
 #include <sys/cdefs.h>
@@ -48,7 +46,9 @@ void	 printlong(char *, char *, struct stat *);
 int	 queryuser(char **);
 OPTION	*lookup_option(const char *);
 void	 finish_execplus(void);
+void	 do_printf(PLAN *plan, FTSENT *entry, FILE *fout);
 const char *f_fstypename(dev_t);
+
 
 creat_f	c_Xmin;
 creat_f	c_Xtime;
@@ -60,6 +60,7 @@ creat_f	c_empty;
 creat_f	c_exec;
 creat_f	c_flags;
 creat_f	c_follow;
+creat_f	c_fprint;
 creat_f	c_fstype;
 creat_f	c_group;
 creat_f	c_ignore_readdir_race;
@@ -73,6 +74,7 @@ creat_f	c_nogroup;
 creat_f	c_nouser;
 creat_f	c_perm;
 creat_f	c_print;
+creat_f	c_printf;
 creat_f	c_regex;
 creat_f	c_samefile;
 creat_f	c_simple;
@@ -95,6 +97,8 @@ exec_f	f_executable;
 exec_f	f_expr;
 exec_f	f_false;
 exec_f	f_flags;
+exec_f	f_fprint;
+exec_f	f_fprint0;
 exec_f	f_fstype;
 exec_f	f_group;
 exec_f	f_inum;
@@ -111,6 +115,7 @@ exec_f	f_path;
 exec_f	f_perm;
 exec_f	f_print;
 exec_f	f_print0;
+exec_f	f_printf;
 exec_f	f_prune;
 exec_f	f_quit;
 exec_f	f_readable;
