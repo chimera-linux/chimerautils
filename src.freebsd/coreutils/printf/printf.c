@@ -44,6 +44,7 @@
 #include <inttypes.h>
 #include <limits.h>
 #include <locale.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -71,6 +72,7 @@
 static int	 asciicode(void);
 static char	*printf_doformat(char *, int *);
 static int	 escape(char *, int, size_t *);
+static char	*unescape(const char *, bool *);
 static int	 getchr(void);
 static int	 getfloating(long double *, int);
 static int	 getint(int *);
@@ -355,19 +357,26 @@ printf_doformat(char *fmt, int *rval)
 
 	*fmt = '\0';
 	switch (convch) {
-	case 'b': {
+	case 'b':
+	case 'q': {
 		size_t len;
 		char *p;
-		int getout;
+		int getout = 0;
+		bool skipesc = false;
 
-		/* Convert "b" to "s" for output. */
+		/* Convert "b" or "q" to "s" for output. */
 		start[strlen(start) - 1] = 's';
-		if ((p = strdup(getstr())) == NULL) {
+		if (convch == 'q')
+			p = unescape(getstr(), &skipesc);
+		else
+			p = strdup(getstr());
+		if (p == NULL) {
 			warnx("%s", strerror(ENOMEM));
 			return (NULL);
 		}
-		getout = escape(p, 0, &len);
-		PF(start, p);
+		if (convch == 'b')
+			getout = escape(p, 0, &len);
+		PF(start, skipesc ? (p + 2) : p);
 		/* Restore format for next loop. */
 
 		free(p);
@@ -454,6 +463,117 @@ mknum(char *str, char ch)
 	copy[len - 2] = ch;
 	copy[len - 1] = '\0';
 	return (copy);
+}
+
+static char *
+unescape(const char *str, bool *skipesc)
+{
+	/* start with a conservative buffer; this is for $'' + nul */
+	size_t bsz = 4;
+	size_t cap = strlen(str) + 32;
+	char *buf = malloc(cap), *p = buf;
+
+	if (!buf)
+		return NULL;
+
+	/* at first assume we won't be escaping */
+	*skipesc = true;
+	/* put this at the beginning in case we end up needing it */
+	*p++ = '$';
+	*p++ = '\'';
+
+	while (*str) {
+		if ((cap - bsz) < 4) {
+			char *nbuf;
+			/* space for longest escape */
+			cap *= 2;
+			nbuf = realloc(buf, cap);
+			if (!nbuf) {
+				free(buf);
+				return NULL;
+			}
+			buf = nbuf;
+		}
+		/* preliminary backslash */
+		*p++ = '\\';
+		switch (*str) {
+		case '\\':
+		case '\'':
+		case '$':
+		case '&':
+		case '*':
+		case '?':
+		case '|':
+		case '~':
+		case '^':
+		case ';':
+		case '`':
+		case ' ':
+		case '(':
+		case ')':
+		case '<':
+		case '>':
+		case '{':
+		case '}':
+		case '[':
+		case ']':
+			/* these get backslashed, but don't cause use of $'' */
+			*p++ = *str++;
+			continue;
+		case '\0':
+			*p++ = '0';
+			break;
+		case '\a':
+			*p++ = 'a';
+			break;
+		case '\b':
+			*p++ = 'b';
+			break;
+		case '\f':
+			*p++ = 'f';
+			break;
+		case '\n':
+			*p++ = 'n';
+			break;
+		case '\r':
+			*p++ = 'r';
+			break;
+		case '\t':
+			*p++ = 't';
+			break;
+		case '\v':
+			*p++ = 'v';
+			break;
+		default:
+			/* anything printable not covered above is not special
+			 * to the shell and can just go in the string verbatim
+			 */
+			if (isprint(*str)) {
+				p[-1] = *str++;
+				continue;
+			}
+			/* if we reach here, turn the character into an octal
+			 * escape sequence, then take the escape path
+			 */
+			*p++ = (*str >> 6) & 0x7;
+			*p++ = (*str >> 3) & 0x7;
+			*p++ = (*str >> 0) & 0x7;
+			break;
+		}
+		/* if we reach here, we end up using $''; the escape sequence
+		 * is already in the result buffer, so just finish up here
+		 */
+		*skipesc = false;
+		++str;
+	}
+
+	/* if we did escaping, do the termination */
+	if (!*skipesc)
+		*p++ = '\'';
+	/* in any case, put in a null terminator */
+	*p++ = '\0';
+
+	return buf;
 }
 
 static int

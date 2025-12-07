@@ -5645,12 +5645,192 @@
  .It Cm \e\'
  Write a <single quote> character.
  .It Cm \e\e
+@@ -290,6 +298,11 @@
+ stops further output from this
+ .Nm
+ invocation.
++.It Cm q
++As for
++.Cm s ,
++but print in a format that can be reused as shell input, escaping
++non-printable characters with the POSIX `$''' syntax.
+ .It Cm n$
+ Allows reordering of the output according to
+ .Ar argument .
 --- src.orig/coreutils/printf/printf.c
 +++ src.freebsd/coreutils/printf/printf.c
-@@ -506,6 +506,24 @@
+@@ -44,6 +44,7 @@
+ #include <inttypes.h>
+ #include <limits.h>
+ #include <locale.h>
++#include <stdbool.h>
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <string.h>
+@@ -71,6 +72,7 @@
+ static int	 asciicode(void);
+ static char	*printf_doformat(char *, int *);
+ static int	 escape(char *, int, size_t *);
++static char	*unescape(const char *, bool *);
+ static int	 getchr(void);
+ static int	 getfloating(long double *, int);
+ static int	 getint(int *);
+@@ -355,19 +357,26 @@
+ 
+ 	*fmt = '\0';
+ 	switch (convch) {
+-	case 'b': {
++	case 'b':
++	case 'q': {
+ 		size_t len;
+ 		char *p;
+-		int getout;
++		int getout = 0;
++		bool skipesc = false;
+ 
+-		/* Convert "b" to "s" for output. */
++		/* Convert "b" or "q" to "s" for output. */
+ 		start[strlen(start) - 1] = 's';
+-		if ((p = strdup(getstr())) == NULL) {
++		if (convch == 'q')
++			p = unescape(getstr(), &skipesc);
++		else
++			p = strdup(getstr());
++		if (p == NULL) {
+ 			warnx("%s", strerror(ENOMEM));
+ 			return (NULL);
+ 		}
+-		getout = escape(p, 0, &len);
+-		PF(start, p);
++		if (convch == 'b')
++			getout = escape(p, 0, &len);
++		PF(start, skipesc ? (p + 2) : p);
+ 		/* Restore format for next loop. */
+ 
+ 		free(p);
+@@ -456,6 +465,117 @@
+ 	return (copy);
+ }
+ 
++static char *
++unescape(const char *str, bool *skipesc)
++{
++	/* start with a conservative buffer; this is for $'' + nul */
++	size_t bsz = 4;
++	size_t cap = strlen(str) + 32;
++	char *buf = malloc(cap), *p = buf;
++
++	if (!buf)
++		return NULL;
++
++	/* at first assume we won't be escaping */
++	*skipesc = true;
++	/* put this at the beginning in case we end up needing it */
++	*p++ = '$';
++	*p++ = '\'';
++
++	while (*str) {
++		if ((cap - bsz) < 4) {
++			char *nbuf;
++			/* space for longest escape */
++			cap *= 2;
++			nbuf = realloc(buf, cap);
++			if (!nbuf) {
++				free(buf);
++				return NULL;
++			}
++			buf = nbuf;
++		}
++		/* preliminary backslash */
++		*p++ = '\\';
++		switch (*str) {
++		case '\\':
++		case '\'':
++		case '$':
++		case '&':
++		case '*':
++		case '?':
++		case '|':
++		case '~':
++		case '^':
++		case ';':
++		case '`':
++		case ' ':
++		case '(':
++		case ')':
++		case '<':
++		case '>':
++		case '{':
++		case '}':
++		case '[':
++		case ']':
++			/* these get backslashed, but don't cause use of $'' */
++			*p++ = *str++;
++			continue;
++		case '\0':
++			*p++ = '0';
++			break;
++		case '\a':
++			*p++ = 'a';
++			break;
++		case '\b':
++			*p++ = 'b';
++			break;
++		case '\f':
++			*p++ = 'f';
++			break;
++		case '\n':
++			*p++ = 'n';
++			break;
++		case '\r':
++			*p++ = 'r';
++			break;
++		case '\t':
++			*p++ = 't';
++			break;
++		case '\v':
++			*p++ = 'v';
++			break;
++		default:
++			/* anything printable not covered above is not special
++			 * to the shell and can just go in the string verbatim
++			 */
++			if (isprint(*str)) {
++				p[-1] = *str++;
++				continue;
++			}
++			/* if we reach here, turn the character into an octal
++			 * escape sequence, then take the escape path
++			 */
++			*p++ = (*str >> 6) & 0x7;
++			*p++ = (*str >> 3) & 0x7;
++			*p++ = (*str >> 0) & 0x7;
++			break;
++		}
++		/* if we reach here, we end up using $''; the escape sequence
++		 * is already in the result buffer, so just finish up here
++		 */
++		*skipesc = false;
++		++str;
++	}
++
++	/* if we did escaping, do the termination */
++	if (!*skipesc)
++		*p++ = '\'';
++	/* in any case, put in a null terminator */
++	*p++ = '\0';
++
++	return buf;
++}
++
+ static int
+ escape(char *fmt, int percent, size_t *len)
+ {
+@@ -505,6 +625,24 @@
+ 			break;
  		case 'v':		/* vertical tab */
  			*store = '\v';
- 			break;
++			break;
 +		case 'x':		/* hexadecimal constant */
 +			if (!percent) {
 +				*store = 'x';
@@ -5668,10 +5848,9 @@
 +			}
 +			--fmt;
 +			*store = (char)value;
-+			break;
+ 			break;
  					/* octal constant */
  		case '0': case '1': case '2': case '3':
- 		case '4': case '5': case '6': case '7':
 --- src.orig/coreutils/pwd/pwd.c
 +++ src.freebsd/coreutils/pwd/pwd.c
 @@ -29,6 +29,7 @@
@@ -9688,15 +9867,17 @@
 +#endif
 --- src.orig/diffutils/diff/diffdir.c
 +++ src.freebsd/diffutils/diff/diffdir.c
-@@ -20,6 +20,7 @@
+@@ -20,8 +20,8 @@
   * Materiel Command, USAF, under agreement number F39502-99-1-0512.
   */
  
 +#include <sys/cdefs.h>
  #include <sys/stat.h>
- #include <sys/tree.h>
+-#include <sys/tree.h>
  
-@@ -43,6 +44,7 @@
+ #include <dirent.h>
+ #include <err.h>
+@@ -43,6 +43,7 @@
  
  #define d_status	d_type		/* we need to store status for -l */
  
@@ -9704,7 +9885,7 @@
  struct inode {
  	dev_t dev;
  	ino_t ino;
-@@ -97,6 +99,7 @@
+@@ -97,6 +98,7 @@
  	errno = serrno;
  	return (-1);
  }
@@ -9712,7 +9893,7 @@
  
  /*
   * Diff directory traversal. Will be called recursively if -r was specified.
-@@ -118,22 +121,26 @@
+@@ -118,22 +120,26 @@
  		status |= 2;
  		return;
  	}
@@ -9744,7 +9925,7 @@
  	if (pos == -1) {
  		if (errno == ENOENT && (Nflag || Pflag)) {
  			pos = 0;
-@@ -145,7 +152,7 @@
+@@ -145,7 +151,7 @@
  	dp1 = dirp1;
  	edp1 = dirp1 + pos;
  
@@ -9753,7 +9934,7 @@
  	if (pos == -1) {
  		if (errno == ENOENT && Nflag) {
  			pos = 0;
-@@ -165,18 +172,6 @@
+@@ -165,18 +171,6 @@
  			dp1++;
  		while (dp2 != edp2 && strcmp((*dp2)->d_name, start) < 0)
  			dp2++;
@@ -10931,6 +11112,15 @@
  		case 'U': /* uid numeric */
  			fprintf(fout, "%d", sp->st_uid);
  			break;
+@@ -238,7 +245,7 @@
+ 			    (float)sp->st_blocks * 512 / (float)sp->st_size);
+ 			break;
+ 		case 'd': /* Depth in tree */
+-			fprintf(fout, "%ld", entry->fts_level);
++			fprintf(fout, "%ld", (long)entry->fts_level);
+ 			break;
+ 		case 'D': /* device number */
+ 			fprintf(fout, "%ju", (uintmax_t)sp->st_dev);
 @@ -298,9 +305,6 @@
  			case S_IFSOCK:
  				putc('s', fout);

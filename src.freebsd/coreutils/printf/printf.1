@@ -298,6 +298,11 @@ and that an additional escape sequence
 stops further output from this
 .Nm
 invocation.
+.It Cm q
+As for
+.Cm s ,
+but print in a format that can be reused as shell input, escaping
+non-printable characters with the POSIX `$''' syntax.
 .It Cm n$
 Allows reordering of the output according to
 .Ar argument .
