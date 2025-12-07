@@ -11468,6 +11468,30 @@
  
  bool	strnsubst(char **, const char *, const char *, size_t);
  
+--- src.orig/findutils/xargs/xargs.1
++++ src.freebsd/findutils/xargs/xargs.1
+@@ -39,6 +39,7 @@
+ .Sh SYNOPSIS
+ .Nm
+ .Op Fl 0oprt
++.Op Fl a Ar file
+ .Op Fl E Ar eofstr
+ .Oo
+ .Fl I Ar replstr
+@@ -91,6 +92,13 @@
+ .Fl print0
+ function in
+ .Xr find 1 .
++.It Fl a Ar file , Fl -arg-file Ar file
++Read items from
++.Ar file
++instead of standard input. Using this will cause standard input to remain
++unchanged. Not using this argument will cause the program to use
++.Ar /dev/null
++as standard input for the utility.
+ .It Fl E Ar eofstr
+ Use
+ .Ar eofstr
 --- src.orig/findutils/xargs/xargs.c
 +++ src.freebsd/findutils/xargs/xargs.c
 @@ -37,8 +37,8 @@
@@ -11480,16 +11504,93 @@
  #include <err.h>
  #include <errno.h>
  #include <fcntl.h>
-@@ -80,7 +80,7 @@
+@@ -55,7 +55,7 @@
+ 
+ #include "pathnames.h"
+ 
+-static void	parse_input(int, char *[]);
++static void	parse_input(FILE *, int, char *[]);
+ static void	prerun(int, char *[]);
+ static int	prompt(void);
+ static void	run(char **);
+@@ -78,19 +78,20 @@
+ static char *argp, *bbp, *ebp, *inpline, *p, *replstr;
+ static const char *eofstr;
  static long eoflen;
- static int count, insingle, indouble, oflag, pflag, tflag, Rflag, rval, zflag;
+-static int count, insingle, indouble, oflag, pflag, tflag, Rflag, rval, zflag;
++static int count, insingle, indouble, oflag, pflag, tflag, Rflag, rval, zflag, aflag;
  static int cnt, Iflag, jfound, Lflag, Sflag, wasquoted, xflag;
 -static int curprocs, maxprocs;
 +static long unsigned int curprocs, maxprocs;
  static pid_t *childpids;
  
  static volatile int childerr;
-@@ -595,6 +595,7 @@
+ 
+ extern char **environ;
+ 
+-static const char *optstr = "+0E:I:J:L:n:oP:pR:S:s:rtx";
++static const char *optstr = "+0a:E:I:J:L:n:oP:pR:S:s:rtx";
+ 
+ static const struct option long_options[] =
+ {
++	{"arg-file",		required_argument,	NULL,	'a'},
+ 	{"exit",		no_argument,		NULL,	'x'},
+ 	{"interactive",		no_argument,		NULL,	'p'},
+ 	{"max-args",		required_argument,	NULL,	'n'},
+@@ -111,6 +112,7 @@
+ 	size_t linelen;
+ 	struct rlimit rl;
+ 	const char *errstr;
++	FILE *inpfile = stdin;
+ 
+ 	inpline = replstr = NULL;
+ 	ep = environ;
+@@ -144,6 +146,13 @@
+ 	maxprocs = 1;
+ 	while ((ch = getopt_long(argc, argv, optstr, long_options, NULL)) != -1)
+ 		switch (ch) {
++		case 'a':
++			/* open with cloexec to not leak it to utility children */
++			inpfile = fopen(optarg, "rbe");
++			if (!inpfile)
++				err(1, "cannot open input file '%s'", optarg);
++			aflag = 1;
++			break;
+ 		case 'E':
+ 			eofstr = optarg;
+ 			eoflen = strlen(eofstr);
+@@ -291,18 +300,18 @@
+ 		errx(1, "malloc failed");
+ 	ebp = (argp = p = bbp) + nline - 1;
+ 	for (;;)
+-		parse_input(argc, argv);
++		parse_input(inpfile, argc, argv);
+ }
+ 
+ static void
+-parse_input(int argc, char *argv[])
++parse_input(FILE *inp, int argc, char *argv[])
+ {
+ 	int ch, foundeof;
+ 	char **avj;
+ 
+ 	foundeof = 0;
+ 
+-	switch (ch = getchar()) {
++	switch (ch = getc(inp)) {
+ 	case EOF:
+ 		/* No arguments since last exec. */
+ 		if (p == bbp) {
+@@ -425,7 +434,7 @@
+ 		if (zflag)
+ 			goto addch;
+ 		/* Backslash escapes anything, is escaped by quotes. */
+-		if (!insingle && !indouble && (ch = getchar()) == EOF) {
++		if (!insingle && !indouble && (ch = getc(inp)) == EOF) {
+ 			warnx("backslash at EOF");
+ 			xexit(*av, 1);
+ 		}
+@@ -595,10 +604,14 @@
  	case -1:
  		warn("vfork");
  		xexit(*argv, 1);
@@ -11497,7 +11598,14 @@
  	case 0:
  		if (oflag) {
  			if ((fd = open(_PATH_TTY, O_RDONLY)) == -1)
-@@ -689,7 +690,7 @@
+ 				err(1, "can't open /dev/tty");
++		} else if (aflag) {
++			/* don't redirect anything by default for -a */
++			fd = -1;
+ 		} else {
+ 			fd = open(_PATH_DEVNULL, O_RDONLY);
+ 		}
+@@ -689,7 +702,7 @@
  static void
  pids_init(void)
  {
@@ -11506,7 +11614,7 @@
  
  	if ((childpids = malloc(maxprocs * sizeof(*childpids))) == NULL)
  		errx(1, "malloc failed");
-@@ -748,7 +749,7 @@
+@@ -748,7 +761,7 @@
  static int
  findslot(pid_t pid)
  {

@@ -55,7 +55,7 @@
 
 #include "pathnames.h"
 
-static void	parse_input(int, char *[]);
+static void	parse_input(FILE *, int, char *[]);
 static void	prerun(int, char *[]);
 static int	prompt(void);
 static void	run(char **);
@@ -78,7 +78,7 @@ static char **av, **bxp, **ep, **endxp, **xp;
 static char *argp, *bbp, *ebp, *inpline, *p, *replstr;
 static const char *eofstr;
 static long eoflen;
-static int count, insingle, indouble, oflag, pflag, tflag, Rflag, rval, zflag;
+static int count, insingle, indouble, oflag, pflag, tflag, Rflag, rval, zflag, aflag;
 static int cnt, Iflag, jfound, Lflag, Sflag, wasquoted, xflag;
 static long unsigned int curprocs, maxprocs;
 static pid_t *childpids;
@@ -87,10 +87,11 @@ static volatile int childerr;
 
 extern char **environ;
 
-static const char *optstr = "+0E:I:J:L:n:oP:pR:S:s:rtx";
+static const char *optstr = "+0a:E:I:J:L:n:oP:pR:S:s:rtx";
 
 static const struct option long_options[] =
 {
+	{"arg-file",		required_argument,	NULL,	'a'},
 	{"exit",		no_argument,		NULL,	'x'},
 	{"interactive",		no_argument,		NULL,	'p'},
 	{"max-args",		required_argument,	NULL,	'n'},
@@ -111,6 +112,7 @@ main(int argc, char *argv[])
 	size_t linelen;
 	struct rlimit rl;
 	const char *errstr;
+	FILE *inpfile = stdin;
 
 	inpline = replstr = NULL;
 	ep = environ;
@@ -144,6 +146,13 @@ main(int argc, char *argv[])
 	maxprocs = 1;
 	while ((ch = getopt_long(argc, argv, optstr, long_options, NULL)) != -1)
 		switch (ch) {
+		case 'a':
+			/* open with cloexec to not leak it to utility children */
+			inpfile = fopen(optarg, "rbe");
+			if (!inpfile)
+				err(1, "cannot open input file '%s'", optarg);
+			aflag = 1;
+			break;
 		case 'E':
 			eofstr = optarg;
 			eoflen = strlen(eofstr);
@@ -291,18 +300,18 @@ main(int argc, char *argv[])
 		errx(1, "malloc failed");
 	ebp = (argp = p = bbp) + nline - 1;
 	for (;;)
-		parse_input(argc, argv);
+		parse_input(inpfile, argc, argv);
 }
 
 static void
-parse_input(int argc, char *argv[])
+parse_input(FILE *inp, int argc, char *argv[])
 {
 	int ch, foundeof;
 	char **avj;
 
 	foundeof = 0;
 
-	switch (ch = getchar()) {
+	switch (ch = getc(inp)) {
 	case EOF:
 		/* No arguments since last exec. */
 		if (p == bbp) {
@@ -425,7 +434,7 @@ arg2:
 		if (zflag)
 			goto addch;
 		/* Backslash escapes anything, is escaped by quotes. */
-		if (!insingle && !indouble && (ch = getchar()) == EOF) {
+		if (!insingle && !indouble && (ch = getc(inp)) == EOF) {
 			warnx("backslash at EOF");
 			xexit(*av, 1);
 		}
@@ -600,6 +609,9 @@ exec:
 		if (oflag) {
 			if ((fd = open(_PATH_TTY, O_RDONLY)) == -1)
 				err(1, "can't open /dev/tty");
+		} else if (aflag) {
+			/* don't redirect anything by default for -a */
+			fd = -1;
 		} else {
 			fd = open(_PATH_DEVNULL, O_RDONLY);
 		}

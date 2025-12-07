@@ -39,6 +39,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl 0oprt
+.Op Fl a Ar file
 .Op Fl E Ar eofstr
 .Oo
 .Fl I Ar replstr
@@ -91,6 +92,13 @@ This is expected to be used in concert with the
 .Fl print0
 function in
 .Xr find 1 .
+.It Fl a Ar file , Fl -arg-file Ar file
+Read items from
+.Ar file
+instead of standard input. Using this will cause standard input to remain
+unchanged. Not using this argument will cause the program to use
+.Ar /dev/null
+as standard input for the utility.
 .It Fl E Ar eofstr
 Use
 .Ar eofstr
