@@ -186,7 +186,7 @@ do_move(const char *from, const char *to)
 {
 	char path[PATH_MAX], modep[15];
 	struct stat sb;
-	int ask, ch, first;
+	int ask, ch, first, ret;
 	struct passwd *pw = NULL;
 	struct group *gr = NULL;
 
@@ -239,7 +239,11 @@ do_move(const char *from, const char *to)
 	 * with EXDEV.  Therefore, copy() doesn't have to perform the checks
 	 * specified in the Step 3 of the POSIX mv specification.
 	 */
-	if (!renameat2(AT_FDCWD, from, AT_FDCWD, to, xflg ? RENAME_EXCHANGE : 0)) {
+	if (xflg)
+		ret = renameat2(AT_FDCWD, from, AT_FDCWD, to, RENAME_EXCHANGE);
+	else
+		ret = rename(from, to);
+	if (!ret) {
 		if (vflg)
 			printf("%s -> %s\n", from, to);
 		return (0);

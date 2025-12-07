@@ -5341,7 +5341,8 @@
  	char path[PATH_MAX], modep[15];
 -	struct statfs sfs;
  	struct stat sb;
- 	int ask, ch, first;
+-	int ask, ch, first;
++	int ask, ch, first, ret;
 +	struct passwd *pw = NULL;
 +	struct group *gr = NULL;
  
@@ -5365,12 +5366,16 @@
  			ask = 1;
  		}
  		if (ask) {
-@@ -207,12 +239,20 @@
+@@ -207,12 +239,24 @@
  	 * with EXDEV.  Therefore, copy() doesn't have to perform the checks
  	 * specified in the Step 3 of the POSIX mv specification.
  	 */
 -	if (!rename(from, to)) {
-+	if (!renameat2(AT_FDCWD, from, AT_FDCWD, to, xflg ? RENAME_EXCHANGE : 0)) {
++	if (xflg)
++		ret = renameat2(AT_FDCWD, from, AT_FDCWD, to, RENAME_EXCHANGE);
++	else
++		ret = rename(from, to);
++	if (!ret) {
  		if (vflg)
  			printf("%s -> %s\n", from, to);
  		return (0);
@@ -5387,7 +5392,7 @@
  	if (errno == EXDEV) {
  		/*
  		 * If the source is a symbolic link and is on another
-@@ -228,11 +268,6 @@
+@@ -228,11 +272,6 @@
  				warn("cannot resolve %s: %s", from, path);
  				return (1);
  			}
@@ -5399,7 +5404,7 @@
  		}
  	} else {
  		warn("rename %s to %s", from, to);
-@@ -256,7 +291,6 @@
+@@ -256,7 +295,6 @@
  fastcopy(const char *from, const char *to, struct stat *sbp)
  {
  	struct timespec ts[2];
@@ -5407,7 +5412,7 @@
  	static char *bp = NULL;
  	static size_t blen = MAXPHYS;
  	ssize_t nread;
-@@ -307,6 +341,7 @@
+@@ -307,6 +345,7 @@
  	}
  	if (fchmod(to_fd, sbp->st_mode))
  		warn("%s: set mode (was: 0%03o)", to, oldmode);
@@ -5415,7 +5420,7 @@
  	/*
  	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
  	 * for dest_file, then its ACLs shall reflect the ACLs of the
-@@ -327,6 +362,7 @@
+@@ -327,6 +366,7 @@
  	 * if the server supports flags and we were trying to *remove* flags
  	 * on a file that we copied, i.e., that we didn't create.)
  	 */
@@ -5423,7 +5428,7 @@
  	if (fstat(to_fd, &tsb) == 0) {
  		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
  		    (tsb.st_flags & ~UF_ARCHIVE)) {
-@@ -339,7 +375,7 @@
+@@ -339,7 +379,7 @@
  		}
  	} else
  		warn("%s: cannot stat", to);
@@ -5432,7 +5437,7 @@
  	if (close(to_fd)) {
  		warn("%s", to);
  		return (1);
-@@ -437,9 +473,9 @@
+@@ -437,9 +477,9 @@
      const char *dest_path)
  {
  	acl_t acl;
@@ -5444,7 +5449,7 @@
  	ret = fpathconf(source_fd, _PC_ACL_NFS4);
  	if (ret > 0 ) {
  		acl_supported = 1;
-@@ -449,13 +485,13 @@
+@@ -449,13 +489,13 @@
  		    source_path);
  		return;
  	}
@@ -5462,7 +5467,7 @@
  			    source_path);
  			return;
  		}
-@@ -463,21 +499,12 @@
+@@ -463,21 +503,12 @@
  	if (acl_supported == 0)
  		return;
  
@@ -5486,7 +5491,7 @@
  		warn("failed to set acl entries for %s", dest_path);
  		acl_free(acl);
  		return;
-@@ -486,10 +513,74 @@
+@@ -486,10 +517,74 @@
  }
  
  static void
