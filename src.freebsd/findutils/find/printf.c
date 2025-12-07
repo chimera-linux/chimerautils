@@ -245,7 +245,7 @@ do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
 			    (float)sp->st_blocks * 512 / (float)sp->st_size);
 			break;
 		case 'd': /* Depth in tree */
-			fprintf(fout, "%ld", entry->fts_level);
+			fprintf(fout, "%ld", (long)entry->fts_level);
 			break;
 		case 'D': /* device number */
 			fprintf(fout, "%ju", (uintmax_t)sp->st_dev);
