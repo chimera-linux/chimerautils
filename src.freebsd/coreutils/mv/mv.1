@@ -38,7 +38,7 @@
 .Sh SYNOPSIS
 .Nm
 .Op Fl f | i | n
-.Op Fl hvT
+.Op Fl hvTx
 .Ar source target
 .Nm
 .Op Fl f | i | n
@@ -133,6 +133,9 @@ Specify the target directory to move other arguments into.
 Cause
 .Nm
 to be verbose, showing files after they are moved.
+.It Fl x
+Atomically exchange the files on a single filesystem.
+Requires two operands.
 .El
 .Pp
 It is an error for the

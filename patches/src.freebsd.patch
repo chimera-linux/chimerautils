@@ -5179,7 +5179,7 @@
  .Nm
  .Op Fl f | i | n
 -.Op Fl hv
-+.Op Fl hvT
++.Op Fl hvTx
  .Ar source target
  .Nm
  .Op Fl f | i | n
@@ -5203,7 +5203,7 @@
  .It Fl f
  Do not prompt for confirmation before overwriting the destination
  path.
-@@ -119,6 +127,8 @@
+@@ -119,10 +127,15 @@
  or
  .Fl i
  options.)
@@ -5212,6 +5212,13 @@
  .It Fl v
  Cause
  .Nm
+ to be verbose, showing files after they are moved.
++.It Fl x
++Atomically exchange the files on a single filesystem.
++Requires two operands.
+ .El
+ .Pp
+ It is an error for the
 --- src.orig/coreutils/mv/mv.c
 +++ src.freebsd/coreutils/mv/mv.c
 @@ -37,7 +37,10 @@
@@ -5230,7 +5237,7 @@
  #define EXEC_FAILED 127
  
 -static int	fflg, hflg, iflg, nflg, vflg;
-+static int	fflg, hflg, iflg, nflg, vflg, Tflg;
++static int	fflg, hflg, iflg, nflg, vflg, Tflg, xflg;
  
  static int	copy(const char *, const char *);
  static int	do_move(const char *, const char *);
@@ -5251,11 +5258,11 @@
 +	const char *target;
  
 -	while ((ch = getopt(argc, argv, "fhinv")) != -1)
-+	while ((ch = getopt(argc, argv, "Tfhint:v")) != -1)
++	while ((ch = getopt(argc, argv, "Tfhint:vx")) != -1)
  		switch (ch) {
  		case 'h':
  			hflg = 1;
-@@ -89,6 +94,12 @@
+@@ -89,27 +94,48 @@
  			nflg = 1;
  			fflg = iflg = 0;
  			break;
@@ -5268,18 +5275,25 @@
  		case 'v':
  			vflg = 1;
  			break;
-@@ -98,18 +109,28 @@
++		case 'x':
++			xflg = 1;
++			break;
+ 		default:
+ 			usage();
+ 		}
  	argc -= optind;
  	argv += optind;
  
 -	if (argc < 2)
-+	if (argc < (!targdir + 1) || (Tflg && argc > 2))
++	if (argc < (!targdir + 1) || ((Tflg || xflg) && argc > 2))
  		usage();
  
 +	if (Tflg && targdir)
 +		errx(1, "the -T and -t options may not be used together");
 +	if (hflg && targdir)
 +		errx(1, "the -h and -t options may not be used together");
++	if (xflg && targdir)
++		errx(1, "the -x and -t options may not be used together");
 +
 +	target = targdir ? targdir : argv[argc - 1];
 +
@@ -5301,7 +5315,7 @@
  
  	/*
  	 * If -h was specified, treat the target as a symlink instead of
-@@ -123,16 +144,16 @@
+@@ -123,16 +149,16 @@
  	}
  
  	/* It's a directory, move each file into it. */
@@ -5321,7 +5335,7 @@
  		/*
  		 * Find the last component of the source pathname.  It
  		 * may have trailing slashes.
-@@ -159,9 +180,10 @@
+@@ -159,9 +185,10 @@
  do_move(const char *from, const char *to)
  {
  	char path[PATH_MAX], modep[15];
@@ -5333,7 +5347,7 @@
  
  	/*
  	 * Check access.  If interactive and file exists, ask user if it
-@@ -186,10 +208,15 @@
+@@ -186,10 +213,15 @@
  			ask = 1;
  		} else if (access(to, W_OK) && !stat(to, &sb) && isatty(STDIN_FILENO)) {
  			strmode(sb.st_mode, modep);
@@ -5351,7 +5365,29 @@
  			ask = 1;
  		}
  		if (ask) {
-@@ -228,11 +255,6 @@
+@@ -207,12 +239,20 @@
+ 	 * with EXDEV.  Therefore, copy() doesn't have to perform the checks
+ 	 * specified in the Step 3 of the POSIX mv specification.
+ 	 */
+-	if (!rename(from, to)) {
++	if (!renameat2(AT_FDCWD, from, AT_FDCWD, to, xflg ? RENAME_EXCHANGE : 0)) {
+ 		if (vflg)
+ 			printf("%s -> %s\n", from, to);
+ 		return (0);
+ 	}
+ 
++	if (xflg) {
++		if (errno == EINVAL || errno == ENOSYS)
++			warnx("atomic exchange of '%s' and '%s' not supported", from, to);
++		else
++			warnx("atomic exchange of '%s' and '%s' failed", from, to);
++		return (1);
++	}
++
+ 	if (errno == EXDEV) {
+ 		/*
+ 		 * If the source is a symbolic link and is on another
+@@ -228,11 +268,6 @@
  				warn("cannot resolve %s: %s", from, path);
  				return (1);
  			}
@@ -5363,7 +5399,7 @@
  		}
  	} else {
  		warn("rename %s to %s", from, to);
-@@ -256,7 +278,6 @@
+@@ -256,7 +291,6 @@
  fastcopy(const char *from, const char *to, struct stat *sbp)
  {
  	struct timespec ts[2];
@@ -5371,7 +5407,7 @@
  	static char *bp = NULL;
  	static size_t blen = MAXPHYS;
  	ssize_t nread;
-@@ -307,6 +328,7 @@
+@@ -307,6 +341,7 @@
  	}
  	if (fchmod(to_fd, sbp->st_mode))
  		warn("%s: set mode (was: 0%03o)", to, oldmode);
@@ -5379,7 +5415,7 @@
  	/*
  	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
  	 * for dest_file, then its ACLs shall reflect the ACLs of the
-@@ -327,6 +349,7 @@
+@@ -327,6 +362,7 @@
  	 * if the server supports flags and we were trying to *remove* flags
  	 * on a file that we copied, i.e., that we didn't create.)
  	 */
@@ -5387,7 +5423,7 @@
  	if (fstat(to_fd, &tsb) == 0) {
  		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
  		    (tsb.st_flags & ~UF_ARCHIVE)) {
-@@ -339,7 +362,7 @@
+@@ -339,7 +375,7 @@
  		}
  	} else
  		warn("%s: cannot stat", to);
@@ -5396,7 +5432,7 @@
  	if (close(to_fd)) {
  		warn("%s", to);
  		return (1);
-@@ -437,9 +460,9 @@
+@@ -437,9 +473,9 @@
      const char *dest_path)
  {
  	acl_t acl;
@@ -5408,7 +5444,7 @@
  	ret = fpathconf(source_fd, _PC_ACL_NFS4);
  	if (ret > 0 ) {
  		acl_supported = 1;
-@@ -449,13 +472,13 @@
+@@ -449,13 +485,13 @@
  		    source_path);
  		return;
  	}
@@ -5426,7 +5462,7 @@
  			    source_path);
  			return;
  		}
-@@ -463,21 +486,12 @@
+@@ -463,21 +499,12 @@
  	if (acl_supported == 0)
  		return;
  
@@ -5450,7 +5486,7 @@
  		warn("failed to set acl entries for %s", dest_path);
  		acl_free(acl);
  		return;
-@@ -486,10 +500,74 @@
+@@ -486,10 +513,74 @@
  }
  
  static void
@@ -5523,7 +5559,7 @@
 -	    "usage: mv [-f | -i | -n] [-hv] source target",
 -	    "       mv [-f | -i | -n] [-v] source ... directory");
 +	(void)fprintf(stderr, "%s\n%s\n%s\n",
-+	    "usage: mv [-f | -i | -n] [-hvT] source target",
++	    "usage: mv [-f | -i | -n] [-hvTx] source target",
 +	    "       mv [-f | -i | -n] [-v] source ... directory",
 +	    "       mv [-f | -i | -n] [-v] -t directory source ...");
  	exit(EX_USAGE);

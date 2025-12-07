@@ -58,7 +58,7 @@
 /* Exit code for a failed exec. */
 #define EXEC_FAILED 127
 
-static int	fflg, hflg, iflg, nflg, vflg, Tflg;
+static int	fflg, hflg, iflg, nflg, vflg, Tflg, xflg;
 
 static int	copy(const char *, const char *);
 static int	do_move(const char *, const char *);
@@ -77,7 +77,7 @@ main(int argc, char *argv[])
 	int ch, rval;
 	const char *target;
 
-	while ((ch = getopt(argc, argv, "Tfhint:v")) != -1)
+	while ((ch = getopt(argc, argv, "Tfhint:vx")) != -1)
 		switch (ch) {
 		case 'h':
 			hflg = 1;
@@ -103,19 +103,24 @@ main(int argc, char *argv[])
 		case 'v':
 			vflg = 1;
 			break;
+		case 'x':
+			xflg = 1;
+			break;
 		default:
 			usage();
 		}
 	argc -= optind;
 	argv += optind;
 
-	if (argc < (!targdir + 1) || (Tflg && argc > 2))
+	if (argc < (!targdir + 1) || ((Tflg || xflg) && argc > 2))
 		usage();
 
 	if (Tflg && targdir)
 		errx(1, "the -T and -t options may not be used together");
 	if (hflg && targdir)
 		errx(1, "the -h and -t options may not be used together");
+	if (xflg && targdir)
+		errx(1, "the -x and -t options may not be used together");
 
 	target = targdir ? targdir : argv[argc - 1];
 
@@ -234,10 +239,18 @@ do_move(const char *from, const char *to)
 	 * with EXDEV.  Therefore, copy() doesn't have to perform the checks
 	 * specified in the Step 3 of the POSIX mv specification.
 	 */
-	if (!rename(from, to)) {
+	if (!renameat2(AT_FDCWD, from, AT_FDCWD, to, xflg ? RENAME_EXCHANGE : 0)) {
 		if (vflg)
 			printf("%s -> %s\n", from, to);
 		return (0);
+	}
+
+	if (xflg) {
+		if (errno == EINVAL || errno == ENOSYS)
+			warnx("atomic exchange of '%s' and '%s' not supported", from, to);
+		else
+			warnx("atomic exchange of '%s' and '%s' failed", from, to);
+		return (1);
 	}
 
 	if (errno == EXDEV) {
@@ -566,7 +579,7 @@ static void
 usage(void)
 {
 	(void)fprintf(stderr, "%s\n%s\n%s\n",
-	    "usage: mv [-f | -i | -n] [-hvT] source target",
+	    "usage: mv [-f | -i | -n] [-hvTx] source target",
 	    "       mv [-f | -i | -n] [-v] source ... directory",
 	    "       mv [-f | -i | -n] [-v] -t directory source ...");
 	exit(EX_USAGE);
