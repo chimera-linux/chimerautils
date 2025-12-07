@@ -40,6 +40,7 @@
 #include <sys/xattr.h>
 #include <sys/wait.h>
 #include <sys/statvfs.h>
+#include <sys/syscall.h>
 #include <acl/libacl.h>
 
 #include <err.h>
@@ -57,6 +58,8 @@
 
 /* Exit code for a failed exec. */
 #define EXEC_FAILED 127
+
+#define RENAME_EXCHANGE (1 << 1)
 
 static int	fflg, hflg, iflg, nflg, vflg, Tflg, xflg;
 
@@ -240,7 +243,7 @@ do_move(const char *from, const char *to)
 	 * specified in the Step 3 of the POSIX mv specification.
 	 */
 	if (xflg)
-		ret = renameat2(AT_FDCWD, from, AT_FDCWD, to, RENAME_EXCHANGE);
+		ret = syscall(SYS_renameat2, AT_FDCWD, from, AT_FDCWD, to, RENAME_EXCHANGE);
 	else
 		ret = rename(from, to);
 	if (!ret) {

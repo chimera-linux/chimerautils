@@ -5221,24 +5221,27 @@
  It is an error for the
 --- src.orig/coreutils/mv/mv.c
 +++ src.freebsd/coreutils/mv/mv.c
-@@ -37,7 +37,10 @@
+@@ -37,7 +37,11 @@
  #include <sys/mount.h>
  #include <sys/stat.h>
  #include <sys/time.h>
 +#include <sys/xattr.h>
  #include <sys/wait.h>
 +#include <sys/statvfs.h>
++#include <sys/syscall.h>
 +#include <acl/libacl.h>
  
  #include <err.h>
  #include <errno.h>
-@@ -55,24 +58,26 @@
+@@ -55,24 +59,28 @@
  /* Exit code for a failed exec. */
  #define EXEC_FAILED 127
  
 -static int	fflg, hflg, iflg, nflg, vflg;
-+static int	fflg, hflg, iflg, nflg, vflg, Tflg, xflg;
++#define RENAME_EXCHANGE (1 << 1)
  
++static int	fflg, hflg, iflg, nflg, vflg, Tflg, xflg;
++
  static int	copy(const char *, const char *);
  static int	do_move(const char *, const char *);
  static int	fastcopy(const char *, const char *, struct stat *);
@@ -5262,7 +5265,7 @@
  		switch (ch) {
  		case 'h':
  			hflg = 1;
-@@ -89,27 +94,48 @@
+@@ -89,27 +97,48 @@
  			nflg = 1;
  			fflg = iflg = 0;
  			break;
@@ -5315,7 +5318,7 @@
  
  	/*
  	 * If -h was specified, treat the target as a symlink instead of
-@@ -123,16 +149,16 @@
+@@ -123,16 +152,16 @@
  	}
  
  	/* It's a directory, move each file into it. */
@@ -5335,7 +5338,7 @@
  		/*
  		 * Find the last component of the source pathname.  It
  		 * may have trailing slashes.
-@@ -159,9 +185,10 @@
+@@ -159,9 +188,10 @@
  do_move(const char *from, const char *to)
  {
  	char path[PATH_MAX], modep[15];
@@ -5348,7 +5351,7 @@
  
  	/*
  	 * Check access.  If interactive and file exists, ask user if it
-@@ -186,10 +213,15 @@
+@@ -186,10 +216,15 @@
  			ask = 1;
  		} else if (access(to, W_OK) && !stat(to, &sb) && isatty(STDIN_FILENO)) {
  			strmode(sb.st_mode, modep);
@@ -5366,13 +5369,13 @@
  			ask = 1;
  		}
  		if (ask) {
-@@ -207,12 +239,24 @@
+@@ -207,12 +242,24 @@
  	 * with EXDEV.  Therefore, copy() doesn't have to perform the checks
  	 * specified in the Step 3 of the POSIX mv specification.
  	 */
 -	if (!rename(from, to)) {
 +	if (xflg)
-+		ret = renameat2(AT_FDCWD, from, AT_FDCWD, to, RENAME_EXCHANGE);
++		ret = syscall(SYS_renameat2, AT_FDCWD, from, AT_FDCWD, to, RENAME_EXCHANGE);
 +	else
 +		ret = rename(from, to);
 +	if (!ret) {
@@ -5392,7 +5395,7 @@
  	if (errno == EXDEV) {
  		/*
  		 * If the source is a symbolic link and is on another
-@@ -228,11 +272,6 @@
+@@ -228,11 +275,6 @@
  				warn("cannot resolve %s: %s", from, path);
  				return (1);
  			}
@@ -5404,7 +5407,7 @@
  		}
  	} else {
  		warn("rename %s to %s", from, to);
-@@ -256,7 +295,6 @@
+@@ -256,7 +298,6 @@
  fastcopy(const char *from, const char *to, struct stat *sbp)
  {
  	struct timespec ts[2];
@@ -5412,7 +5415,7 @@
  	static char *bp = NULL;
  	static size_t blen = MAXPHYS;
  	ssize_t nread;
-@@ -307,6 +345,7 @@
+@@ -307,6 +348,7 @@
  	}
  	if (fchmod(to_fd, sbp->st_mode))
  		warn("%s: set mode (was: 0%03o)", to, oldmode);
@@ -5420,7 +5423,7 @@
  	/*
  	 * POSIX 1003.2c states that if _POSIX_ACL_EXTENDED is in effect
  	 * for dest_file, then its ACLs shall reflect the ACLs of the
-@@ -327,6 +366,7 @@
+@@ -327,6 +369,7 @@
  	 * if the server supports flags and we were trying to *remove* flags
  	 * on a file that we copied, i.e., that we didn't create.)
  	 */
@@ -5428,7 +5431,7 @@
  	if (fstat(to_fd, &tsb) == 0) {
  		if ((sbp->st_flags  & ~UF_ARCHIVE) !=
  		    (tsb.st_flags & ~UF_ARCHIVE)) {
-@@ -339,7 +379,7 @@
+@@ -339,7 +382,7 @@
  		}
  	} else
  		warn("%s: cannot stat", to);
@@ -5437,7 +5440,7 @@
  	if (close(to_fd)) {
  		warn("%s", to);
  		return (1);
-@@ -437,9 +477,9 @@
+@@ -437,9 +480,9 @@
      const char *dest_path)
  {
  	acl_t acl;
@@ -5449,7 +5452,7 @@
  	ret = fpathconf(source_fd, _PC_ACL_NFS4);
  	if (ret > 0 ) {
  		acl_supported = 1;
-@@ -449,13 +489,13 @@
+@@ -449,13 +492,13 @@
  		    source_path);
  		return;
  	}
@@ -5467,7 +5470,7 @@
  			    source_path);
  			return;
  		}
-@@ -463,21 +503,12 @@
+@@ -463,21 +506,12 @@
  	if (acl_supported == 0)
  		return;
  
@@ -5491,7 +5494,7 @@
  		warn("failed to set acl entries for %s", dest_path);
  		acl_free(acl);
  		return;
-@@ -486,10 +517,74 @@
+@@ -486,10 +520,74 @@
  }
  
  static void
