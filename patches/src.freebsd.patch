@@ -2170,6 +2170,24 @@
  	mode_t mask, mode;
  	bool beneath = Rflag && type != FILE_TO_FILE;
  
+@@ -318,7 +332,7 @@
+ 		to.end = to.path + strlcpy(to.path, to.base, sizeof(to.path));
+ 		to.base[0] = '\0';
+ 	} else if (type == FILE_TO_DIR) {
+-		to.dir = open(to.base, O_DIRECTORY | O_SEARCH);
++		to.dir = open(to.base, O_DIRECTORY | O_PATH);
+ 		if (to.dir < 0)
+ 			err(1, "%s", to.base);
+ 		/*
+@@ -401,7 +415,7 @@
+ 						umask(~mask);
+ 					continue;
+ 				}
+-				to.dir = open(to.base, O_DIRECTORY | O_SEARCH);
++				to.dir = open(to.base, O_DIRECTORY | O_PATH);
+ 				if (to.dir < 0) {
+ 					warn("%s", to.base);
+ 					(void)rmdir(to.base);
 @@ -509,6 +523,7 @@
  				if (preserve_dir_acls(curr->fts_accpath,
  				    to.path) != 0)

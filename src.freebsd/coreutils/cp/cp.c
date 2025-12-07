@@ -332,7 +332,7 @@ copy(char *argv[], enum op type, int fts_options, struct stat *root_stat)
 		to.end = to.path + strlcpy(to.path, to.base, sizeof(to.path));
 		to.base[0] = '\0';
 	} else if (type == FILE_TO_DIR) {
-		to.dir = open(to.base, O_DIRECTORY | O_SEARCH);
+		to.dir = open(to.base, O_DIRECTORY | O_PATH);
 		if (to.dir < 0)
 			err(1, "%s", to.base);
 		/*
@@ -415,7 +415,7 @@ copy(char *argv[], enum op type, int fts_options, struct stat *root_stat)
 						umask(~mask);
 					continue;
 				}
-				to.dir = open(to.base, O_DIRECTORY | O_SEARCH);
+				to.dir = open(to.base, O_DIRECTORY | O_PATH);
 				if (to.dir < 0) {
 					warn("%s", to.base);
 					(void)rmdir(to.base);
