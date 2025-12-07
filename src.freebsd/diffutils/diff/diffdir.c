@@ -22,7 +22,6 @@
 
 #include <sys/cdefs.h>
 #include <sys/stat.h>
-#include <sys/tree.h>
 
 #include <dirent.h>
 #include <err.h>
