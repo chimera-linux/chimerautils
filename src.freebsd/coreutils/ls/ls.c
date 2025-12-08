@@ -728,7 +728,7 @@ traverse(int argc, char *argv[], int options)
  * points to the parent directory of the display list.
  */
 static void
-display(const FTSENT *p, FTSENT *list, int options __unused)
+display(const FTSENT *p, FTSENT *list, int options)
 {
 	struct stat *sp;
 	DISPLAY d;
@@ -818,7 +818,8 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 			}
 			cur->fts_number = ERR_PRINT;
 			/* zero out the structure just in case */
-			memset(cur->fts_statp, 0, sizeof(*cur->fts_statp));
+			if (!(options & FTS_NOSTAT))
+				memset(cur->fts_statp, 0, sizeof(*cur->fts_statp));
 			failent = true;
 		} else failent = false;
 		/*

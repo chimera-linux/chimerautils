@@ -4528,15 +4528,6 @@
  #endif
  		default:
  		case '?':
-@@ -726,7 +728,7 @@
-  * points to the parent directory of the display list.
-  */
- static void
--display(const FTSENT *p, FTSENT *list, int options)
-+display(const FTSENT *p, FTSENT *list, int options __unused)
- {
- 	struct stat *sp;
- 	DISPLAY d;
 @@ -744,12 +746,15 @@
  	size_t flen, ulen, glen;
  	char *initmax;
@@ -4554,7 +4545,7 @@
  
  	needstats = f_inode || f_longform || f_size;
  	flen = 0;
-@@ -802,15 +807,20 @@
+@@ -802,15 +807,21 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -4573,13 +4564,14 @@
 +			}
 +			cur->fts_number = ERR_PRINT;
 +			/* zero out the structure just in case */
-+			memset(cur->fts_statp, 0, sizeof(*cur->fts_statp));
++			if (!(options & FTS_NOSTAT))
++				memset(cur->fts_statp, 0, sizeof(*cur->fts_statp));
 +			failent = true;
 +		} else failent = false;
  		/*
  		 * P is NULL if list is the argv list, to which different rules
  		 * apply.
-@@ -849,7 +859,10 @@
+@@ -849,7 +860,10 @@
  
  			btotal += sp->st_blocks;
  			if (f_longform) {
@@ -4591,7 +4583,7 @@
  					(void)snprintf(nuser, sizeof(nuser),
  					    "%u", sp->st_uid);
  					(void)snprintf(ngroup, sizeof(ngroup),
-@@ -857,27 +870,33 @@
+@@ -857,27 +871,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -4638,7 +4630,7 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -891,8 +910,13 @@
+@@ -891,8 +911,13 @@
  						maxflags = flen;
  				} else
  					flen = 0;
@@ -4653,7 +4645,7 @@
  					char name[PATH_MAX + 1];
  					mac_t label;
  					int error;
-@@ -938,6 +962,27 @@
+@@ -938,6 +963,27 @@
  					}
  					mac_free(label);
  label_out:
@@ -4681,7 +4673,7 @@
  					if (labelstr == NULL)
  						labelstr = strdup("-");
  					labelstrlen = strlen(labelstr);
-@@ -945,7 +990,6 @@
+@@ -945,7 +991,6 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -4689,7 +4681,7 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -955,6 +999,11 @@
+@@ -955,6 +1000,11 @@
  				np->group = &np->data[ulen + 1];
  				(void)strcpy(np->group, group);
  
@@ -4701,7 +4693,7 @@
  				if (S_ISCHR(sp->st_mode) ||
  				    S_ISBLK(sp->st_mode)) {
  					sizelen = snprintf(NULL, 0,
-@@ -963,11 +1012,6 @@
+@@ -963,11 +1013,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4713,7 +4705,7 @@
  				if (f_label) {
  					np->label = &np->data[ulen + glen + 2
  					    + (f_flags ? flen + 1 : 0)];
-@@ -1024,7 +1068,7 @@
+@@ -1024,7 +1069,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
