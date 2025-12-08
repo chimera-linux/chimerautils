@@ -74,6 +74,7 @@ static int	colortype(mode_t);
 static void	aclmode(char *, const FTSENT *);
 
 #define	IS_NOPRINT(p)	((p)->fts_number == NO_PRINT)
+#define	IS_ERRPRINT(p)	((p)->fts_number == ERR_PRINT)
 
 #ifdef COLORLS
 /* Most of these are taken from <sys/stat.h> */
@@ -225,17 +226,27 @@ printlong(const DISPLAY *dp)
 		if (IS_NOPRINT(p))
 			continue;
 		sp = p->fts_statp;
-		if (f_inode)
+		if (f_inode && IS_ERRPRINT(p))
+			(void)printf("%*s ", dp->s_inode, "?");
+		else if (f_inode)
 			(void)printf("%*ju ",
 			    dp->s_inode, (uintmax_t)sp->st_ino);
-		if (f_size)
+		if (f_size && IS_ERRPRINT(p))
+			(void)printf("%*s ", dp->s_block, "?");
+		else if (f_size)
 			(void)printf(f_thousands ? "%'*jd " : "%*jd ",
 			    dp->s_block, howmany(sp->st_blocks, blocksize));
-		strmode(sp->st_mode, buf);
+		if (IS_ERRPRINT(p))
+			memset(buf, '?', 10);
+		else
+			strmode(sp->st_mode, buf);
 		aclmode(buf, p);
 		np = p->fts_pointer;
-		(void)printf("%s %*ju ", buf, dp->s_nlink,
-		    (uintmax_t)sp->st_nlink);
+		if (IS_ERRPRINT(p))
+			(void)printf("%s %*s ", buf, dp->s_nlink, "?");
+		else
+			(void)printf("%s %*ju ", buf, dp->s_nlink,
+			    (uintmax_t)sp->st_nlink);
 		if (!f_sowner)
 			(void)printf("%-*s ", dp->s_user, np->user);
 		(void)printf("%-*s ", dp->s_group, np->group);
@@ -243,11 +254,15 @@ printlong(const DISPLAY *dp)
 			(void)printf("%-*s ", dp->s_flags, np->flags);
 		if (f_label)
 			(void)printf("%-*s ", dp->s_label, np->label);
-		if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
+		if (IS_ERRPRINT(p))
+			(void)printf("%*s ", dp->s_size, "?");
+		else if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
 			printdev(dp->s_size, sp->st_rdev);
 		else
 			printsize(dp->s_size, sp->st_size);
-		if (f_accesstime)
+		if (IS_ERRPRINT(p))
+			(void)printf("           ? ");
+		else if (f_accesstime)
 			printtime(sp->st_atime);
 		else if (f_birthtime)
 			printtime(sp->st_ctime);
@@ -778,6 +793,9 @@ aclmode(char *buf, const FTSENT *p)
 	int ret, trivial = -1;
 	static dev_t previous_dev = (dev_t)-1;
 	static int supports_acls = -1;
+
+	if (IS_ERRPRINT(p))
+		return;
 
 	if (S_ISCHR(p->fts_statp->st_mode) || S_ISBLK(p->fts_statp->st_mode) ||
 	    S_ISLNK(p->fts_statp->st_mode))

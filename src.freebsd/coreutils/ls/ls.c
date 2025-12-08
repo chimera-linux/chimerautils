@@ -754,6 +754,7 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 	char nuser[STRBUF_SIZEOF(gid_t) + 1];
 	u_long width[9];
 	int i;
+	bool failent;
 
 	needstats = f_inode || f_longform || f_size;
 	flen = 0;
@@ -810,10 +811,16 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
 			warnx("%s: %s",
 			    cur->fts_name, strerror(cur->fts_errno));
-			cur->fts_number = NO_PRINT;
 			rval = 1;
-			continue;
-		}
+			if (cur->fts_errno != ENOTCONN && cur->fts_errno != EIO) {
+				cur->fts_number = NO_PRINT;
+				continue;
+			}
+			cur->fts_number = ERR_PRINT;
+			/* zero out the structure just in case */
+			memset(cur->fts_statp, 0, sizeof(*cur->fts_statp));
+			failent = true;
+		} else failent = false;
 		/*
 		 * P is NULL if list is the argv list, to which different rules
 		 * apply.
@@ -852,7 +859,10 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 
 			btotal += sp->st_blocks;
 			if (f_longform) {
-				if (f_numericonly) {
+				if (failent) {
+					user = "?";
+					group = "?";
+				} else if (f_numericonly) {
 					(void)snprintf(nuser, sizeof(nuser),
 					    "%u", sp->st_uid);
 					(void)snprintf(ngroup, sizeof(ngroup),
@@ -902,7 +912,10 @@ display(const FTSENT *p, FTSENT *list, int options __unused)
 					flen = 0;
 #endif
 				labelstr = NULL;
-				if (f_label) {
+				if (f_label && failent) {
+					labelstr = strdup("?");
+					labelstrlen = 1;
+				} else if (f_label) {
 #if 0
 					char name[PATH_MAX + 1];
 					mac_t label;

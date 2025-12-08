@@ -4537,7 +4537,7 @@
  {
  	struct stat *sp;
  	DISPLAY d;
-@@ -744,8 +746,10 @@
+@@ -744,12 +746,15 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -4549,7 +4549,12 @@
  	char ngroup[STRBUF_SIZEOF(uid_t) + 1];
  	char nuser[STRBUF_SIZEOF(gid_t) + 1];
  	u_long width[9];
-@@ -802,7 +806,6 @@
+ 	int i;
++	bool failent;
+ 
+ 	needstats = f_inode || f_longform || f_size;
+ 	flen = 0;
+@@ -802,15 +807,20 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -4557,7 +4562,36 @@
  	for (cur = list, entries = 0; cur; cur = cur->fts_link) {
  		if (cur->fts_info == FTS_ERR || cur->fts_info == FTS_NS) {
  			warnx("%s: %s",
-@@ -857,27 +860,33 @@
+ 			    cur->fts_name, strerror(cur->fts_errno));
+-			cur->fts_number = NO_PRINT;
+ 			rval = 1;
+-			continue;
+-		}
++			if (cur->fts_errno != ENOTCONN && cur->fts_errno != EIO) {
++				cur->fts_number = NO_PRINT;
++				continue;
++			}
++			cur->fts_number = ERR_PRINT;
++			/* zero out the structure just in case */
++			memset(cur->fts_statp, 0, sizeof(*cur->fts_statp));
++			failent = true;
++		} else failent = false;
+ 		/*
+ 		 * P is NULL if list is the argv list, to which different rules
+ 		 * apply.
+@@ -849,7 +859,10 @@
+ 
+ 			btotal += sp->st_blocks;
+ 			if (f_longform) {
+-				if (f_numericonly) {
++				if (failent) {
++					user = "?";
++					group = "?";
++				} else if (f_numericonly) {
+ 					(void)snprintf(nuser, sizeof(nuser),
+ 					    "%u", sp->st_uid);
+ 					(void)snprintf(ngroup, sizeof(ngroup),
+@@ -857,27 +870,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -4604,18 +4638,22 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -891,8 +900,10 @@
+@@ -891,8 +910,13 @@
  						maxflags = flen;
  				} else
  					flen = 0;
 +#endif
  				labelstr = NULL;
- 				if (f_label) {
+-				if (f_label) {
++				if (f_label && failent) {
++					labelstr = strdup("?");
++					labelstrlen = 1;
++				} else if (f_label) {
 +#if 0
  					char name[PATH_MAX + 1];
  					mac_t label;
  					int error;
-@@ -938,6 +949,27 @@
+@@ -938,6 +962,27 @@
  					}
  					mac_free(label);
  label_out:
@@ -4643,7 +4681,7 @@
  					if (labelstr == NULL)
  						labelstr = strdup("-");
  					labelstrlen = strlen(labelstr);
-@@ -945,7 +977,6 @@
+@@ -945,7 +990,6 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -4651,7 +4689,7 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -955,6 +986,11 @@
+@@ -955,6 +999,11 @@
  				np->group = &np->data[ulen + 1];
  				(void)strcpy(np->group, group);
  
@@ -4663,7 +4701,7 @@
  				if (S_ISCHR(sp->st_mode) ||
  				    S_ISBLK(sp->st_mode)) {
  					sizelen = snprintf(NULL, 0,
-@@ -963,11 +999,6 @@
+@@ -963,11 +1012,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4675,7 +4713,7 @@
  				if (f_label) {
  					np->label = &np->data[ulen + glen + 2
  					    + (f_flags ? flen + 1 : 0)];
-@@ -1024,7 +1055,7 @@
+@@ -1024,7 +1068,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -4683,6 +4721,16 @@
 +mastercmp(const FTSENT **a, const FTSENT **b)
  {
  	int a_info, b_info, dir;
+ 
+--- src.orig/coreutils/ls/ls.h
++++ src.freebsd/coreutils/ls/ls.h
+@@ -33,6 +33,7 @@
+  */
+ 
+ #define NO_PRINT	1
++#define ERR_PRINT	2
+ 
+ #define HUMANVALSTR_LEN	5
  
 --- src.orig/coreutils/ls/print.c
 +++ src.freebsd/coreutils/ls/print.c
@@ -4703,8 +4751,62 @@
  #include <unistd.h>
  #include <wchar.h>
  #ifdef COLORLS
-@@ -249,7 +250,7 @@
- 		if (f_accesstime)
+@@ -73,6 +74,7 @@
+ static void	aclmode(char *, const FTSENT *);
+ 
+ #define	IS_NOPRINT(p)	((p)->fts_number == NO_PRINT)
++#define	IS_ERRPRINT(p)	((p)->fts_number == ERR_PRINT)
+ 
+ #ifdef COLORLS
+ /* Most of these are taken from <sys/stat.h> */
+@@ -224,17 +226,27 @@
+ 		if (IS_NOPRINT(p))
+ 			continue;
+ 		sp = p->fts_statp;
+-		if (f_inode)
++		if (f_inode && IS_ERRPRINT(p))
++			(void)printf("%*s ", dp->s_inode, "?");
++		else if (f_inode)
+ 			(void)printf("%*ju ",
+ 			    dp->s_inode, (uintmax_t)sp->st_ino);
+-		if (f_size)
++		if (f_size && IS_ERRPRINT(p))
++			(void)printf("%*s ", dp->s_block, "?");
++		else if (f_size)
+ 			(void)printf(f_thousands ? "%'*jd " : "%*jd ",
+ 			    dp->s_block, howmany(sp->st_blocks, blocksize));
+-		strmode(sp->st_mode, buf);
++		if (IS_ERRPRINT(p))
++			memset(buf, '?', 10);
++		else
++			strmode(sp->st_mode, buf);
+ 		aclmode(buf, p);
+ 		np = p->fts_pointer;
+-		(void)printf("%s %*ju ", buf, dp->s_nlink,
+-		    (uintmax_t)sp->st_nlink);
++		if (IS_ERRPRINT(p))
++			(void)printf("%s %*s ", buf, dp->s_nlink, "?");
++		else
++			(void)printf("%s %*ju ", buf, dp->s_nlink,
++			    (uintmax_t)sp->st_nlink);
+ 		if (!f_sowner)
+ 			(void)printf("%-*s ", dp->s_user, np->user);
+ 		(void)printf("%-*s ", dp->s_group, np->group);
+@@ -242,14 +254,18 @@
+ 			(void)printf("%-*s ", dp->s_flags, np->flags);
+ 		if (f_label)
+ 			(void)printf("%-*s ", dp->s_label, np->label);
+-		if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
++		if (IS_ERRPRINT(p))
++			(void)printf("%*s ", dp->s_size, "?");
++		else if (S_ISCHR(sp->st_mode) || S_ISBLK(sp->st_mode))
+ 			printdev(dp->s_size, sp->st_rdev);
+ 		else
+ 			printsize(dp->s_size, sp->st_size);
+-		if (f_accesstime)
++		if (IS_ERRPRINT(p))
++			(void)printf("           ? ");
++		else if (f_accesstime)
  			printtime(sp->st_atime);
  		else if (f_birthtime)
 -			printtime(sp->st_birthtime);
@@ -4712,7 +4814,7 @@
  		else if (f_statustime)
  			printtime(sp->st_ctime);
  		else
-@@ -454,7 +455,7 @@
+@@ -454,7 +470,7 @@
  		}
  	}
  	if (tm != NULL)
@@ -4721,7 +4823,7 @@
  	else
  		strlcpy(str, "bad date val", len);
  }
-@@ -467,8 +468,11 @@
+@@ -467,8 +483,11 @@
  	const char *format;
  	static int d_first = -1;
  
@@ -4735,7 +4837,7 @@
  	if (now == 0)
  		now = time(NULL);
  
-@@ -514,9 +518,6 @@
+@@ -514,9 +533,6 @@
  	case S_IFSOCK:
  		(void)putchar('=');
  		return (1);
@@ -4745,7 +4847,7 @@
  	default:
  		break;
  	}
-@@ -774,18 +775,12 @@
+@@ -774,18 +790,15 @@
  aclmode(char *buf, const FTSENT *p)
  {
  	char name[MAXPATHLEN + 1];
@@ -4761,13 +4863,16 @@
 -	 * XXX: ACLs are not supported on whiteouts and device files
 -	 * residing on UFS.
 -	 */
++	if (IS_ERRPRINT(p))
++		return;
++
  	if (S_ISCHR(p->fts_statp->st_mode) || S_ISBLK(p->fts_statp->st_mode) ||
 -	    S_ISWHT(p->fts_statp->st_mode))
 +	    S_ISLNK(p->fts_statp->st_mode))
  		return;
  
  	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
-@@ -800,7 +795,7 @@
+@@ -800,7 +813,7 @@
  	if (previous_dev != p->fts_statp->st_dev) {
  		previous_dev = p->fts_statp->st_dev;
  		supports_acls = 0;
@@ -4776,7 +4881,7 @@
  		ret = lpathconf(name, _PC_ACL_NFS4);
  		if (ret > 0) {
  			type = ACL_TYPE_NFS4;
-@@ -809,30 +804,24 @@
+@@ -809,30 +822,24 @@
  			warn("%s", name);
  			return;
  		}

@@ -33,6 +33,7 @@
  */
 
 #define NO_PRINT	1
+#define ERR_PRINT	2
 
 #define HUMANVALSTR_LEN	5
 
