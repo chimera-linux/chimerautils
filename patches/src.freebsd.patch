@@ -2471,7 +2471,7 @@
  		warn("unlink: %s%s", to.base, to.path);
  		return (1);
  	}
-@@ -326,26 +414,30 @@
+@@ -326,26 +414,34 @@
  {
  	static struct timespec tspec[2];
  	struct stat ts;
@@ -2487,7 +2487,11 @@
  	    S_IRWXU | S_IRWXG | S_IRWXO;
  
 +	if (!fdval) {
-+		fd = openat_beneath(to.dir, to.path, O_RDONLY | (islink ? O_NOFOLLOW : 0), beneath, 0);
++		/* be careful with links, we can only get a link descriptor with
++		 * O_PATH | O_NOFOLLOW and most standard ops don't work with
++		 * those, but we can relax the behavior with *at and AT_EMPTY_PATH
++		 */
++		fd = openat_beneath(to.dir, to.path, islink ? (O_PATH | O_NOFOLLOW) : O_RDONLY, beneath, 0);
 +		if (fd < 0) {
 +			warn("openat2: %s%s", to.base, to.path);
 +			/* any action will fail, might as well just return early */
@@ -2499,7 +2503,7 @@
  	tspec[1] = fs->st_mtim;
 -	if (fdval ? futimens(fd, tspec) :
 -	    utimensat(to.dir, to.path, tspec, atflags)) {
-+	if (futimens(fd, tspec)) {
++	if (utimensat(fd, "", tspec, AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) {
  		warn("utimensat: %s%s", to.base, to.path);
  		rval = 1;
  	}
@@ -2509,17 +2513,17 @@
  		gotstat = 0;
  	} else {
  		gotstat = 1;
-@@ -359,8 +451,7 @@
+@@ -359,8 +455,7 @@
  	 * chown.  If chown fails, lose setuid/setgid bits.
  	 */
  	if (!gotstat || fs->st_uid != ts.st_uid || fs->st_gid != ts.st_gid) {
 -		if (fdval ? fchown(fd, fs->st_uid, fs->st_gid) :
 -		    fchownat(to.dir, to.path, fs->st_uid, fs->st_gid, atflags)) {
-+		if (fchown(fd, fs->st_uid, fs->st_gid)) {
++		if (fchownat(fd, "", fs->st_uid, fs->st_gid, AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) {
  			if (errno != EPERM) {
  				warn("chown: %s%s", to.base, to.path);
  				rval = 1;
-@@ -370,13 +461,13 @@
+@@ -370,13 +465,13 @@
  	}
  
  	if (!gotstat || fs->st_mode != ts.st_mode) {
@@ -2535,7 +2539,7 @@
  	if (!Nflag && (!gotstat || fs->st_flags != ts.st_flags)) {
  		if (fdval ? fchflags(fd, fs->st_flags) :
  		    chflagsat(to.dir, to.path, fs->st_flags, atflags)) {
-@@ -393,7 +484,11 @@
+@@ -393,7 +488,11 @@
  			}
  		}
  	}
@@ -2547,7 +2551,7 @@
  	return (rval);
  }
  
-@@ -401,25 +496,25 @@
+@@ -401,25 +500,25 @@
  preserve_fd_acls(int source_fd, int dest_fd)
  {
  	acl_t acl;
@@ -2580,7 +2584,7 @@
  			    to.base, to.path);
  			return (-1);
  		}
-@@ -427,23 +522,13 @@
+@@ -427,23 +526,13 @@
  	if (acl_supported == 0)
  		return (0);
  
@@ -2606,7 +2610,7 @@
  		warn("failed to set acl entries for %s%s",
  		    to.base, to.path);
  		acl_free(acl);
-@@ -463,7 +548,7 @@
+@@ -463,7 +552,7 @@
  		return (-1);
  	}
  	dest_fd = (*dest_dir == '\0') ? to.dir :
@@ -2615,7 +2619,7 @@
  	if (dest_fd < 0) {
  		warn("%s: failed to copy ACLs to %s%s", source_dir,
  		    to.base, dest_dir);
-@@ -479,15 +564,150 @@
+@@ -479,15 +568,150 @@
  	return (ret);
  }
  

@@ -423,7 +423,11 @@ setfile(struct stat *fs, int fd, bool beneath)
 	    S_IRWXU | S_IRWXG | S_IRWXO;
 
 	if (!fdval) {
-		fd = openat_beneath(to.dir, to.path, O_RDONLY | (islink ? O_NOFOLLOW : 0), beneath, 0);
+		/* be careful with links, we can only get a link descriptor with
+		 * O_PATH | O_NOFOLLOW and most standard ops don't work with
+		 * those, but we can relax the behavior with *at and AT_EMPTY_PATH
+		 */
+		fd = openat_beneath(to.dir, to.path, islink ? (O_PATH | O_NOFOLLOW) : O_RDONLY, beneath, 0);
 		if (fd < 0) {
 			warn("openat2: %s%s", to.base, to.path);
 			/* any action will fail, might as well just return early */
@@ -433,7 +437,7 @@ setfile(struct stat *fs, int fd, bool beneath)
 
 	tspec[0] = fs->st_atim;
 	tspec[1] = fs->st_mtim;
-	if (futimens(fd, tspec)) {
+	if (utimensat(fd, "", tspec, AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) {
 		warn("utimensat: %s%s", to.base, to.path);
 		rval = 1;
 	}
@@ -451,7 +455,7 @@ setfile(struct stat *fs, int fd, bool beneath)
 	 * chown.  If chown fails, lose setuid/setgid bits.
 	 */
 	if (!gotstat || fs->st_uid != ts.st_uid || fs->st_gid != ts.st_gid) {
-		if (fchown(fd, fs->st_uid, fs->st_gid)) {
+		if (fchownat(fd, "", fs->st_uid, fs->st_gid, AT_SYMLINK_NOFOLLOW | AT_EMPTY_PATH)) {
 			if (errno != EPERM) {
 				warn("chown: %s%s", to.base, to.path);
 				rval = 1;
