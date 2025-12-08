@@ -15466,6 +15466,22 @@
 -
 -#define setjmp(jmploc)	_setjmp(jmploc)
 -#define longjmp(jmploc, val)	_longjmp(jmploc, val)
+--- src.orig/sh/eval.c
++++ src.freebsd/sh/eval.c
+@@ -1274,7 +1274,12 @@
+ 	}
+ 
+ 	if (cmd != -1) {
+-		if (*argptr == NULL || argptr[1] != NULL)
++		/* chimerautils: freebsd also checks if there is exactly
++		 * one argument, but this is unhelpful (e.g. linux kernel
++		 * build relies on the other arguments being ignored) and
++		 * dash just ignores them, follow dash here
++		 */
++		if (*argptr == NULL)
+ 			error("wrong number of arguments");
+ 		return typecmd_impl(2, argptr - 1, cmd, path);
+ 	}
 --- src.orig/sh/exec.c
 +++ src.freebsd/sh/exec.c
 @@ -30,6 +30,7 @@

@@ -1274,7 +1274,12 @@ commandcmd(int argc __unused, char **argv __unused)
 	}
 
 	if (cmd != -1) {
-		if (*argptr == NULL || argptr[1] != NULL)
+		/* chimerautils: freebsd also checks if there is exactly
+		 * one argument, but this is unhelpful (e.g. linux kernel
+		 * build relies on the other arguments being ignored) and
+		 * dash just ignores them, follow dash here
+		 */
+		if (*argptr == NULL)
 			error("wrong number of arguments");
 		return typecmd_impl(2, argptr - 1, cmd, path);
 	}
