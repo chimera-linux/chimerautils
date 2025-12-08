@@ -175,6 +175,7 @@ usr.bin/colrm
 usr.bin/column
 usr.bin/getopt
 usr.bin/hexdump
+usr.bin/indent
 usr.bin/logger
 usr.bin/look
 usr.bin/mesg
