@@ -1,7 +1,10 @@
 sort_cargs = ['-DWITHOUT_NLS', '-DSORT_THREADS']
+sort_deps = [libpthread]
 
 if not libcrypto.found()
     sort_cargs += ['-DWITHOUT_LIBCRYPTO']
+else
+    sort_deps += [libcrypto]
 endif
 
 sort_srcs = [
@@ -12,7 +15,7 @@ sort_srcs = [
 sort_prog = executable(
     'sort', sort_srcs,
     include_directories: [inc],
-    dependencies: [libcrypto, libpthread],
+    dependencies: sort_deps,
     link_with: [libcompat],
     c_args: sort_cargs,
     install: true,
