@@ -288,6 +288,7 @@ main(int argc, char **argv)
 	sigset_t zeromask, allmask, oldmask;
 	struct sigaction sa;
 	siginfo_t si, child_si;
+	int minrtsig;
 
 	const char optstr[] = "+fhk:ps:v";
 	const struct option longopts[] = {
@@ -381,9 +382,12 @@ main(int argc, char **argv)
 	sigfillset(&sa.sa_mask);
 	sa.sa_handler = sig_handler;
 	sa.sa_flags = SA_RESTART;
+	minrtsig = SIGRTMIN;
 	for (sig = 1; sig < NSIG; sig++) {
 		if (sig == SIGKILL || sig == SIGSTOP || sig == SIGCONT ||
 		    sig == SIGTTIN || sig == SIGTTOU)
+			continue;
+		if (sig > SIGSYS && sig < minrtsig)
 			continue;
 		if (sigaction(sig, &sa, NULL) == -1)
 			err(EXIT_FAILURE, "sigaction(%d)", sig);

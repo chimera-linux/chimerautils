@@ -8100,15 +8100,17 @@
  }
  
  static void
-@@ -307,7 +287,6 @@
+@@ -307,8 +287,8 @@
  	bool child_done = false;
  	sigset_t zeromask, allmask, oldmask;
  	struct sigaction sa;
 -	struct procctl_reaper_status info;
  	siginfo_t si, child_si;
++	int minrtsig;
  
  	const char optstr[] = "+fhk:ps:v";
-@@ -358,8 +337,8 @@
+ 	const struct option longopts[] = {
+@@ -358,8 +338,8 @@
  
  	if (!foreground) {
  		/* Acquire a reaper */
@@ -8119,16 +8121,22 @@
  	}
  
  	/* Block all signals to avoid racing against the child. */
-@@ -402,7 +381,7 @@
+@@ -402,10 +382,13 @@
  	sigfillset(&sa.sa_mask);
  	sa.sa_handler = sig_handler;
  	sa.sa_flags = SA_RESTART;
 -	for (sig = 1; sig < sys_nsig; sig++) {
++	minrtsig = SIGRTMIN;
 +	for (sig = 1; sig < NSIG; sig++) {
  		if (sig == SIGKILL || sig == SIGSTOP || sig == SIGCONT ||
  		    sig == SIGTTIN || sig == SIGTTOU)
  			continue;
-@@ -455,9 +434,7 @@
++		if (sig > SIGSYS && sig < minrtsig)
++			continue;
+ 		if (sigaction(sig, &sa, NULL) == -1)
+ 			err(EXIT_FAILURE, "sigaction(%d)", sig);
+ 	}
+@@ -455,9 +438,7 @@
  				if (foreground) {
  					break;
  				} else {
@@ -8139,7 +8147,7 @@
  						break;
  				}
  			}
-@@ -471,7 +448,7 @@
+@@ -471,7 +452,7 @@
  				sig = sig_term;
  				sig_term = 0;
  				logv("received terminating signal %s(%d)",
@@ -8148,7 +8156,7 @@
  			}
  
  			send_sig(pid, sig, foreground);
-@@ -486,14 +463,14 @@
+@@ -486,14 +467,14 @@
  			/* Propagate any other signals. */
  			sig = sig_other;
  			sig_other = 0;
