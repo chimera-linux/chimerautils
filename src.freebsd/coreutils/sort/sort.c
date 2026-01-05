@@ -87,9 +87,9 @@ const char *nlsstr[] = { "",
 #endif
       "[--human-numeric-sort] "
 #ifndef WITHOUT_LIBCRYPTO
-      "[--version-sort]] "
-#else
       "[--version-sort] [--random-sort [--random-source file]] "
+#else
+      "[--version-sort] "
 #endif
       "[--compress-program program] [file ...]\n" };
 
