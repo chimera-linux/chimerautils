@@ -49,7 +49,7 @@ option('chimera_realpath',
 )
 
 option('install-lib',
-    type: 'boolean', value: 'true',
+    type: 'boolean', value: true,
     description: 'Whether to install chimerautils library'
 )
 
