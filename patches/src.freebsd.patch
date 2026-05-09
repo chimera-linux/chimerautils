@@ -5673,6 +5673,17 @@
 +	    "       mv [-f | -i | -n] [-v] -t directory source ...");
  	exit(EX_USAGE);
  }
+--- src.orig/coreutils/nl/nl.c
++++ src.freebsd/coreutils/nl/nl.c
+@@ -361,7 +361,7 @@
+ parse_numbering(const char *argstr, int section)
+ {
+ 	int error;
+-	char errorbuf[NL_TEXTMAX];
++	char errorbuf[256];
+ 
+ 	switch (argstr[0]) {
+ 	case 'a':
 --- src.orig/coreutils/nohup/nohup.c
 +++ src.freebsd/coreutils/nohup/nohup.c
 @@ -29,6 +29,7 @@
