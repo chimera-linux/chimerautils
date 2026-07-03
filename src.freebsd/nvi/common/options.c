@@ -318,7 +318,7 @@ opts_init(SCR *sp, int *oargs)
 
 	/* Set numeric and string default values. */
 #define	OI(indx, ...) do {						\
-	size_t len = SPRINTF(b2, SIZE(b2), __VA_ARGS__);		\
+	int len = SPRINTF(b2, SIZE(b2), __VA_ARGS__);		\
 	if (len < 0 || len >= SIZE(b2) || opts_set(sp, argv, NULL)) {	\
 		optindx = indx;						\
 		goto err;						\
