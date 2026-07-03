@@ -65,3 +65,11 @@ atomicio(ssize_t (*f) (int, void *, size_t), int fd, void *_s, size_t n)
 	}
 	return (pos);
 }
+
+/*
+ * Write wrapper to make clang CFI happy
+ */
+ssize_t vwrite(int f, void *s, size_t n)
+{
+	return write(f, s, n);
+}

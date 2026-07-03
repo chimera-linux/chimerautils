@@ -34,6 +34,9 @@
  */
 size_t	atomicio(ssize_t (*)(int, void *, size_t), int, void *, size_t);
 
-#define vwrite (ssize_t (*)(int, void *, size_t))write
+/*
+ * Write wrapper to make clang CFI happy
+ */
+ssize_t vwrite(int, void *, size_t);
 
 #endif /* _ATOMICIO_H */
