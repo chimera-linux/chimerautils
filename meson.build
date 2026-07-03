@@ -95,11 +95,16 @@ if not tinfo.found()
 endif
 
 curses_incdefs = []
+diff_incdefs = []
 
 if cc.has_header('ncursesw/ncurses.h', dependencies: ncurses)
     curses_incdefs += ['-DHAVE_NCURSESW_NCURSES_H']
 elif cc.has_header('ncurses.h', dependencies: ncurses)
     curses_incdefs += ['-DHAVE_NCURSES_H']
+endif
+
+if cc.has_header('stdckdint.h')
+    diff_incdefs += ['-DHAVE_STDCKDINT_H']
 endif
 
 # whether to use our own realpath

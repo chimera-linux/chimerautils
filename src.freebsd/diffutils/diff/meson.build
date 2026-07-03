@@ -4,6 +4,7 @@ diff_prog = executable(
     include_directories: [inc],
     dependencies: [libm],
     link_with: [libcompat],
+    c_args: diff_incdefs,
     install: true,
 )
 
