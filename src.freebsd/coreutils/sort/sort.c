@@ -86,8 +86,8 @@ const char *nlsstr[] = { "",
       "[--parallel thread_no] "
 #endif
       "[--human-numeric-sort] "
-#ifndef WITHOUT_LIBCRYPTO
-      "[--version-sort]] "
+#if defined(WITHOUT_LIBCRYPTO)
+      "[--version-sort] "
 #else
       "[--version-sort] [--random-sort [--random-source file]] "
 #endif
