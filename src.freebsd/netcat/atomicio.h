@@ -34,6 +34,6 @@
  */
 size_t	atomicio(ssize_t (*)(int, void *, size_t), int, void *, size_t);
 
-#define vwrite (ssize_t (*)(int, void *, size_t))write
+static inline ssize_t vwrite(int fd, void *buf, size_t count) { return write(fd, buf, count); }
 
 #endif /* _ATOMICIO_H */
