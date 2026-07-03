@@ -42,6 +42,10 @@
 #define EXP	"y\n"
 #define EXPLEN	strlen(EXP)
 
+#ifndef ARG_MAX
+#define ARG_MAX 131072
+#endif
+
 /*
  * Optimum and maximum buffer size.  The optimum is just a little less
  * than the default value of kern.ipc.pipe_mindirect; writing more than

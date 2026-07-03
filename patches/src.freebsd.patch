@@ -9523,6 +9523,19 @@
  "               directory ...\n");
  	exit(EX_USAGE);
  	/* NOTREACHED */
+--- src.orig/coreutils/yes/yes.c
++++ src.freebsd/coreutils/yes/yes.c
+@@ -42,6 +42,10 @@
+ #define EXP	"y\n"
+ #define EXPLEN	strlen(EXP)
+ 
++#ifndef ARG_MAX
++#define ARG_MAX 131072
++#endif
++
+ /*
+  * Optimum and maximum buffer size.  The optimum is just a little less
+  * than the default value of kern.ipc.pipe_mindirect; writing more than
 --- src.orig/dbcompat/btree/bt_close.c
 +++ src.freebsd/dbcompat/btree/bt_close.c
 @@ -32,7 +32,7 @@
