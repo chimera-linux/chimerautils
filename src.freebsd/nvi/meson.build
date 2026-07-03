@@ -83,11 +83,35 @@ nvi_srcs = [
     'regex/regfree.c',
 ]
 
-extern_h = custom_target(
-    'extern_h',
-    output: 'extern.h',
+cl_extern_h = custom_target(
+    'cl_extern_h',
+    output: 'cl_extern.h',
     input: nvi_srcs,
-    command: ['./gen_extern_h.sh', '@INPUT@'],
+    command: ['./gen_extern_h.sh', 'cl', '@INPUT@'],
+    capture: true,
+)
+
+common_extern_h = custom_target(
+    'common_extern_h',
+    output: 'common_extern.h',
+    input: nvi_srcs,
+    command: ['./gen_extern_h.sh', 'common', '@INPUT@'],
+    capture: true,
+)
+
+ex_extern_h = custom_target(
+    'ex_extern_h',
+    output: 'ex_extern.h',
+    input: nvi_srcs,
+    command: ['./gen_extern_h.sh', 'ex', '@INPUT@'],
+    capture: true,
+)
+
+vi_extern_h = custom_target(
+    'vi_extern_h',
+    output: 'vi_extern.h',
+    input: nvi_srcs,
+    command: ['./gen_extern_h.sh', 'vi', '@INPUT@'],
     capture: true,
 )
 
@@ -144,7 +168,15 @@ endif
 
 nvi_prog = executable(
     'vi',
-    nvi_srcs + [ options_def_h, ex_def_h, ex_version_h, extern_h ],
+    nvi_srcs + [
+        options_def_h,
+        ex_def_h,
+        ex_version_h,
+        cl_extern_h,
+        common_extern_h,
+        ex_extern_h,
+        vi_extern_h,
+    ],
     include_directories: [include_directories('.', 'regex'), inc, cinc, dbinc],
     dependencies: [ncurses],
     link_with: [libcompat, libdbcompat],

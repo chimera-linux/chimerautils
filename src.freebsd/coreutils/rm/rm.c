@@ -266,7 +266,7 @@ rm_tree(char **argv)
 #if 0
 			case FTS_W:
 				rval = undelete(p->fts_accpath);
-				if (rval == 0 && (fflag && errno == ENOENT)) {
+				if (rval == 0 || (fflag && errno == ENOENT)) {
 					if (vflag)
 						(void)printf("%s\n",
 						    p->fts_path);

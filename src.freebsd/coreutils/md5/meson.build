@@ -1,8 +1,9 @@
 md5_prog = executable(
     'md5',
     ['md5.c'],
-    include_directories: inc,
+    include_directories: [inc, cinc],
     dependencies: [libcrypto],
+    link_with: [libcompat],
     install: true,
 )
 

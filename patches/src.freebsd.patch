@@ -1867,7 +1867,7 @@
 -command before chrooting, effectively disabling SUID/SGID bits
 -for the calling process and its descendants.
 -If
--.Dv security.bsd.unprivileged_chroot
+-.Va security.bsd.unprivileged_chroot
 -sysctl is set to 1, it will make it possible to chroot without
 -superuser privileges.
 +.Dv CLONE_NEWUSER
@@ -2414,7 +2414,7 @@
  			}
  		}
  		if (!use_copy_file_range) {
-@@ -240,6 +332,7 @@
+@@ -243,6 +335,7 @@
  		rval = 1;
  	if (pflag && preserve_fd_acls(from_fd, to_fd) != 0)
  		rval = 1;
@@ -2422,7 +2422,7 @@
  	if (close(to_fd)) {
  		warn("%s%s", to.base, to.path);
  		rval = 1;
-@@ -255,7 +348,6 @@
+@@ -258,7 +351,6 @@
  copy_link(const FTSENT *p, bool dne, bool beneath)
  {
  	ssize_t len;
@@ -2430,7 +2430,7 @@
  	char llink[PATH_MAX];
  
  	if (!dne && nflag) {
-@@ -268,7 +360,7 @@
+@@ -271,7 +363,7 @@
  		return (1);
  	}
  	llink[len] = '\0';
@@ -2439,7 +2439,7 @@
  		warn("unlink: %s%s", to.base, to.path);
  		return (1);
  	}
-@@ -282,14 +374,12 @@
+@@ -285,14 +377,12 @@
  int
  copy_fifo(struct stat *from_stat, bool dne, bool beneath)
  {
@@ -2455,7 +2455,7 @@
  		warn("unlink: %s%s", to.base, to.path);
  		return (1);
  	}
-@@ -303,14 +393,12 @@
+@@ -306,14 +396,12 @@
  int
  copy_special(struct stat *from_stat, bool dne, bool beneath)
  {
@@ -2471,7 +2471,7 @@
  		warn("unlink: %s%s", to.base, to.path);
  		return (1);
  	}
-@@ -326,26 +414,34 @@
+@@ -329,26 +417,34 @@
  {
  	static struct timespec tspec[2];
  	struct stat ts;
@@ -2513,7 +2513,7 @@
  		gotstat = 0;
  	} else {
  		gotstat = 1;
-@@ -359,8 +455,7 @@
+@@ -362,8 +458,7 @@
  	 * chown.  If chown fails, lose setuid/setgid bits.
  	 */
  	if (!gotstat || fs->st_uid != ts.st_uid || fs->st_gid != ts.st_gid) {
@@ -2523,7 +2523,7 @@
  			if (errno != EPERM) {
  				warn("chown: %s%s", to.base, to.path);
  				rval = 1;
-@@ -370,13 +465,13 @@
+@@ -373,13 +468,13 @@
  	}
  
  	if (!gotstat || fs->st_mode != ts.st_mode) {
@@ -2539,7 +2539,7 @@
  	if (!Nflag && (!gotstat || fs->st_flags != ts.st_flags)) {
  		if (fdval ? fchflags(fd, fs->st_flags) :
  		    chflagsat(to.dir, to.path, fs->st_flags, atflags)) {
-@@ -393,7 +488,11 @@
+@@ -396,7 +491,11 @@
  			}
  		}
  	}
@@ -2551,7 +2551,7 @@
  	return (rval);
  }
  
-@@ -401,25 +500,25 @@
+@@ -404,25 +503,25 @@
  preserve_fd_acls(int source_fd, int dest_fd)
  {
  	acl_t acl;
@@ -2584,7 +2584,7 @@
  			    to.base, to.path);
  			return (-1);
  		}
-@@ -427,23 +526,13 @@
+@@ -430,23 +529,13 @@
  	if (acl_supported == 0)
  		return (0);
  
@@ -2610,7 +2610,7 @@
  		warn("failed to set acl entries for %s%s",
  		    to.base, to.path);
  		acl_free(acl);
-@@ -463,7 +552,7 @@
+@@ -466,7 +555,7 @@
  		return (-1);
  	}
  	dest_fd = (*dest_dir == '\0') ? to.dir :
@@ -2619,7 +2619,7 @@
  	if (dest_fd < 0) {
  		warn("%s: failed to copy ACLs to %s%s", source_dir,
  		    to.base, dest_dir);
-@@ -479,15 +568,150 @@
+@@ -482,15 +571,150 @@
  	return (ret);
  }
  
@@ -2804,15 +2804,15 @@
  .Xr strptime 3 .
  .It Fl I Ns Op Ar FMT
  Use extended
-@@ -327,7 +327,7 @@
+@@ -326,7 +326,7 @@
  The format string may contain any of the conversion specifications
  described in the
  .Xr strftime 3
--manual page and
-+FreeBSD manual page and
- .Ql %N
- for nanoseconds, as well as any arbitrary text.
- A newline
+-manual page, as well as any arbitrary text.
++FreeBSD manual page, as well as any arbitrary text.
+ .Pp
+ The following extensions to the regular
+ .Xr strftime 3
 --- src.orig/coreutils/date/date.c
 +++ src.freebsd/coreutils/date/date.c
 @@ -29,6 +29,7 @@
@@ -2823,7 +2823,7 @@
  #include <sys/param.h>
  #include <sys/time.h>
  #include <sys/stat.h>
-@@ -44,6 +45,8 @@
+@@ -45,6 +46,8 @@
  #include <syslog.h>
  #include <unistd.h>
  #include <utmpx.h>
@@ -2832,7 +2832,7 @@
  
  #include "vary.h"
  
-@@ -251,6 +254,7 @@
+@@ -257,6 +260,7 @@
  	struct utmpx utx;
  	struct tm *lt;
  	const char *dot, *t;
@@ -2840,7 +2840,7 @@
  	int century;
  
  	lt = localtime(&ts->tv_sec);
-@@ -259,7 +263,7 @@
+@@ -265,7 +269,7 @@
  	lt->tm_isdst = -1;		/* divine correct DST */
  
  	if (fmt != NULL) {
@@ -2849,7 +2849,7 @@
  		if (t == NULL) {
  			fprintf(stderr, "Failed conversion of ``%s''"
  				" using format ``%s''\n", p, fmt);
-@@ -343,12 +347,16 @@
+@@ -349,12 +353,16 @@
  	if (!jflag) {
  		utx.ut_type = OLD_TIME;
  		memset(utx.ut_id, 0, sizeof(utx.ut_id));
@@ -2868,7 +2868,7 @@
  		pututxline(&utx);
  
  		if ((p = getlogin()) == NULL)
-@@ -428,7 +436,7 @@
+@@ -484,7 +492,7 @@
  		}
  	}
  
@@ -3591,7 +3591,7 @@
  static int	Aflag, hflag;
  static long	blocksize, cblocksize;
  static volatile sig_atomic_t info;
-@@ -117,7 +118,7 @@
+@@ -118,7 +119,7 @@
  	if (argc < 0)
  		exit(EX_USAGE);
  
@@ -3600,7 +3600,7 @@
  	    long_options, NULL)) != -1)
  		switch (ch) {
  		case 'A':
-@@ -183,9 +184,6 @@
+@@ -184,9 +185,6 @@
  			hflag = 0;
  			blocksize = 1048576;
  			break;
@@ -3610,15 +3610,15 @@
  		case 'r':		 /* Compatibility. */
  			break;
  		case 't':
-@@ -525,8 +523,6 @@
+@@ -526,8 +524,6 @@
  {
  	struct ignentry *ign;
  
 -	if (nodumpflag && (ent->fts_statp->st_flags & UF_NODUMP))
--		return (1);
- 	SLIST_FOREACH(ign, &ignores, next)
+-		return (true);
+ 	SLIST_FOREACH(ign, &ignores, next) {
  		if (fnmatch(ign->mask, ent->fts_name, 0) != FNM_NOMATCH)
- 			return (1);
+ 			return (true);
 --- src.orig/coreutils/env/env.1
 +++ src.freebsd/coreutils/env/env.1
 @@ -37,13 +37,11 @@
@@ -4532,7 +4532,7 @@
  #endif
  		default:
  		case '?':
-@@ -744,12 +746,15 @@
+@@ -761,12 +763,15 @@
  	size_t flen, ulen, glen;
  	char *initmax;
  	int entries, needstats;
@@ -4549,7 +4549,7 @@
  
  	needstats = f_inode || f_longform || f_size;
  	flen = 0;
-@@ -802,15 +807,21 @@
+@@ -819,15 +824,21 @@
  
  	d.s_size = 0;
  	sizelen = 0;
@@ -4575,7 +4575,7 @@
  		/*
  		 * P is NULL if list is the argv list, to which different rules
  		 * apply.
-@@ -849,7 +860,10 @@
+@@ -866,7 +877,10 @@
  
  			btotal += sp->st_blocks;
  			if (f_longform) {
@@ -4587,7 +4587,7 @@
  					(void)snprintf(nuser, sizeof(nuser),
  					    "%u", sp->st_uid);
  					(void)snprintf(ngroup, sizeof(ngroup),
-@@ -857,27 +871,33 @@
+@@ -874,27 +888,33 @@
  					user = nuser;
  					group = ngroup;
  				} else {
@@ -4634,7 +4634,7 @@
  				if (f_flags) {
  					flags = fflagstostr(sp->st_flags);
  					if (flags != NULL && *flags == '\0') {
-@@ -891,8 +911,13 @@
+@@ -908,8 +928,13 @@
  						maxflags = flen;
  				} else
  					flen = 0;
@@ -4649,7 +4649,7 @@
  					char name[PATH_MAX + 1];
  					mac_t label;
  					int error;
-@@ -938,6 +963,27 @@
+@@ -955,6 +980,27 @@
  					}
  					mac_free(label);
  label_out:
@@ -4677,7 +4677,7 @@
  					if (labelstr == NULL)
  						labelstr = strdup("-");
  					labelstrlen = strlen(labelstr);
-@@ -945,7 +991,6 @@
+@@ -962,7 +1008,6 @@
  						maxlabelstr = labelstrlen;
  				} else
  					labelstrlen = 0;
@@ -4685,7 +4685,7 @@
  				if ((np = malloc(sizeof(NAMES) + labelstrlen +
  				    ulen + glen + flen + 4)) == NULL)
  					err(1, "malloc");
-@@ -955,6 +1000,11 @@
+@@ -972,6 +1017,11 @@
  				np->group = &np->data[ulen + 1];
  				(void)strcpy(np->group, group);
  
@@ -4697,7 +4697,7 @@
  				if (S_ISCHR(sp->st_mode) ||
  				    S_ISBLK(sp->st_mode)) {
  					sizelen = snprintf(NULL, 0,
-@@ -963,11 +1013,6 @@
+@@ -980,11 +1030,6 @@
  						d.s_size = sizelen;
  				}
  
@@ -4709,7 +4709,7 @@
  				if (f_label) {
  					np->label = &np->data[ulen + glen + 2
  					    + (f_flags ? flen + 1 : 0)];
-@@ -1024,7 +1069,7 @@
+@@ -1041,7 +1086,7 @@
   * All other levels use the sort function.  Error entries remain unsorted.
   */
  static int
@@ -4969,17 +4969,16 @@
  utilities do the same, but with command-line options and an output
  format that match those of their similary named GNU utilities.
  .Pp
-@@ -87,8 +84,7 @@
+@@ -95,7 +92,7 @@
  It is conjectured that it is computationally infeasible to
  produce two messages having the same message digest, or to produce any
  message having a given prespecified target message digest.
--The SHA-224 , SHA-256 , SHA-384 , SHA-512, RIPEMD-160,
--and SKEIN
-+The SHA-224 , SHA-256 , SHA-384 , and SHA-512
+-The SHA-224, SHA-256, SHA-384, SHA-512, RIPEMD-160, and SKEIN
++The SHA-224, SHA-256, SHA-384, and SHA-512
  algorithms are intended for digital signature applications, where a
  large file must be
  .Dq compressed
-@@ -112,7 +108,7 @@
+@@ -115,7 +112,7 @@
  SHA-512t224 is identical to SHA-512t256, but with the digest truncated
  to 224 bits.
  .Pp
@@ -4988,7 +4987,7 @@
  instead of one of the other hash functions.
  .Ss BSD OPTIONS
  The following options are available in BSD mode, i.e. when the program
-@@ -279,11 +275,9 @@
+@@ -282,11 +279,9 @@
  .El
  .Sh EXIT STATUS
  The
@@ -5002,7 +5001,7 @@
  utilities exit 0 on success,
  1 if at least one of the input files could not be read,
  and 2 if at least one file does not have the same hash as the
-@@ -292,10 +286,9 @@
+@@ -295,10 +290,9 @@
  .Pp
  The
  .Nm md5sum , sha1sum , sha224sum , sha256sum , sha384sum , sha512sum ,
@@ -5015,7 +5014,7 @@
  utilities exit 0 on success and 1 if at least one of the input files
  could not be read or, when verifying checksums, does not have the
  expected checksum.
-@@ -380,12 +373,10 @@
+@@ -383,12 +377,10 @@
  .Sh SEE ALSO
  .Xr cksum 1 ,
  .Xr md5 3 ,
@@ -5024,11 +5023,11 @@
  .Xr sha256 3 ,
  .Xr sha384 3 ,
  .Xr sha512 3 ,
--.Xr skein 3
+-.Xr skein 3 ,
+ .Xr vis 3
  .Rs
  .%A R. Rivest
- .%T The MD5 Message-Digest Algorithm
-@@ -402,15 +393,8 @@
+@@ -406,15 +398,8 @@
  .%O RFC 3174
  .Re
  .Pp
@@ -5041,10 +5040,10 @@
 -.Pp
 -The RIPEMD-160 page:
 -.Pa https://homes.esat.kuleuven.be/~bosselae/ripemd160.html
- .Sh BUGS
- In bits mode, the original
- .Nm shasum
-@@ -422,15 +406,12 @@
+ .Sh CAVEATS
+ The encoding used for file names containing non-printable characters
+ is incompatible with that used by GNU coreutils.
+@@ -436,15 +421,12 @@
  This utility was originally derived from a program which was placed in
  the public domain for free general use by RSA Data Security.
  .Pp
@@ -5089,7 +5088,7 @@
  #include <stdbool.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -72,9 +72,9 @@
+@@ -73,9 +73,9 @@
  static bool failed;
  static int endl = '\n';
  
@@ -5102,7 +5101,7 @@
  
  extern const char *MD5TestOutput[MDTESTCOUNT];
  extern const char *SHA1_TestOutput[MDTESTCOUNT];
-@@ -84,10 +84,12 @@
+@@ -85,10 +85,12 @@
  extern const char *SHA512_TestOutput[MDTESTCOUNT];
  extern const char *SHA512t224_TestOutput[MDTESTCOUNT];
  extern const char *SHA512t256_TestOutput[MDTESTCOUNT];
@@ -5115,7 +5114,7 @@
  
  typedef struct Algorithm_t {
  	const char *progname;
-@@ -100,7 +102,6 @@
+@@ -101,7 +103,6 @@
  	char *(*Data)(const void *, unsigned int, char *);
  } Algorithm_t;
  
@@ -5123,7 +5122,7 @@
  static char *MDInput(const Algorithm_t *, FILE *, char *, bool);
  static void MDOutput(const Algorithm_t *, char *, const char *);
  static void MDTimeTrial(const Algorithm_t *);
-@@ -108,6 +109,7 @@
+@@ -109,6 +110,7 @@
  static void usage(const Algorithm_t *);
  static void version(void);
  
@@ -5131,7 +5130,7 @@
  typedef union {
  	MD5_CTX md5;
  	SHA1_CTX sha1;
-@@ -120,6 +122,8 @@
+@@ -121,6 +123,8 @@
  	SKEIN512_CTX skein512;
  	SKEIN1024_CTX skein1024;
  } DIGEST_CTX;
@@ -5140,7 +5139,7 @@
  
  /* max(MD5_DIGEST_LENGTH, SHA_DIGEST_LENGTH,
  	SHA256_DIGEST_LENGTH, SHA512_DIGEST_LENGTH,
-@@ -161,6 +165,7 @@
+@@ -162,6 +166,7 @@
  		&SHA512t256_TestOutput, (DIGEST_Init*)&SHA512_256_Init,
  		(DIGEST_Update*)&SHA512_256_Update, (DIGEST_End*)&SHA512_256_End,
  		&SHA512_256_Data },
@@ -5148,7 +5147,7 @@
  	{ "rmd160", NULL, "RMD160",
  		&RIPEMD160_TestOutput,
  		(DIGEST_Init*)&RIPEMD160_Init, (DIGEST_Update*)&RIPEMD160_Update,
-@@ -177,6 +182,7 @@
+@@ -178,6 +183,7 @@
  		&SKEIN1024_TestOutput,
  		(DIGEST_Init*)&SKEIN1024_Init, (DIGEST_Update*)&SKEIN1024_Update,
  		(DIGEST_End*)&SKEIN1024_End, &SKEIN1024_Data },
@@ -5156,7 +5155,7 @@
  	{ }
  };
  
-@@ -280,11 +286,13 @@
+@@ -281,11 +287,13 @@
  };
  static const char *perl_shortopts = "0a:bchqstUvw";
  
@@ -5170,7 +5169,7 @@
  
  struct chksumrec {
  	char *filename;
-@@ -310,7 +318,7 @@
+@@ -311,7 +319,7 @@
  	int lineno;
  	char *filename;
  	char *hashstr;
@@ -5179,7 +5178,7 @@
  	const char *digestname;
  	size_t digestnamelen;
  	size_t hashstrlen;
-@@ -588,8 +596,8 @@
+@@ -607,8 +615,8 @@
  		 * with an array of the filenames from that list.
  		 */
  		if (argc < 1)
@@ -5190,7 +5189,7 @@
  			gnu_check(*argv++);
  		argc = 0;
  		argv = calloc(numrecs + 1, sizeof(char *));
-@@ -686,7 +694,7 @@
+@@ -711,7 +719,7 @@
  	DIGEST_CTX context;
  	char *end, *p, *q;
  	size_t len;
@@ -5199,7 +5198,7 @@
  	uint8_t byte;
  	bool cr = false;
  
-@@ -951,6 +959,7 @@
+@@ -980,6 +988,7 @@
  	"dd095fc859b336c30a52548b3dc59fcc0d1be8616ebcf3368fad23107db2d736"
  };
  
@@ -5207,7 +5206,7 @@
  const char *RIPEMD160_TestOutput[MDTESTCOUNT] = {
  	"9c1185a5c5e9fc54612808977ee8f548b2258d31",
  	"0bdc9d2d256b3ee9daae347be6f4dc835a467ffe",
-@@ -994,6 +1003,7 @@
+@@ -1023,6 +1032,7 @@
  	"cf21a613620e6c119eca31fdfaad449a8e02f95ca256c21d2a105f8e4157048f9fe1e897893ea18b64e0e37cb07d5ac947f27ba544caf7cbc1ad094e675aed77a366270f7eb7f46543bccfa61c526fd628408058ed00ed566ac35a9761d002e629c4fb0d430b2f4ad016fcc49c44d2981c4002da0eecc42144160e2eaea4855a",
  	"e6799b78db54085a2be7ff4c8007f147fa88d326abab30be0560b953396d8802feee9a15419b48a467574e9283be15685ca8a079ee52b27166b64dd70b124b1d4e4f6aca37224c3f2685e67e67baef9f94b905698adc794a09672aba977a61b20966912acdb08c21a2c37001785355dc884751a21f848ab36e590331ff938138"
  };
@@ -5215,7 +5214,7 @@
  
  static void
  MDTestSuite(const Algorithm_t *alg)
-@@ -1037,8 +1047,6 @@
+@@ -1066,8 +1076,6 @@
  {
  	if (mode == mode_gnu)
  		printf("%s (FreeBSD) ", progname);
@@ -6009,14 +6008,14 @@
  		case '0': case '1': case '2': case '3':
 --- src.orig/coreutils/pwd/pwd.c
 +++ src.freebsd/coreutils/pwd/pwd.c
-@@ -29,6 +29,7 @@
+@@ -30,6 +30,7 @@
   * SUCH DAMAGE.
   */
  
 +#include <sys/cdefs.h>
  #include <sys/param.h>
  #include <sys/stat.h>
- #include <sys/types.h>
+ 
 --- src.orig/coreutils/realpath/realpath.c
 +++ src.freebsd/coreutils/realpath/realpath.c
 @@ -29,6 +29,7 @@
@@ -6109,7 +6108,7 @@
  	flags = FTS_PHYSICAL;
  	if (!needstat)
  		flags |= FTS_NOSTAT;
--	if (Wflag)
+-	if (Wflag || fflag)
 -		flags |= FTS_WHITEOUT;
  	if (xflag)
  		flags |= FTS_XDEV;
@@ -6149,7 +6148,7 @@
 +#if 0
  			case FTS_W:
  				rval = undelete(p->fts_accpath);
- 				if (rval == 0 && (fflag && errno == ENOENT)) {
+ 				if (rval == 0 || (fflag && errno == ENOENT)) {
 @@ -285,7 +278,7 @@
  					continue;
  				}
@@ -7181,7 +7180,7 @@
  				/*
  				 * Try stat() and if it fails, fall back to
  				 * lstat() just in case we're examining a
-@@ -644,8 +615,10 @@
+@@ -644,13 +615,17 @@
  {
  	u_int64_t data;
  	char *stmp, lfmt[24], tmp[20];
@@ -7194,7 +7193,14 @@
  	const struct timespec *tsp;
  	struct timespec ts;
  	struct tm *tm;
-@@ -737,10 +710,12 @@
+ 	int l, small, formats;
++#if HAVE_DEVNAME
+ 	mode_t dtype;
++#endif
+ 
+ 	tsp = NULL;
+ 	formats = 0;
+@@ -745,10 +720,12 @@
  	case SHOW_st_uid:
  		small = (sizeof(st->st_uid) == 4);
  		data = st->st_uid;
@@ -7209,7 +7215,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -750,10 +725,12 @@
+@@ -758,10 +735,12 @@
  	case SHOW_st_gid:
  		small = (sizeof(st->st_gid) == 4);
  		data = st->st_gid;
@@ -7224,7 +7230,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -761,15 +738,15 @@
+@@ -769,15 +748,15 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -7243,7 +7249,7 @@
  		/* FALLTHROUGH */
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
-@@ -785,7 +762,7 @@
+@@ -793,7 +772,7 @@
  			tm = localtime(&ts.tv_sec);
  		}
  		(void)setlocale(LC_TIME, "");
@@ -7252,7 +7258,7 @@
  		sdata = path;
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_FLOAT | FMTF_STRING;
-@@ -1109,28 +1086,17 @@
+@@ -1117,28 +1096,17 @@
  	return (snprintf(buf, blen, lfmt, data));
  }
  
@@ -7986,18 +7992,17 @@
  #define TOKEN_TYPE(token) ((token) & 0xff00)
  
  static const struct t_op {
--	char op_text[2];
+-	char op_text[2] __nonstring;
 +	char op_text[3];
  	short op_num;
  } ops1[] = {
  	{"=",	STREQ},
 --- src.orig/coreutils/timeout/timeout.c
 +++ src.freebsd/coreutils/timeout/timeout.c
-@@ -26,14 +26,16 @@
+@@ -26,11 +26,13 @@
   * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
   */
  
--#include <sys/fcntl.h>
 -#include <sys/procctl.h>
 +#include <sys/cdefs.h>
 +#include <sys/prctl.h>
@@ -8007,33 +8012,38 @@
  
 +#include <sysexits.h>
  #include <err.h>
+ #include <fcntl.h>
  #include <errno.h>
-+#include <fcntl.h>
- #include <getopt.h>
- #include <signal.h>
- #include <stdarg.h>
-@@ -123,15 +125,17 @@
- {
- 	int sig, i;
- 	const char *errstr;
+@@ -118,6 +120,28 @@
+ 	return (ret);
+ }
+ 
++static int
++parse_signal(const char *str)
++{
++	int sig, i;
++	const char *errstr;
 +	const char *signame;
- 
--	sig = strtonum(str, 1, sys_nsig - 1, &errstr);
++
 +	sig = strtonum(str, 1, NSIG, &errstr);
- 	if (errstr == NULL)
- 		return (sig);
- 
- 	if (strncasecmp(str, "SIG", 3) == 0)
- 		str += 3;
--	for (i = 1; i < sys_nsig; i++) {
--		if (strcasecmp(str, sys_signame[i]) == 0)
++	if (errstr == NULL)
++		return (sig);
++
++	if (strncasecmp(str, "SIG", 3) == 0)
++		str += 3;
 +	for (i = 1; i < NSIG; i++) {
 +		signame = signum_to_signame(i);
 +		if (signame && strcasecmp(str, signame) == 0)
- 			return (i);
- 	}
- 
-@@ -159,7 +163,6 @@
++			return (i);
++	}
++
++	errx(EXIT_INVALID, "invalid signal");
++}
++
+ static void
+ sig_handler(int signo)
+ {
+@@ -139,7 +163,6 @@
  	case SIGILL:
  	case SIGTRAP:
  	case SIGABRT:
@@ -8041,7 +8051,7 @@
  	case SIGFPE:
  	case SIGBUS:
  	case SIGSEGV:
-@@ -185,33 +188,16 @@
+@@ -165,27 +188,13 @@
  }
  
  static void
@@ -8049,42 +8059,36 @@
 +send_sig(pid_t pid, int signo, bool foreground __unused)
  {
 -	struct procctl_reaper_kill rk;
--	int error;
 -
  	logv("sending signal %s(%d) to command '%s'",
--	     sys_signame[signo], signo, command);
+-	    sys_signame[signo], signo, command);
 -	if (foreground) {
-+	     signum_to_signame(signo), signo, command);
++	    signum_to_signame(signo), signo, command);
 +	if (1) {
- 		if (kill(pid, signo) == -1) {
- 			if (errno != ESRCH)
- 				warn("kill(%d, %s)", (int)pid,
--				    sys_signame[signo]);
-+				    signum_to_signame(signo));
- 		}
+ 		if (kill(pid, signo) < 0 && errno != ESRCH)
+-			warn("kill(%d, %s)", (int)pid, sys_signame[signo]);
 -	} else {
 -		memset(&rk, 0, sizeof(rk));
 -		rk.rk_sig = signo;
--		error = procctl(P_PID, getpid(), PROC_REAP_KILL, &rk);
--		if (error == 0 || (error == -1 && errno == ESRCH))
--			;
--		else if (error == -1) {
+-		if (procctl(P_PID, getpid(), PROC_REAP_KILL, &rk) < 0 &&
+-		    errno != ESRCH) {
 -			warn("procctl(PROC_REAP_KILL)");
--			if (rk.rk_fpid > 0)
--				warnx(
--			    "failed to signal some processes: first pid=%d",
--				    (int)rk.rk_fpid);
+-			if (rk.rk_fpid > 0) {
+-				warnx("failed to signal some processes:"
+-				    " first pid=%d", (int)rk.rk_fpid);
+-			}
 -		}
 -		logv("signaled %u processes", rk.rk_killed);
++			warn("kill(%d, %s)", (int)pid, signum_to_signame(signo));
  	}
  
  	/*
-@@ -221,15 +207,9 @@
+@@ -195,15 +204,9 @@
  	 * are doing here.
  	 */
  	if (signo != SIGKILL && signo != SIGSTOP && signo != SIGCONT) {
 -		logv("sending signal %s(%d) to command '%s'",
--		     sys_signame[SIGCONT], SIGCONT, command);
+-		    sys_signame[SIGCONT], SIGCONT, command);
 -		if (foreground) {
 -			kill(pid, SIGCONT);
 -		} else {
@@ -8098,76 +8102,86 @@
  	}
  }
  
-@@ -271,10 +251,10 @@
- 	memset(&rl, 0, sizeof(rl));
- 	setrlimit(RLIMIT_CORE, &rl);
+@@ -235,7 +238,7 @@
+ 	sigset_t mask;
+ 	struct rlimit rl;
  
 -	logv("killing self with signal %s(%d)", sys_signame[signo], signo);
 +	logv("killing self with signal %s(%d)", signum_to_signame(signo), signo);
- 	kill(getpid(), signo);
- 	err(128 + signo, "signal %s(%d) failed to kill self",
--	    sys_signame[signo], signo);
-+	    signum_to_signame(signo), signo);
- }
  
- static void
-@@ -307,8 +287,8 @@
- 	bool child_done = false;
- 	sigset_t zeromask, allmask, oldmask;
- 	struct sigaction sa;
+ 	/* Disable core generation. */
+ 	memset(&rl, 0, sizeof(rl));
+@@ -267,7 +270,6 @@
+ int
+ main(int argc, char **argv)
+ {
 -	struct procctl_reaper_status info;
  	siginfo_t si, child_si;
-+	int minrtsig;
- 
- 	const char optstr[] = "+fhk:ps:v";
- 	const struct option longopts[] = {
-@@ -358,8 +338,8 @@
+ 	struct sigaction sa;
+ 	sigset_t zeromask, allmask, oldmask;
+@@ -276,7 +278,7 @@
+ 	ssize_t error;
+ 	pid_t pid;
+ 	int pp[2];
+-	int ch, sig;
++	int ch, sig, minrtsig;
+ 	int pstat = 0;
+ 	char c;
+ 	bool foreground = false;
+@@ -309,8 +311,7 @@
+ 			preserve = true;
+ 			break;
+ 		case 's':
+-			if (str2sig(optarg, &killsig) != 0)
+-				errx(EXIT_INVALID, "invalid signal");
++			killsig = parse_signal(optarg);
+ 			break;
+ 		case 'v':
+ 			verbose = true;
+@@ -334,8 +335,8 @@
  
  	if (!foreground) {
  		/* Acquire a reaper */
--		if (procctl(P_PID, getpid(), PROC_REAP_ACQUIRE, NULL) == -1)
+-		if (procctl(P_PID, getpid(), PROC_REAP_ACQUIRE, NULL) < 0)
 -			err(EXIT_FAILURE, "procctl(PROC_REAP_ACQUIRE)");
 +		if (prctl(PR_SET_CHILD_SUBREAPER, 1, 0, 0) == -1)
 +			err(EX_OSERR, "Fail to set the reaper");
  	}
  
  	/* Block all signals to avoid racing against the child. */
-@@ -402,10 +382,13 @@
+@@ -380,7 +381,10 @@
  	sigfillset(&sa.sa_mask);
  	sa.sa_handler = sig_handler;
  	sa.sa_flags = SA_RESTART;
 -	for (sig = 1; sig < sys_nsig; sig++) {
 +	minrtsig = SIGRTMIN;
 +	for (sig = 1; sig < NSIG; sig++) {
- 		if (sig == SIGKILL || sig == SIGSTOP || sig == SIGCONT ||
- 		    sig == SIGTTIN || sig == SIGTTOU)
- 			continue;
 +		if (sig > SIGSYS && sig < minrtsig)
 +			continue;
- 		if (sigaction(sig, &sa, NULL) == -1)
- 			err(EXIT_FAILURE, "sigaction(%d)", sig);
- 	}
-@@ -455,9 +438,7 @@
+ 		switch (sig) {
+ 		case SIGTTIN:
+ 		case SIGTTOU:
+@@ -443,9 +447,7 @@
  				if (foreground) {
  					break;
  				} else {
 -					procctl(P_PID, getpid(),
--					    	PROC_REAP_STATUS, &info);
+-					    PROC_REAP_STATUS, &info);
 -					if (info.rs_children == 0)
 +					if (waitpid(-1, NULL, WNOHANG) < 0)
  						break;
  				}
  			}
-@@ -471,7 +452,7 @@
+@@ -459,7 +461,7 @@
  				sig = sig_term;
  				sig_term = 0;
  				logv("received terminating signal %s(%d)",
--				     sys_signame[sig], sig);
-+				     signum_to_signame(sig), sig);
+-				    sys_signame[sig], sig);
++				    signum_to_signame(sig), sig);
  			}
  
  			send_sig(pid, sig, foreground);
-@@ -486,14 +467,14 @@
+@@ -474,14 +476,14 @@
  			/* Propagate any other signals. */
  			sig = sig_other;
  			sig_other = 0;
@@ -8195,7 +8209,7 @@
  #include <unistd.h>
  
  static void	stime_arg1(const char *, struct timespec *);
-@@ -322,7 +322,7 @@
+@@ -317,7 +317,7 @@
  		goto bad;
  	fmt = strchr(arg, 'T') != NULL ? "%Y-%m-%dT%H:%M:%S" :
  	    "%Y-%m-%d %H:%M:%S";
@@ -8338,7 +8352,7 @@
  	case 1:
  		isstring2 = 0;
  		break;
-@@ -293,7 +296,7 @@
+@@ -327,7 +330,7 @@
  
  		s2.str = argv[1];
  		s2.state = NORMAL;
@@ -8377,15 +8391,7 @@
  	int ch, error, fd, oflags, r;
  	int do_dealloc;
  	int do_truncate;
-@@ -62,7 +63,6 @@
- 	int do_refer;
- 	int got_size;
- 	char *fname, *rname;
--	struct spacectl_range sr;
- 
- 	fd = -1;
- 	rsize = tsize = sz = off = 0;
-@@ -93,7 +93,7 @@
+@@ -92,7 +93,7 @@
  			}
  			if (expand_number(do_relative || do_round ?
  			    optarg + 1 : optarg,
@@ -8394,7 +8400,7 @@
  				errx(EXIT_FAILURE,
  				    "invalid size argument `%s'", optarg);
  
-@@ -103,7 +103,7 @@
+@@ -102,7 +103,7 @@
  			break;
  		case 'o':
  			if (expand_number(optarg, &usz) == -1 ||
@@ -8403,7 +8409,7 @@
  				errx(EXIT_FAILURE,
  				    "invalid offset argument `%s'", optarg);
  
-@@ -111,7 +111,7 @@
+@@ -110,7 +111,7 @@
  			break;
  		case 'l':
  			if (expand_number(optarg, &usz) == -1 ||
@@ -8412,10 +8418,12 @@
  				errx(EXIT_FAILURE,
  				    "invalid length argument `%s'", optarg);
  
-@@ -198,9 +198,7 @@
+@@ -197,11 +198,7 @@
  			tsize = 0;
  
  		if (do_dealloc == 1) {
+-			struct spacectl_range sr;
+-
 -			sr.r_offset = off;
 -			sr.r_len = len;
 -			r = fspacectl(fd, SPACECTL_DEALLOC, &sr, 0, &sr);
@@ -8796,7 +8804,7 @@
  			err(1, "unable to limit ioctls for %s",
 --- src.orig/coreutils/wc/wc.1
 +++ src.freebsd/coreutils/wc/wc.1
-@@ -127,7 +127,7 @@
+@@ -131,7 +131,7 @@
  If
  .Nm
  receives a
@@ -9444,8 +9452,8 @@
  }
  
  /*
-@@ -1202,11 +1256,17 @@
- 		} while (ret > 0);
+@@ -1201,11 +1255,17 @@
+ 		} while (ret > 0 || (ret < 0 && errno == EINTR));
  		if (ret == 0)
  			goto done;
 -		if (errno != EINVAL) {
@@ -10017,7 +10025,7 @@
  #include <ctype.h>
 --- src.orig/diffutils/diff/diff.h
 +++ src.freebsd/diffutils/diff/diff.h
-@@ -126,3 +126,11 @@
+@@ -127,3 +127,11 @@
  bool	 can_libdiff(int);
  void	 diffdir(char *, char *, int);
  void	 print_status(int, char *, char *, const char *);
@@ -10041,23 +10049,31 @@
  
  #include <dirent.h>
  #include <err.h>
-@@ -43,6 +43,7 @@
- 
- #define d_status	d_type		/* we need to store status for -l */
+@@ -41,6 +41,7 @@
+ 	char *, size_t, int);
+ static void print_only(const char *, size_t, const char *);
  
 +#if 0
  struct inode {
  	dev_t dev;
  	ino_t ino;
-@@ -97,6 +98,7 @@
- 	errno = serrno;
- 	return (-1);
+@@ -104,6 +105,7 @@
+ 	RB_REMOVE(inodetree, tree, ino);
+ 	free(ino);
  }
 +#endif
  
  /*
   * Diff directory traversal. Will be called recursively if -r was specified.
-@@ -118,22 +120,26 @@
+@@ -113,7 +115,6 @@
+ {
+ 	struct dirent *dent1, **dp1, **edp1, **dirp1 = NULL;
+ 	struct dirent *dent2, **dp2, **edp2, **dirp2 = NULL;
+-	struct inode *ino1 = NULL, *ino2 = NULL;
+ 	size_t dirlen1, dirlen2;
+ 	char path1[PATH_MAX], path2[PATH_MAX];
+ 	int pos;
+@@ -126,22 +127,26 @@
  		status |= 2;
  		return;
  	}
@@ -10084,27 +10100,24 @@
  	 * Get a list of entries in each directory, skipping "excluded" files
  	 * and sorting alphabetically.
  	 */
--	pos = vscandir(&v1, path1, &dirp1, selectfile, alphasort);
+-	pos = vscandir(&v1, &ino1, path1, &dirp1, selectfile, alphasort);
 +	pos = scandir(path1, &dirp1, selectfile, alphasort);
  	if (pos == -1) {
  		if (errno == ENOENT && (Nflag || Pflag)) {
  			pos = 0;
-@@ -145,7 +151,7 @@
+@@ -153,7 +158,7 @@
  	dp1 = dirp1;
  	edp1 = dirp1 + pos;
  
--	pos = vscandir(&v2, path2, &dirp2, selectfile, alphasort);
+-	pos = vscandir(&v2, &ino2, path2, &dirp2, selectfile, alphasort);
 +	pos = scandir(path2, &dirp2, selectfile, alphasort);
  	if (pos == -1) {
  		if (errno == ENOENT && Nflag) {
  			pos = 0;
-@@ -165,18 +171,6 @@
- 			dp1++;
- 		while (dp2 != edp2 && strcmp((*dp2)->d_name, start) < 0)
- 			dp2++;
--	}
--
--	/*
+@@ -176,18 +181,6 @@
+ 	}
+ 
+ 	/*
 -	 * Append separator so children's names can be appended directly.
 -	 */
 -	if (path1[dirlen1 - 1] != '/') {
@@ -10114,9 +10127,28 @@
 -	if (path2[dirlen2 - 1] != '/') {
 -		path2[dirlen2++] = '/';
 -		path2[dirlen2] = '\0';
- 	}
+-	}
+-
+-	/*
+ 	 * Iterate through the two directory lists, diffing as we go.
+ 	 */
+ 	while (dp1 != edp1 || dp2 != edp2) {
+@@ -227,15 +220,11 @@
  
- 	/*
+ closem:
+ 	if (dirp1 != NULL) {
+-		if (ino1 != NULL)
+-			leavedir(&v1, ino1);
+ 		for (dp1 = dirp1; dp1 < edp1; dp1++)
+ 			free(*dp1);
+ 		free(dirp1);
+ 	}
+ 	if (dirp2 != NULL) {
+-		if (ino2 != NULL)
+-			leavedir(&v2, ino2);
+ 		for (dp2 = dirp2; dp2 < edp2; dp2++)
+ 			free(*dp2);
+ 		free(dirp2);
 --- src.orig/diffutils/diff/diffreg.c
 +++ src.freebsd/diffutils/diff/diffreg.c
 @@ -66,6 +66,7 @@
@@ -10127,7 +10159,7 @@
  
  #include <capsicum_helpers.h>
  #include <ctype.h>
-@@ -82,6 +83,9 @@
+@@ -83,6 +84,9 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <string.h>
@@ -10137,7 +10169,7 @@
  
  #include "pr.h"
  #include "diff.h"
-@@ -167,7 +171,6 @@
+@@ -168,7 +172,6 @@
  
  enum readhash { RH_BINARY, RH_OK, RH_EOF };
  
@@ -10145,7 +10177,7 @@
  static FILE	*opentemp(const char *);
  static void	 output(char *, FILE *, char *, FILE *, int);
  static void	 check(FILE *, FILE *, int);
-@@ -224,32 +227,6 @@
+@@ -225,32 +228,6 @@
  static int lastline;
  static int lastmatchline;
  
@@ -10178,7 +10210,7 @@
  static int
  clow2low(int c)
  {
-@@ -265,7 +242,7 @@
+@@ -266,7 +243,7 @@
  }
  
  int
@@ -10187,7 +10219,7 @@
  {
  	FILE *f1, *f2;
  	int i, rval;
-@@ -522,7 +499,7 @@
+@@ -530,7 +507,7 @@
  
  	(void)strlcpy(tempfile, _PATH_TMP "/diff.XXXXXXXX", sizeof(tempfile));
  
@@ -10196,7 +10228,7 @@
  		close(ifd);
  		return (NULL);
  	}
-@@ -1446,7 +1423,7 @@
+@@ -1460,7 +1437,7 @@
  static char *
  match_function(const long *f, int pos, FILE *fp)
  {
@@ -10205,7 +10237,7 @@
  	size_t nc;
  	int last = lastline;
  	const char *state = NULL;
-@@ -1688,11 +1665,11 @@
+@@ -1710,11 +1687,11 @@
  		printf("%s %s\n", diff_format == D_CONTEXT ? "***" : "---",
  		    label[0]);
  	else {
@@ -10219,7 +10251,7 @@
  			printf(".%.9d %s", nsec1, buf);
  		}
  		printf("\n");
-@@ -1701,11 +1678,11 @@
+@@ -1723,11 +1700,11 @@
  		printf("%s %s\n", diff_format == D_CONTEXT ? "---" : "+++",
  		    label[1]);
  	else {
@@ -10244,7 +10276,7 @@
  #include <sys/wait.h>
  
  #include <err.h>
-@@ -33,6 +33,9 @@
+@@ -36,6 +36,9 @@
  #include <stdio.h>
  #include <stdlib.h>
  #include <unistd.h>
@@ -10254,13 +10286,14 @@
  
  #include "pr.h"
  #include "diff.h"
-@@ -40,11 +43,19 @@
+@@ -43,8 +46,15 @@
  
  #define _PATH_PR "/usr/bin/pr"
  
+-extern char **environ;
 +static int sigpipe[2] = {-1, -1};
 +static struct pollfd poll_fd;
-+
+ 
 +static void
 +handle_sig(int signo)
 +{
@@ -10270,16 +10303,46 @@
  struct pr *
  start_pr(char *file1, char *file2)
  {
- 	int pfd[2];
--	int pr_pd;
+@@ -52,9 +62,6 @@
  	pid_t pid;
  	char *header;
  	struct pr *pr;
-@@ -57,7 +68,20 @@
- 	rewind(stdout);
- 	if (pipe(pfd) == -1)
+-	posix_spawn_file_actions_t fa;
+-	posix_spawnattr_t sa;
+-	int error;
+ 
+ 	pr = xcalloc(1, sizeof(*pr));
+ 
+@@ -64,37 +71,46 @@
+ 	if (pipe2(pfd, O_CLOEXEC) == -1)
  		err(2, "pipe");
--	switch ((pid = pdfork(&pr_pd, PD_CLOEXEC))) {
+ 
+-	if ((error = posix_spawnattr_init(&sa)) != 0)
+-		errc(2, error, "posix_spawnattr_init");
+-	if ((error = posix_spawn_file_actions_init(&fa)) != 0)
+-		errc(2, error, "posix_spawn_file_actions_init");
+-
+-	posix_spawnattr_setprocdescp_np(&sa, &pr->procd, 0);
+-
+-	if (pfd[0] != STDIN_FILENO)
+-		posix_spawn_file_actions_adddup2(&fa, pfd[0], STDIN_FILENO);
+-
+-	char *argv[] = { __DECONST(char *, _PATH_PR),
+-	    __DECONST(char *, "-h"), header, NULL };
+-	error = posix_spawn(&pid, _PATH_PR, &fa, &sa, argv, environ);
+-	if (error != 0)
+-		errc(2, error, "could not spawn pr");
+-
+-	posix_spawn_file_actions_destroy(&fa);
+-	posix_spawnattr_destroy(&sa);
+-
+-	/* parent */
+-	if (pfd[1] == STDOUT_FILENO) {
+-		pr->ostdout = STDOUT_FILENO;
+-	} else {
+-		if ((pr->ostdout = dup(STDOUT_FILENO)) < 0 ||
+-		    dup2(pfd[1], STDOUT_FILENO) < 0) {
+-			err(2, "stdout");
 +	if (sigpipe[0] < 0) {
 +		if (pipe(sigpipe) == -1)
 +			err(2, "pipe");
@@ -10294,26 +10357,38 @@
 +	}
 +	poll_fd.revents = 0;
 +	switch ((pid = fork())) {
- 	case -1:
- 		status |= 2;
- 		free(header);
-@@ -82,14 +106,7 @@
- 		close(pfd[0]);
- 		rewind(stdout);
- 		free(header);
--		pr->kq = kqueue();
--		if (pr->kq == -1)
--			err(2, "kqueue");
--		pr->e = xmalloc(sizeof(struct kevent));
--		EV_SET(pr->e, pr_pd, EVFILT_PROCDESC, EV_ADD, NOTE_EXIT, 0,
--		    NULL);
--		if (kevent(pr->kq, pr->e, 1, NULL, 0, NULL) == -1)
--			err(2, "kevent");
++	case -1:
++		err(2, "No more processes");
++	case 0:
++		/* child */
++		if (pfd[0] != STDIN_FILENO) {
++			dup2(pfd[0], STDIN_FILENO);
++			close(pfd[0]);
+ 		}
+ 		close(pfd[1]);
++		execl(_PATH_PR, _PATH_PR, "-h", header, (char *)0);
++		_exit(127);
++	default:
++		/* parent */
++		if (pfd[1] == STDOUT_FILENO) {
++			pr->ostdout = STDOUT_FILENO;
++		} else {
++			if ((pr->ostdout = dup(STDOUT_FILENO)) < 0 ||
++			    dup2(pfd[1], STDOUT_FILENO) < 0) {
++				err(2, "stdout");
++			}
++			close(pfd[1]);
++		}
++		close(pfd[0]);
++		free(header);
 +		pr->cpid = pid;
  	}
+-	close(pfd[0]);
+-	free(header);
  	return (pr);
  }
-@@ -99,6 +116,7 @@
+ 
+@@ -103,6 +119,7 @@
  stop_pr(struct pr *pr)
  {
  	int wstatus;
@@ -10321,14 +10396,13 @@
  
  	if (pr == NULL)
  		return;
-@@ -109,14 +127,27 @@
+@@ -112,15 +129,27 @@
  		dup2(pr->ostdout, STDOUT_FILENO);
  		close(pr->ostdout);
  	}
--	if (kevent(pr->kq, NULL, 0, pr->e, 1, NULL) == -1)
--		err(2, "kevent");
--	wstatus = pr->e[0].data;
--	close(pr->kq);
+-	while (pdwait(pr->procd, &wstatus, WEXITED, NULL, NULL) == -1) {
+-		if (errno != EINTR)
+-			err(2, "pdwait");
 +	while (!done) {
 +		pid_t wpid;
 +		int npe = poll(&poll_fd, 1, -1);
@@ -10350,7 +10424,8 @@
 +			done = 1;
 +			break;
 +		}
-+	}
+ 	}
+-	close(pr->procd);
  	free(pr);
 -	if (WIFEXITED(wstatus) && WEXITSTATUS(wstatus) != 0)
 -		errx(2, "pr exited abnormally");
@@ -10360,50 +10435,49 @@
  }
 --- src.orig/diffutils/diff/pr.h
 +++ src.freebsd/diffutils/diff/pr.h
-@@ -24,12 +24,9 @@
-  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  */
+@@ -26,7 +26,7 @@
  
--#include <sys/event.h>
--
  struct pr {
  	int ostdout;
--	int kq;
--	struct kevent *e;
+-	int procd;
 +	pid_t cpid;
  };
  
  struct pr *start_pr(char *file1, char *file2);
 --- src.orig/diffutils/diff3/diff3.c
 +++ src.freebsd/diffutils/diff3/diff3.c
-@@ -62,22 +62,24 @@
+@@ -64,26 +64,26 @@
   * SUCH DAMAGE.
   */
  
 +#include <sys/cdefs.h>
+ #include <sys/types.h>
  #include <sys/capsicum.h>
 -#include <sys/procdesc.h>
- #include <sys/types.h>
--#include <sys/event.h>
  #include <sys/wait.h>
  
+ #include <assert.h>
  #include <capsicum_helpers.h>
  #include <ctype.h>
  #include <err.h>
+-#include <fcntl.h>
  #include <getopt.h>
+ #include <inttypes.h>
+ #include <limits.h>
+-#include <spawn.h>
 +#include <stdbool.h>
  #include <stdio.h>
  #include <stdlib.h>
- #include <limits.h>
- #include <inttypes.h>
  #include <string.h>
  #include <unistd.h>
 +#include <errno.h>
 +#include <poll.h>
  
+-extern char **environ;
  /*
   * "from" is first in range of changed lines; "to" is last+1
-@@ -122,6 +124,7 @@
+  * from=to=line after point of insertion for added lines.
+@@ -129,6 +129,7 @@
  static int  overlapcnt;
  static FILE *fp[3];
  static int cline[3];		/* # of the last-read line in each file (0-2) */
@@ -10411,43 +10485,89 @@
  /*
   * The latest known correspondence between line numbers of the 3 files
   * is stored in last[1-3];
-@@ -299,12 +302,10 @@
+@@ -303,30 +304,23 @@
  	return (i);
  }
  
 -static int
+-diffexec(char **diffargv, int fd[])
 +static void
- diffexec(const char *diffprog, char **diffargv, int fd[])
++diffexec(const char *diffprog, char **diffargv, int fd[])
  {
--	int pd;
+-	posix_spawnattr_t sa;
+-	posix_spawn_file_actions_t fa;
+-	pid_t pid;
+-	int pd, error;
 -
--	switch (pdfork(&pd, PD_CLOEXEC)) {
+-	if ((error = posix_spawnattr_init(&sa)) != 0)
+-		errc(2, error, "posix_spawnattr_init");
+-	if ((error = posix_spawn_file_actions_init(&fa)) != 0)
+-		errc(2, error, "posix_spawn_file_actions_init");
+-
+-	posix_spawnattr_setprocdescp_np(&sa, &pd, 0);
+-	posix_spawn_file_actions_adddup2(&fa, fd[1], STDOUT_FILENO);
+-
+-	error = posix_spawn(&pid, diffargv[0], &fa, &sa, diffargv, environ);
+-	if (error != 0)
+-		errc(2, error, "could not spawn diff");
+-
+-	posix_spawn_file_actions_destroy(&fa);
+-	posix_spawnattr_destroy(&sa);
 +	switch (fork()) {
- 	case 0:
- 		close(fd[0]);
- 		if (dup2(fd[1], STDOUT_FILENO) == -1)
-@@ -318,7 +319,6 @@
- 		break;
- 	}
++	case 0:
++		close(fd[0]);
++		if (dup2(fd[1], STDOUT_FILENO) == -1)
++			err(2, "child could not duplicate descriptor");
++		close(fd[1]);
++		execvp(diffprog, diffargv);
++		err(2, "could not execute diff: %s", diffprog);
++		break;
++	case -1:
++		err(2, "could not fork");
++		break;
++	}
  	close(fd[1]);
 -	return (pd);
  }
  
  static char *
-@@ -921,20 +921,25 @@
- 	szchanges = newsz;
+@@ -876,7 +870,9 @@
+ 			}
+ 			break;
+ 		default:
+-			__assert_unreachable();
++			/* unreachable */
++			abort();
++			break;
+ 		}
+ 
+ 		if (de[n].type == DIFF_TYPE2)
+@@ -936,33 +932,23 @@
  }
  
-+static void
+ static void
+-wait_and_check(int pd)
 +handle_sig(int signo)
-+{
+ {
+-	int status;
+-
+-	while (pdwait(pd, &status, WEXITED, NULL, NULL) == -1) {
+-		if (errno != EINTR)
+-			err(2, "pdwait");
+-	}
+-	close(pd);
+-
+-	if (WIFEXITED(status) && WEXITSTATUS(status) >= 2)
+-		errx(2, "diff exited abnormally");
+-	if (WIFSIGNALED(status))
+-		errx(2, "diff killed by signal %d", WTERMSIG(status));
 +    write(sigpipe[1], &signo, sizeof(signo));
-+}
+ }
  
  int
  main(int argc, char **argv)
  {
--	int ch, nblabels, status, m, n, kq, nke, nleft, i;
+-	int ch, nblabels, m, n;
 +	int ch, nblabels, status, m, n, npe, nleft;
  	char *labels[] = { NULL, NULL, NULL };
  	const char *diffprog = DIFF_PATH;
@@ -10460,35 +10580,23 @@
 +	pid_t wpid;
 +	struct pollfd pfd;
  	cap_rights_t rights_ro;
--	struct kevent *e;
  
  	nblabels = 0;
- 	eflag = EFLAG_NONE;
-@@ -1016,14 +1021,6 @@
- 
- 	cap_rights_init(&rights_ro, CAP_READ, CAP_FSTAT, CAP_SEEK);
- 
--	kq = kqueue();
--	if (kq == -1)
--		err(2, "kqueue");
--
--	e = malloc(2 * sizeof(*e));
--	if (e == NULL)
--		err(2, "malloc");
--
- 	/* TODO stdio */
- 	file1 = argv[0];
- 	file2 = argv[1];
-@@ -1065,23 +1062,30 @@
+@@ -1012,7 +998,7 @@
+ 			eflag = EFLAG_OVERLAP;
+ 			break;
+ 		case DIFFPROG_OPT:
+-			diffargv[0] = optarg;
++			diffprog = optarg;
+ 			break;
+ 		case STRIPCR_OPT:
+ 			strip_cr = 1;
+@@ -1086,14 +1072,27 @@
  		err(2, "pipe");
- 	if (pipe(fd23))
+ 	if (pipe2(fd23, O_CLOEXEC))
  		err(2, "pipe");
-+	if (pipe(sigpipe))
++	if (pipe2(sigpipe, O_CLOEXEC))
 +		err(2, "pipe");
-+	if (fcntl(sigpipe[0], F_SETFD, FD_CLOEXEC))
-+		err(2, "fcntl");
-+	if (fcntl(sigpipe[1], F_SETFD, FD_CLOEXEC))
-+		err(2, "fcntl");
  
 +	pfd.fd = sigpipe[0];
 +	pfd.events = POLLIN;
@@ -10500,36 +10608,28 @@
  	diffargv[diffargc] = file1;
  	diffargv[diffargc + 1] = file3;
  	diffargv[diffargc + 2] = NULL;
+-	pd13 = diffexec(diffargv, fd13);
  
- 	nleft = 0;
--	pd13 = diffexec(diffprog, diffargv, fd13);
--	EV_SET(e + nleft , pd13, EVFILT_PROCDESC, EV_ADD, NOTE_EXIT, 0, NULL);
--	if (kevent(kq, e + nleft, 1, NULL, 0, NULL) == -1)
--		err(2, "kevent1");
++	nleft = 0;
 +	diffexec(diffprog, diffargv, fd13);
- 	nleft++;
- 
++	nleft++;
++
  	diffargv[diffargc] = file2;
--	pd23 = diffexec(diffprog, diffargv, fd23);
--	EV_SET(e + nleft , pd23, EVFILT_PROCDESC, EV_ADD, NOTE_EXIT, 0, NULL);
--	if (kevent(kq, e + nleft, 1, NULL, 0, NULL) == -1)
--		err(2, "kevent2");
+-	pd23 = diffexec(diffargv, fd23);
 +	diffexec(diffprog, diffargv, fd23);
- 	nleft++;
++	nleft++;
  
  	caph_cache_catpages();
-@@ -1093,22 +1097,25 @@
+ 	if (caph_enter() < 0)
+@@ -1104,9 +1103,26 @@
  	m = readin(fd13[0], &d13);
  	n = readin(fd23[0], &d23);
  
--	/* waitpid cooked over pdforks */
+-	wait_and_check(pd13);
+-	wait_and_check(pd23);
+-
 +	/* waitpid */
- 	while (nleft > 0) {
--		nke = kevent(kq, NULL, 0, e, nleft, NULL);
--		if (nke == -1)
--			err(2, "kevent");
--		for (i = 0; i < nke; i++) {
--			status = e[i].data;
++	while (nleft > 0) {
 +		npe = poll(&pfd, 1, -1);
 +		if (npe == -1) {
 +			if (errno == EINTR) continue;
@@ -10540,18 +10640,17 @@
 +		if (read(pfd.fd, &signo, sizeof(signo)) < 0)
 +			err(2, "read");
 +		while ((wpid = waitpid(-1, &status, WNOHANG)) > 0) {
- 			if (WIFEXITED(status) && WEXITSTATUS(status) >= 2)
- 				errx(2, "diff exited abnormally");
- 			else if (WIFSIGNALED(status))
- 				errx(2, "diff killed by signal %d",
- 				    WTERMSIG(status));
- 		}
--		nleft -= nke;
- 	}
--	free(e);
++			if (WIFEXITED(status) && WEXITSTATUS(status) >= 2)
++				errx(2, "diff exited abnormally");
++			else if (WIFSIGNALED(status))
++				errx(2, "diff killed by signal %d",
++				    WTERMSIG(status));
++			--nleft;
++		}
++	}
  	merge(m, n);
  
- 	return (EXIT_SUCCESS);
+ 	exit(0);
 --- src.orig/diffutils/sdiff/edit.c
 +++ src.freebsd/diffutils/sdiff/edit.c
 @@ -140,7 +140,7 @@
@@ -10811,7 +10910,25 @@
  .It Ic -gid Ar gname
  The same thing as
  .Ic -group Ar gname
-@@ -1238,7 +1159,6 @@
+@@ -982,17 +903,6 @@
+ Matches files which have the specified
+ .Ar xattr
+ extended attribute set.
+-All supported namespaces are searched by default, but
+-.Ar xattr
+-may be prefixed with
+-.Dq user:
+-or
+-.Dq system:
+-to filter by namespace.
+-.Pp
+-Note that named attributes are not supported, only extended attributes as set
+-by, e.g.,
+-.Xr setextattr 8 .
+ .El
+ .Sh OPERATORS
+ The primaries may be combined using the following operators.
+@@ -1255,7 +1165,6 @@
  .Sx STANDARDS
  section below for details.
  .Sh SEE ALSO
@@ -10819,7 +10936,7 @@
  .Xr chmod 1 ,
  .Xr locate 1 ,
  .Xr lsvfs 1 ,
-@@ -1269,9 +1189,7 @@
+@@ -1288,9 +1197,7 @@
  .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
  .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
  .Ic -not , -path , -print0 , -regex , -sparse
@@ -10873,7 +10990,7 @@
  struct _plandata;
 --- src.orig/findutils/find/function.c
 +++ src.freebsd/findutils/find/function.c
-@@ -33,12 +33,14 @@
+@@ -33,13 +33,15 @@
   */
  
  #include <sys/param.h>
@@ -10881,26 +10998,28 @@
  #include <sys/stat.h>
  #include <sys/types.h>
  #include <sys/acl.h>
+-#include <sys/extattr.h>
  #include <sys/wait.h>
  #include <sys/mount.h>
 +#include <sys/sysmacros.h>
 +#include <sys/statvfs.h>
++#include <sys/xattr.h>
 +#include <acl/libacl.h>
  
  #include <dirent.h>
  #include <err.h>
-@@ -57,6 +59,10 @@
+@@ -59,7 +61,9 @@
  
  #include "find.h"
  
+-static const char * const xattr_ns[] = EXTATTR_NAMESPACE_NAMES;
 +#ifndef REG_STARTEND
 +#define REG_STARTEND 0
 +#endif
-+
+ 
  static PLAN *palloc(OPTION *);
  static long long find_parsenum(PLAN *, const char *, char *, char *);
- static long long find_parsetime(PLAN *, const char *, char *);
-@@ -366,12 +372,11 @@
+@@ -370,12 +374,11 @@
  int
  f_acl(PLAN *plan __unused, FTSENT *entry)
  {
@@ -10915,7 +11034,7 @@
  	ret = pathconf(entry->fts_accpath, _PC_ACL_NFS4);
  	if (ret > 0) {
  		acl_supported = 1;
-@@ -380,16 +385,17 @@
+@@ -384,16 +387,17 @@
  		warn("%s", entry->fts_accpath);
  		return (0);
  	}
@@ -10936,7 +11055,7 @@
  	if (acl_supported == 0)
  		return (0);
  
-@@ -407,6 +413,8 @@
+@@ -411,6 +415,8 @@
  	if (trivial)
  		return (0);
  	return (1);
@@ -10945,7 +11064,7 @@
  }
  #endif
  
-@@ -910,6 +918,120 @@
+@@ -914,6 +920,120 @@
  }
  
  #if HAVE_STRUCT_STATFS_F_FSTYPENAME
@@ -11066,7 +11185,7 @@
  /*
   * -fstype functions --
   *
-@@ -920,9 +1042,9 @@
+@@ -924,9 +1044,9 @@
  {
  	static dev_t curdev;	/* need a guaranteed illegal dev value */
  	static int first = 1;
@@ -11079,7 +11198,7 @@
  	char *p, save[2] = {0,0};
  
  	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
-@@ -933,7 +1055,7 @@
+@@ -937,7 +1057,7 @@
  		curdev = entry->fts_statp->st_dev;
  
  		/*
@@ -11088,7 +11207,7 @@
  		 * not where it points.
  		 */
  		if (entry->fts_info == FTS_SL ||
-@@ -949,7 +1071,7 @@
+@@ -953,7 +1073,7 @@
  		} else
  			p = NULL;
  
@@ -11097,7 +11216,7 @@
  			if (!ignore_readdir_race || errno != ENOENT) {
  				warn("statfs: %s", entry->fts_accpath);
  				exitstatus = 1;
-@@ -968,14 +1090,14 @@
+@@ -972,14 +1092,14 @@
  		 * Further tests may need both of these values, so
  		 * always copy both of them.
  		 */
@@ -11115,7 +11234,7 @@
  	default:
  		abort();
  	}
-@@ -992,17 +1114,10 @@
+@@ -996,17 +1116,10 @@
  
  	new = palloc(option);
  	switch (*fsname) {
@@ -11134,7 +11253,7 @@
  			return new;
  		}
  		break;
-@@ -1297,7 +1412,9 @@
+@@ -1301,7 +1414,9 @@
  int
  f_nogroup(PLAN *plan __unused, FTSENT *entry)
  {
@@ -11145,7 +11264,7 @@
  }
  
  PLAN *
-@@ -1317,7 +1434,9 @@
+@@ -1321,7 +1436,9 @@
  int
  f_nouser(PLAN *plan __unused, FTSENT *entry)
  {
@@ -11156,6 +11275,88 @@
  }
  
  PLAN *
+@@ -1771,32 +1888,12 @@
+ 	if (entry->fts_level == 0 && (ftsoptions & FTS_COMFOLLOW) != 0)
+ 		deref_link = true;
+ 
+-	for (size_t ns = 0; ns < nitems(xattr_ns); ns++) {
+-		if (ns == EXTATTR_NAMESPACE_EMPTY)
+-			continue;
+-
+-		if (deref_link)
+-			asz = extattr_list_file(entry->fts_accpath, ns, NULL, 0);
+-		else
+-			asz = extattr_list_link(entry->fts_accpath, ns, NULL, 0);
+-		if (asz > 0)
+-			return 1;
+-	}
+-
+-	return 0;
+-}
+-
+-static bool
+-find_has_xattr(const char *path, int ns, const char *aname, bool deref_link)
+-{
+-	size_t asz;
+-
+ 	if (deref_link)
+-		asz = extattr_get_file(path, ns, aname, NULL, 0);
++		asz = listxattr(entry->fts_accpath, NULL, 0);
+ 	else
+-		asz = extattr_get_link(path, ns, aname, NULL, 0);
++		asz = llistxattr(entry->fts_accpath, NULL, 0);
+ 
+-	return asz != (size_t)-1;
++	return asz > 0;
+ }
+ 
+ /*
+@@ -1811,39 +1908,20 @@
+ {
+ 	const char *aname;
+ 	bool deref_link;
++	ssize_t asz;
+ 
+ 	deref_link = (ftsoptions & FTS_LOGICAL) != 0;
+ 	if (entry->fts_level == 0 && (ftsoptions & FTS_COMFOLLOW) != 0)
+ 		deref_link = true;
+ 
+ 	aname = plan->c_data;
+-	for (size_t ns = 0; ns < nitems(xattr_ns); ns++) {
+-		const char *name;
+-		size_t namelen;
+ 
+-		if (ns == EXTATTR_NAMESPACE_EMPTY)
+-			continue;
++	if (deref_link)
++		asz = getxattr(entry->fts_accpath, aname, NULL, 0);
++	else
++		asz = lgetxattr(entry->fts_accpath, aname, NULL, 0);
+ 
+-		name = xattr_ns[ns];
+-		namelen = strlen(xattr_ns[ns]);
+-		if (strncmp(aname, name, namelen) == 0 &&
+-		    aname[namelen] == ':') {
+-			aname += namelen + 1;
+-			return find_has_xattr(entry->fts_accpath, ns, aname,
+-			    deref_link);
+-		}
+-	}
+-
+-	for (size_t ns = 0; ns < nitems(xattr_ns); ns++) {
+-		if (ns == EXTATTR_NAMESPACE_EMPTY)
+-			continue;
+-
+-		if (find_has_xattr(entry->fts_accpath, ns, aname,
+-		    deref_link))
+-			return 1;
+-	}
+-
+-	return 0;
++	return asz > 0;
+ }
+ 
+ /*
 --- src.orig/findutils/find/ls.c
 +++ src.freebsd/findutils/find/ls.c
 @@ -31,6 +31,7 @@
@@ -12298,7 +12499,7 @@
  };
  
 -/* End-of-Line */
--static const char ENDL[2] = "\r\n";
+-static const char ENDL[2] = { '\r', '\n' };
  
 -
  /*** Error-reporting functions ***********************************************/
@@ -12317,7 +12518,7 @@
  		fetchLastErrCode = FETCH_AUTH;
  		break;
  	case ENOENT:
-@@ -278,7 +279,6 @@
+@@ -282,7 +283,6 @@
  {
  	conn_t *conn;
  	int flags;
@@ -12325,15 +12526,15 @@
  
  	/* allocate and fill connection structure */
  	if ((conn = calloc(1, sizeof(*conn))) == NULL)
-@@ -286,7 +286,6 @@
- 	flags = fcntl(sd, F_GETFD);
- 	if (flags != -1 && (flags & FD_CLOEXEC) == 0)
- 		(void)fcntl(sd, F_SETFD, flags | FD_CLOEXEC);
+@@ -293,7 +293,6 @@
+ 	flags = fcntl(sd, F_GETFL);
+ 	if (flags != -1 && (flags & O_NONBLOCK) == 0)
+ 		(void)fcntl(sd, F_SETFL, flags | O_NONBLOCK);
 -	(void)setsockopt(sd, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt));
  	conn->sd = sd;
  	++conn->ref;
  	return (conn);
-@@ -410,15 +409,16 @@
+@@ -416,14 +415,15 @@
  	 * Largest FQDN (256) + one byte size (1) +
  	 * Port (2)
  	 */
@@ -12343,8 +12544,7 @@
 +	ptrdiff_t dif;
  	int ret = 1;
  
- 	if (verbose)
- 		fetch_info("Initializing SOCKS5 connection: %s:%d", host, port);
+ 	fetch_verbose("Initializing SOCKS5 connection: %s:%d", host, port);
  
  	/* Connection initialization */
 -	ptr = buf;
@@ -12352,7 +12552,7 @@
  	*ptr++ = SOCKS_VERSION_5;
  	*ptr++ = SOCKS_CONNECTION;
  	*ptr++ = SOCKS_RSV;
-@@ -434,7 +434,7 @@
+@@ -439,7 +439,7 @@
  		goto fail;
  	}
  
@@ -12361,7 +12561,7 @@
  	if (ptr[0] != SOCKS_VERSION_5) {
  		ret = SOCKS5_ERR_VER5_ONLY;
  		goto fail;
-@@ -466,7 +466,8 @@
+@@ -471,7 +471,8 @@
  	*ptr++ = port & 0x00ff;
  	*ptr++ = (port & 0xff00) >> 8;
  
@@ -12371,7 +12571,7 @@
  		ret = SOCKS5_ERR_REQUEST;
  		goto fail;
  	}
-@@ -477,7 +478,7 @@
+@@ -482,7 +483,7 @@
  		goto fail;
  	}
  
@@ -12380,7 +12580,7 @@
  	if (*ptr++ != SOCKS_VERSION_5) {
  		ret = SOCKS5_ERR_NON_VER5_RESP;
  		goto fail;
-@@ -704,6 +705,7 @@
+@@ -709,6 +710,7 @@
  }
  
  #ifdef WITH_SSL
@@ -12388,7 +12588,7 @@
  /*
   * Convert characters A-Z to lowercase (intentionally avoid any locale
   * specific conversions).
-@@ -1032,6 +1034,7 @@
+@@ -1037,6 +1039,7 @@
  		GENERAL_NAMES_free(altnames);
  	return (ret);
  }
@@ -12396,18 +12596,18 @@
  
  /*
   * Configure transport security layer based on environment.
-@@ -1224,7 +1227,9 @@
+@@ -1223,7 +1226,9 @@
+ 
  	if (getenv("SSL_NO_VERIFY_HOSTNAME") == NULL) {
- 		if (verbose)
- 			fetch_info("Verify hostname");
+ 		fetch_verbose("Verify hostname");
 -		if (!fetch_ssl_verify_hname(conn->ssl_cert, URL->host)) {
 +		if (X509_check_host(conn->ssl_cert, URL->host, strlen(URL->host),
 +				X509_CHECK_FLAG_NO_PARTIAL_WILDCARDS,
 +				NULL) != 1) {
- 			fprintf(stderr,
- 			    "SSL certificate subject doesn't match host %s\n",
+ 			fetch_info("SSL certificate subject does not match host %s",
  			    URL->host);
-@@ -1312,7 +1317,7 @@
+ 			return (-1);
+@@ -1311,7 +1316,7 @@
  		timeout.tv_sec += fetchTimeout;
  	}
  
@@ -12416,14 +12616,7 @@
  	memset(&pfd, 0, sizeof pfd);
  	pfd.fd = conn->sd;
  	pfd.events = POLLIN | POLLERR;
-@@ -1422,27 +1427,12 @@
- 	return (0);
- }
- 
--
- /*
-  * Write to a connection w/ timeout
-  */
+@@ -1428,20 +1433,6 @@
  ssize_t
  fetch_write(conn_t *conn, const char *buf, size_t len)
  {
@@ -12431,7 +12624,7 @@
 -
 -	iov.iov_base = __DECONST(char *, buf);
 -	iov.iov_len = len;
--	return fetch_writev(conn, &iov, 1);
+-	return (fetch_writev(conn, &iov, 1));
 -}
 -
 -/*
@@ -12444,7 +12637,7 @@
  	struct timeval now, timeout, delta;
  	struct pollfd pfd;
  	ssize_t wlen, total;
-@@ -1457,7 +1447,7 @@
+@@ -1456,7 +1447,7 @@
  	}
  
  	total = 0;
@@ -12453,7 +12646,7 @@
  		while (fetchTimeout && pfd.revents == 0) {
  			gettimeofday(&now, NULL);
  			if (!timercmp(&timeout, &now, >)) {
-@@ -1482,11 +1472,10 @@
+@@ -1481,11 +1472,10 @@
  		errno = 0;
  #ifdef WITH_SSL
  		if (conn->ssl != NULL)
@@ -12467,7 +12660,7 @@
  		if (wlen == 0) {
  			/* we consider a short write a failure */
  			/* XXX perhaps we shouldn't in the SSL case */
-@@ -1500,20 +1489,13 @@
+@@ -1499,20 +1489,13 @@
  			return (-1);
  		}
  		total += wlen;
@@ -12491,7 +12684,7 @@
  /*
   * Write a line of text to a connection w/ timeout
   */
-@@ -1536,6 +1518,7 @@
+@@ -1535,6 +1518,7 @@
  		return (-1);
  	return (0);
  }
@@ -12512,7 +12705,7 @@
  /* Connection */
  typedef struct fetchconn conn_t;
  struct fetchconn {
-@@ -100,9 +104,6 @@
+@@ -99,9 +103,6 @@
  #define SOCKS_COMMAND_NOT_SUPPORTED	0x07
  #define SOCKS_ADDRESS_NOT_SUPPORTED	0x08
  
@@ -12522,7 +12715,7 @@
  void		 fetch_seterr(struct fetcherr *, int);
  void		 fetch_syserr(void);
  void		 fetch_info(const char *, ...) __printflike(1, 2);
-@@ -123,8 +124,6 @@
+@@ -122,8 +123,6 @@
  ssize_t		 fetch_read(conn_t *, char *, size_t);
  int		 fetch_getln(conn_t *);
  ssize_t		 fetch_write(conn_t *, const char *, size_t);
@@ -12922,7 +13115,7 @@
   * Print the value of mp to standard output in base 10.  See blurb
 --- src.orig/m4/eval.c
 +++ src.freebsd/m4/eval.c
-@@ -409,7 +409,7 @@
+@@ -401,7 +401,7 @@
  
  			temp = xstrdup(argv[2]);
  
@@ -12931,7 +13124,7 @@
  			if (fd == -1)
  				err(1,
  	    "%s at line %lu: couldn't make temp file %s",
-@@ -843,7 +843,7 @@
+@@ -831,7 +831,7 @@
  	if (outfile[n] == NULL) {
  		char fname[] = _PATH_DIVNAME;
  
@@ -12957,11 +13150,11 @@
  void
  pbnumbase(int n, int base, int d)
  {
--	static char digits[36] = "0123456789abcdefghijklmnopqrstuvwxyz";
-+	static char digits[37] = "0123456789abcdefghijklmnopqrstuvwxyz";
+-	static char digits[36] __nonstring =
++	static char digits[37] =
+ 	    "0123456789abcdefghijklmnopqrstuvwxyz";
  	unsigned int num;
  	int printed = 0;
- 
 --- src.orig/m4/parser.y
 +++ src.freebsd/m4/parser.y
 @@ -18,6 +18,7 @@
@@ -15182,101 +15375,6 @@
  static int	 v_obsolete(char *[]);
  
  /*
---- src.orig/nvi/common/options.c
-+++ src.freebsd/nvi/common/options.c
-@@ -317,15 +317,24 @@
- 	argv[1] = &b;
- 
- 	/* Set numeric and string default values. */
--#define	OI(indx, str) do {						\
--	a.len = STRLEN(str);						\
--	if (STRCMP((CHAR_T*)str, b2) != 0)					\
--		(void)MEMCPY(b2, str, a.len+1);				\
-+#define	OI_BASE(indx) do {						\
- 	if (opts_set(sp, argv, NULL)) {					\
- 		 optindx = indx;					\
- 		goto err;						\
- 	}								\
- } while (0)
-+
-+#define OI(indx, str) do { \
-+	a.len = STRLEN(str); \
-+	MEMCPY(b2, str, a.len + 1); \
-+	OI_BASE(indx); \
-+} while(0)
-+
-+#define OIB(indx) do { \
-+	a.len = STRLEN(b2); \
-+	OI_BASE(indx); \
-+} while(0)
-+
- 	/*
- 	 * Indirect global options to global space.  Specifically, set up
- 	 * terminal, lines, columns first, they're used by other options.
-@@ -347,7 +356,7 @@
- 	/* Initialize string values. */
- 	(void)SPRINTF(b2, SIZE(b2),
- 	    L("cdpath=%s"), (s = getenv("CDPATH")) == NULL ? ":" : s);
--	OI(O_CDPATH, b2);
-+	OIB(O_CDPATH);
- 	OI(O_CEDIT, L("cedit=\033"));
- 
- 	/*
-@@ -359,30 +368,30 @@
- 	 */
- 	(void)SPRINTF(b2, SIZE(b2),
- 	    L("directory=%s"), (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
--	OI(O_TMPDIR, b2);
-+	OIB(O_TMPDIR);
- 	OI(O_ESCAPETIME, L("escapetime=6"));
- 	OI(O_FILEC, L("filec=\t"));
- 	OI(O_KEYTIME, L("keytime=6"));
- 	OI(O_MATCHCHARS, L("matchchars=()[]{}"));
- 	OI(O_MATCHTIME, L("matchtime=7"));
- 	(void)SPRINTF(b2, SIZE(b2), L("msgcat=%s"), _PATH_MSGCAT);
--	OI(O_MSGCAT, b2);
-+	OIB(O_MSGCAT);
- 	OI(O_REPORT, L("report=5"));
- 	OI(O_PARAGRAPHS, L("paragraphs=IPLPPPQPP LIpplpipbp"));
- 	(void)SPRINTF(b2, SIZE(b2), L("path=%s"), "");
--	OI(O_PATH, b2);
-+	OIB(O_PATH);
- 	(void)SPRINTF(b2, SIZE(b2), L("recdir=%s"), NVI_PATH_PRESERVE);
--	OI(O_RECDIR, b2);
-+	OIB(O_RECDIR);
- 	OI(O_SECTIONS, L("sections=NHSHH HUnhsh"));
- 	(void)SPRINTF(b2, SIZE(b2),
- 	    L("shell=%s"), (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
--	OI(O_SHELL, b2);
-+	OIB(O_SHELL);
- 	OI(O_SHELLMETA, L("shellmeta=~{[*?$`'\"\\"));
- 	OI(O_SHIFTWIDTH, L("shiftwidth=8"));
- 	OI(O_SIDESCROLL, L("sidescroll=16"));
- 	OI(O_TABSTOP, L("tabstop=8"));
- 	(void)SPRINTF(b2, SIZE(b2), L("tags=%s"), _PATH_TAGS);
--	OI(O_TAGS, b2);
-+	OIB(O_TAGS);
- 
- 	/*
- 	 * XXX
-@@ -392,7 +401,7 @@
- 	if ((v = (O_VAL(sp, O_LINES) - 1) / 2) == 0)
- 		v = 1;
- 	(void)SPRINTF(b2, SIZE(b2), L("scroll=%ld"), v);
--	OI(O_SCROLL, b2);
-+	OIB(O_SCROLL);
- 
- 	/*
- 	 * The default window option values are:
-@@ -413,7 +422,7 @@
- 		v = 1;
- 
- 	(void)SPRINTF(b2, SIZE(b2), L("window=%lu"), v);
--	OI(O_WINDOW, b2);
-+	OIB(O_WINDOW);
- 
- 	/*
- 	 * Set boolean default values, and copy all settings into the default
 --- src.orig/nvi/common/recover.c
 +++ src.freebsd/nvi/common/recover.c
 @@ -33,6 +33,7 @@
@@ -15285,8 +15383,8 @@
  #include <unistd.h>
 +#include <libutil.h>
  
- #include "../ex/version.h"
  #include "common.h"
+ #include "version.h"
 @@ -811,7 +812,7 @@
  {
  	int fd;
@@ -15381,8 +15479,11 @@
 +exec sed -n 's/^.*version \([^)]*)\).*/\#define VI_VERSION "\1"/p' "$@"
 --- src.orig/nvi/gen_extern_h.sh
 +++ src.freebsd/nvi/gen_extern_h.sh
-@@ -0,0 +1,39 @@
+@@ -0,0 +1,21 @@
 +#!/bin/sh
++
++COMPONENT=$1
++shift
 +
 +do_sed() {
 +    sed -n 's/^ \* PUBLIC: \(.*\)/\1/p' "$@"
@@ -15392,35 +15493,14 @@
 +    case "$1" in
 +        */$2/*)
 +            do_sed "$1"
-+            return 0
 +            ;;
 +    esac
-+    return 1
 +}
 +
-+echo "#ifdef CL_IN_EX"
-+
-+while try_sed "$1" cl; do
++while [ $# -gt 0 ]; do
++    try_sed "$1" "$COMPONENT"
 +    shift
 +done
-+
-+echo "#endif"
-+echo "#ifdef EXP"
-+
-+while try_sed "$1" ex; do
-+    shift
-+done
-+
-+echo "#endif"
-+echo "#ifdef V_ABS"
-+
-+while try_sed "$1" vi; do
-+    shift
-+done
-+
-+echo "#endif"
-+
-+do_sed "$@"
 --- src.orig/nvi/vi/v_paragraph.c
 +++ src.freebsd/nvi/vi/v_paragraph.c
 @@ -47,7 +47,7 @@
@@ -15810,7 +15890,55 @@
  	char *stacknxt;
 --- src.orig/sh/miscbltin.c
 +++ src.freebsd/sh/miscbltin.c
-@@ -438,6 +438,13 @@
+@@ -48,6 +48,7 @@
+ #include <stdio.h>
+ #include <stdlib.h>
+ #include <unistd.h>
++#include <time.h>
+ 
+ #include "shell.h"
+ #include "options.h"
+@@ -61,6 +62,21 @@
+ 
+ #undef eflag
+ 
++#define	timespeccmp(tvp, uvp, cmp)					\
++	(((tvp)->tv_sec == (uvp)->tv_sec) ?				\
++	    ((tvp)->tv_nsec cmp (uvp)->tv_nsec) :			\
++	    ((tvp)->tv_sec cmp (uvp)->tv_sec))
++
++#define	timespecsub(tsp, usp, vsp)					\
++	do {								\
++		(vsp)->tv_sec = (tsp)->tv_sec - (usp)->tv_sec;		\
++		(vsp)->tv_nsec = (tsp)->tv_nsec - (usp)->tv_nsec;	\
++		if ((vsp)->tv_nsec < 0) {				\
++			(vsp)->tv_sec--;				\
++			(vsp)->tv_nsec += 1000000000L;			\
++		}							\
++	} while (0)
++
+ #define	READ_BUFLEN	1024
+ struct fdctx {
+ 	int	fd;
+@@ -238,7 +254,7 @@
+ 		} else if (timeout == 0) {
+ 			status = poll(&pfd, 1, 0);
+ 		} else {
+-			clock_gettime(CLOCK_UPTIME, &tnow);
++			clock_gettime(CLOCK_MONOTONIC, &tnow);
+ 			tend = tnow;
+ 			tend.tv_sec += timeout;
+ 			do {
+@@ -246,7 +262,7 @@
+ 				status = ppoll(&pfd, 1, &tresid, &oset);
+ 				if (status >= 0 || pendingsig != 0)
+ 					break;
+-				clock_gettime(CLOCK_UPTIME, &tnow);
++				clock_gettime(CLOCK_MONOTONIC, &tnow);
+ 			} while (timespeccmp(&tnow, &tend, <));
+ 		}
+ 		sigprocmask(SIG_SETMASK, &oset, NULL);
+@@ -469,6 +485,13 @@
  	char	option;
  };
  
@@ -15824,7 +15952,7 @@
  static const struct limits limits[] = {
  #ifdef RLIMIT_CPU
  	{ "cpu time",		"seconds",	RLIMIT_CPU,	   1, 't' },
-@@ -469,7 +476,8 @@
+@@ -500,7 +523,8 @@
  #ifdef RLIMIT_VMEM
  	{ "virtual mem size",	"kbytes",	RLIMIT_VMEM,	1024, 'v' },
  #endif
@@ -15834,7 +15962,7 @@
  	{ "swap limit",		"kbytes",	RLIMIT_SWAP,	1024, 'w' },
  #endif
  #ifdef RLIMIT_SBSIZE
-@@ -484,6 +492,23 @@
+@@ -515,6 +539,23 @@
  #ifdef RLIMIT_UMTXP
  	{ "umtx shared locks",	(char *)0,	RLIMIT_UMTXP,	   1, 'o' },
  #endif
@@ -15858,7 +15986,7 @@
  #ifdef RLIMIT_PIPEBUF
  	{ "pipebuf",		(char *)0,	RLIMIT_PIPEBUF, 1024, 'y' },
  #endif
-@@ -522,7 +547,7 @@
+@@ -553,7 +594,7 @@
  	struct rlimit	limit;
  
  	what = 'f';
@@ -15867,7 +15995,7 @@
  		switch (optc) {
  		case 'H':
  			how = HARD;
-@@ -564,7 +589,8 @@
+@@ -595,7 +636,8 @@
  				error("bad number");
  			uval *= l->factor;
  			val = (rlim_t)uval;
@@ -16091,7 +16219,7 @@
 +extern const char optletter[NSHORTOPTS + 1];
  #ifdef DEFINE_OPTIONS
  char optval[NOPTS];
--const char optletter[NSHORTOPTS] = "efIimnsxvVECabupTPh";
+-const char optletter[NSHORTOPTS] __nonstring = "efIimnsxvVECabupTPh";
 +const char optletter[NSHORTOPTS + 1] = "efIimnsxvVECabuTPh";
  static const unsigned char optname[] =
  	"\007errexit"
@@ -16243,7 +16371,7 @@
  	memory[fd] = 0;
 --- src.orig/sh/sh.1
 +++ src.freebsd/sh/sh.1
-@@ -277,22 +277,6 @@
+@@ -288,22 +288,6 @@
  to
  .Fl P
  (physical directory layout).
@@ -16266,7 +16394,7 @@
  .It Fl s Li stdin
  Read commands from standard input (set automatically
  if no file arguments are present).
-@@ -2704,7 +2688,7 @@
+@@ -2888,7 +2872,7 @@
  For aliases the alias expansion is printed;
  for commands and tracked aliases
  the complete pathname of the command is printed.
@@ -16275,7 +16403,7 @@
  Set or display resource limits (see
  .Xr getrlimit 2 ) .
  If
-@@ -2743,8 +2727,6 @@
+@@ -2927,8 +2911,6 @@
  displayed or modified.
  They are mutually exclusive.
  .Bl -tag -width indent
@@ -16284,7 +16412,7 @@
  .It Fl c Ar coredumpsize
  The maximal size of core dump files, in 512-byte blocks.
  Setting
-@@ -2752,13 +2734,12 @@
+@@ -2936,13 +2918,12 @@
  to 0 prevents core dump files from being created.
  .It Fl d Ar datasize
  The maximal size of the data segment of a process, in kilobytes.
@@ -16302,7 +16430,7 @@
  .It Fl l Ar lockedmem
  The maximal size of memory that can be locked by a process, in
  kilobytes.
-@@ -2766,13 +2747,10 @@
+@@ -2950,13 +2931,10 @@
  The maximal resident set size of a process, in kilobytes.
  .It Fl n Ar nofiles
  The maximal number of descriptors that could be opened by a process.
@@ -16320,7 +16448,7 @@
  .It Fl s Ar stacksize
  The maximal size of the stack segment, in kilobytes.
  .It Fl t Ar time
-@@ -2781,9 +2759,12 @@
+@@ -2965,9 +2943,12 @@
  The maximal number of simultaneous processes for this user ID.
  .It Fl v Ar virtualmem
  The maximal virtual size of a process, in kilobytes.
@@ -17827,7 +17955,12 @@
  	    else
  		continue;
  	    if (line[0] != ' ' && line[0] != '\t' && line[0] != '\n')
-@@ -2852,9 +2952,11 @@
+@@ -2848,13 +2948,15 @@
+ static int
+ sourceroute(struct addrinfo *ai, char *arg, unsigned char **cpp, int *lenp, int *protop, int *optp)
+ {
+-	static char buf[1024] __aligned(sizeof(void *));	/*XXX*/
++	static char buf[1024 + ALIGNBYTES];	/*XXX*/
  	unsigned char *cp, *cp2, *lsrp, *ep;
  	struct sockaddr_in *_sin;
  #ifdef INET6
@@ -17853,7 +17986,7 @@
  		lsrp = *cpp;
  		ep = lsrp + *lenp;
  	} else {
--		*cpp = lsrp = (char *)ALIGN(buf);
+-		*cpp = lsrp = buf;
 +		*cpp = lsrp = (unsigned char *)ALIGN(buf);
  		ep = lsrp + 1024;
  	}

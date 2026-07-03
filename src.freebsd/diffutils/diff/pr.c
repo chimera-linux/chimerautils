@@ -28,8 +28,11 @@
 #include <sys/wait.h>
 
 #include <err.h>
+#include <errno.h>
+#include <fcntl.h>
 #include <paths.h>
 #include <signal.h>
+#include <spawn.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -65,9 +68,9 @@ start_pr(char *file1, char *file2)
 	xasprintf(&header, "%s %s %s", diffargs, file1, file2);
 	signal(SIGPIPE, SIG_IGN);
 	fflush(stdout);
-	rewind(stdout);
-	if (pipe(pfd) == -1)
+	if (pipe2(pfd, O_CLOEXEC) == -1)
 		err(2, "pipe");
+
 	if (sigpipe[0] < 0) {
 		if (pipe(sigpipe) == -1)
 			err(2, "pipe");
@@ -83,8 +86,6 @@ start_pr(char *file1, char *file2)
 	poll_fd.revents = 0;
 	switch ((pid = fork())) {
 	case -1:
-		status |= 2;
-		free(header);
 		err(2, "No more processes");
 	case 0:
 		/* child */
@@ -96,15 +97,17 @@ start_pr(char *file1, char *file2)
 		execl(_PATH_PR, _PATH_PR, "-h", header, (char *)0);
 		_exit(127);
 	default:
-
 		/* parent */
-		if (pfd[1] != STDOUT_FILENO) {
-			pr->ostdout = dup(STDOUT_FILENO);
-			dup2(pfd[1], STDOUT_FILENO);
+		if (pfd[1] == STDOUT_FILENO) {
+			pr->ostdout = STDOUT_FILENO;
+		} else {
+			if ((pr->ostdout = dup(STDOUT_FILENO)) < 0 ||
+			    dup2(pfd[1], STDOUT_FILENO) < 0) {
+				err(2, "stdout");
+			}
 			close(pfd[1]);
 		}
 		close(pfd[0]);
-		rewind(stdout);
 		free(header);
 		pr->cpid = pid;
 	}
@@ -123,7 +126,6 @@ stop_pr(struct pr *pr)
 
 	fflush(stdout);
 	if (pr->ostdout != STDOUT_FILENO) {
-		close(STDOUT_FILENO);
 		dup2(pr->ostdout, STDOUT_FILENO);
 		close(pr->ostdout);
 	}

@@ -25,7 +25,7 @@
 .\" OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF
 .\" SUCH DAMAGE.
 .\"
-.Dd April 3, 2025
+.Dd April 11, 2026
 .Dt TIMEOUT 1
 .Os
 .Sh NAME
@@ -188,7 +188,7 @@ will terminate itself with the same signal if the
 is terminated by a signal.
 .Pp
 If an error occurred, the following exit values are returned:
-.Bl -tag -offset indent with indent -compact
+.Bl -tag -offset indent -width indent -compact
 .It 125
 An error other than the two described below occurred.
 For example, an invalid duration or signal was specified.
@@ -269,6 +269,10 @@ The
 utility is expected to conform to the
 .St -p1003.1-2024
 specification.
+.Pp
+The
+.Fl v
+option and long option names are extensions to that specification.
 .Sh HISTORY
 The
 .Nm

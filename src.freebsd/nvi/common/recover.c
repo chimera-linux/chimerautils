@@ -35,8 +35,8 @@
 #include <unistd.h>
 #include <libutil.h>
 
-#include "../ex/version.h"
 #include "common.h"
+#include "version.h"
 #include "pathnames.h"
 
 /*

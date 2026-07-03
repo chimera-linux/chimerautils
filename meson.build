@@ -1,7 +1,7 @@
 project(
     'chimerautils',
     ['c', 'cpp'],
-    version: '15.0.3',
+    version: '15.1.0',
     default_options: [
         'c_std=c99',
         'cpp_rtti=false',

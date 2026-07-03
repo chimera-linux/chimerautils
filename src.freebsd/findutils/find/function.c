@@ -40,6 +40,7 @@
 #include <sys/mount.h>
 #include <sys/sysmacros.h>
 #include <sys/statvfs.h>
+#include <sys/xattr.h>
 #include <acl/libacl.h>
 
 #include <dirent.h>
@@ -51,6 +52,7 @@
 #include <limits.h>
 #include <pwd.h>
 #include <regex.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -1869,6 +1871,57 @@ c_user(OPTION *option, char ***argvp)
 
 	new->u_data = uid;
 	return new;
+}
+
+/*
+ * -xattr functions --
+ *
+ *	True if the entry has any extended attribute in any namespace.
+ */
+int
+f_xattr(PLAN *plan __unused, FTSENT *entry)
+{
+	ssize_t asz;
+	bool deref_link;
+
+	deref_link = (ftsoptions & FTS_LOGICAL) != 0;
+	if (entry->fts_level == 0 && (ftsoptions & FTS_COMFOLLOW) != 0)
+		deref_link = true;
+
+	if (deref_link)
+		asz = listxattr(entry->fts_accpath, NULL, 0);
+	else
+		asz = llistxattr(entry->fts_accpath, NULL, 0);
+
+	return asz > 0;
+}
+
+/*
+ * -xattrname xattr functions --
+ *
+ *	True if the entry has the given extended attribute xattr.  The xattr
+ *	may be prefixed with "user:" or "system:" to scope the search
+ *	explicitly, otherwise we assume the user namespace is requested.
+ */
+int
+f_xattrname(PLAN *plan, FTSENT *entry)
+{
+	const char *aname;
+	bool deref_link;
+	ssize_t asz;
+
+	deref_link = (ftsoptions & FTS_LOGICAL) != 0;
+	if (entry->fts_level == 0 && (ftsoptions & FTS_COMFOLLOW) != 0)
+		deref_link = true;
+
+	aname = plan->c_data;
+
+	if (deref_link)
+		asz = getxattr(entry->fts_accpath, aname, NULL, 0);
+	else
+		asz = lgetxattr(entry->fts_accpath, aname, NULL, 0);
+
+	return asz > 0;
 }
 
 /*

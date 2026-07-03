@@ -317,24 +317,14 @@ opts_init(SCR *sp, int *oargs)
 	argv[1] = &b;
 
 	/* Set numeric and string default values. */
-#define	OI_BASE(indx) do {						\
-	if (opts_set(sp, argv, NULL)) {					\
-		 optindx = indx;					\
+#define	OI(indx, ...) do {						\
+	size_t len = SPRINTF(b2, SIZE(b2), __VA_ARGS__);		\
+	if (len < 0 || len >= SIZE(b2) || opts_set(sp, argv, NULL)) {	\
+		optindx = indx;						\
 		goto err;						\
 	}								\
+	a.len = len;							\
 } while (0)
-
-#define OI(indx, str) do { \
-	a.len = STRLEN(str); \
-	MEMCPY(b2, str, a.len + 1); \
-	OI_BASE(indx); \
-} while(0)
-
-#define OIB(indx) do { \
-	a.len = STRLEN(b2); \
-	OI_BASE(indx); \
-} while(0)
-
 	/*
 	 * Indirect global options to global space.  Specifically, set up
 	 * terminal, lines, columns first, they're used by other options.
@@ -354,9 +344,7 @@ opts_init(SCR *sp, int *oargs)
 	F_SET(&sp->opts[O_SECURE], OPT_GLOBAL);
 
 	/* Initialize string values. */
-	(void)SPRINTF(b2, SIZE(b2),
-	    L("cdpath=%s"), (s = getenv("CDPATH")) == NULL ? ":" : s);
-	OIB(O_CDPATH);
+	OI(O_CDPATH, L("cdpath=%s"), (s = getenv("CDPATH")) == NULL ? ":" : s);
 	OI(O_CEDIT, L("cedit=\033"));
 
 	/*
@@ -366,32 +354,26 @@ opts_init(SCR *sp, int *oargs)
 	 * are two ways to change this -- the user can set either the directory
 	 * option or the TMPDIR environmental variable.
 	 */
-	(void)SPRINTF(b2, SIZE(b2),
+	OI(O_TMPDIR,
 	    L("directory=%s"), (s = getenv("TMPDIR")) == NULL ? _PATH_TMP : s);
-	OIB(O_TMPDIR);
 	OI(O_ESCAPETIME, L("escapetime=6"));
 	OI(O_FILEC, L("filec=\t"));
 	OI(O_KEYTIME, L("keytime=6"));
 	OI(O_MATCHCHARS, L("matchchars=()[]{}"));
 	OI(O_MATCHTIME, L("matchtime=7"));
-	(void)SPRINTF(b2, SIZE(b2), L("msgcat=%s"), _PATH_MSGCAT);
-	OIB(O_MSGCAT);
+	OI(O_MSGCAT, L("msgcat=%s"), _PATH_MSGCAT);
 	OI(O_REPORT, L("report=5"));
 	OI(O_PARAGRAPHS, L("paragraphs=IPLPPPQPP LIpplpipbp"));
-	(void)SPRINTF(b2, SIZE(b2), L("path=%s"), "");
-	OIB(O_PATH);
-	(void)SPRINTF(b2, SIZE(b2), L("recdir=%s"), NVI_PATH_PRESERVE);
-	OIB(O_RECDIR);
+	OI(O_PATH, L("path=%s"), "");
+	OI(O_RECDIR, L("recdir=%s"), NVI_PATH_PRESERVE);
 	OI(O_SECTIONS, L("sections=NHSHH HUnhsh"));
-	(void)SPRINTF(b2, SIZE(b2),
+	OI(O_SHELL,
 	    L("shell=%s"), (s = getenv("SHELL")) == NULL ? _PATH_BSHELL : s);
-	OIB(O_SHELL);
 	OI(O_SHELLMETA, L("shellmeta=~{[*?$`'\"\\"));
 	OI(O_SHIFTWIDTH, L("shiftwidth=8"));
 	OI(O_SIDESCROLL, L("sidescroll=16"));
 	OI(O_TABSTOP, L("tabstop=8"));
-	(void)SPRINTF(b2, SIZE(b2), L("tags=%s"), _PATH_TAGS);
-	OIB(O_TAGS);
+	OI(O_TAGS, L("tags=%s"), _PATH_TAGS);
 
 	/*
 	 * XXX
@@ -400,8 +382,7 @@ opts_init(SCR *sp, int *oargs)
 	 */
 	if ((v = (O_VAL(sp, O_LINES) - 1) / 2) == 0)
 		v = 1;
-	(void)SPRINTF(b2, SIZE(b2), L("scroll=%ld"), v);
-	OIB(O_SCROLL);
+	OI(O_SCROLL, L("scroll=%ld"), v);
 
 	/*
 	 * The default window option values are:
@@ -421,8 +402,7 @@ opts_init(SCR *sp, int *oargs)
 	else if ((v = O_VAL(sp, O_LINES) - 1) == 0)
 		v = 1;
 
-	(void)SPRINTF(b2, SIZE(b2), L("window=%lu"), v);
-	OIB(O_WINDOW);
+	OI(O_WINDOW, L("window=%lu"), v);
 
 	/*
 	 * Set boolean default values, and copy all settings into the default
