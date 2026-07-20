@@ -68,9 +68,14 @@ static const speed_t baudvals[] = {
 };
 
 int get_baud(speed_t s) {
+#ifdef __GLIBC__
+	/* in glibc the speed_t constants are the baud rate itself */
+	return (int)s;
+#else
 	if (s & CBAUDEX)
 		s = (s & ~CBAUDEX) + 15;
 	return baudlist[s];
+#endif
 }
 
 speed_t get_speed(unsigned long b) {
