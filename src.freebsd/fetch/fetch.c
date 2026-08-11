@@ -78,7 +78,7 @@ static int	 o_flag;	/*    -o: specify output file */
 static int	 o_directory;	/*        output file is a directory */
 static char	*o_filename;	/*        name of output file */
 static int	 o_stdout;	/*        output file is stdout */
-static int	 once_flag;	/*    -1: stop at first successful file */
+static int	 once_flag_;	/*    -1: stop at first successful file */
 static int	 p_flag;	/* -[Pp]: use passive FTP */
 static int	 R_flag;	/*    -R: don't delete partial files */
 static int	 r_flag;	/*    -r: restart previous transfer */
@@ -928,7 +928,7 @@ main(int argc, char *argv[])
 	    longopts, NULL)) != -1)
 		switch (c) {
 		case '1':
-			once_flag = 1;
+			once_flag_ = 1;
 			break;
 		case '4':
 			family = PF_INET;
@@ -1200,7 +1200,7 @@ main(int argc, char *argv[])
 		if (sigint)
 			kill(getpid(), SIGINT);
 
-		if (e == 0 && once_flag)
+		if (e == 0 && once_flag_)
 			exit(0);
 
 		if (e) {

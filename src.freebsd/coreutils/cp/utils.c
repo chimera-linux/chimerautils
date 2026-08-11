@@ -52,7 +52,7 @@
 
 #include "extern.h"
 
-struct open_how {
+struct cp_open_how {
 	uint64_t flags;
 	uint64_t mode;
 	uint64_t resolve;
@@ -64,7 +64,7 @@ struct open_how {
 int openat_beneath(int dfd, const char *path, int flags, bool beneath, mode_t mode) {
 	if (!beneath)
 		return openat(dfd, path, flags, mode);
-	struct open_how how;
+	struct cp_open_how how;
 	how.flags = flags;
 	if (flags & (O_CREAT | O_TMPFILE))
 		how.mode = mode & 07777; /* EINVAL if it contains more stuff */

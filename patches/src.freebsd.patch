@@ -2281,7 +2281,7 @@
  
  #include "extern.h"
  
-+struct open_how {
++struct cp_open_how {
 +	uint64_t flags;
 +	uint64_t mode;
 +	uint64_t resolve;
@@ -2293,7 +2293,7 @@
 +int openat_beneath(int dfd, const char *path, int flags, bool beneath, mode_t mode) {
 +	if (!beneath)
 +		return openat(dfd, path, flags, mode);
-+	struct open_how how;
++	struct cp_open_how how;
 +	how.flags = flags;
 +	if (flags & (O_CREAT | O_TMPFILE))
 +		how.mode = mode & 07777; /* EINVAL if it contains more stuff */
@@ -10848,6 +10848,15 @@
  /* Option flags */
  static int	 A_flag;	/*    -A: do not follow 302 redirects */
  static int	 a_flag;	/*    -a: auto retry */
+@@ -71,7 +78,7 @@
+ static int	 o_directory;	/*        output file is a directory */
+ static char	*o_filename;	/*        name of output file */
+ static int	 o_stdout;	/*        output file is stdout */
+-static int	 once_flag;	/*    -1: stop at first successful file */
++static int	 once_flag_;	/*    -1: stop at first successful file */
+ static int	 p_flag;	/* -[Pp]: use passive FTP */
+ static int	 R_flag;	/*    -R: don't delete partial files */
+ static int	 r_flag;	/*    -r: restart previous transfer */
 @@ -280,7 +287,7 @@
  static void
  stat_display(struct xferstat *xs, int force)
@@ -10879,6 +10888,24 @@
  			/* if precious, warn the user and give up */
  			if (R_flag) {
  				warnx("%s: local modification time "
+@@ -920,7 +928,7 @@
+ 	    longopts, NULL)) != -1)
+ 		switch (c) {
+ 		case '1':
+-			once_flag = 1;
++			once_flag_ = 1;
+ 			break;
+ 		case '4':
+ 			family = PF_INET;
+@@ -1192,7 +1200,7 @@
+ 		if (sigint)
+ 			kill(getpid(), SIGINT);
+ 
+-		if (e == 0 && once_flag)
++		if (e == 0 && once_flag_)
+ 			exit(0);
+ 
+ 		if (e) {
 --- src.orig/findutils/find/extern.h
 +++ src.freebsd/findutils/find/extern.h
 @@ -30,6 +30,8 @@
