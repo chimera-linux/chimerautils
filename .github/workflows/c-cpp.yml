@@ -34,6 +34,8 @@ jobs:
                   tar -xf libxo-${VER}.tar.gz
                   cd libxo-${VER}
 
+                  # build system bad
+                  sed -i 's,${GETTEXT_PREFIX}/bin/msgfmt,/usr/bin/msgfmt,' configure
                   ./configure --prefix=/usr/local
                   make
                   sudo make install
@@ -64,6 +66,8 @@ jobs:
                   tar -xf libxo-${VER}.tar.gz
                   cd libxo-${VER}
 
+                  # build system bad
+                  sed -i 's,${GETTEXT_PREFIX}/bin/msgfmt,/usr/bin/msgfmt,' configure
                   ./configure --prefix=/usr/local
                   make
                   make install
