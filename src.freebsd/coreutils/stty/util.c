@@ -54,6 +54,19 @@ checkredirect(void)
 warnx("stdout appears redirected, but stdin is the control descriptor");
 }
 
+#if B9600 == 9600U
+/* libcs where speed_t matches the baud constant, e.g. glibc and freebsd */
+
+int get_baud(speed_t s) {
+	return (int)s;
+}
+
+speed_t get_speed(unsigned long b) {
+	return (speed_t)b;
+}
+#else
+/* libcs where speed_t are specific constants, e.g. musl (matching linux) */
+
 static const int baudlist[] = {
 	0, 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600,
 	19200, 38400, 57600, 115200, 230400, 460800, 500000, 576000, 921600,
@@ -81,3 +94,4 @@ speed_t get_speed(unsigned long b) {
 	}
 	errx(1, "unknown speed for baud %lu", b);
 }
+#endif

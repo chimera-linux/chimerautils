@@ -7725,11 +7725,23 @@
  
  #include "stty.h"
  #include "extern.h"
-@@ -51,4 +52,32 @@
- 	    !fstat(STDOUT_FILENO, &sb1) && !fstat(STDERR_FILENO, &sb2) &&
+@@ -52,3 +53,45 @@
  	    (sb1.st_rdev != sb2.st_rdev))
  warnx("stdout appears redirected, but stdin is the control descriptor");
+ }
++
++#if B9600 == 9600U
++/* libcs where speed_t matches the baud constant, e.g. glibc and freebsd */
++
++int get_baud(speed_t s) {
++	return (int)s;
 +}
++
++speed_t get_speed(unsigned long b) {
++	return (speed_t)b;
++}
++#else
++/* libcs where speed_t are specific constants, e.g. musl (matching linux) */
 +
 +static const int baudlist[] = {
 +	0, 50, 75, 110, 134, 150, 200, 300, 600, 1200, 1800, 2400, 4800, 9600,
@@ -7757,7 +7769,8 @@
 +		return baudvals[i];
 +	}
 +	errx(1, "unknown speed for baud %lu", b);
- }
++}
++#endif
 --- src.orig/coreutils/sync/sync.c
 +++ src.freebsd/coreutils/sync/sync.c
 @@ -27,6 +27,7 @@
