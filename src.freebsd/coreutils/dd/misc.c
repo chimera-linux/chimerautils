@@ -57,9 +57,9 @@ secs_elapsed(void)
 	struct timespec end, ts_res;
 	double secs, res;
 
-	if (clock_gettime(CLOCK_MONOTONIC, &end))
+	if (clock_gettime(CLOCK_BOOTTIME, &end))
 		err(1, "clock_gettime");
-	if (clock_getres(CLOCK_MONOTONIC, &ts_res))
+	if (clock_getres(CLOCK_BOOTTIME, &ts_res))
 		err(1, "clock_getres");
 	secs = (end.tv_sec - st.start.tv_sec) + \
 	       (end.tv_nsec - st.start.tv_nsec) * 1e-9;

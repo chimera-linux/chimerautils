@@ -2931,6 +2931,15 @@
  		if (ddflags & C_ODIRECT)
  			oflags |= O_DIRECT;
  		before_io();
+@@ -303,7 +301,7 @@
+ 		ctab = casetab;
+ 	}
+ 
+-	if (clock_gettime(CLOCK_MONOTONIC, &st.start))
++	if (clock_gettime(CLOCK_BOOTTIME, &st.start))
+ 		err(1, "clock_gettime");
+ }
+ 
 @@ -311,23 +309,16 @@
  getfdtype(IO *io)
  {
@@ -2992,6 +3001,18 @@
  #include <sys/types.h>
  
  #include <err.h>
+@@ -56,9 +57,9 @@
+ 	struct timespec end, ts_res;
+ 	double secs, res;
+ 
+-	if (clock_gettime(CLOCK_MONOTONIC, &end))
++	if (clock_gettime(CLOCK_BOOTTIME, &end))
+ 		err(1, "clock_gettime");
+-	if (clock_getres(CLOCK_MONOTONIC, &ts_res))
++	if (clock_getres(CLOCK_BOOTTIME, &ts_res))
+ 		err(1, "clock_getres");
+ 	secs = (end.tv_sec - st.start.tv_sec) + \
+ 	       (end.tv_nsec - st.start.tv_nsec) * 1e-9;
 --- src.orig/coreutils/dd/position.c
 +++ src.freebsd/coreutils/dd/position.c
 @@ -46,6 +46,10 @@
@@ -14543,7 +14564,16 @@
  		case 'o':
  			ofn = optarg;
  			break;
-@@ -124,8 +120,8 @@
+@@ -109,7 +105,7 @@
+ 		setvbuf(out, (char *)NULL, _IONBF, (size_t)0);
+ 	}
+ 
+-	if (clock_gettime(CLOCK_MONOTONIC, &before_ts))
++	if (clock_gettime(CLOCK_BOOTTIME, &before_ts))
+ 		err(1, "clock_gettime");
+ 	switch(pid = fork()) {
+ 	case -1:			/* error */
+@@ -124,26 +120,27 @@
  	(void)signal(SIGINT, SIG_IGN);
  	(void)signal(SIGQUIT, SIG_IGN);
  	siginfo_recvd = 0;
@@ -14554,7 +14584,20 @@
  	while (wait4(pid, &status, 0, &ru) != pid) {
  		bool do_siginfo = siginfo_recvd != 0;
  
-@@ -144,6 +140,7 @@
+ 		atomic_signal_fence(memory_order_acquire);
+ 		if (do_siginfo) {
+ 			siginfo_recvd = 0;
+-			if (clock_gettime(CLOCK_MONOTONIC, &after))
++			if (clock_gettime(CLOCK_BOOTTIME, &after))
+ 				err(1, "clock_gettime");
+ 			getrusage(RUSAGE_CHILDREN, &ru);
+ 			showtime(stdout, &before_ts, &after, &ru);
+ 		}
+ 	}
+-	if (clock_gettime(CLOCK_MONOTONIC, &after))
++	if (clock_gettime(CLOCK_BOOTTIME, &after))
+ 		err(1, "clock_gettime");
+ 	if ( ! WIFEXITED(status))
  		warnx("command terminated abnormally");
  	exitonsig = WIFSIGNALED(status) ? WTERMSIG(status) : 0;
  	showtime(out, &before_ts, &after, &ru);
@@ -16072,7 +16115,7 @@
  			status = poll(&pfd, 1, 0);
  		} else {
 -			clock_gettime(CLOCK_UPTIME, &tnow);
-+			clock_gettime(CLOCK_MONOTONIC, &tnow);
++			clock_gettime(CLOCK_MONOTONIC_RAW, &tnow);
  			tend = tnow;
  			tend.tv_sec += timeout;
  			do {
@@ -16081,7 +16124,7 @@
  				if (status >= 0 || pendingsig != 0)
  					break;
 -				clock_gettime(CLOCK_UPTIME, &tnow);
-+				clock_gettime(CLOCK_MONOTONIC, &tnow);
++				clock_gettime(CLOCK_MONOTONIC_RAW, &tnow);
  			} while (timespeccmp(&tnow, &tend, <));
  		}
  		sigprocmask(SIG_SETMASK, &oset, NULL);

@@ -254,7 +254,7 @@ readcmd(int argc __unused, char **argv __unused)
 		} else if (timeout == 0) {
 			status = poll(&pfd, 1, 0);
 		} else {
-			clock_gettime(CLOCK_MONOTONIC, &tnow);
+			clock_gettime(CLOCK_MONOTONIC_RAW, &tnow);
 			tend = tnow;
 			tend.tv_sec += timeout;
 			do {
@@ -262,7 +262,7 @@ readcmd(int argc __unused, char **argv __unused)
 				status = ppoll(&pfd, 1, &tresid, &oset);
 				if (status >= 0 || pendingsig != 0)
 					break;
-				clock_gettime(CLOCK_MONOTONIC, &tnow);
+				clock_gettime(CLOCK_MONOTONIC_RAW, &tnow);
 			} while (timespeccmp(&tnow, &tend, <));
 		}
 		sigprocmask(SIG_SETMASK, &oset, NULL);

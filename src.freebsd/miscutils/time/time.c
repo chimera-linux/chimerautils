@@ -105,7 +105,7 @@ main(int argc, char **argv)
 		setvbuf(out, (char *)NULL, _IONBF, (size_t)0);
 	}
 
-	if (clock_gettime(CLOCK_MONOTONIC, &before_ts))
+	if (clock_gettime(CLOCK_BOOTTIME, &before_ts))
 		err(1, "clock_gettime");
 	switch(pid = fork()) {
 	case -1:			/* error */
@@ -128,13 +128,13 @@ main(int argc, char **argv)
 		atomic_signal_fence(memory_order_acquire);
 		if (do_siginfo) {
 			siginfo_recvd = 0;
-			if (clock_gettime(CLOCK_MONOTONIC, &after))
+			if (clock_gettime(CLOCK_BOOTTIME, &after))
 				err(1, "clock_gettime");
 			getrusage(RUSAGE_CHILDREN, &ru);
 			showtime(stdout, &before_ts, &after, &ru);
 		}
 	}
-	if (clock_gettime(CLOCK_MONOTONIC, &after))
+	if (clock_gettime(CLOCK_BOOTTIME, &after))
 		err(1, "clock_gettime");
 	if ( ! WIFEXITED(status))
 		warnx("command terminated abnormally");

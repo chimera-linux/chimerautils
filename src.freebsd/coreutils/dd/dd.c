@@ -301,7 +301,7 @@ setup(void)
 		ctab = casetab;
 	}
 
-	if (clock_gettime(CLOCK_MONOTONIC, &st.start))
+	if (clock_gettime(CLOCK_BOOTTIME, &st.start))
 		err(1, "clock_gettime");
 }
 
