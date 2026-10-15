@@ -121,7 +121,7 @@ _gettemp(int dfd, char *path, int *doopen, int domkdir, int oflags)
 		}
 		start = bx;
 		while (bx < suffp) {
-			*bx = padchar[*bx % sizeof(padchar)];
+			*bx = padchar[(unsigned char)*bx % (sizeof(padchar) - 1)];
 			++bx;
 		}
 	} else start = trv + 1;
