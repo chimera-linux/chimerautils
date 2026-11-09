@@ -9712,7 +9712,7 @@
  	int ret;
  
  	if (target_sb != NULL) {
-@@ -799,7 +851,7 @@
+@@ -799,14 +851,15 @@
   *	build a path name and install the file
   */
  static void
@@ -9721,7 +9721,16 @@
  {
  	struct stat from_sb, temp_sb, to_sb;
  	struct timespec tsb[2];
-@@ -819,7 +871,7 @@
+ 	int devnull, files_match, from_fd, serrno, stripped, target;
+ 	int temp_fd, to_fd;
+-	char backup[MAXPATHLEN], *p, pathbuf[MAXPATHLEN], tempfile[MAXPATHLEN];
++	char backup[MAXPATHLEN], pathbuf[MAXPATHLEN], tempfile[MAXPATHLEN];
+ 	char *digestresult;
++	const char *p;
+ 
+ 	digestresult = NULL;
+ 	files_match = stripped = 0;
+@@ -819,7 +872,7 @@
  			if (stat(from_name, &from_sb))
  				err(EX_OSERR, "%s", from_name);
  			if (!S_ISREG(from_sb.st_mode))
@@ -9730,7 +9739,7 @@
  		}
  		/* Build the target path. */
  		if (flags & DIRECTORY) {
-@@ -844,7 +896,7 @@
+@@ -844,7 +897,7 @@
  	}
  
  	if (target && !S_ISREG(to_sb.st_mode) && !S_ISLNK(to_sb.st_mode))
@@ -9739,7 +9748,7 @@
  
  	if (!devnull && (from_fd = open(from_name, O_RDONLY, 0)) < 0)
  		err(EX_OSERR, "%s", from_name);
-@@ -1025,9 +1077,11 @@
+@@ -1025,9 +1078,11 @@
  	    (uid != (uid_t)-1 && uid != to_sb.st_uid))) {
  		if (fchown(to_fd, uid, gid) == -1) {
  			serrno = errno;
@@ -9754,7 +9763,7 @@
  		}
  	}
  	if (mode != (to_sb.st_mode & ALLPERMS)) {
-@@ -1137,14 +1191,14 @@
+@@ -1137,14 +1192,14 @@
  		lseek(from_fd, 0, SEEK_SET);
  		lseek(to_fd, 0, SEEK_SET);
  	} else {
@@ -9771,7 +9780,7 @@
  	}
  
  	return rv;
-@@ -1167,7 +1221,7 @@
+@@ -1167,7 +1222,7 @@
  		p = temp;
  	(void)strncpy(p, "INS@XXXXXX", &temp[tsize - 1] - p);
  	temp[tsize - 1] = '\0';
@@ -9780,7 +9789,7 @@
  }
  
  /*
-@@ -1201,11 +1255,17 @@
+@@ -1201,11 +1256,17 @@
  		} while (ret > 0 || (ret < 0 && errno == EINTR));
  		if (ret == 0)
  			goto done;
@@ -9799,7 +9808,7 @@
  		}
  		/* Fall back */
  	}
-@@ -1305,7 +1365,7 @@
+@@ -1305,7 +1366,7 @@
  	    __DECONST(char **, args), environ);
  	if (error != 0) {
  		(void)unlink(to_name);
@@ -9808,7 +9817,7 @@
  		    EX_TEMPFAIL : EX_OSERR, error, "spawn %s", stripbin);
  	}
  	free(prefixed_from_name);
-@@ -1338,7 +1398,7 @@
+@@ -1338,7 +1399,7 @@
   *	build directory hierarchy
   */
  static void
@@ -9817,7 +9826,7 @@
  {
  	char *p;
  	struct stat sb;
-@@ -1373,8 +1433,8 @@
+@@ -1373,8 +1434,8 @@
  		    chown(path, uid, gid))
  			warn("chown %u:%u %s", uid, gid, path);
  		/* XXXBED: should we do the chmod in the dounpriv case? */
@@ -9828,7 +9837,7 @@
  	}
  	metadata_log(path, "dir", NULL, NULL, NULL, 0);
  }
-@@ -1483,16 +1543,16 @@
+@@ -1483,16 +1544,16 @@
  usage(void)
  {
  	(void)fprintf(stderr,

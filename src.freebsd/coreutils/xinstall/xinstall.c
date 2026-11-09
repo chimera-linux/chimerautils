@@ -857,8 +857,9 @@ install(const char *from_name, const char *to_name, u_long fset __unused, u_int 
 	struct timespec tsb[2];
 	int devnull, files_match, from_fd, serrno, stripped, target;
 	int temp_fd, to_fd;
-	char backup[MAXPATHLEN], *p, pathbuf[MAXPATHLEN], tempfile[MAXPATHLEN];
+	char backup[MAXPATHLEN], pathbuf[MAXPATHLEN], tempfile[MAXPATHLEN];
 	char *digestresult;
+	const char *p;
 
 	digestresult = NULL;
 	files_match = stripped = 0;
