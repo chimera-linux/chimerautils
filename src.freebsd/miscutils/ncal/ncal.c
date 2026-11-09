@@ -209,7 +209,7 @@ main(int argc, char *argv[])
 	int	flag_specifiedmonth = 0;/* user wants to see this month (-m) */
 	int	flag_givenmonth = 0;	/* user has specified month [n] */
 	int	flag_givenyear = 0;	/* user has specified year [n] */
-	char	*cp;			/* character pointer */
+	const char	*cp;		/* character pointer */
 	char	*flag_today = NULL;	/* debug: use date as being today */
 	char	*flag_month = NULL;	/* requested month as string */
 	char	*flag_highlightdate = NULL; /* debug: date to highlight */
