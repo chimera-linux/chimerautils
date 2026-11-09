@@ -13504,6 +13504,15 @@
  extern void	dodefine(const char *, const char *);
 --- src.orig/m4/misc.c
 +++ src.freebsd/m4/misc.c
+@@ -70,7 +70,7 @@
+ ptrdiff_t
+ doindex(const char *s1, const char *s2)
+ {
+-	char *t;
++	const char *t;
+ 
+ 	t = strstr(s1, s2);
+ 	if (t == NULL)
 @@ -120,7 +120,7 @@
  void
  pbnumbase(int n, int base, int d)
