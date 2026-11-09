@@ -280,7 +280,7 @@ main(int argc, char *argv[])
 		colorflag = COLORFLAG_AUTO;
 #endif
 	while ((ch = getopt_long(argc, argv,
-	    "+1ABCD:FGHILPRSTXZabcdfghiklmnpqrstuvwxy,", long_opts,
+	    "+1ABCD:FGHILPRSTUXZabcdfghiklmnpqrstuvwxy,", long_opts,
 	    NULL)) != -1) {
 		switch (ch) {
 		/*

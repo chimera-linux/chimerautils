@@ -130,18 +130,17 @@ revacccmp(const FTSENT *a, const FTSENT *b)
 int
 birthcmp(const FTSENT *a, const FTSENT *b)
 {
-#if 0
-	if (b->fts_statp->st_birthtim.tv_sec >
-	    a->fts_statp->st_birthtim.tv_sec)
+#ifdef FTS_USES_STATX
+	struct timespec ta, tb;
+	ta = ftsent_get_birthtime(a);
+	tb = ftsent_get_birthtime(b);
+	if (tb.tv_sec > ta.tv_sec)
 		return (1);
-	if (b->fts_statp->st_birthtim.tv_sec <
-	    a->fts_statp->st_birthtim.tv_sec)
+	if (tb.tv_sec < ta.tv_sec)
 		return (-1);
-	if (b->fts_statp->st_birthtim.tv_nsec >
-	    a->fts_statp->st_birthtim.tv_nsec)
+	if (tb.tv_nsec > ta.tv_nsec)
 		return (1);
-	if (b->fts_statp->st_birthtim.tv_nsec <
-	    a->fts_statp->st_birthtim.tv_nsec)
+	if (tb.tv_nsec < ta.tv_nsec)
 		return (-1);
 #endif
 	if (f_samesort)

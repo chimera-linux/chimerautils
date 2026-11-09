@@ -5,9 +5,11 @@
  */
 
 #include <sys/types.h>
+#include <sys/sysmacros.h>
 
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <fts.h>
 #include <grp.h>
 #include <pwd.h>
@@ -156,12 +158,46 @@ fp_strftime(FILE *fp, time_t t, char mod)
 	fputs(buffer, fp);
 }
 
+#ifdef FTS_USES_STATX
+static int stat_with_btime(const char *path, struct stat *sp, struct timespec *btime)
+{
+	struct statx stx;
+	int sret = statx(AT_FDCWD, path, AT_NO_AUTOMOUNT,
+	                 STATX_BASIC_STATS | STATX_BTIME, &stx);
+	if (sret != 0)
+		return sret;
+	/* copy into sp */;
+	sp->st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
+	sp->st_rdev = makedev(stx.stx_rdev_major, stx.stx_rdev_minor);
+	sp->st_ino = stx.stx_ino;
+	sp->st_nlink = stx.stx_nlink;
+	sp->st_mode = stx.stx_mode;
+	sp->st_uid = stx.stx_uid;
+	sp->st_gid = stx.stx_gid;
+	sp->st_size = stx.stx_size;
+	sp->st_blksize = stx.stx_blksize;
+	sp->st_blocks = stx.stx_blocks;
+	sp->st_atim.tv_sec = stx.stx_atime.tv_sec;
+	sp->st_atim.tv_nsec = stx.stx_atime.tv_nsec;
+	sp->st_mtim.tv_sec = stx.stx_mtime.tv_sec;
+	sp->st_mtim.tv_nsec = stx.stx_mtime.tv_nsec;
+	sp->st_ctim.tv_sec = stx.stx_ctime.tv_sec;
+	sp->st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
+	btime->tv_sec = stx.stx_btime.tv_sec;
+	btime->tv_nsec = stx.stx_btime.tv_nsec;
+	return 0;
+}
+#endif
+
 void
 do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
 {
 	char buf[4096];
 	struct stat sb;
 	struct stat *sp;
+#ifdef FTS_USES_STATX
+	struct timespec bts;
+#endif
 	const char *path, *pend;
 	char *all, *fmt;
 	ssize_t ret;
@@ -174,6 +210,9 @@ do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
 		plan->flags |= F_HAS_WARNED;
 	for (c = *fmt++; c; c = *fmt++) {
 		sp = entry->fts_statp;
+#ifdef FTS_USES_STATX
+		bts = ftsent_get_birthtime(entry);
+#endif
 		if (c != '%') {
 			putc(c, fout);
 			continue;
@@ -265,7 +304,7 @@ do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
 			break;
 		case 'Y': /* -type of file, following 'l' types L loop ? error */
 			if (S_ISLNK(sp->st_mode)) {
-				if (stat(entry->fts_accpath, &sb) != 0) {
+				if (stat_with_btime(entry->fts_accpath, &sb, &bts) != 0) {
 					switch (errno) {
 					case ELOOP:
 						putc('L', fout);
@@ -317,6 +356,10 @@ do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
 			fp_strftime(fout, sp->st_atime, *fmt++);
 			break;
 		case 'B': /* birth time with next char strftime format */
+#ifdef FTS_USES_STATX
+			if (bts.tv_sec != 0)
+				fp_strftime(fout, bts.tv_sec, *fmt);
+#endif
 			fmt++;
 			break;	/* blank on systems that don't support it */
 		case 'c': /* status change time ctime */

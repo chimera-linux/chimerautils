@@ -35,6 +35,7 @@
 #include <regex.h>
 #include <sys/mount.h>
 #include <sys/stat.h>
+#include <fts.h>
 
 /*
  * We need to build find during the bootstrap stage when building on a
@@ -48,7 +49,7 @@
 #else
 #define HAVE_STRUCT_STAT_ST_FLAGS 0
 #endif
-#if defined(st_birthtime) || defined(st_birthtimespec)
+#ifdef FTS_USES_STATX
 #define HAVE_STRUCT_STAT_ST_BIRTHTIME 1
 #else
 #define HAVE_STRUCT_STAT_ST_BIRTHTIME 0

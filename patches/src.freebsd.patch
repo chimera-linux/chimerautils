@@ -4393,18 +4393,30 @@
  #include <unistd.h>
 --- src.orig/coreutils/ls/cmp.c
 +++ src.freebsd/coreutils/ls/cmp.c
-@@ -130,7 +130,7 @@
+@@ -130,19 +130,19 @@
  int
  birthcmp(const FTSENT *a, const FTSENT *b)
  {
 -
-+#if 0
- 	if (b->fts_statp->st_birthtim.tv_sec >
- 	    a->fts_statp->st_birthtim.tv_sec)
+-	if (b->fts_statp->st_birthtim.tv_sec >
+-	    a->fts_statp->st_birthtim.tv_sec)
++#ifdef FTS_USES_STATX
++	struct timespec ta, tb;
++	ta = ftsent_get_birthtime(a);
++	tb = ftsent_get_birthtime(b);
++	if (tb.tv_sec > ta.tv_sec)
  		return (1);
-@@ -143,6 +143,7 @@
- 	if (b->fts_statp->st_birthtim.tv_nsec <
- 	    a->fts_statp->st_birthtim.tv_nsec)
+-	if (b->fts_statp->st_birthtim.tv_sec <
+-	    a->fts_statp->st_birthtim.tv_sec)
++	if (tb.tv_sec < ta.tv_sec)
+ 		return (-1);
+-	if (b->fts_statp->st_birthtim.tv_nsec >
+-	    a->fts_statp->st_birthtim.tv_nsec)
++	if (tb.tv_nsec > ta.tv_nsec)
+ 		return (1);
+-	if (b->fts_statp->st_birthtim.tv_nsec <
+-	    a->fts_statp->st_birthtim.tv_nsec)
++	if (tb.tv_nsec < ta.tv_nsec)
  		return (-1);
 +#endif
  	if (f_samesort)
@@ -4417,7 +4429,7 @@
  .Sh SYNOPSIS
  .Nm
 -.Op Fl ABCFGHILPRSTUWZabcdfghiklmnopqrstuvwxy1\&,
-+.Op Fl ABCFGHILPRSTWZabcdfghiklmnpqrstuvwxy1\&,
++.Op Fl ABCFGHILPRSTUWZabcdfghiklmnpqrstuvwxy1\&,
  .Op Fl -color Ns = Ns Ar when
  .Op Fl -group-directories Ns = Ns Ar order
  .Op Fl -group-directories-first
@@ -4440,14 +4452,10 @@
  and a vertical bar
  .Pq Ql \&|
  after each that is a
-@@ -184,17 +181,8 @@
- option gives even more control over the output format.
+@@ -188,13 +185,8 @@
+ Use time when file was created for sorting or printing.
  This option is not defined in
  .St -p1003.1-2008 .
--.It Fl U
--Use time when file was created for sorting or printing.
--This option is not defined in
--.St -p1003.1-2008 .
 -.It Fl W
 -Display whiteouts when scanning directories.
 -This option is not defined in
@@ -4459,7 +4467,7 @@
  This option is not defined in
  .St -p1003.1-2008 .
  .It Fl a
-@@ -344,15 +332,6 @@
+@@ -344,15 +336,6 @@
  or group name in a long
  .Pq Fl l
  output.
@@ -4475,7 +4483,7 @@
  .It Fl p
  Write a slash
  .Pq Ql /
-@@ -587,8 +566,6 @@
+@@ -587,8 +570,6 @@
  .Tn FIFO .
  .It Sy s
  Socket.
@@ -4484,7 +4492,7 @@
  .El
  .Pp
  The next three fields
-@@ -880,11 +857,10 @@
+@@ -880,11 +861,10 @@
  .Dl $ ls -l
  .Pp
  In addition to listing the contents of the current working directory in
@@ -4498,7 +4506,7 @@
  .Pp
  List the files in
  .Pa /var/log ,
-@@ -898,7 +874,6 @@
+@@ -898,7 +878,6 @@
  .St -p1003.2
  specification.
  .Sh SEE ALSO
@@ -4506,7 +4514,7 @@
  .Xr chmod 1 ,
  .Xr getfacl 1 ,
  .Xr sort 1 ,
-@@ -909,15 +884,14 @@
+@@ -909,15 +888,14 @@
  .Xr strmode 3 ,
  .Xr strverscmp 3 ,
  .Xr termcap 5 ,
@@ -4524,12 +4532,12 @@
  the
  .Nm
  utility conforms to
-@@ -925,7 +899,7 @@
+@@ -925,7 +903,7 @@
  and
  .St -p1003.1-2008 .
  The options
 -.Fl B , D , G , I , T , U , W , Z , b , h , v , w , y
-+.Fl B , D , G , I , T , Z , b , h , v , w , y
++.Fl B , D , G , I , T , U , Z , b , h , v , w , y
  ,
  .Fl ,
  .Fl -color
@@ -4572,7 +4580,7 @@
  #endif
  	while ((ch = getopt_long(argc, argv,
 -	    "+1ABCD:FGHILPRSTUWXZabcdfghiklmnopqrstuvwxy,", long_opts,
-+	    "+1ABCD:FGHILPRSTXZabcdfghiklmnpqrstuvwxy,", long_opts,
++	    "+1ABCD:FGHILPRSTUXZabcdfghiklmnpqrstuvwxy,", long_opts,
  	    NULL)) != -1) {
  		switch (ch) {
  		/*
@@ -4808,11 +4816,20 @@
  
  #ifdef COLORLS
  /* Most of these are taken from <sys/stat.h> */
-@@ -224,17 +226,27 @@
+@@ -221,20 +223,36 @@
+ 	}
+ 
+ 	for (p = dp->list; p; p = p->fts_link) {
++#ifdef FTS_USES_STATX
++		struct timespec birthtime;
++#endif
  		if (IS_NOPRINT(p))
  			continue;
  		sp = p->fts_statp;
 -		if (f_inode)
++#ifdef FTS_USES_STATX
++		birthtime = ftsent_get_birthtime(p);
++#endif
 +		if (f_inode && IS_ERRPRINT(p))
 +			(void)printf("%*s ", dp->s_inode, "?");
 +		else if (f_inode)
@@ -4841,7 +4858,7 @@
  		if (!f_sowner)
  			(void)printf("%-*s ", dp->s_user, np->user);
  		(void)printf("%-*s ", dp->s_group, np->group);
-@@ -242,14 +254,18 @@
+@@ -242,14 +260,22 @@
  			(void)printf("%-*s ", dp->s_flags, np->flags);
  		if (f_label)
  			(void)printf("%-*s ", dp->s_label, np->label);
@@ -4859,11 +4876,15 @@
  			printtime(sp->st_atime);
  		else if (f_birthtime)
 -			printtime(sp->st_birthtime);
++#ifdef FTS_USES_STATX
++			printtime(birthtime.tv_sec);
++#else
 +			printtime(sp->st_ctime);
++#endif
  		else if (f_statustime)
  			printtime(sp->st_ctime);
  		else
-@@ -436,8 +452,8 @@
+@@ -436,8 +462,8 @@
  static void
  ls_strftime(char *str, size_t len, const char *fmt, const struct tm *tm)
  {
@@ -4874,7 +4895,7 @@
  
  	if ((posb = strstr(fmt, "%b")) != NULL) {
  		if (month_max_size == 0) {
-@@ -454,7 +470,7 @@
+@@ -454,7 +480,7 @@
  		}
  	}
  	if (tm != NULL)
@@ -4883,7 +4904,7 @@
  	else
  		strlcpy(str, "bad date val", len);
  }
-@@ -467,8 +483,11 @@
+@@ -467,8 +493,11 @@
  	const char *format;
  	static int d_first = -1;
  
@@ -4897,7 +4918,7 @@
  	if (now == 0)
  		now = time(NULL);
  
-@@ -514,9 +533,6 @@
+@@ -514,9 +543,6 @@
  	case S_IFSOCK:
  		(void)putchar('=');
  		return (1);
@@ -4907,7 +4928,7 @@
  	default:
  		break;
  	}
-@@ -774,18 +790,15 @@
+@@ -774,18 +800,15 @@
  aclmode(char *buf, const FTSENT *p)
  {
  	char name[MAXPATHLEN + 1];
@@ -4932,7 +4953,7 @@
  		return;
  
  	if (previous_dev == p->fts_statp->st_dev && supports_acls == 0)
-@@ -800,7 +813,7 @@
+@@ -800,7 +823,7 @@
  	if (previous_dev != p->fts_statp->st_dev) {
  		previous_dev = p->fts_statp->st_dev;
  		supports_acls = 0;
@@ -4941,7 +4962,7 @@
  		ret = lpathconf(name, _PC_ACL_NFS4);
  		if (ret > 0) {
  			type = ACL_TYPE_NFS4;
-@@ -809,30 +822,24 @@
+@@ -809,30 +832,24 @@
  			warn("%s", name);
  			return;
  		}
@@ -7032,11 +7053,12 @@
  .Op Fl f Ar format | Fl l | r | s | x
  .Op Fl t Ar timefmt
  .Op Ar
-@@ -90,11 +90,9 @@
+@@ -90,11 +90,10 @@
  .Fa st_atime ,
  .Fa st_mtime ,
  .Fa st_ctime ,
 -.Fa st_birthtime ,
++.Fa stx_btime ,
  .Fa st_blksize ,
 -.Fa st_blocks ,
  and
@@ -7045,7 +7067,7 @@
  fields, in that order.
  .Pp
  The options are as follows:
-@@ -124,13 +122,6 @@
+@@ -124,13 +123,6 @@
  .Fl F
  implies
  .Fl l .
@@ -7059,7 +7081,7 @@
  .It Fl h
  For each file argument, print a line consisting of a comma-separated
  list of holes, a space, and the file name.
-@@ -221,7 +212,7 @@
+@@ -221,7 +213,7 @@
  .It Fl t Ar timefmt
  Display timestamps using the specified format.
  This format is
@@ -7068,7 +7090,7 @@
  .Xr strftime 3 .
  .It Fl x
  Display information in a more verbose way as known from some
-@@ -307,16 +298,11 @@
+@@ -307,16 +299,11 @@
  May be used in combination with:
  .Bl -tag -width indent
  .It Cm amc
@@ -7086,23 +7108,16 @@
  .It Cm gu
  Display group or user name.
  .It Cm p
-@@ -435,12 +421,11 @@
- .It Cm r
- Device number for character and block device special files
- .Pq Fa st_rdev .
--.It Cm a , m , c , B
-+.It Cm a , m , c
- The time
+@@ -440,7 +427,7 @@
  .Ar file
--was last accessed or modified, or when the inode was last changed, or
--the birth time of the inode
+ was last accessed or modified, or when the inode was last changed, or
+ the birth time of the inode
 -.Pq Fa st_atime , st_mtime , st_ctime , st_birthtime .
-+was last accessed or modified or when the inode was last changed
-+.Pq Fa st_atime , st_mtime , st_ctime .
++.Pq Fa st_atime , st_mtime , st_ctime , stx_btime .
  .It Cm z
  The size of
  .Ar file
-@@ -453,9 +438,6 @@
+@@ -453,9 +440,6 @@
  .It Cm k
  Optimal file system I/O operation block size
  .Pq Fa st_blksize .
@@ -11264,43 +11279,7 @@
  creat_f	c_Xmin;
 --- src.orig/findutils/find/find.1
 +++ src.freebsd/findutils/find/find.1
-@@ -199,35 +199,6 @@
- and neither means
- .Dq exactly n .
- .Bl -tag -width indent
--.It Ic -Bmin Ar n
--True if the difference between the time of a file's inode creation
--and the time
--.Nm
--was started, rounded up to the next full minute, is
--.Ar n
--minutes.
--.It Ic -Bnewer Ar file
--Same as
--.Ic -newerBm .
--.It Ic -Btime Ar n Ns Op Cm smhdw
--If no units are specified, this primary evaluates to
--true if the difference between the time of a file's inode creation
--and the time
--.Nm
--was started, rounded up to the next full 24-hour period, is
--.Ar n
--24-hour periods.
--.Pp
--If units are specified, this primary evaluates to
--true if the difference between the time of a file's inode creation
--and the time
--.Nm
--was started is exactly
--.Ar n
--units.
--Please refer to the
--.Ic -atime
--primary description for information on supported time units.
- .It Ic -acl
- May be used in conjunction with other primaries to locate
- files with extended ACLs.
-@@ -471,50 +442,6 @@
+@@ -471,50 +471,6 @@
  .Xr access 2
  system call, and so can be fooled by NFS servers which do UID mapping (or root-squashing).
  This is a GNU find extension.
@@ -11351,7 +11330,7 @@
  .It Ic -fprint Ar filename
  This primary always evaluates to true.
  This creates
-@@ -544,15 +471,9 @@
+@@ -544,15 +500,9 @@
  .Xr lsvfs 1
  command can be used to find out the types of file systems
  that are available on the system.
@@ -11370,7 +11349,7 @@
  .It Ic -gid Ar gname
  The same thing as
  .Ic -group Ar gname
-@@ -982,17 +903,6 @@
+@@ -982,17 +932,6 @@
  Matches files which have the specified
  .Ar xattr
  extended attribute set.
@@ -11388,7 +11367,7 @@
  .El
  .Sh OPERATORS
  The primaries may be combined using the following operators.
-@@ -1255,7 +1165,6 @@
+@@ -1255,7 +1194,6 @@
  .Sx STANDARDS
  section below for details.
  .Sh SEE ALSO
@@ -11396,17 +11375,6 @@
  .Xr chmod 1 ,
  .Xr locate 1 ,
  .Xr lsvfs 1 ,
-@@ -1288,9 +1197,7 @@
- .Ic -amin , -anewer , -cmin , -cnewer , -delete , -empty , -fstype ,
- .Ic -iname , -inum , -iregex , -ls , -maxdepth , -mindepth , -mmin ,
- .Ic -not , -path , -print0 , -regex , -sparse
--and all of the
--.Fl B*
--birthtime related primaries are extensions to
-+are extensions to
- .St -p1003.1-2001 .
- .Pp
- Historically, the
 --- src.orig/findutils/find/find.c
 +++ src.freebsd/findutils/find/find.c
 @@ -45,7 +45,7 @@
@@ -11436,7 +11404,21 @@
  }
 --- src.orig/findutils/find/find.h
 +++ src.freebsd/findutils/find/find.h
-@@ -53,11 +53,7 @@
+@@ -35,6 +35,7 @@
+ #include <regex.h>
+ #include <sys/mount.h>
+ #include <sys/stat.h>
++#include <fts.h>
+ 
+ /*
+  * We need to build find during the bootstrap stage when building on a
+@@ -48,16 +49,12 @@
+ #else
+ #define HAVE_STRUCT_STAT_ST_FLAGS 0
+ #endif
+-#if defined(st_birthtime) || defined(st_birthtimespec)
++#ifdef FTS_USES_STATX
+ #define HAVE_STRUCT_STAT_ST_BIRTHTIME 1
  #else
  #define HAVE_STRUCT_STAT_ST_BIRTHTIME 0
  #endif
@@ -11450,7 +11432,7 @@
  struct _plandata;
 --- src.orig/findutils/find/function.c
 +++ src.freebsd/findutils/find/function.c
-@@ -33,13 +33,15 @@
+@@ -33,17 +33,20 @@
   */
  
  #include <sys/param.h>
@@ -11468,7 +11450,12 @@
  
  #include <dirent.h>
  #include <err.h>
-@@ -59,7 +61,9 @@
+ #include <errno.h>
++#include <fcntl.h>
+ #include <fnmatch.h>
+ #include <fts.h>
+ #include <grp.h>
+@@ -59,7 +62,9 @@
  
  #include "find.h"
  
@@ -11479,7 +11466,30 @@
  
  static PLAN *palloc(OPTION *);
  static long long find_parsenum(PLAN *, const char *, char *, char *);
-@@ -370,12 +374,11 @@
+@@ -258,7 +263,8 @@
+ 		    60 - 1) / 60, plan->t_data.tv_sec);
+ #if HAVE_STRUCT_STAT_ST_BIRTHTIME
+ 	} else if (plan->flags & F_TIME_B) {
+-		COMPARE((now - entry->fts_statp->st_birthtime +
++		struct timespec bts = ftsent_get_birthtime(entry);
++		COMPARE((now - bts.tv_sec +
+ 		    60 - 1) / 60, plan->t_data.tv_sec);
+ #endif
+ 	} else {
+@@ -302,8 +308,10 @@
+ 	if (plan->flags & F_TIME_A)
+ 		xtime = entry->fts_statp->st_atime;
+ #if HAVE_STRUCT_STAT_ST_BIRTHTIME
+-	else if (plan->flags & F_TIME_B)
+-		xtime = entry->fts_statp->st_birthtime;
++	else if (plan->flags & F_TIME_B) {
++		struct timespec bts = ftsent_get_birthtime(entry);
++		xtime = bts.tv_sec;
++	}
+ #endif
+ 	else if (plan->flags & F_TIME_C)
+ 		xtime = entry->fts_statp->st_ctime;
+@@ -370,12 +378,11 @@
  int
  f_acl(PLAN *plan __unused, FTSENT *entry)
  {
@@ -11494,7 +11504,7 @@
  	ret = pathconf(entry->fts_accpath, _PC_ACL_NFS4);
  	if (ret > 0) {
  		acl_supported = 1;
-@@ -384,16 +387,17 @@
+@@ -384,16 +391,17 @@
  		warn("%s", entry->fts_accpath);
  		return (0);
  	}
@@ -11515,7 +11525,7 @@
  	if (acl_supported == 0)
  		return (0);
  
-@@ -411,6 +415,8 @@
+@@ -411,6 +419,8 @@
  	if (trivial)
  		return (0);
  	return (1);
@@ -11524,7 +11534,7 @@
  }
  #endif
  
-@@ -914,6 +920,120 @@
+@@ -914,6 +924,120 @@
  }
  
  #if HAVE_STRUCT_STATFS_F_FSTYPENAME
@@ -11645,7 +11655,7 @@
  /*
   * -fstype functions --
   *
-@@ -924,9 +1044,9 @@
+@@ -924,9 +1048,9 @@
  {
  	static dev_t curdev;	/* need a guaranteed illegal dev value */
  	static int first = 1;
@@ -11658,7 +11668,7 @@
  	char *p, save[2] = {0,0};
  
  	if ((plan->flags & F_MTMASK) == F_MTUNKNOWN)
-@@ -937,7 +1057,7 @@
+@@ -937,7 +1061,7 @@
  		curdev = entry->fts_statp->st_dev;
  
  		/*
@@ -11667,7 +11677,7 @@
  		 * not where it points.
  		 */
  		if (entry->fts_info == FTS_SL ||
-@@ -953,7 +1073,7 @@
+@@ -953,7 +1077,7 @@
  		} else
  			p = NULL;
  
@@ -11676,7 +11686,7 @@
  			if (!ignore_readdir_race || errno != ENOENT) {
  				warn("statfs: %s", entry->fts_accpath);
  				exitstatus = 1;
-@@ -972,14 +1092,14 @@
+@@ -972,14 +1096,14 @@
  		 * Further tests may need both of these values, so
  		 * always copy both of them.
  		 */
@@ -11694,7 +11704,7 @@
  	default:
  		abort();
  	}
-@@ -996,17 +1116,10 @@
+@@ -996,17 +1120,10 @@
  
  	new = palloc(option);
  	switch (*fsname) {
@@ -11713,7 +11723,68 @@
  			return new;
  		}
  		break;
-@@ -1301,7 +1414,9 @@
+@@ -1243,7 +1360,7 @@
+ 	else if (plan->flags & F_TIME_A)
+ 		ft = entry->fts_statp->st_atim;
+ 	else if (plan->flags & F_TIME_B)
+-		ft = entry->fts_statp->st_birthtim;
++		ft = ftsent_get_birthtime(entry);
+ #endif
+ 	else
+ 		ft = entry->fts_statp->st_mtim;
+@@ -1257,8 +1374,10 @@
+ {
+ 	char *fn_or_tspec;
+ 	PLAN *new;
+-	struct stat sb;
++	struct statx sx;
+ 	int error;
++	int sxflags = AT_NO_AUTOMOUNT;
++	unsigned int sxmask = STATX_ATIME | STATX_MTIME | STATX_CTIME | STATX_BTIME;
+ 
+ 	fn_or_tspec = nextarg(option, argvp);
+ 	ftsoptions &= ~FTS_NOSTAT;
+@@ -1273,21 +1392,29 @@
+ 		new->t_data.tv_nsec = 999999999;
+ 	} else {
+ 		if (ftsoptions & FTS_PHYSICAL)
+-			error = lstat(fn_or_tspec, &sb);
++			error = statx(AT_FDCWD, fn_or_tspec,
++			              sxflags | AT_SYMLINK_NOFOLLOW, sxmask, &sx);
+ 		else
+-			error = stat(fn_or_tspec, &sb);
++			error = statx(AT_FDCWD, fn_or_tspec, sxflags, sxmask, &sx);
+ 		if (error != 0)
+ 			err(1, "%s", fn_or_tspec);
+-		if (option->flags & F_TIME2_C)
+-			new->t_data = sb.st_ctim;
+-		else if (option->flags & F_TIME2_A)
+-			new->t_data = sb.st_atim;
++		if (option->flags & F_TIME2_C) {
++			new->t_data.tv_sec = sx.stx_ctime.tv_sec;
++			new->t_data.tv_nsec = sx.stx_ctime.tv_nsec;
++		} else if (option->flags & F_TIME2_A) {
++			new->t_data.tv_sec = sx.stx_atime.tv_sec;
++			new->t_data.tv_nsec = sx.stx_atime.tv_nsec;
++		}
+ #if HAVE_STRUCT_STAT_ST_BIRTHTIME
+-		else if (option->flags & F_TIME2_B)
+-			new->t_data = sb.st_birthtim;
++		else if (option->flags & F_TIME2_B) {
++			new->t_data.tv_sec = sx.stx_btime.tv_sec;
++			new->t_data.tv_nsec = sx.stx_btime.tv_nsec;
++		}
+ #endif
+-		else
+-			new->t_data = sb.st_mtim;
++		else {
++			new->t_data.tv_sec = sx.stx_mtime.tv_sec;
++			new->t_data.tv_nsec = sx.stx_mtime.tv_nsec;
++		}
+ 	}
+ 	return new;
+ }
+@@ -1301,7 +1428,9 @@
  int
  f_nogroup(PLAN *plan __unused, FTSENT *entry)
  {
@@ -11724,7 +11795,7 @@
  }
  
  PLAN *
-@@ -1321,7 +1436,9 @@
+@@ -1321,7 +1450,9 @@
  int
  f_nouser(PLAN *plan __unused, FTSENT *entry)
  {
@@ -11735,7 +11806,7 @@
  }
  
  PLAN *
-@@ -1771,32 +1888,12 @@
+@@ -1771,32 +1902,12 @@
  	if (entry->fts_level == 0 && (ftsoptions & FTS_COMFOLLOW) != 0)
  		deref_link = true;
  
@@ -11771,7 +11842,7 @@
  }
  
  /*
-@@ -1811,39 +1908,20 @@
+@@ -1811,39 +1922,20 @@
  {
  	const char *aname;
  	bool deref_link;
@@ -11903,7 +11974,15 @@
   *	Replace occurrences of {} in s1 with s2 and return the result string.
 --- src.orig/findutils/find/printf.c
 +++ src.freebsd/findutils/find/printf.c
-@@ -11,6 +11,7 @@
+@@ -5,12 +5,15 @@
+  */
+ 
+ #include <sys/types.h>
++#include <sys/sysmacros.h>
+ 
+ #include <err.h>
+ #include <errno.h>
++#include <fcntl.h>
  #include <fts.h>
  #include <grp.h>
  #include <pwd.h>
@@ -11911,7 +11990,64 @@
  #include <stdbool.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -205,15 +206,21 @@
+@@ -155,12 +158,46 @@
+ 	fputs(buffer, fp);
+ }
+ 
++#ifdef FTS_USES_STATX
++static int stat_with_btime(const char *path, struct stat *sp, struct timespec *btime)
++{
++	struct statx stx;
++	int sret = statx(AT_FDCWD, path, AT_NO_AUTOMOUNT,
++	                 STATX_BASIC_STATS | STATX_BTIME, &stx);
++	if (sret != 0)
++		return sret;
++	/* copy into sp */;
++	sp->st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
++	sp->st_rdev = makedev(stx.stx_rdev_major, stx.stx_rdev_minor);
++	sp->st_ino = stx.stx_ino;
++	sp->st_nlink = stx.stx_nlink;
++	sp->st_mode = stx.stx_mode;
++	sp->st_uid = stx.stx_uid;
++	sp->st_gid = stx.stx_gid;
++	sp->st_size = stx.stx_size;
++	sp->st_blksize = stx.stx_blksize;
++	sp->st_blocks = stx.stx_blocks;
++	sp->st_atim.tv_sec = stx.stx_atime.tv_sec;
++	sp->st_atim.tv_nsec = stx.stx_atime.tv_nsec;
++	sp->st_mtim.tv_sec = stx.stx_mtime.tv_sec;
++	sp->st_mtim.tv_nsec = stx.stx_mtime.tv_nsec;
++	sp->st_ctim.tv_sec = stx.stx_ctime.tv_sec;
++	sp->st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
++	btime->tv_sec = stx.stx_btime.tv_sec;
++	btime->tv_nsec = stx.stx_btime.tv_nsec;
++	return 0;
++}
++#endif
++
+ void
+ do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
+ {
+ 	char buf[4096];
+ 	struct stat sb;
+ 	struct stat *sp;
++#ifdef FTS_USES_STATX
++	struct timespec bts;
++#endif
+ 	const char *path, *pend;
+ 	char *all, *fmt;
+ 	ssize_t ret;
+@@ -173,6 +210,9 @@
+ 		plan->flags |= F_HAS_WARNED;
+ 	for (c = *fmt++; c; c = *fmt++) {
+ 		sp = entry->fts_statp;
++#ifdef FTS_USES_STATX
++		bts = ftsent_get_birthtime(entry);
++#endif
+ 		if (c != '%') {
+ 			putc(c, fout);
+ 			continue;
+@@ -205,15 +245,21 @@
  			errx(1, "%%%c is unimplemented", c);
  		case 'H': /* Command line arg -- HOW? */
  			errx(1, "%%%c is unimplemented", c);
@@ -11937,7 +12073,7 @@
  		case 'U': /* uid numeric */
  			fprintf(fout, "%d", sp->st_uid);
  			break;
-@@ -238,7 +245,7 @@
+@@ -238,7 +284,7 @@
  			    (float)sp->st_blocks * 512 / (float)sp->st_size);
  			break;
  		case 'd': /* Depth in tree */
@@ -11946,7 +12082,16 @@
  			break;
  		case 'D': /* device number */
  			fprintf(fout, "%ju", (uintmax_t)sp->st_dev);
-@@ -298,9 +305,6 @@
+@@ -258,7 +304,7 @@
+ 			break;
+ 		case 'Y': /* -type of file, following 'l' types L loop ? error */
+ 			if (S_ISLNK(sp->st_mode)) {
+-				if (stat(entry->fts_accpath, &sb) != 0) {
++				if (stat_with_btime(entry->fts_accpath, &sb, &bts) != 0) {
+ 					switch (errno) {
+ 					case ELOOP:
+ 						putc('L', fout);
+@@ -298,9 +344,6 @@
  			case S_IFSOCK:
  				putc('s', fout);
  				break;
@@ -11956,17 +12101,19 @@
  			default:
  				putc('U', fout);
  				break;
-@@ -313,10 +317,6 @@
+@@ -313,9 +356,9 @@
  			fp_strftime(fout, sp->st_atime, *fmt++);
  			break;
  		case 'B': /* birth time with next char strftime format */
 -#ifdef HAVE_STRUCT_STAT_ST_BIRTHTIME
 -			if (sp->st_birthtime != 0)
 -				fp_strftime(fout, sp->st_birthtime, *fmt);
--#endif
++#ifdef FTS_USES_STATX
++			if (bts.tv_sec != 0)
++				fp_strftime(fout, bts.tv_sec, *fmt);
+ #endif
  			fmt++;
  			break;	/* blank on systems that don't support it */
- 		case 'c': /* status change time ctime */
 --- src.orig/findutils/locate/bigram/locate.bigram.c
 +++ src.freebsd/findutils/locate/bigram/locate.bigram.c
 @@ -35,10 +35,12 @@
@@ -12713,7 +12860,7 @@
  	struct s_zstate *zs;
 --- src.orig/include/fts.h
 +++ src.freebsd/include/fts.h
-@@ -32,7 +32,13 @@
+@@ -32,29 +32,33 @@
  #ifndef	_FTS_H_
  #define	_FTS_H_
  
@@ -12721,14 +12868,20 @@
 +#ifdef _CHIMERAUTILS_BUILD
 +#include "config-compat.h"
 +#endif
-+ 
-+#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
-+ 
-+#include <sys/types.h>
  
++#include <time.h>
++
++#if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
++
++#include <sys/types.h>
++#include <sys/stat.h>
++#include <string.h>
++
++#define FTS_USES_STATX
++
  typedef struct _ftsent FTSENT;
  
-@@ -40,21 +46,13 @@
+ typedef struct {
  	FTSENT *fts_cur;		/* current node */
  	FTSENT *fts_child;		/* linked list of children */
  	FTSENT **fts_array;		/* sort array */
@@ -12755,7 +12908,7 @@
  
  /* valid for fts_open() */
  #define	FTS_COMFOLLOW	0x000001	/* follow command line symlinks */
-@@ -64,9 +62,6 @@
+@@ -64,9 +68,6 @@
  #define	FTS_PHYSICAL	0x000010	/* physical walk */
  #define	FTS_SEEDOT	0x000020	/* return dot and dot-dot */
  #define	FTS_XDEV	0x000040	/* don't cross devices */
@@ -12765,7 +12918,7 @@
  #define FTS_COMFOLLOWDIR 0x00400	/* like COMFOLLOW but directories only */
  #define FTS_NOSTAT_TYPE	0x000800	/* like NOSTAT but use d_type */
  #define	FTS_OPTIONMASK	0x000cff	/* valid user option mask */
-@@ -76,7 +71,6 @@
+@@ -76,7 +77,6 @@
  
  /* internal use only */
  #define	FTS_STOP	0x010000	/* unrecoverable error */
@@ -12773,7 +12926,7 @@
  	int fts_options;		/* fts_open options, global flags */
  	void *fts_clientptr;		/* thunk for sort function */
  } FTS;
-@@ -92,12 +86,12 @@
+@@ -92,12 +92,12 @@
  	char *fts_path;			/* root path */
  	int fts_errno;			/* errno for this node */
  	int fts_symfd;			/* fd for symlink */
@@ -12791,7 +12944,7 @@
  
  #define	FTS_ROOTPARENTLEVEL	-1
  #define	FTS_ROOTLEVEL		 0
-@@ -116,12 +110,16 @@
+@@ -116,12 +116,16 @@
  #define	FTS_NSOK	11		/* no stat(2) requested */
  #define	FTS_SL		12		/* symbolic link */
  #define	FTS_SLNONE	13		/* symbolic link without target */
@@ -12808,7 +12961,7 @@
  	unsigned fts_flags;		/* private flags for FTSENT structure */
  
  #define	FTS_AGAIN	 1		/* read node again */
-@@ -135,9 +133,10 @@
+@@ -135,9 +139,10 @@
  	FTS *fts_fts;			/* back pointer to main FTS */
  };
  
@@ -12821,7 +12974,7 @@
  FTSENT	*fts_children(FTS *, int);
  int	 fts_close(FTS *);
  void	*fts_get_clientptr(FTS *);
-@@ -145,14 +144,17 @@
+@@ -145,14 +150,23 @@
  FTS	*fts_get_stream(FTSENT *);
  #define	 fts_get_stream(ftsent)	((ftsent)->fts_fts)
  FTS	*fts_open(char * const *, int,
@@ -12835,6 +12988,12 @@
  int	 fts_set(FTS *, FTSENT *, int);
  void	 fts_set_clientptr(FTS *, void *);
 -__END_DECLS
++
++static inline struct timespec ftsent_get_birthtime(const FTSENT *ent) {
++	struct timespec ret;
++	memcpy(&ret, ent->fts_statp + 1, sizeof(ret));
++	return ret;
++}
 +
 +#ifdef __cplusplus
 +}
@@ -19712,7 +19871,7 @@
  .Ft FTSENT *
 --- src.orig/util/fts.c
 +++ src.freebsd/util/fts.c
-@@ -31,10 +31,10 @@
+@@ -31,10 +31,11 @@
   * $OpenBSD: fts.c,v 1.22 1999/10/03 19:22:22 millert Exp $
   */
  
@@ -19721,10 +19880,11 @@
  #include <sys/mount.h>
  #include <sys/stat.h>
 +#include <sys/vfs.h>
++#include <sys/sysmacros.h>
  
  #include <dirent.h>
  #include <errno.h>
-@@ -44,23 +44,9 @@
+@@ -44,23 +45,9 @@
  #include <stdlib.h>
  #include <string.h>
  #include <unistd.h>
@@ -19749,7 +19909,7 @@
  static FTSENT	*fts_alloc(FTS *, char *, size_t);
  static FTSENT	*fts_build(FTS *, int);
  static void	 fts_lfree(FTSENT *);
-@@ -71,7 +57,6 @@
+@@ -71,7 +58,6 @@
  static FTSENT	*fts_sort(FTS *, FTSENT *, size_t);
  static int	 fts_stat(FTS *, FTSENT *, int, int);
  static int	 fts_safe_changedir(FTS *, FTSENT *, int, char *);
@@ -19757,7 +19917,7 @@
  
  #define	ISDOT(a)	(a[0] == '.' && (!a[1] || (a[1] == '.' && !a[2])))
  
-@@ -98,6 +83,7 @@
+@@ -98,6 +84,7 @@
  	int		ftsp_linksreliable;
  };
  
@@ -19765,7 +19925,7 @@
  /*
   * The "FTS_NOSTAT" option can avoid a lot of calls to stat(2) if it
   * knows that a directory could not possibly have subdirectories.  This
-@@ -113,7 +99,19 @@
+@@ -113,7 +100,19 @@
  	"ext2fs",
  	0
  };
@@ -19785,7 +19945,7 @@
  static FTS *
  __fts_open(FTS *sp, char * const *argv)
  {
-@@ -198,7 +196,7 @@
+@@ -198,7 +197,7 @@
  	 * descriptor we run anyway, just more slowly.
  	 */
  	if (!ISSET(FTS_NOCHDIR) &&
@@ -19794,7 +19954,7 @@
  		SET(FTS_NOCHDIR);
  
  	return (sp);
-@@ -212,7 +210,7 @@
+@@ -212,7 +211,7 @@
  
  FTS *
  fts_open(char * const *argv, int options,
@@ -19803,7 +19963,7 @@
  {
  	struct _fts_private *priv;
  	FTS *sp;
-@@ -239,10 +237,11 @@
+@@ -239,10 +238,11 @@
  	return (__fts_open(sp, argv));
  }
  
@@ -19816,7 +19976,7 @@
  #else
  FTS *
  fts_open_b(char * const *argv, int options, fts_block compar)
-@@ -300,6 +299,7 @@
+@@ -300,6 +300,7 @@
  	}
  	return (sp);
  }
@@ -19824,7 +19984,7 @@
  
  static void
  fts_load(FTS *sp, FTSENT *p)
-@@ -352,21 +352,10 @@
+@@ -352,21 +353,10 @@
  		free(sp->fts_array);
  	free(sp->fts_path);
  
@@ -19847,7 +20007,7 @@
  
  		/* Set errno and return. */
  		if (saved_errno != 0) {
-@@ -425,7 +414,7 @@
+@@ -425,7 +415,7 @@
  	    (p->fts_info == FTS_SL || p->fts_info == FTS_SLNONE)) {
  		p->fts_info = fts_stat(sp, p, 1, -1);
  		if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
@@ -19856,7 +20016,7 @@
  			    0)) < 0) {
  				p->fts_errno = errno;
  				p->fts_info = FTS_ERR;
-@@ -441,7 +430,7 @@
+@@ -441,7 +431,7 @@
  		if (instr == FTS_SKIP ||
  		    (ISSET(FTS_XDEV) && p->fts_dev != sp->fts_dev)) {
  			if (p->fts_flags & FTS_SYMFOLLOW)
@@ -19865,7 +20025,7 @@
  			if (sp->fts_child) {
  				fts_lfree(sp->fts_child);
  				sp->fts_child = NULL;
-@@ -518,7 +507,7 @@
+@@ -518,7 +508,7 @@
  			p->fts_info = fts_stat(sp, p, 1, -1);
  			if (p->fts_info == FTS_D && !ISSET(FTS_NOCHDIR)) {
  				if ((p->fts_symfd =
@@ -19874,7 +20034,7 @@
  					p->fts_errno = errno;
  					p->fts_info = FTS_ERR;
  				} else
-@@ -565,12 +554,12 @@
+@@ -565,12 +555,12 @@
  	} else if (p->fts_flags & FTS_SYMFOLLOW) {
  		if (FCHDIR(sp, p->fts_symfd)) {
  			saved_errno = errno;
@@ -19889,7 +20049,7 @@
  	} else if (!(p->fts_flags & FTS_DONTCHDIR) &&
  	    fts_safe_changedir(sp, p->fts_parent, -1, "..")) {
  		SET(FTS_STOP);
-@@ -591,6 +580,7 @@
+@@ -591,6 +581,7 @@
  int
  fts_set(FTS *sp, FTSENT *p, int instr)
  {
@@ -19897,7 +20057,7 @@
  	if (instr != 0 && instr != FTS_AGAIN && instr != FTS_FOLLOW &&
  	    instr != FTS_NOINSTR && instr != FTS_SKIP) {
  		errno = EINVAL;
-@@ -657,14 +647,14 @@
+@@ -657,14 +648,14 @@
  	    ISSET(FTS_NOCHDIR))
  		return (sp->fts_child = fts_build(sp, instr));
  
@@ -19914,7 +20074,7 @@
  	errno = serrno;
  	if (rc < 0)
  		return (NULL);
-@@ -733,8 +723,7 @@
+@@ -733,8 +724,7 @@
  	DIR *dirp;
  	void *oldaddr;
  	char *cp;
@@ -19924,7 +20084,7 @@
  	long level;
  	long nlinks;	/* has to be signed because -1 is a magic value */
  	size_t dnamlen, len, maxlen, nitems;
-@@ -746,11 +735,7 @@
+@@ -746,11 +736,7 @@
  	 * Open the directory for reading.  If this fails, we're done.
  	 * If being called from fts_read, set the fts_info field.
  	 */
@@ -19937,7 +20097,7 @@
  		if (type == BREAD) {
  			cur->fts_info = FTS_DNR;
  			cur->fts_errno = errno;
-@@ -768,10 +753,7 @@
+@@ -768,10 +754,7 @@
  		/* Be quiet about nostat, GCC. */
  		nostat = 0;
  	} else if (ISSET(FTS_NOSTAT) && ISSET(FTS_PHYSICAL)) {
@@ -19949,7 +20109,7 @@
  		nostat = 1;
  	} else {
  		nlinks = -1;
-@@ -800,7 +782,7 @@
+@@ -800,7 +783,7 @@
  	 */
  	cderrno = 0;
  	if (nlinks || type == BREAD) {
@@ -19958,7 +20118,7 @@
  			if (nlinks && type == BREAD)
  				cur->fts_errno = errno;
  			cur->fts_flags |= FTS_DONTCHDIR;
-@@ -839,7 +821,11 @@
+@@ -839,7 +822,11 @@
  	readdir_errno = 0;
  	for (head = tail = NULL, nitems = 0;
  	    (dp = fts_safe_readdir(dirp, &readdir_errno));) {
@@ -19970,7 +20130,7 @@
  		if (!ISSET(FTS_SEEDOT) && ISDOT(dp->d_name))
  			continue;
  
-@@ -876,9 +862,6 @@
+@@ -876,9 +863,6 @@
  		p->fts_parent = sp->fts_cur;
  		p->fts_pathlen = len + dnamlen;
  
@@ -19980,7 +20140,7 @@
  		if (cderrno) {
  			if (nlinks) {
  				p->fts_info = FTS_NS;
-@@ -896,7 +879,7 @@
+@@ -896,7 +880,7 @@
  			if (ISSET(FTS_NOCHDIR)) {
  				p->fts_accpath = p->fts_path;
  				memmove(cp, p->fts_name, p->fts_namelen + 1);
@@ -19989,7 +20149,7 @@
  			} else {
  				p->fts_accpath = p->fts_name;
  				p->fts_info = fts_stat(sp, p, 0, -1);
-@@ -921,9 +904,6 @@
+@@ -921,9 +905,6 @@
  			case DT_LNK:
  				p->fts_info = FTS_SL;
  				break;
@@ -19999,10 +20159,59 @@
  			}
  		}
  
-@@ -1015,15 +995,6 @@
- 	/* If user needs stat info, stat buffer already allocated. */
- 	sbp = ISSET(FTS_NOSTAT) ? &sb : p->fts_statp;
+@@ -996,12 +977,46 @@
+ }
  
+ static int
++ftstatx(int dfd, const char *path, struct stat *sp, struct timespec *btime, int flags)
++{
++	struct statx stx;
++	struct timespec bts;
++	int sret = statx(dfd, path, flags | AT_NO_AUTOMOUNT,
++	                 STATX_BASIC_STATS | STATX_BTIME, &stx);
++	if (sret != 0)
++		return sret;
++	/* copy into sp */;
++	sp->st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
++	sp->st_rdev = makedev(stx.stx_rdev_major, stx.stx_rdev_minor);
++	sp->st_ino = stx.stx_ino;
++	sp->st_nlink = stx.stx_nlink;
++	sp->st_mode = stx.stx_mode;
++	sp->st_uid = stx.stx_uid;
++	sp->st_gid = stx.stx_gid;
++	sp->st_size = stx.stx_size;
++	sp->st_blksize = stx.stx_blksize;
++	sp->st_blocks = stx.stx_blocks;
++	sp->st_atim.tv_sec = stx.stx_atime.tv_sec;
++	sp->st_atim.tv_nsec = stx.stx_atime.tv_nsec;
++	sp->st_mtim.tv_sec = stx.stx_mtime.tv_sec;
++	sp->st_mtim.tv_nsec = stx.stx_mtime.tv_nsec;
++	sp->st_ctim.tv_sec = stx.stx_ctime.tv_sec;
++	sp->st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
++	/* store birth time separately as an internal detail */
++	bts.tv_sec = stx.stx_btime.tv_sec;
++	bts.tv_nsec = stx.stx_btime.tv_nsec;
++	memcpy(btime, &bts, sizeof(bts));
++	return 0;
++}
++
++static int
+ fts_stat(FTS *sp, FTSENT *p, int follow, int dfd)
+ {
+ 	FTSENT *t;
+ 	dev_t dev;
+ 	ino_t ino;
+ 	struct stat *sbp, sb;
++	struct timespec *btp, bt;
+ 	int ret, saved_errno;
+ 	const char *path;
+ 
+@@ -1013,15 +1028,14 @@
+ 	}
+ 
+ 	/* If user needs stat info, stat buffer already allocated. */
+-	sbp = ISSET(FTS_NOSTAT) ? &sb : p->fts_statp;
+-
 -	/* Check for whiteout. */
 -	if (p->fts_flags & FTS_ISW) {
 -		if (sbp != &sb) {
@@ -20010,12 +20219,40 @@
 -			sbp->st_mode = S_IFWHT;
 -		}
 -		return (FTS_W);
--	}
--
++	if (ISSET(FTS_NOSTAT)) {
++		btp = &bt;
++		sbp = &sb;
++	} else {
++		struct stat *sp = p->fts_statp;
++		sbp = sp;
++		sp += 1;
++		memcpy(&btp, &sp, sizeof(void *));
+ 	}
+ 
  	/*
- 	 * If doing a logical walk, or caller requested FTS_COMFOLLOW, do
- 	 * a full stat(2).  If that fails, do an lstat(2) to check for a
-@@ -1088,6 +1059,21 @@
+@@ -1035,10 +1049,10 @@
+ 	 * rather than FTS_COMFOLLOW), we also revert to lstat(2).
+ 	 */
+ 	if (ISSET(FTS_LOGICAL) || follow) {
+-		if ((ret = fstatat(dfd, path, sbp, 0)) != 0 ||
++		if ((ret = ftstatx(dfd, path, sbp, btp, 0)) != 0 ||
+ 		    (follow < 0 && !S_ISDIR(sbp->st_mode))) {
+ 			saved_errno = errno;
+-			if (fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW)) {
++			if (ftstatx(dfd, path, sbp, btp, AT_SYMLINK_NOFOLLOW)) {
+ 				p->fts_errno = saved_errno;
+ 				goto err;
+ 			}
+@@ -1046,7 +1060,7 @@
+ 			if (ret != 0 && S_ISLNK(sbp->st_mode))
+ 				return (FTS_SLNONE);
+ 		}
+-	} else if (fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW)) {
++	} else if (ftstatx(dfd, path, sbp, btp, AT_SYMLINK_NOFOLLOW)) {
+ 		p->fts_errno = errno;
+ err:		memset(sbp, 0, sizeof(struct stat));
+ 		return (FTS_NS);
+@@ -1088,6 +1102,21 @@
  	return (FTS_DEFAULT);
  }
  
@@ -20037,7 +20274,7 @@
  static FTSENT *
  fts_sort(FTS *sp, FTSENT *head, size_t nitems)
  {
-@@ -1110,18 +1096,7 @@
+@@ -1110,18 +1139,7 @@
  	}
  	for (ap = sp->fts_array, p = head; p; p = p->fts_link)
  		*ap++ = p;
@@ -20057,7 +20294,16 @@
  	for (head = *(ap = sp->fts_array); --nitems; ++ap)
  		ap[0]->fts_link = ap[1];
  	ap[0]->fts_link = NULL;
-@@ -1239,38 +1214,32 @@
+@@ -1143,7 +1161,7 @@
+ 	len = sizeof(FTSENT) + namelen + 1;
+ 	if (!ISSET(FTS_NOSTAT)) {
+ 		len = roundup(len, alignof(struct stat));
+-		p = calloc(1, len + sizeof(struct stat));
++		p = calloc(1, len + sizeof(struct stat) + sizeof(struct timespec));
+ 	} else {
+ 		p = calloc(1, len);
+ 	}
+@@ -1239,38 +1257,32 @@
  {
  	int ret, oerrno, newfd;
  	struct stat sb;
@@ -20103,7 +20349,7 @@
  /*
   * Check if the filesystem for "ent" has UFS-style links.
   */
-@@ -1304,3 +1273,6 @@
+@@ -1304,3 +1316,6 @@
  	}
  	return (priv->ftsp_linksreliable);
  }

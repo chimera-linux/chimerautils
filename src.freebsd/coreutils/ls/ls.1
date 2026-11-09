@@ -37,7 +37,7 @@
 .Nd list directory contents
 .Sh SYNOPSIS
 .Nm
-.Op Fl ABCFGHILPRSTWZabcdfghiklmnpqrstuvwxy1\&,
+.Op Fl ABCFGHILPRSTUWZabcdfghiklmnpqrstuvwxy1\&,
 .Op Fl -color Ns = Ns Ar when
 .Op Fl -group-directories Ns = Ns Ar order
 .Op Fl -group-directories-first
@@ -179,6 +179,10 @@ month, day, hour, minute, second, and year.
 The
 .Fl D
 option gives even more control over the output format.
+This option is not defined in
+.St -p1003.1-2008 .
+.It Fl U
+Use time when file was created for sorting or printing.
 This option is not defined in
 .St -p1003.1-2008 .
 .It Fl Z
@@ -899,7 +903,7 @@ utility conforms to
 and
 .St -p1003.1-2008 .
 The options
-.Fl B , D , G , I , T , Z , b , h , v , w , y
+.Fl B , D , G , I , T , U , Z , b , h , v , w , y
 ,
 .Fl ,
 .Fl -color

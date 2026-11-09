@@ -223,9 +223,15 @@ printlong(const DISPLAY *dp)
 	}
 
 	for (p = dp->list; p; p = p->fts_link) {
+#ifdef FTS_USES_STATX
+		struct timespec birthtime;
+#endif
 		if (IS_NOPRINT(p))
 			continue;
 		sp = p->fts_statp;
+#ifdef FTS_USES_STATX
+		birthtime = ftsent_get_birthtime(p);
+#endif
 		if (f_inode && IS_ERRPRINT(p))
 			(void)printf("%*s ", dp->s_inode, "?");
 		else if (f_inode)
@@ -265,7 +271,11 @@ printlong(const DISPLAY *dp)
 		else if (f_accesstime)
 			printtime(sp->st_atime);
 		else if (f_birthtime)
+#ifdef FTS_USES_STATX
+			printtime(birthtime.tv_sec);
+#else
 			printtime(sp->st_ctime);
+#endif
 		else if (f_statustime)
 			printtime(sp->st_ctime);
 		else

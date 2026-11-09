@@ -46,6 +46,7 @@
 #include <dirent.h>
 #include <err.h>
 #include <errno.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <fts.h>
 #include <grp.h>
@@ -262,7 +263,8 @@ f_Xmin(PLAN *plan, FTSENT *entry)
 		    60 - 1) / 60, plan->t_data.tv_sec);
 #if HAVE_STRUCT_STAT_ST_BIRTHTIME
 	} else if (plan->flags & F_TIME_B) {
-		COMPARE((now - entry->fts_statp->st_birthtime +
+		struct timespec bts = ftsent_get_birthtime(entry);
+		COMPARE((now - bts.tv_sec +
 		    60 - 1) / 60, plan->t_data.tv_sec);
 #endif
 	} else {
@@ -306,8 +308,10 @@ f_Xtime(PLAN *plan, FTSENT *entry)
 	if (plan->flags & F_TIME_A)
 		xtime = entry->fts_statp->st_atime;
 #if HAVE_STRUCT_STAT_ST_BIRTHTIME
-	else if (plan->flags & F_TIME_B)
-		xtime = entry->fts_statp->st_birthtime;
+	else if (plan->flags & F_TIME_B) {
+		struct timespec bts = ftsent_get_birthtime(entry);
+		xtime = bts.tv_sec;
+	}
 #endif
 	else if (plan->flags & F_TIME_C)
 		xtime = entry->fts_statp->st_ctime;
@@ -1356,7 +1360,7 @@ f_newer(PLAN *plan, FTSENT *entry)
 	else if (plan->flags & F_TIME_A)
 		ft = entry->fts_statp->st_atim;
 	else if (plan->flags & F_TIME_B)
-		ft = entry->fts_statp->st_birthtim;
+		ft = ftsent_get_birthtime(entry);
 #endif
 	else
 		ft = entry->fts_statp->st_mtim;
@@ -1370,8 +1374,10 @@ c_newer(OPTION *option, char ***argvp)
 {
 	char *fn_or_tspec;
 	PLAN *new;
-	struct stat sb;
+	struct statx sx;
 	int error;
+	int sxflags = AT_NO_AUTOMOUNT;
+	unsigned int sxmask = STATX_ATIME | STATX_MTIME | STATX_CTIME | STATX_BTIME;
 
 	fn_or_tspec = nextarg(option, argvp);
 	ftsoptions &= ~FTS_NOSTAT;
@@ -1386,21 +1392,29 @@ c_newer(OPTION *option, char ***argvp)
 		new->t_data.tv_nsec = 999999999;
 	} else {
 		if (ftsoptions & FTS_PHYSICAL)
-			error = lstat(fn_or_tspec, &sb);
+			error = statx(AT_FDCWD, fn_or_tspec,
+			              sxflags | AT_SYMLINK_NOFOLLOW, sxmask, &sx);
 		else
-			error = stat(fn_or_tspec, &sb);
+			error = statx(AT_FDCWD, fn_or_tspec, sxflags, sxmask, &sx);
 		if (error != 0)
 			err(1, "%s", fn_or_tspec);
-		if (option->flags & F_TIME2_C)
-			new->t_data = sb.st_ctim;
-		else if (option->flags & F_TIME2_A)
-			new->t_data = sb.st_atim;
+		if (option->flags & F_TIME2_C) {
+			new->t_data.tv_sec = sx.stx_ctime.tv_sec;
+			new->t_data.tv_nsec = sx.stx_ctime.tv_nsec;
+		} else if (option->flags & F_TIME2_A) {
+			new->t_data.tv_sec = sx.stx_atime.tv_sec;
+			new->t_data.tv_nsec = sx.stx_atime.tv_nsec;
+		}
 #if HAVE_STRUCT_STAT_ST_BIRTHTIME
-		else if (option->flags & F_TIME2_B)
-			new->t_data = sb.st_birthtim;
+		else if (option->flags & F_TIME2_B) {
+			new->t_data.tv_sec = sx.stx_btime.tv_sec;
+			new->t_data.tv_nsec = sx.stx_btime.tv_nsec;
+		}
 #endif
-		else
-			new->t_data = sb.st_mtim;
+		else {
+			new->t_data.tv_sec = sx.stx_mtime.tv_sec;
+			new->t_data.tv_nsec = sx.stx_mtime.tv_nsec;
+		}
 	}
 	return new;
 }

@@ -90,6 +90,7 @@ The default format displays the
 .Fa st_atime ,
 .Fa st_mtime ,
 .Fa st_ctime ,
+.Fa stx_btime ,
 .Fa st_blksize ,
 and
 .Fa st_blocks
@@ -421,11 +422,12 @@ owner
 .It Cm r
 Device number for character and block device special files
 .Pq Fa st_rdev .
-.It Cm a , m , c
+.It Cm a , m , c , B
 The time
 .Ar file
-was last accessed or modified or when the inode was last changed
-.Pq Fa st_atime , st_mtime , st_ctime .
+was last accessed or modified, or when the inode was last changed, or
+the birth time of the inode
+.Pq Fa st_atime , st_mtime , st_ctime , stx_btime .
 .It Cm z
 The size of
 .Ar file

@@ -35,6 +35,7 @@
 #include <sys/mount.h>
 #include <sys/stat.h>
 #include <sys/vfs.h>
+#include <sys/sysmacros.h>
 
 #include <dirent.h>
 #include <errno.h>
@@ -976,12 +977,46 @@ mem1:				saved_errno = errno;
 }
 
 static int
+ftstatx(int dfd, const char *path, struct stat *sp, struct timespec *btime, int flags)
+{
+	struct statx stx;
+	struct timespec bts;
+	int sret = statx(dfd, path, flags | AT_NO_AUTOMOUNT,
+	                 STATX_BASIC_STATS | STATX_BTIME, &stx);
+	if (sret != 0)
+		return sret;
+	/* copy into sp */;
+	sp->st_dev = makedev(stx.stx_dev_major, stx.stx_dev_minor);
+	sp->st_rdev = makedev(stx.stx_rdev_major, stx.stx_rdev_minor);
+	sp->st_ino = stx.stx_ino;
+	sp->st_nlink = stx.stx_nlink;
+	sp->st_mode = stx.stx_mode;
+	sp->st_uid = stx.stx_uid;
+	sp->st_gid = stx.stx_gid;
+	sp->st_size = stx.stx_size;
+	sp->st_blksize = stx.stx_blksize;
+	sp->st_blocks = stx.stx_blocks;
+	sp->st_atim.tv_sec = stx.stx_atime.tv_sec;
+	sp->st_atim.tv_nsec = stx.stx_atime.tv_nsec;
+	sp->st_mtim.tv_sec = stx.stx_mtime.tv_sec;
+	sp->st_mtim.tv_nsec = stx.stx_mtime.tv_nsec;
+	sp->st_ctim.tv_sec = stx.stx_ctime.tv_sec;
+	sp->st_ctim.tv_nsec = stx.stx_ctime.tv_nsec;
+	/* store birth time separately as an internal detail */
+	bts.tv_sec = stx.stx_btime.tv_sec;
+	bts.tv_nsec = stx.stx_btime.tv_nsec;
+	memcpy(btime, &bts, sizeof(bts));
+	return 0;
+}
+
+static int
 fts_stat(FTS *sp, FTSENT *p, int follow, int dfd)
 {
 	FTSENT *t;
 	dev_t dev;
 	ino_t ino;
 	struct stat *sbp, sb;
+	struct timespec *btp, bt;
 	int ret, saved_errno;
 	const char *path;
 
@@ -993,7 +1028,15 @@ fts_stat(FTS *sp, FTSENT *p, int follow, int dfd)
 	}
 
 	/* If user needs stat info, stat buffer already allocated. */
-	sbp = ISSET(FTS_NOSTAT) ? &sb : p->fts_statp;
+	if (ISSET(FTS_NOSTAT)) {
+		btp = &bt;
+		sbp = &sb;
+	} else {
+		struct stat *sp = p->fts_statp;
+		sbp = sp;
+		sp += 1;
+		memcpy(&btp, &sp, sizeof(void *));
+	}
 
 	/*
 	 * If doing a logical walk, or caller requested FTS_COMFOLLOW, do
@@ -1006,10 +1049,10 @@ fts_stat(FTS *sp, FTSENT *p, int follow, int dfd)
 	 * rather than FTS_COMFOLLOW), we also revert to lstat(2).
 	 */
 	if (ISSET(FTS_LOGICAL) || follow) {
-		if ((ret = fstatat(dfd, path, sbp, 0)) != 0 ||
+		if ((ret = ftstatx(dfd, path, sbp, btp, 0)) != 0 ||
 		    (follow < 0 && !S_ISDIR(sbp->st_mode))) {
 			saved_errno = errno;
-			if (fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW)) {
+			if (ftstatx(dfd, path, sbp, btp, AT_SYMLINK_NOFOLLOW)) {
 				p->fts_errno = saved_errno;
 				goto err;
 			}
@@ -1017,7 +1060,7 @@ fts_stat(FTS *sp, FTSENT *p, int follow, int dfd)
 			if (ret != 0 && S_ISLNK(sbp->st_mode))
 				return (FTS_SLNONE);
 		}
-	} else if (fstatat(dfd, path, sbp, AT_SYMLINK_NOFOLLOW)) {
+	} else if (ftstatx(dfd, path, sbp, btp, AT_SYMLINK_NOFOLLOW)) {
 		p->fts_errno = errno;
 err:		memset(sbp, 0, sizeof(struct stat));
 		return (FTS_NS);
@@ -1118,7 +1161,7 @@ fts_alloc(FTS *sp, char *name, size_t namelen)
 	len = sizeof(FTSENT) + namelen + 1;
 	if (!ISSET(FTS_NOSTAT)) {
 		len = roundup(len, alignof(struct stat));
-		p = calloc(1, len + sizeof(struct stat));
+		p = calloc(1, len + sizeof(struct stat) + sizeof(struct timespec));
 	} else {
 		p = calloc(1, len);
 	}

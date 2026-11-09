@@ -35,10 +35,16 @@
 #ifdef _CHIMERAUTILS_BUILD
 #include "config-compat.h"
 #endif
- 
+
+#include <time.h>
+
 #if !defined(_CHIMERAUTILS_BUILD) || !defined(HAVE_FTS_OPEN)
- 
+
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+
+#define FTS_USES_STATX
 
 typedef struct _ftsent FTSENT;
 
@@ -148,6 +154,12 @@ FTS	*fts_open(char * const *, int,
 FTSENT	*fts_read(FTS *);
 int	 fts_set(FTS *, FTSENT *, int);
 void	 fts_set_clientptr(FTS *, void *);
+
+static inline struct timespec ftsent_get_birthtime(const FTSENT *ent) {
+	struct timespec ret;
+	memcpy(&ret, ent->fts_statp + 1, sizeof(ret));
+	return ret;
+}
 
 #ifdef __cplusplus
 }
