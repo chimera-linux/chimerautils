@@ -5809,6 +5809,17 @@
  #include <sys/types.h>
  
  #include <err.h>
+--- src.orig/coreutils/pr/egetopt.c
++++ src.freebsd/coreutils/pr/egetopt.c
+@@ -69,7 +69,7 @@
+ egetopt(int nargc, char * const *nargv, const char *ostr)
+ {
+ 	static char *place = emsg;	/* option letter processing */
+-	char *oli;			/* option letter list index */
++	const char *oli;		/* option letter list index */
+ 	static int delim;		/* which option delimiter */
+ 	char *p;
+ 	static char savec = '\0';
 --- src.orig/coreutils/pr/pr.c
 +++ src.freebsd/coreutils/pr/pr.c
 @@ -37,6 +37,7 @@
