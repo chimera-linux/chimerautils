@@ -2877,6 +2877,38 @@
  	free(newformat);
  	return (ret);
  }
+--- src.orig/coreutils/dd/args.c
++++ src.freebsd/coreutils/dd/args.c
+@@ -265,7 +265,8 @@
+ static void
+ f_iflag(char *arg)
+ {
+-	struct iflag *ip, tmp;
++	const struct iflag *ip;
++	struct iflag tmp;
+ 
+ 	while (arg != NULL) {
+ 		tmp.name = strsep(&arg, ",");
+@@ -375,7 +376,8 @@
+ static void
+ f_conv(char *arg)
+ {
+-	struct conv *cp, tmp;
++	const struct conv *cp;
++	struct conv tmp;
+ 
+ 	while (arg != NULL) {
+ 		tmp.name = strsep(&arg, ",");
+@@ -411,7 +413,8 @@
+ static void
+ f_oflag(char *arg)
+ {
+-	struct oflag *op, tmp;
++	const struct oflag *op;
++	struct oflag tmp;
+ 
+ 	while (arg != NULL) {
+ 		tmp.name = strsep(&arg, ",");
 --- src.orig/coreutils/dd/dd.1
 +++ src.freebsd/coreutils/dd/dd.1
 @@ -414,7 +414,7 @@
