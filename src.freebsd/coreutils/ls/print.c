@@ -452,8 +452,8 @@ printdev(size_t width, dev_t dev)
 static void
 ls_strftime(char *str, size_t len, const char *fmt, const struct tm *tm)
 {
-	char *posb, nfmt[BUFSIZ];
-	const char *format = fmt;
+	char nfmt[BUFSIZ];
+	const char *format = fmt, *posb;
 
 	if ((posb = strstr(fmt, "%b")) != NULL) {
 		if (month_max_size == 0) {
