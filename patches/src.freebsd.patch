@@ -15775,6 +15775,16 @@
  	if (len < 0 || len >= SIZE(b2) || opts_set(sp, argv, NULL)) {	\
  		optindx = indx;						\
  		goto err;						\
+@@ -1032,7 +1032,8 @@
+ opts_search(CHAR_T *name)
+ {
+ 	OPTLIST const *op, *found;
+-	OABBREV atmp, *ap;
++	OABBREV atmp;
++	const OABBREV *ap;
+ 	OPTLIST otmp;
+ 	size_t len;
+ 
 --- src.orig/nvi/common/recover.c
 +++ src.freebsd/nvi/common/recover.c
 @@ -33,6 +33,7 @@

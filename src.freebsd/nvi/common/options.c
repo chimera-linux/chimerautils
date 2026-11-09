@@ -1032,7 +1032,8 @@ OPTLIST const *
 opts_search(CHAR_T *name)
 {
 	OPTLIST const *op, *found;
-	OABBREV atmp, *ap;
+	OABBREV atmp;
+	const OABBREV *ap;
 	OPTLIST otmp;
 	size_t len;
 
