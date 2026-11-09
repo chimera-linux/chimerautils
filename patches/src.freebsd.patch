@@ -6442,6 +6442,15 @@
  	if (term != NULL) {
  		fputs(sep, stdout);
  		fputs(term, stdout);
+@@ -442,7 +456,7 @@
+ decimal_places(const char *number)
+ {
+ 	int places = 0;
+-	char *dp;
++	const char *dp;
+ 
+ 	/* look for a decimal point */
+ 	if ((dp = strstr(number, decimal_point))) {
 @@ -461,27 +475,36 @@
   * when "%g" prints as "%e" (this way no width adjustments are made)
   */
