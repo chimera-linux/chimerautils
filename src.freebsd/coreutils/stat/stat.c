@@ -620,6 +620,7 @@ format1(const struct statx *st,
 	struct statx_timestamp ts;
 	struct tm *tm;
 	int l, small, formats;
+	time_t tsec;
 #if HAVE_DEVNAME
 	mode_t dtype;
 #endif
@@ -761,11 +762,13 @@ handle_tsp:
 		ts = *tsp;		/* copy so we can muck with it */
 		small = (sizeof(ts.tv_sec) == 4);
 		data = ts.tv_sec;
-		tm = localtime(&ts.tv_sec);
+		tsec = ts.tv_sec;
+		tm = localtime(&tsec);
 		if (tm == NULL) {
-			ts.tv_sec = 0;
-			tm = localtime(&ts.tv_sec);
+			tsec = 0;
+			tm = localtime(&tsec);
 		}
+		ts.tv_sec = tsec;
 		(void)setlocale(LC_TIME, "");
 		(void)strftime_bsd(path, sizeof(path), timefmt, tm);
 		sdata = path;

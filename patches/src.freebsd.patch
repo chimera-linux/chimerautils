@@ -6897,6 +6897,15 @@
  	case 'M':
  		initialise_months();
  		sm->Mflag = true;
+@@ -735,7 +756,7 @@
+ 	    { false, false, false, false, false, false };
+ 
+ 	if (s && *s) {
+-		char *sptr;
++		const char *sptr;
+ 
+ 		sptr = strchr(s, ',');
+ 		if (sptr) {
 @@ -847,7 +868,7 @@
  void
  fix_obsolete_keys(int *argc, char **argv)
@@ -7318,7 +7327,7 @@
      const char *file,
      const char *fmt, int flen,
      char *buf, size_t blen,
-@@ -644,13 +612,17 @@
+@@ -644,13 +612,18 @@
  {
  	u_int64_t data;
  	char *stmp, lfmt[24], tmp[20];
@@ -7334,13 +7343,14 @@
 +	struct statx_timestamp ts;
  	struct tm *tm;
  	int l, small, formats;
++	time_t tsec;
 +#if HAVE_DEVNAME
  	mode_t dtype;
 +#endif
  
  	tsp = NULL;
  	formats = 0;
-@@ -663,15 +635,15 @@
+@@ -663,15 +636,15 @@
  	switch (what) {
  	case SHOW_st_dev:
  	case SHOW_st_rdev:
@@ -7359,7 +7369,7 @@
  			break;
  		}
  
-@@ -695,17 +667,16 @@
+@@ -695,17 +668,16 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_ino:
@@ -7381,7 +7391,7 @@
  		stmp = smode;
  		l = strlen(stmp);
  		if (stmp[l - 1] == ' ')
-@@ -735,20 +706,22 @@
+@@ -735,20 +707,22 @@
  			ofmt = FMTF_OCTAL;
  		break;
  	case SHOW_st_nlink:
@@ -7411,7 +7421,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -756,12 +729,14 @@
+@@ -756,12 +730,14 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_gid:
@@ -7431,7 +7441,7 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -769,21 +744,20 @@
+@@ -769,31 +745,32 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
@@ -7462,16 +7472,23 @@
  		ts = *tsp;		/* copy so we can muck with it */
  		small = (sizeof(ts.tv_sec) == 4);
  		data = ts.tv_sec;
-@@ -793,7 +767,7 @@
- 			tm = localtime(&ts.tv_sec);
+-		tm = localtime(&ts.tv_sec);
++		tsec = ts.tv_sec;
++		tm = localtime(&tsec);
+ 		if (tm == NULL) {
+-			ts.tv_sec = 0;
+-			tm = localtime(&ts.tv_sec);
++			tsec = 0;
++			tm = localtime(&tsec);
  		}
++		ts.tv_sec = tsec;
  		(void)setlocale(LC_TIME, "");
 -		(void)strftime(path, sizeof(path), timefmt, tm);
 +		(void)strftime_bsd(path, sizeof(path), timefmt, tm);
  		sdata = path;
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_FLOAT | FMTF_STRING;
-@@ -801,24 +775,24 @@
+@@ -801,24 +778,24 @@
  			ofmt = FMTF_DECIMAL;
  		break;
  	case SHOW_st_size:
@@ -7502,7 +7519,7 @@
  		sdata = NULL;
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX;
  		if (ofmt == 0)
-@@ -870,7 +844,7 @@
+@@ -870,7 +847,7 @@
  	case SHOW_symlink:
  		small = 0;
  		data = 0;
@@ -7511,7 +7528,7 @@
  			snprintf(path, sizeof(path), " -> ");
  			l = readlink(file, path + 4, sizeof(path) - 4 - 1);
  			if (l == -1) {
-@@ -894,11 +868,11 @@
+@@ -894,11 +871,11 @@
  		data = 0;
  		sdata = "";
  		if (hilo == 0 || hilo == LOW_PIECE) {
@@ -7525,7 +7542,7 @@
  				    (S_IXUSR | S_IXGRP | S_IXOTH))
  					sdata = "*";
  				break;
-@@ -914,7 +888,7 @@
+@@ -914,7 +891,7 @@
  			hilo = 0;
  		}
  		else if (hilo == HIGH_PIECE) {
@@ -7534,7 +7551,7 @@
  			case S_IFIFO:	sdata = "Fifo File";		break;
  			case S_IFCHR:	sdata = "Character Device";	break;
  			case S_IFDIR:	sdata = "Directory";		break;
-@@ -946,7 +920,7 @@
+@@ -946,7 +923,7 @@
  			ofmt = FMTF_STRING;
  		break;
  	case SHOW_sizerdev:
@@ -7543,7 +7560,7 @@
  			char majdev[20], mindev[20];
  			int l1, l2;
  
-@@ -1117,28 +1091,17 @@
+@@ -1117,28 +1094,17 @@
  	return (snprintf(buf, blen, lfmt, data));
  }
  
