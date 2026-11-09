@@ -37,7 +37,7 @@ v_match(SCR *sp, VICMD *vp)
 	size_t cno, len, off;
 	int cnt, isempty, matchc, startc, (*gc)(SCR *, VCS *);
 	CHAR_T *p;
-	CHAR_T *cp;
+	const CHAR_T *cp;
 	const CHAR_T *match_chars;
 
 	/*

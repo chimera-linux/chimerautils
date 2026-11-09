@@ -15901,6 +15901,17 @@
 +    try_sed "$1" "$COMPONENT"
 +    shift
 +done
+--- src.orig/nvi/vi/v_match.c
++++ src.freebsd/nvi/vi/v_match.c
+@@ -37,7 +37,7 @@
+ 	size_t cno, len, off;
+ 	int cnt, isempty, matchc, startc, (*gc)(SCR *, VCS *);
+ 	CHAR_T *p;
+-	CHAR_T *cp;
++	const CHAR_T *cp;
+ 	const CHAR_T *match_chars;
+ 
+ 	/*
 --- src.orig/nvi/vi/v_paragraph.c
 +++ src.freebsd/nvi/vi/v_paragraph.c
 @@ -47,7 +47,7 @@
