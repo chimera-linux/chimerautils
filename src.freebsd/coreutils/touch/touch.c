@@ -44,7 +44,7 @@
 #include <time_bsd.h>
 #include <unistd.h>
 
-static void	stime_arg1(const char *, struct timespec *);
+static void	stime_arg1(char *, struct timespec *);
 static void	stime_arg2(const char *, int, struct timespec *);
 static void	stime_darg(const char *, struct timespec *);
 static void	stime_file(const char *, struct timespec *);
@@ -206,7 +206,7 @@ main(int argc, char *argv[])
 #define	ATOI2(ar)	((ar)[0] - '0') * 10 + ((ar)[1] - '0'); (ar) += 2;
 
 static void
-stime_arg1(const char *arg, struct timespec *tvp)
+stime_arg1(char *arg, struct timespec *tvp)
 {
 	time_t now;
 	struct tm *t;
