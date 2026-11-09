@@ -16749,6 +16749,15 @@
  	case '\n':
  		plinno++;
  		if (doprompt)
+@@ -1615,7 +1616,7 @@
+ 	int subtype;
+ 	int typeloc;
+ 	int flags;
+-	char *p;
++	const char *p;
+ 	static const char types[] = "}-+?=";
+ 	int linno;
+ 	int length;
 @@ -1984,7 +1985,7 @@
  static void
  getusername(char *name, size_t namelen)
