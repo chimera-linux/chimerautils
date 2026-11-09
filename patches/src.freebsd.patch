@@ -7368,32 +7368,38 @@
  		}
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_STRING;
-@@ -769,20 +744,20 @@
+@@ -769,21 +744,20 @@
  			ofmt = FMTF_UNSIGNED;
  		break;
  	case SHOW_st_atime:
 -		tsp = &st->st_atimespec;
+-		/* FALLTHROUGH */
 +		tsp = &st->stx_atime;
- 		/* FALLTHROUGH */
++		goto handle_tsp;
  	case SHOW_st_mtime:
- 		if (tsp == NULL)
+-		if (tsp == NULL)
 -			tsp = &st->st_mtimespec;
-+			tsp = &st->stx_mtime;
- 		/* FALLTHROUGH */
+-		/* FALLTHROUGH */
++		tsp = &st->stx_mtime;
++		goto handle_tsp;
  	case SHOW_st_ctime:
- 		if (tsp == NULL)
+-		if (tsp == NULL)
 -			tsp = &st->st_ctimespec;
-+			tsp = &st->stx_ctime;
- 		/* FALLTHROUGH */
+-		/* FALLTHROUGH */
++		tsp = &st->stx_ctime;
++		goto handle_tsp;
  #if HAVE_STRUCT_STAT_ST_BIRTHTIME
  	case SHOW_st_btime:
- 		if (tsp == NULL)
+-		if (tsp == NULL)
 -			tsp = &st->st_birthtimespec;
-+			tsp = &st->stx_btime;
++		tsp = &st->stx_btime;
++		goto handle_tsp;
  #endif /* HAVE_STRUCT_STAT_ST_BIRTHTIME */
++handle_tsp:
  		ts = *tsp;		/* copy so we can muck with it */
  		small = (sizeof(ts.tv_sec) == 4);
-@@ -793,7 +768,7 @@
+ 		data = ts.tv_sec;
+@@ -793,7 +767,7 @@
  			tm = localtime(&ts.tv_sec);
  		}
  		(void)setlocale(LC_TIME, "");
@@ -7402,7 +7408,7 @@
  		sdata = path;
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX |
  		    FMTF_FLOAT | FMTF_STRING;
-@@ -801,24 +776,24 @@
+@@ -801,24 +775,24 @@
  			ofmt = FMTF_DECIMAL;
  		break;
  	case SHOW_st_size:
@@ -7433,7 +7439,7 @@
  		sdata = NULL;
  		formats = FMTF_DECIMAL | FMTF_OCTAL | FMTF_UNSIGNED | FMTF_HEX;
  		if (ofmt == 0)
-@@ -870,7 +845,7 @@
+@@ -870,7 +844,7 @@
  	case SHOW_symlink:
  		small = 0;
  		data = 0;
@@ -7442,7 +7448,7 @@
  			snprintf(path, sizeof(path), " -> ");
  			l = readlink(file, path + 4, sizeof(path) - 4 - 1);
  			if (l == -1) {
-@@ -894,11 +869,11 @@
+@@ -894,11 +868,11 @@
  		data = 0;
  		sdata = "";
  		if (hilo == 0 || hilo == LOW_PIECE) {
@@ -7456,7 +7462,7 @@
  				    (S_IXUSR | S_IXGRP | S_IXOTH))
  					sdata = "*";
  				break;
-@@ -914,7 +889,7 @@
+@@ -914,7 +888,7 @@
  			hilo = 0;
  		}
  		else if (hilo == HIGH_PIECE) {
@@ -7465,7 +7471,7 @@
  			case S_IFIFO:	sdata = "Fifo File";		break;
  			case S_IFCHR:	sdata = "Character Device";	break;
  			case S_IFDIR:	sdata = "Directory";		break;
-@@ -946,7 +921,7 @@
+@@ -946,7 +920,7 @@
  			ofmt = FMTF_STRING;
  		break;
  	case SHOW_sizerdev:
@@ -7474,7 +7480,7 @@
  			char majdev[20], mindev[20];
  			int l1, l2;
  
-@@ -1117,28 +1092,17 @@
+@@ -1117,28 +1091,17 @@
  	return (snprintf(buf, blen, lfmt, data));
  }
  

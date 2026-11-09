@@ -745,20 +745,19 @@ format1(const struct statx *st,
 		break;
 	case SHOW_st_atime:
 		tsp = &st->stx_atime;
-		/* FALLTHROUGH */
+		goto handle_tsp;
 	case SHOW_st_mtime:
-		if (tsp == NULL)
-			tsp = &st->stx_mtime;
-		/* FALLTHROUGH */
+		tsp = &st->stx_mtime;
+		goto handle_tsp;
 	case SHOW_st_ctime:
-		if (tsp == NULL)
-			tsp = &st->stx_ctime;
-		/* FALLTHROUGH */
+		tsp = &st->stx_ctime;
+		goto handle_tsp;
 #if HAVE_STRUCT_STAT_ST_BIRTHTIME
 	case SHOW_st_btime:
-		if (tsp == NULL)
-			tsp = &st->stx_btime;
+		tsp = &st->stx_btime;
+		goto handle_tsp;
 #endif /* HAVE_STRUCT_STAT_ST_BIRTHTIME */
+handle_tsp:
 		ts = *tsp;		/* copy so we can muck with it */
 		small = (sizeof(ts.tv_sec) == 4);
 		data = ts.tv_sec;
