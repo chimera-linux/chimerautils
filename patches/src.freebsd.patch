@@ -11990,7 +11990,7 @@
  #include <stdbool.h>
  #include <stdio.h>
  #include <stdlib.h>
-@@ -155,12 +158,46 @@
+@@ -155,12 +158,49 @@
  	fputs(buffer, fp);
  }
  
@@ -12023,6 +12023,11 @@
 +	btime->tv_nsec = stx.stx_btime.tv_nsec;
 +	return 0;
 +}
++#else
++static int stat_with_btime(const char *path, struct stat *sp, struct timespec *)
++{
++	return stat(path, sp);
++}
 +#endif
 +
  void
@@ -12031,13 +12036,11 @@
  	char buf[4096];
  	struct stat sb;
  	struct stat *sp;
-+#ifdef FTS_USES_STATX
 +	struct timespec bts;
-+#endif
  	const char *path, *pend;
  	char *all, *fmt;
  	ssize_t ret;
-@@ -173,6 +210,9 @@
+@@ -173,6 +213,9 @@
  		plan->flags |= F_HAS_WARNED;
  	for (c = *fmt++; c; c = *fmt++) {
  		sp = entry->fts_statp;
@@ -12047,7 +12050,7 @@
  		if (c != '%') {
  			putc(c, fout);
  			continue;
-@@ -205,15 +245,21 @@
+@@ -205,15 +248,21 @@
  			errx(1, "%%%c is unimplemented", c);
  		case 'H': /* Command line arg -- HOW? */
  			errx(1, "%%%c is unimplemented", c);
@@ -12073,7 +12076,7 @@
  		case 'U': /* uid numeric */
  			fprintf(fout, "%d", sp->st_uid);
  			break;
-@@ -238,7 +284,7 @@
+@@ -238,7 +287,7 @@
  			    (float)sp->st_blocks * 512 / (float)sp->st_size);
  			break;
  		case 'd': /* Depth in tree */
@@ -12082,7 +12085,7 @@
  			break;
  		case 'D': /* device number */
  			fprintf(fout, "%ju", (uintmax_t)sp->st_dev);
-@@ -258,7 +304,7 @@
+@@ -258,7 +307,7 @@
  			break;
  		case 'Y': /* -type of file, following 'l' types L loop ? error */
  			if (S_ISLNK(sp->st_mode)) {
@@ -12091,7 +12094,7 @@
  					switch (errno) {
  					case ELOOP:
  						putc('L', fout);
-@@ -298,9 +344,6 @@
+@@ -298,9 +347,6 @@
  			case S_IFSOCK:
  				putc('s', fout);
  				break;
@@ -12101,7 +12104,7 @@
  			default:
  				putc('U', fout);
  				break;
-@@ -313,9 +356,9 @@
+@@ -313,9 +359,9 @@
  			fp_strftime(fout, sp->st_atime, *fmt++);
  			break;
  		case 'B': /* birth time with next char strftime format */

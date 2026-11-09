@@ -187,6 +187,11 @@ static int stat_with_btime(const char *path, struct stat *sp, struct timespec *b
 	btime->tv_nsec = stx.stx_btime.tv_nsec;
 	return 0;
 }
+#else
+static int stat_with_btime(const char *path, struct stat *sp, struct timespec *)
+{
+	return stat(path, sp);
+}
 #endif
 
 void
@@ -195,9 +200,7 @@ do_printf(PLAN *plan, FTSENT *entry, FILE *fout)
 	char buf[4096];
 	struct stat sb;
 	struct stat *sp;
-#ifdef FTS_USES_STATX
 	struct timespec bts;
-#endif
 	const char *path, *pend;
 	char *all, *fmt;
 	ssize_t ret;
