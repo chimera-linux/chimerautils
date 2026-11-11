@@ -485,7 +485,7 @@ atend:
 	}
 
 	c = *p++;
-	for (q = optstr; *q != c; ) {
+	for (q = optstr[0] == ':' ? optstr + 1 : optstr; *q != c; ) {
 		if (*q == '\0') {
 			if (optstr[0] == ':') {
 				s[0] = c;
