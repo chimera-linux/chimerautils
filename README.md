@@ -47,7 +47,7 @@ In a way, `chimerautils` is also an alternative to projects like Busybox.
 
 ## bsdutils
 
-This project is a fork of [bsdutils](https://github.com/dcantrell/bsdutils)
+This project is a fork of [bsdutils](https://codeberg.org/dcantrell/bsdutils)
 by David Cantrell. Chimerautils were created in order to provide a more
 complete package that prioritizes Chimera's needs and development pace.
 
